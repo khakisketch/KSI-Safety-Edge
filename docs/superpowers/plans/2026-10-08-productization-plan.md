@@ -34,7 +34,7 @@
 |---|---|---|---|
 | 판단·검증 | **W5 완료·검증(C15)** — 순수 로직·합성 GT | 실데이터 연결은 기체/GPS GT 확보 후 | 없음(실데이터만 대기) |
 | 사용 흐름(RC) | 미착수 — 환경 조사 완료(2026-10-08): JDK 8(부족)·adb/sdkmanager/gradle 부재, dl.google.com 접근 가능, 디스크 2.9T 여유 | JDK17+cmdline-tools 설치 승인 시 착수 | 설치 승인·RC 접근 경로 |
-| 실제 인식(AI) | W6-A~W8(C16~C19) + ONNX export + TRT engine(fp16) + W9 PASS + **W9-FU2 완료(C25): preprocess 35.3→3.6ms(≈10×)·Detect ~27–28ms(~36qps)** | **Replay 통합**(주기 독립: Detection/Tracking/Spatial, **출처 실측/추적/예측 구분**, 15FPS+tracking 옵션·미관측 구간/지연 기록, 영상 구간→공간 판단 수행/보류 검증) + 다운스케일 보간 충실도 검토 | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
+| 실제 인식(AI) | W6-A~W8(C16~C19) + ONNX export + TRT engine(fp16) + W9 PASS + **W9-FU2 완료(C25: preprocess 35.3→3.6ms·Detect ~27ms·~36qps)** + **충실도 정량화(C26: 다운스케일에서 검출 이동 확인)** | **W10 PIL 호환 리샘플 정렬 진행** → **Replay 통합**(주기 독립: Detection/Tracking/Spatial, **출처 실측/추적/예측 구분**, 15FPS+tracking 옵션·미관측 구간/지연 기록, 영상 구간→공간 판단 수행/보류 검증) | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
 
 ## 4. 첫 현장시험 범위 (추천안 — 사용자 확정 대기)
 
@@ -75,6 +75,7 @@
 - 2026-10-09: **W9 완료·검증(C23)** — C++ TensorRT 런타임(`TensorRtRuntime`, fail-closed T1~T8, TRT OFF stub 경로) + `dfine_trt_smoke`(수용기준: score≥0.2 동일클래스 IoU≥0.5·|Δscore|≤0.05, top-1 필수, tail 정보 표시). 호스트 14/14×2(stub)·장치 gcc 9.4 14/14(TRT ON)·독립 runner `ses_ee382e2f6ffer4hqUUQAyN55FZ`: fp16 smoke 양 이미지 **PASS**(top-1 0.8980/0.9161 vs 참조 0.8984/0.9158, gating 9/9·2/2, tail 3/3·10/10, ~61ms·16.3qps·RSS ~1.4GB), 실패 전이 clean exit 1×2, 범위 정확. **FP32 진단(Primary)**: 꼬리 실패 라인들이 fp32에서 dscore ≤0.0013·IoU ≥0.997로 일치 → **fp16 수치 재순위가 원인 확정, FP16 기본 유지**(fp32 engine은 진단용). 미검증: 실영상·thermal soak(H1-6)·단계별 지연 분해(→ W9-FU).
 - 2026-10-09: **W9-FU 완료·검증(C24)** — 단계별 지연 분해(`RunTimed` + `--breakdown`). 장치 fp16: **preprocess ~35.3ms(지배)** · enqueue+sync ~20.5ms(GPU) · h2d 0.66 · d2h 0.12 · decode 0.39 · total ~57ms(pipelined mean ~61ms). runner `ses_ee376ded1ffe2UUpVDwONjZkVD` 전 항목 PASS(+문서 2건 정정: 'sum exceeds'→방향 중립, enqueueV2→enqueueV3). **다음: W9-FU2 preprocess 최적화**(채널-외부 루프·인덱스 재계산 제거, identity fast path; 목표 대폭 감소) → Replay 통합.
 - 2026-10-09: **W9-FU2 완료·검증(C25)** — `PreprocessRgb` 재구성(열·행 계수 1회·픽셀당 인덱스 1회·3채널 단일 패스·identity fast path) + 등가 시험(3×2→5×4·7×5→4×3·1×1→4×4 @1e-6·identity 5×4). 장치 fp16: **preprocess 35.3→3.6ms(≈10×)**, **Detect mean ~61→~27–28ms(~35–37qps)**; gating·SMOKE PASS 불변; runner `ses_ee36e1452ffelo9SoTnZ8EguL0` 전 항목 PASS. **미검증: 비640 입력 일반 경로 실측 성능**(등가만 검증) — Replay 통합에서 실영상 크기로 확인. **검토 필요(Replay 전)**: 다운스케일 보간 충실도 — PIL(RTDetrImageProcessor) 안티앨리어스 지원 스케일 vs 우리 2-tap bilinear 차이(비640 입력에서만 발생; 정량화·필요 시 C++ 개선).
+- 2026-10-09: **다운스케일 보간 충실도 정량화(Primary, C26)** — PIL(RTDetrImageProcessor) vs 우리 2-tap: tensor max|d| 0.022(381×680 업스케일)·**0.124(800×538 다운스케일)**·0.042(615×800)·**0.170(1080p NEAREST 최악)**. **top-1 안정**(cls 동일, |Δscore|≤0.003, IoU ≥0.96)이지만 **mid/low-confidence 검출 이동**(gating miss 0/9·**1/2**·**7/39**·**11/32**). → **C++ 리샘플을 PIL 호환(다운스케일 안티앨리어스)으로 정렬 필요 — W10**. 분석 스크립트: `scripts/check_resize_fidelity.py`.
 - (이전) B0~W4·C13: `2026-10-08-reuse-audit-and-porting.md`, `docs/verification/evidence/`.
 
 ## 7. 대기 중 결정 (비차단)
