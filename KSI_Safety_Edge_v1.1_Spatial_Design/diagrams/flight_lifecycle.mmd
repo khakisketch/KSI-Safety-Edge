@@ -1,0 +1,10 @@
+flowchart LR
+ A[웹 또는 RC에서 현장/위험구역 설정] --> B[RC 로컬 캐시/임무 Snapshot]
+ B --> C[MOP로 Edge 적용 ACK]
+ C --> D[현장 비행 · Edge AI · RC 오프라인 기록]
+ D --> E[RC 로컬 보관/업로드 대기]
+ E -->|Wi-Fi/4G/핫스팟 연결| F[서버 업로드 · 해시 검증 · durable ACK]
+ F --> G{선택적 사후 분석?}
+ G -->|예| H[DGX Spark 야간 FP/FN 후보]
+ G -->|아니오| I[다음 출근시 MSDK/웹/API/MCP 조회]
+ H --> I

@@ -1,0 +1,19 @@
+flowchart LR
+  subgraph M4[DJI Matrice 4 + 기체 탑재 Manifold 3]
+    CAM[카메라 · 기체 · 짐벌]
+    EDGE[PSDK · 영상/Telemetry 정합 · AI 탐지 · Observation]
+    CAM --> EDGE
+  end
+  subgraph RC[RC Plus 2 · KSI MSDK · Offline-first]
+    APP[임무/위험구역 · 영상/알림 · 로컬 저장 · 업로드 큐]
+  end
+  subgraph CORE[KSI Safety Core]
+    API[현장/위험구역 버전 · 수신/무결성 · 비행/이벤트/증거 DB · API/MCP]
+  end
+  CAM -->|DJI 원본 영상 링크| APP
+  APP -->|MOP 임무 설정| EDGE
+  EDGE -->|MOP AI 탐지 결과 + 스냅샷| APP
+  APP <-->|인터넷 연결 시 다운로드/업로드; RC가 유일한 uplink| API
+  API --> WEB[최소 웹 현장/사건/관리]
+  API --> AGENT[ChatGPT/Claude/Agent · API/MCP]
+  API <-.-> GPU[선택: DGX Spark 야간 VLM]

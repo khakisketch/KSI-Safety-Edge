@@ -1,0 +1,751 @@
+openapi: 3.1.0
+info:
+  title: KSI Safety Edge API (Proposed)
+  version: 1.1.0-spatial-draft
+  description: v1.0 API + 신규 spatial extension 설계. 실제 배포 아님; 서버 URL은 placeholder.
+servers:
+- url: https://safety.example.invalid/api/v1/edge
+  description: PLACEHOLDER — 실제 URL이 아님
+security:
+- bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        request_id:
+          type: string
+      required:
+      - code
+      - message
+    IngestSessionCreated:
+      type: object
+      additionalProperties: false
+      properties:
+        upload_id: &id001
+          type: string
+          format: uuid
+        missing_artifact_ids:
+          type: array
+          items: *id001
+        status:
+          type: string
+          enum:
+          - NEW
+          - RESUMING
+      required:
+      - upload_id
+      - missing_artifact_ids
+      - status
+    DurableCommit:
+      type: object
+      additionalProperties: false
+      properties:
+        durable_commit_id: *id001
+        manifest_sha256: &id005
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        completeness_status:
+          type: string
+          enum:
+          - COMPLETE
+          - PARTIAL
+        missing_artifact_ids:
+          type: array
+          items: *id001
+        committed_at_utc:
+          type: string
+          format: date-time
+      required:
+      - durable_commit_id
+      - manifest_sha256
+      - completeness_status
+      - missing_artifact_ids
+      - committed_at_utc
+paths:
+  /sites:
+    get:
+      summary: List sites
+      operationId: list_sites
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: &id002
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                  next_cursor:
+                    type:
+                    - string
+                    - 'null'
+                required:
+                - items
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      parameters:
+      - name: cursor
+        in: query
+        schema:
+          type: string
+    post:
+      summary: Create site
+      operationId: create_site
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                client_request_id: *id001
+                name:
+                  type: string
+                  minLength: 1
+                org_id: *id001
+              required:
+              - client_request_id
+              - name
+              - org_id
+  /sites/{siteId}/zones:
+    get:
+      summary: List zone revisions
+      operationId: list_zone_revisions
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: *id002
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      parameters: &id003
+      - name: siteId
+        in: path
+        required: true
+        schema: *id001
+  /sites/{siteId}/zone-revisions:
+    post:
+      summary: Create zone revision
+      operationId: create_zone_revision
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                zone_id: *id001
+                base_revision_id:
+                  type:
+                  - string
+                  - 'null'
+                  format: uuid
+                geometry_wgs84:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    type:
+                      type: string
+                      enum:
+                      - Polygon
+                    coordinates:
+                      type: array
+                      minItems: 1
+                      items:
+                        type: array
+                        minItems: 4
+                        items:
+                          type: array
+                          prefixItems:
+                          - type: number
+                            minimum: -180
+                            maximum: 180
+                          - type: number
+                            minimum: -90
+                            maximum: 90
+                          items: false
+                          minItems: 2
+                          maxItems: 2
+                  required:
+                  - type
+                  - coordinates
+                  title: GeoJSON Polygon WGS84 (lon lat)
+                rule_kind:
+                  type: string
+                  minLength: 1
+              required:
+              - zone_id
+              - base_revision_id
+              - geometry_wgs84
+              - rule_kind
+      parameters: *id003
+  /missions:
+    post:
+      summary: Create mission
+      operationId: create_mission
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas/mission-snapshot.v1.schema.json
+  /missions/{missionId}/snapshot:
+    get:
+      summary: Get mission snapshot
+      operationId: get_mission_snapshot
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas/mission-snapshot.v1.schema.json
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      parameters:
+      - name: missionId
+        in: path
+        required: true
+        schema: *id001
+  /ingest-sessions:
+    post:
+      summary: Open ingest session
+      operationId: open_ingest_session
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestSessionCreated'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas/flight-upload-manifest.v1.schema.json
+  /ingest-sessions/{uploadId}:
+    get:
+      summary: Get ingest status
+      operationId: get_ingest_status
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestSessionCreated'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      parameters: &id006
+      - &id004
+        name: uploadId
+        in: path
+        required: true
+        schema: *id001
+  /ingest-sessions/{uploadId}/objects/{artifactId}:
+    put:
+      summary: Upload artifact chunk
+      operationId: upload_artifact_chunk
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      parameters:
+      - *id004
+      - name: artifactId
+        in: path
+        required: true
+        schema: *id001
+      - name: Content-Range
+        in: header
+        schema:
+          type: string
+      - name: X-Content-SHA256
+        in: header
+        schema: *id005
+  /ingest-sessions/{uploadId}/complete:
+    post:
+      summary: Complete ingest session
+      operationId: complete_ingest_session
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DurableCommit'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                manifest_sha256: *id005
+              required:
+              - manifest_sha256
+      parameters: *id006
+  /flights/{flightId}:
+    get:
+      summary: Get flight
+      operationId: get_flight
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      parameters: &id007
+      - name: flightId
+        in: path
+        required: true
+        schema: *id001
+  /flights/{flightId}/observations:
+    get:
+      summary: List observations
+      operationId: list_observations
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: *id002
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      parameters: *id007
+  /events:
+    get:
+      summary: List events
+      operationId: list_events
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: *id002
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      parameters:
+      - name: flight_id
+        in: query
+        schema: *id001
+      - name: site_id
+        in: query
+        schema: *id001
+  /events/{eventId}:
+    get:
+      summary: Get event with provenance
+      operationId: get_event_with_provenance
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      parameters: &id008
+      - name: eventId
+        in: path
+        required: true
+        schema: *id001
+  /events/{eventId}/evidence:
+    get:
+      summary: Get evidence metadata and URLs
+      operationId: get_evidence_metadata_and_urls
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema: *id002
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      parameters: *id008
+  /events/{eventId}/annotations:
+    post:
+      summary: Append operator annotation
+      operationId: append_operator_annotation
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: ./schemas/operator-annotation.v1.schema.json
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ./schemas/operator-annotation.v1.schema.json
+      parameters: *id008
+  /review-jobs:
+    post:
+      summary: Create optional review job
+      operationId: create_optional_review_job
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                flight_id: *id001
+                job_kind:
+                  type: string
+                  enum:
+                  - FP_REVIEW
+                  - FN_AUDIT_SAMPLE
+                  - COMPLEX_BEHAVIOR_REVIEW
+                idempotency_key:
+                  type: string
+                  minLength: 1
+              required:
+              - flight_id
+              - job_kind
+              - idempotency_key
+  /review-jobs/{jobId}:
+    get:
+      summary: Get review job
+      operationId: get_review_job
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '409':
+          description: Revision/hash conflict
+      parameters:
+      - name: jobId
+        in: path
+        required: true
+        schema: *id001
+  /flights/{flightId}/spatial-summaries:
+    get:
+      operationId: list_spatial_summaries
+      summary: Spatial summary with quality and relation lineage
+      parameters:
+      - &id009
+        name: flightId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Flight spatial summaries
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                  complete:
+                    type: boolean
+        '401':
+          description: Unauthenticated
+        '404':
+          description: Not accessible
+  /flights/{flightId}/spatial-summaries:batch:
+    post:
+      operationId: ingest_spatial_summaries
+      summary: Idempotent spatial summary upload from RC only
+      parameters:
+      - *id009
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    type: object
+                client_batch_id:
+                  type: string
+              required:
+              - items
+              - client_batch_id
+      responses:
+        '200':
+          description: Batch accepted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accepted_ids:
+                    type: array
+                    items:
+                      type: string
+                  durable:
+                    type: boolean
+        '409':
+          description: Duplicate ID changed content
+  /events/{eventId}/spatial-context:
+    get:
+      operationId: get_event_spatial_context
+      summary: Get relation quality + calibrated basis + policy/zone revisions
+      parameters:
+      - name: eventId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Spatial context
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  relation_ids:
+                    type: array
+                    items:
+                      type: string
+                  metric_status:
+                    type: string
+                  evidence_ids:
+                    type: array
+                    items:
+                      type: string
+        '404':
+          description: No access or not found
+  /flights/{flightId}/coverage:
+    get:
+      operationId: get_flight_coverage
+      summary: Coverage area, image quality and unknown gaps
+      parameters:
+      - *id009
+      responses:
+        '200':
+          description: Coverage info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  windows:
+                    type: array
+                    items:
+                      type: object
+                  data_completeness:
+                    type: string
+  /sites/{siteId}/risk-policies:
+    get:
+      operationId: list_risk_policies
+      summary: Read policies and immutable revisions
+      parameters:
+      - &id010
+        name: siteId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Policy revisions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+    post:
+      operationId: create_risk_policy_revision
+      summary: CAS create a new immutable revision
+      parameters:
+      - *id010
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                expected_parent_revision_id:
+                  type:
+                  - string
+                  - 'null'
+                policy:
+                  type: object
+              required:
+              - expected_parent_revision_id
+              - policy
+      responses:
+        '201':
+          description: New revision
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revision_id:
+                    type: string
+        '409':
+          description: Revision conflict

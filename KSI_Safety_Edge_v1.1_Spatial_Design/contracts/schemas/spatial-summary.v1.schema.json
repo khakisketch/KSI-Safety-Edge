@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/spatial-summary.v1.schema.json",
+  "title": "SpatialSummary v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "summary_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mission_snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "edge_boot_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "period_start_edge_monotonic_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "period_end_edge_monotonic_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "person_count_max": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "equipment_count_max": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "min_verified_person_equipment_distance_m": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "metric_pair_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unverified_pair_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "covered_frames": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "skipped_frames": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "quality_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "relation_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "zone_revision_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "model_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "summary_id",
+    "flight_id",
+    "mission_snapshot_hash",
+    "edge_boot_id",
+    "period_start_edge_monotonic_ns",
+    "period_end_edge_monotonic_ns",
+    "person_count_max",
+    "equipment_count_max",
+    "min_verified_person_equipment_distance_m",
+    "metric_pair_count",
+    "unverified_pair_count",
+    "covered_frames",
+    "skipped_frames",
+    "quality_reasons",
+    "relation_ids",
+    "zone_revision_ids",
+    "model_digest"
+  ]
+}

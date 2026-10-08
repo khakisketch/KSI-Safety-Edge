@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "mission_id": "00000000-0000-4000-8000-000000000001",
+  "flight_id": "00000000-0000-4000-8000-000000000002",
+  "org_id": "00000000-0000-4000-8000-000000000003",
+  "site_id": "00000000-0000-4000-8000-000000000004",
+  "mission_revision_id": "00000000-0000-4000-8000-000000000005",
+  "origin": "SERVER",
+  "created_at_utc": "2026-10-08T02:00:00Z",
+  "zones": [
+    {
+      "zone_id": "00000000-0000-4000-8000-000000000006",
+      "revision_id": "00000000-0000-4000-8000-000000000007",
+      "rule_kind": "PERSON_ENTRY",
+      "geometry_wgs84": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              127.49,
+              36.63
+            ],
+            [
+              127.4908,
+              36.63
+            ],
+            [
+              127.4908,
+              36.6307
+            ],
+            [
+              127.49,
+              36.63
+            ]
+          ]
+        ]
+      },
+      "zone_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "enabled": true
+    }
+  ],
+  "model_profiles": [
+    {
+      "model_id": "ksi-person-ppe-test",
+      "model_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "enabled": true
+    }
+  ],
+  "recording_policy": {
+    "rc_proxy": true,
+    "target_video_bitrate_bps": 1500000,
+    "target_fps": 15,
+    "segment_seconds": 300
+  },
+  "content_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

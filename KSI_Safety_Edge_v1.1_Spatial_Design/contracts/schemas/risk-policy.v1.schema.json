@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/risk-policy.v1.schema.json",
+  "title": "RiskPolicy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "policy_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "revision_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "site_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "PERSON_EQUIPMENT_PROXIMITY",
+              "ZONE_INTRUSION"
+            ]
+          },
+          "mode": {
+            "enum": [
+              "OFF",
+              "SHADOW",
+              "ACTIVE"
+            ]
+          },
+          "threshold_m": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "exclusiveMinimum": 0
+          },
+          "hysteresis_m": {
+            "type": "number",
+            "minimum": 0
+          },
+          "enter_duration_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "exit_duration_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "required_geometry_level": {
+            "enum": [
+              "PIXEL_ONLY",
+              "TIME_UNVERIFIED",
+              "GEO_ESTIMATE",
+              "METRIC_VERIFIED"
+            ]
+          },
+          "enabled_equipment_classes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "zone_revision_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        },
+        "required": [
+          "rule_id",
+          "kind",
+          "mode",
+          "threshold_m",
+          "hysteresis_m",
+          "enter_duration_ms",
+          "exit_duration_ms",
+          "required_geometry_level",
+          "enabled_equipment_classes",
+          "zone_revision_ids"
+        ],
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "PERSON_EQUIPMENT_PROXIMITY"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "properties": {
+                "threshold_m": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "mode": {
+                  "const": "ACTIVE"
+                }
+              },
+              "required": [
+                "mode"
+              ]
+            },
+            "then": {
+              "properties": {
+                "required_geometry_level": {
+                  "const": "METRIC_VERIFIED"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    "created_offline": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "schema_version",
+    "policy_id",
+    "revision_id",
+    "site_id",
+    "content_sha256",
+    "rules",
+    "created_offline"
+  ]
+}

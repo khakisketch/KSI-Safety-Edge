@@ -1,0 +1,32 @@
+digraph KSI {
+  graph [rankdir=LR,compound=true,splines=polyline,bgcolor="white",pad="0.25",nodesep="0.26",ranksep="0.46",label="KSI Safety Edge v1.1   |   Spatial Observation Architecture",labelloc=t,fontsize=19,fontname="NanumSquare Bold",fontcolor="#183b66"];
+  node [shape=box,style="rounded,filled",color="#93adc7",fontname="NanumSquare",fontsize=11,penwidth=1.1,margin="0.14,0.12"];
+  edge [fontname="NanumSquare",fontsize=9,color="#75849b",arrowsize=0.7];
+  subgraph cluster_edge {label="Matrice 4 + 기체 탑재 Manifold 3 / PSDK";fontname="NanumSquare Bold";style="rounded,filled";color="#8bb5e7";fillcolor="#eaf2fc";
+    cam [label="PSDK Camera Video",fillcolor="white"];tel [label="FC/Gimbal Telemetry",fillcolor="white"];
+    align [label="Time Matcher + Quality",fillcolor="#d5e8ff"];
+    detect [label="Person + Equipment\nDetection / Tracking",fillcolor="#d5e8ff"];
+    spatial [label="Ground Geometry\nFootprints / Pairwise distance",fillcolor="#c7dbfa"];
+    risk [label="Zone + Risk Policy\nOFF / SHADOW / ACTIVE",fillcolor="#c7dbfa"];
+    event [label="Observation / Evidence\nBounded temp spool",fillcolor="white"];
+    cam->align;tel->align;align->detect->spatial->risk->event;
+  }
+  subgraph cluster_rc {label="RC Plus 2 / KSI MSDK (오프라인 기본)";fontname="NanumSquare Bold";style="rounded,filled";color="#85c7a4";fillcolor="#e8f7ef";
+    mission [label="Site / Mission / Zones\nPolicy & ACK",fillcolor="white"];
+    local [label="DJI Live View + Alerts\nLocal DB / Video / Evidence",fillcolor="white"];
+    sync [label="Upload Queue\nWi-Fi·4G 연결 후",fillcolor="#d0efde"];
+    local->sync;
+  }
+  subgraph cluster_core {label="KSI Safety Core";fontname="NanumSquare Bold";style="rounded,filled";color="#b7a4df";fillcolor="#f0ecfa";
+    api[label="Versioned API / Ingest",fillcolor="white"];
+    store[label="Flight · Spatial · Event\nEvidence · Policy history",fillcolor="white"];
+    agents[label="MCP / Agents\nMinimal Web",fillcolor="white"];
+    api->store->agents;
+  }
+  mission->risk [label="MOP config/ACK",color="#3d946e",dir=both];
+  event->local [label="MOP event/snapshot",color="#2b73bf"];
+  cam->local [label="DJI video (separate)",style=dotted,concentrate=false];
+  sync->api [label="internet reconnect",color="#7656b8"];
+  optional [label="DGX Spark (선택)\n비행 후 FP/FN VLM",fillcolor="#fff0da",color="#e0ae63"];
+  store->optional [label="async review",color="#d38a46",style=dashed,dir=both];
+}

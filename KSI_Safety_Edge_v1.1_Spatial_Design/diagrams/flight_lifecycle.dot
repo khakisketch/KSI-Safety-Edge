@@ -1,0 +1,13 @@
+digraph G {
+ graph [rankdir=LR, bgcolor="white", pad=0.38, nodesep=0.40, ranksep=0.55, splines=ortho, label="KSI Safety  |  웹 준비 → 오프라인 비행 → 동기화 → 사후 검토", labelloc=t, fontname="NanumSquare", fontsize=22, fontcolor="#162B4B"];
+ node [fontname="NanumSquare", fontsize=12, shape=box, style="rounded,filled", margin="0.22,0.15", color="#A6B8C6", fontcolor="#14253D"];
+ edge [fontname="NanumSquare", fontsize=11, color="#506982", penwidth=1.6, arrowsize=0.7];
+ a [label="① 준비\n웹/RC 현장·위험구역 작성\n임무/Zone Snapshot",fillcolor="#F1EAFF"];
+ b [label="② 출발 전\nRC 오프라인 캐시\nMOP 설정/해시 적용 ACK",fillcolor="#DCF2E4"];
+ c [label="③ 비행/탐지\nManifold AI/Telemetry\nRC 영상·증거 기록",fillcolor="#DFECFF"];
+ d [label="④ 종료·보관\nRC 로컬 DB/영상\n업로드 대기",fillcolor="#DCF2E4"];
+ e [label="⑤ 온라인 복구\nWi-Fi/4G/핫스팟\n해시검증/서버 durable ACK",fillcolor="#EEE8FF"];
+ f [label="⑥ 사후 분석(선택)\nDGX Spark 야간 VLM\n오탐/미탐 후보",fillcolor="#FFF0DE"];
+ g [label="⑦ 다음 출근\nMSDK/웹/API/MCP\n위험·미관측·조치 확인",fillcolor="#E7F0FF"];
+ a->b->c->d->e->f->g;
+}

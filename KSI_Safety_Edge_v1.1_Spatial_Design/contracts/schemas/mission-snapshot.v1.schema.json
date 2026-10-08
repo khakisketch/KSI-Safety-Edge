@@ -1,0 +1,196 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "mission_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "org_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "site_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mission_revision_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "origin": {
+      "type": "string",
+      "enum": [
+        "SERVER",
+        "RC_LOCAL"
+      ]
+    },
+    "created_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "zone_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "revision_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "rule_kind": {
+            "type": "string",
+            "enum": [
+              "PERSON_ENTRY",
+              "EQUIPMENT_ENTRY",
+              "PPE_REQUIRED",
+              "RESTRICTED_AREA"
+            ]
+          },
+          "geometry_wgs84": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "Polygon"
+                ]
+              },
+              "coordinates": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "array",
+                  "minItems": 4,
+                  "items": {
+                    "type": "array",
+                    "prefixItems": [
+                      {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      }
+                    ],
+                    "items": false,
+                    "minItems": 2,
+                    "maxItems": 2
+                  }
+                }
+              }
+            },
+            "required": [
+              "type",
+              "coordinates"
+            ],
+            "title": "GeoJSON Polygon WGS84 (lon lat)"
+          },
+          "zone_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "zone_id",
+          "revision_id",
+          "rule_kind",
+          "geometry_wgs84",
+          "zone_sha256",
+          "enabled"
+        ],
+        "title": "Mission Zone Revision"
+      }
+    },
+    "model_profiles": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "model_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model_digest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "model_id",
+          "model_digest",
+          "enabled"
+        ]
+      }
+    },
+    "recording_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rc_proxy": {
+          "type": "boolean"
+        },
+        "target_video_bitrate_bps": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target_fps": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "segment_seconds": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "rc_proxy"
+      ]
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "mission_id",
+    "flight_id",
+    "org_id",
+    "site_id",
+    "mission_revision_id",
+    "origin",
+    "created_at_utc",
+    "zones",
+    "model_profiles",
+    "recording_policy",
+    "content_sha256"
+  ],
+  "title": "MissionSnapshot v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/mission-snapshot.v1.schema.json"
+}

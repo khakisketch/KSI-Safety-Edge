@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "observation_id": "00000000-0000-4000-8000-000000000008",
+  "flight_id": "00000000-0000-4000-8000-000000000002",
+  "mission_revision_id": "00000000-0000-4000-8000-000000000005",
+  "edge_boot_id": "00000000-0000-4000-8000-000000000009",
+  "source_kind": "PSDK_EDGE",
+  "edge_frame_seq": 1024,
+  "edge_frame_id": null,
+  "lens_id": "wide",
+  "frame_received_monotonic_ns": 12883301000,
+  "model_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "sync_quality": "DEGRADED",
+  "geometry_status": "WITHHELD",
+  "telemetry_refs": [
+    {
+      "topic": "aircraft_attitude",
+      "source_timestamp_ns": null,
+      "edge_receive_monotonic_ns": 12882700000,
+      "sample_age_ms": 60.1,
+      "timestamp_basis": "PSDK_LOCAL_RECEIVE",
+      "quality": "DEGRADED"
+    }
+  ],
+  "detections": [
+    {
+      "detection_id": "00000000-0000-4000-8000-000000000010",
+      "class_id": "person",
+      "score": 0.91,
+      "bbox_xyxy_px": [
+        440,
+        290,
+        560,
+        760
+      ],
+      "track_id": "t-17",
+      "position_wgs84": null
+    }
+  ],
+  "quality_reasons": [
+    "exposure_timestamp_unknown"
+  ],
+  "zone_revision_ids": [
+    "00000000-0000-4000-8000-000000000007"
+  ]
+}

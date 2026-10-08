@@ -1,0 +1,280 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/spatial-relation.v1.schema.json",
+  "title": "SpatialRelation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "relation_id",
+    "observation_id",
+    "flight_id",
+    "subject_track_id",
+    "object_track_id",
+    "subject_class",
+    "object_class",
+    "metric_status",
+    "distance_m",
+    "distance_interval_m",
+    "geometry_level",
+    "quality_reasons",
+    "frame_ref",
+    "distance_basis"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "relation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "observation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "subject_track_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "object_track_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "subject_class": {
+      "const": "person"
+    },
+    "object_class": {
+      "type": "string",
+      "enum": [
+        "excavator",
+        "dump_truck",
+        "loader",
+        "forklift",
+        "crane",
+        "truck"
+      ]
+    },
+    "metric_status": {
+      "enum": [
+        "VERIFIED",
+        "SHADOW_ESTIMATE",
+        "UNAVAILABLE"
+      ]
+    },
+    "geometry_level": {
+      "enum": [
+        "PIXEL_ONLY",
+        "TIME_UNVERIFIED",
+        "GEO_ESTIMATE",
+        "METRIC_VERIFIED"
+      ]
+    },
+    "distance_m": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "distance_interval_m": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "number",
+          "minimum": 0
+        }
+      ],
+      "items": false
+    },
+    "distance_basis": {
+      "enum": [
+        "GROUND_FOOTPRINT",
+        "IMAGE_ONLY",
+        "UNAVAILABLE"
+      ]
+    },
+    "quality_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "frame_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "edge_boot_id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "edge_frame_seq": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lens_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "time_basis": {
+          "enum": [
+            "CAMERA_CAPTURE_VERIFIED",
+            "PSDK_LOCAL_RECEIVE",
+            "UNVERIFIED"
+          ]
+        }
+      },
+      "required": [
+        "edge_boot_id",
+        "edge_frame_seq",
+        "lens_id",
+        "time_basis"
+      ]
+    },
+    "calibration_revision_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ground_model_revision_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "effective_policy_revision_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "person_ground_point_enu_m": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "minItems": 2,
+      "maxItems": 2,
+      "prefixItems": [
+        {
+          "type": "number"
+        },
+        {
+          "type": "number"
+        }
+      ],
+      "items": false
+    },
+    "equipment_footprint_enu_m": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "minItems": 3,
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "maxItems": 2,
+        "prefixItems": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "number"
+          }
+        ],
+        "items": false
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "metric_status": {
+            "const": "VERIFIED"
+          }
+        },
+        "required": [
+          "metric_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "distance_m": {
+            "type": "number"
+          },
+          "distance_interval_m": {
+            "type": "array",
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "geometry_level": {
+            "const": "METRIC_VERIFIED"
+          },
+          "distance_basis": {
+            "const": "GROUND_FOOTPRINT"
+          },
+          "calibration_revision_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ground_model_revision_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "distance_m",
+          "distance_interval_m",
+          "calibration_revision_id",
+          "ground_model_revision_id"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "metric_status": {
+            "const": "UNAVAILABLE"
+          }
+        },
+        "required": [
+          "metric_status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "distance_m": {
+            "type": "null"
+          },
+          "distance_interval_m": {
+            "type": "null"
+          },
+          "distance_basis": {
+            "enum": [
+              "IMAGE_ONLY",
+              "UNAVAILABLE"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,163 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mission_revision_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mission_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "rc_device_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "edge_boot_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "event_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "edge_last_seq": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "rc_received_last_seq": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "flight_started_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "flight_ended_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "artifact_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "source_kind": {
+            "type": "string",
+            "enum": [
+              "EDGE_SNAPSHOT",
+              "EDGE_CLIP",
+              "RC_PROXY_SEGMENT",
+              "CAMERA_SD_ORIGINAL",
+              "FLIGHT_LOG",
+              "TELEMETRY_LOG"
+            ]
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "media_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "segment_index": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "required": [
+          "artifact_id",
+          "source_kind",
+          "sha256",
+          "size_bytes",
+          "media_type",
+          "required",
+          "segment_index"
+        ]
+      }
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "VIDEO_GAP",
+              "AI_GAP",
+              "MOP_EVENT_GAP",
+              "UNKNOWN"
+            ]
+          },
+          "start_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "kind",
+          "start_ms",
+          "duration_ms",
+          "reason"
+        ]
+      }
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "flight_id",
+    "mission_revision_id",
+    "mission_sha256",
+    "rc_device_id",
+    "edge_boot_id",
+    "event_count",
+    "edge_last_seq",
+    "rc_received_last_seq",
+    "flight_started_at_utc",
+    "flight_ended_at_utc",
+    "artifacts",
+    "gaps",
+    "manifest_sha256"
+  ],
+  "title": "FlightUploadManifest v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/flight-upload-manifest.v1.schema.json"
+}

@@ -1,0 +1,18 @@
+# runtime / tooling
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.worktrees/
+
+# opencode session checkpoint (local only, never committed)
+.opencode/working-state.md
+
+# service runtime data
+core/var/
+harness/var/
+
+# build artifacts
+dist/
+build/
+*.egg-info/

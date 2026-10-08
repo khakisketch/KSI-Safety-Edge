@@ -1,0 +1,17 @@
+digraph G {
+ graph [rankdir=TB, bgcolor="#FFFFFF", pad=0.26, nodesep=0.45, ranksep=0.62, splines=polyline, fontname="NanumSquare", label="KSI Safety Edge  |  설계 책임과 정보 흐름", labelloc=t, fontsize=24, fontcolor="#1A3051"];
+ node [fontname="NanumSquare", fontsize=14, shape=box, style="rounded,filled", margin="0.21,0.13", penwidth=1.5, color="#9BACC0", fillcolor="#FFFFFF", fontcolor="#14253D"];
+ edge [fontname="NanumSquare", fontsize=12, color="#536A7D", penwidth=1.6, arrowsize=0.80];
+   A [label="1  DJI Matrice 4E/4T + 기체 탑재 Manifold 3\nPSDK 영상·텔레메트리 수집 / 정합품질\nAI 사람·PPE 탐지 / 위험구역 후보 / 임시 버퍼", fillcolor="#E7F1FF", color="#5797D3"];
+   R [label="2  RC Plus 2 / KSI MSDK 앱  [오프라인 기본]\n임무·위험구역 다운로드 / PSDK 적용 ACK\nDJI 실시간 영상 / AI 경고 / 비행 전체 기록\n로컬 증거 · 오탐 의심 · 업로드 큐", fillcolor="#E5F7EB", color="#44A26A"];
+   S [label="3  KSI Safety Core  [기록의 영구 소유자]\n현장·위험구역 버전 / 비행·관측·사건·증거\nRC로부터 저장 / 파일 해시·완결성 검증\n조회 API / 권한 / 감사 / MCP",fillcolor="#F0ECFF", color="#8562C7"];
+   W [label="최소 웹 UI\n현장·위험구역 설정 / 사건·조치 확인",fillcolor="#F7F8FC"];
+   V [label="선택: DGX Spark\n야간 VLM 오탐/미탐 후보",fillcolor="#FFF2E3",color="#D6AA6D"];
+   AG [label="ChatGPT · Claude · 업무 에이전트\nAPI / MCP 기반 근거 조회",fillcolor="#F7F8FC"];
+   A -> R [label="DJI 라이브 화면 + MOP 이벤트 / 임무 명령은 양방향"];
+   R -> S [label="온라인 복귀 시 RC가 업로드 / 설정 다운로드",color="#7959C5",penwidth=2.4];
+   {rank=same;W;V;AG;}
+   S -> W [label="웹 최소 구성"];
+   S -> V [style=dashed,label="사후 분석 선택"];
+   S -> AG [label="API/MCP"];
+}

@@ -1,0 +1,78 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "annotation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "actor_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "client_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "annotation_type": {
+      "type": "string",
+      "enum": [
+        "FALSE_POSITIVE_SUSPECTED",
+        "NEEDS_REVIEW",
+        "REVOKE_PREVIOUS"
+      ]
+    },
+    "reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 1000
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "created_at_local": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "supersedes_annotation_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    }
+  },
+  "required": [
+    "schema_version",
+    "annotation_id",
+    "event_id",
+    "flight_id",
+    "actor_id",
+    "client_id",
+    "annotation_type",
+    "reason",
+    "evidence_ids",
+    "created_at_local",
+    "supersedes_annotation_id"
+  ],
+  "title": "OperatorAnnotation v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/operator-annotation.v1.schema.json"
+}
