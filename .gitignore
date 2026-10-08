@@ -17,3 +17,6 @@ dist/
 build/
 edge/build*/
 *.egg-info/
+
+# DJI PSDK credentials — never commit (real file only; .example is tracked)
+**/dji_sdk_app_info.h

@@ -1,6 +1,6 @@
 # KSI Safety Edge — SI 자산 재사용 감사·이식 원장 (workstream ledger)
 
-- 작성: 2026-10-08 (Build 전환 후) · 상태: **B0·W2·W3 완료** — W4(PSDK 앱) 장치 빌드 진행 중, H1-1 장치 온보딩 완료
+- 작성: 2026-10-08 (Build 전환 후) · 상태: **B0·W2·W3·W4 완료** — PSDK 앱 DPK 장치 빌드 완료, 다음은 DPK 기동 세션(기체/RC)
 - 사용자 지시(승인 범위): ① H1 전 SI 자산 정밀 감사 ② 재사용/독립 경계와 중복 최소화 계획 ③ 격리 환경에서 실제 빌드·실행 ④ 재사용 모듈 확정 후 Safety Edge 최소 실행 파이프라인 연결 ⑤ SI 운영 코드·제품 계약 변경 금지 ⑥ H1 없이 기체 통합 완료 주장 금지.
 - 감사 정적 보고서(plan 위치): `/home/ksi/.opencode/plan/2026-10-08-ksi-safety-edge-reuse-audit.md`
 - 확정 개발 순서(2026-10-08 사용자 보정):
@@ -77,8 +77,8 @@
 - 2026-10-08: **DPK 세션 패키지 준비** — `docs/verification/h1-dpk-session-checklist.md`. 기존 빌드 DPK(`ksi-psdk-tap` v00.01.00.02, 무인자 기본 out=/tmp/ksi-psdk-tap.ndjson·60초)로 H1-3/4/5 1차 raw 수집 가능. 실행은 사용자 승인(설치) + 기체/RC 연결 필요.
 - 2026-10-08: **W3 Spatial Engine 착수**(백그라운드 developer): 좌표·투영·footprint 거리·zone 관계 + Replay GT, SHADOW 전용.
 - 2026-10-08: **W3 Spatial Engine 완료(C11)** — 좌표(NED/ENU·국소 ENU)·투영(자세 등급 gate·near-horizon·교차)·footprint 거리(point-to-polygon)·zone 관계(내부/외부/BOUNDARY_UNCERTAIN/revision 고정). 호스트 8/8 ×2(기본/ASan), **장치 gcc 9.4/cmake 3.16.3 8/8**, 독립 test-runner `ses_ee4e01454ffeXNhwri8GSxT6Zi`(의미론 4건·격리·이식성 확인, mismatch 0). Primary 보강: 자세 gate 우선순위 테스트·polygon revision 단언·include 정리(재통과). 정확도·실기 검증은 미실시(합성 GT, SHADOW 전용).
-- 2026-10-08: W4(PSDK 앱 "KSI AI Payload") 진행 — 자격증명 gitignore 반영(커밋 금지), 앱 구현·장치 빌드·DPK 패키징 백그라운드 진행 중.
-- (다음) W4 검증·커밋 → DPK 세션(기체/RC 연결 시) → H1-3/4/5 1차 결과.
+- 2026-10-08: **W4 PSDK 앱 "KSI AI Payload"(ksi-safety-edge) 완료·장치 빌드(C12)** — 우리 코어(프레임큐·provenance·matching)를 실제 PSDK 콜백에 연결한 v0 앱. 장치(gcc 9.4/cmake 3.16.3)에서 바이너리(2.78MB) + **DPK 587KB** 생성. Manifold 적응 글루 8파일을 출처·sha와 함께 추출(NOTICE). **센서 시각 fail-closed**(has_source_time=false 고정, recv 등급만). 자격증명은 gitignore 경로에만 저장(커밋 0 확인 — `git grep` 시크릿 0건). 독립 test-runner `ses_ee49b57b9ffeURavMylHEovfzq`: 자격증명 위생·호스트 8/8·장치 신규 빌드·DPK·의미론·글루 충실성 전부 통과, mismatch 0. 발견·수정: 자격증명 템플릿 주석의 `*/` 조기 종료 버그(Primary 수정 후 장치 재빌드 성공).
+- (다음) **DPK 설치·기동 세션**(기체/RC 연결 + 사용자 승인) → H1-3/4/5 1차 결과. 그 후 Spatial 엔진과 실측 연결.
 
 ## 5. 후속 결정 대기(제품을 막지 않음)
 

@@ -1,0 +1,28 @@
+{
+  "user_app_id": "@KSI_SAFETY_EDGE_DPK_USER_APP_ID@",
+  "firmware_version": "@KSI_SAFETY_EDGE_DPK_FIRMWARE_VERSION@",
+  "is_ai_rendering": "false",
+  "platform": "manifold3",
+  "name": {
+    "name_cn": "KSI安全边缘",
+    "name_en": "ksi-safety-edge",
+    "name_jp": "KSIセーフティエッジ",
+    "name_fr": "KSI Safety Edge"
+  },
+  "description": {
+    "description_cn": ["KSI Safety Edge PSDK应用 — 帧/遥测来源采集器（仅接收等级，无拍摄时刻主张）"],
+    "description_en": ["KSI Safety Edge PSDK app — frame/telemetry provenance collector (recv-grade only, no capture-time claims)."],
+    "description_jp": ["KSI Safety Edge PSDKアプリ — フレーム/テレメトリ収集（受信等級のみ、撮影時刻の主張なし）"],
+    "description_fr": ["Application PSDK KSI Safety Edge — collecteur de provenance trames/telemetrie (reception seule, sans pretention de capture)."]
+  },
+  "maintainer": {
+    "maintainer_cn": "KSI",
+    "maintainer_en": "KSI",
+    "maintainer_jp": "KSI",
+    "maintainer_fr": "KSI"
+  },
+  "ver_min": "00.00.00.00",
+  "ver_max": "99.99.99.99",
+  "bin": "@KSI_SAFETY_EDGE_DPK_BINARY@",
+  "userconfig": []
+}

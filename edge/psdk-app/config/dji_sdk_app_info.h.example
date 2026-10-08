@@ -1,0 +1,20 @@
+/* edge/psdk-app/config/dji_sdk_app_info.h.example
+ *
+ * 예시 템플릿이다 — 실제 자격증명이 아니다(전부 플레이스홀더).
+ * 빌드하려면:
+ *   1) 이 파일을 같은 디렉터리에 dji_sdk_app_info.h 로 복사한다.
+ *   2) developer.dji.com 에서 발급받은 실제 값으로 채운다.
+ * 이 파일 이름(dji_sdk_app_info.h)은 루트 .gitignore 규칙으로 어느 경로에
+ * 두어도 항상 무시된다(이 `.example` 파일만 추적된다).
+ */
+#ifndef KSI_SAFETY_EDGE_DJI_SDK_APP_INFO_H
+#define KSI_SAFETY_EDGE_DJI_SDK_APP_INFO_H
+
+#define USER_APP_NAME               "your_app_name"
+#define USER_APP_ID                 "your_app_id"
+#define USER_APP_KEY                "your_app_key"
+#define USER_APP_LICENSE            "your_app_license"
+#define USER_DEVELOPER_ACCOUNT      ""
+#define USER_BAUD_RATE              "460800"
+
+#endif /* KSI_SAFETY_EDGE_DJI_SDK_APP_INFO_H */
