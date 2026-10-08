@@ -1,0 +1,11 @@
+[SKIP] Core REST wire + store-forward 저널 연동 — SQLite 백엔드가 이 빌드에 없다
+[SKIP] download identity drift contract — SQLite 백엔드가 이 빌드에 없다
+[SKIP] media offload 컨베이어 계약 — SQLite 백엔드가 이 빌드에 없다
+[SKIP] mission-scoped media attribution contract — SQLite 백엔드가 이 빌드에 없다
+[SKIP] native evidence oracle 계약 — SQLite 백엔드가 이 빌드에 없다
+[SKIP] offload 중 권한 보유 구간 계약 — SQLite 백엔드가 이 빌드에 없다
+[SKIP] purge 이전 durable 기록 순서 계약 — SQLite 백엔드가 이 빌드에 없다
+[SKIP] source media journal 가드 계약 — SQLite 백엔드가 이 빌드에 없다
+[SKIP] 기동 시 권한 재조정 계약 — SQLite 백엔드가 이 빌드에 없다
+[WARN] SQLite 백엔드 없이 9개 계약 묶음을 건너뛰었다 — 이 실행은 저장후전달 순서·WAL 복구를 검증하지 않았다.
+edge runtime tests: 246 checks passed, 9 groups skipped

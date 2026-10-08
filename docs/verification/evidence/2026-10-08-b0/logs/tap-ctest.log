@@ -1,0 +1,10 @@
+Internal ctest changing into directory: /tmp/opencode/ksi-audit-20261008/build/tap
+Test project /tmp/opencode/ksi-audit-20261008/build/tap
+    Start 1: psdk_tap_pairing
+1/2 Test #1: psdk_tap_pairing .................   Passed    0.00 sec
+    Start 2: psdk_tap_ndjson_writer
+2/2 Test #2: psdk_tap_ndjson_writer ...........   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   0.01 sec

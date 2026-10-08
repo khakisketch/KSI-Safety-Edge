@@ -14,8 +14,8 @@ Updated: 2026-10-08 · Owner: Build (Primary) · Spec: `docs/superpowers/specs/2
 | M0 | 설계·계약 기준선 (스키마 13종, 도메인 검증, OpenAPI 39 ops) | **완료** (C1=050d80f, 독립 검증) |
 | M1 | 재생 기반 전체 흐름 (임무 적용→RC 오프라인 저장→업로드→조회, E01~E12) | **구현·재생 검증 완료** (C3=b2366a8, 112 passed) — 사용자 end-to-end 인수 미실시 |
 | H1 | 실제 장비 능력 확인 (PSDK/MSDK/영상/시간/MOP/RC 저장) | **준비 완료** — 계획(`docs/verification/h1-capability-plan.md`)·수집기(`scripts/h1/`)·서식·재사용 평가(`docs/verification/reuse-assessment.md`). 실행은 장비 접속·세션 필요 |
-| M2 | 실제 Edge 탐지 전체 흐름 | 대기 (H1 후) |
-| M3 | 공간 SHADOW (지면/거리/zone 관계, episode) | 대기 |
+| M2 | 실제 Edge 탐지 전체 흐름 | 준비 진행 — **B0 격리 빌드·테스트 완료(2026-10-08)**: psdk-tap 2/2, manifold-runtime 10/10(246 checks, SQLite 9그룹 스킵), timing 124/124, ASan 10/10. WAL·GPU·PSDK 실행 경로 BLOCKED 명시. 원장: `docs/superpowers/plans/2026-10-08-reuse-audit-and-porting.md` |
+| M3 | 공간 SHADOW (지면/거리/zone 관계, episode) | 대기 (H1 후) — 물리 촬영 시각 미확보 시 시뮬레이션·SHADOW로 계속 개발 |
 | M4 | 제한된 규칙 ACTIVE (규칙별 승인 후) | 대기 |
 
 ## 현재 슬라이스

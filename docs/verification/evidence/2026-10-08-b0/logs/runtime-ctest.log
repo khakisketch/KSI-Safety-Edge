@@ -1,0 +1,26 @@
+Internal ctest changing into directory: /tmp/opencode/ksi-audit-20261008/build/runtime
+Test project /tmp/opencode/ksi-audit-20261008/build/runtime
+      Start  1: control_plane_contract
+ 1/10 Test  #1: control_plane_contract ..................   Passed    0.00 sec
+      Start  2: action_intent_conformance
+ 2/10 Test  #2: action_intent_conformance ...............   Passed    0.00 sec
+      Start  3: edge_runtime_contract
+ 3/10 Test  #3: edge_runtime_contract ...................   Passed    0.13 sec
+      Start  4: capture_quality_policy_contract
+ 4/10 Test  #4: capture_quality_policy_contract .........   Passed    0.00 sec
+      Start  5: media_control_contract
+ 5/10 Test  #5: media_control_contract ..................   Passed    0.04 sec
+      Start  6: tensorrt_differential_runner_contract
+ 6/10 Test  #6: tensorrt_differential_runner_contract ...   Passed    0.00 sec
+      Start  7: ksi_edge_flight_arm_contract
+ 7/10 Test  #7: ksi_edge_flight_arm_contract ............   Passed    0.00 sec
+      Start  8: ksi_edge_flight_abort_contract
+ 8/10 Test  #8: ksi_edge_flight_abort_contract ..........   Passed    0.00 sec
+      Start  9: ksi_edge_media_prepare_contract
+ 9/10 Test  #9: ksi_edge_media_prepare_contract .........   Passed    0.00 sec
+      Start 10: ksi_edge_media_trigger_contract
+10/10 Test #10: ksi_edge_media_trigger_contract .........   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 10
+
+Total Test time (real) =   0.19 sec
