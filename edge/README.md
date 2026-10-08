@@ -36,6 +36,7 @@ Build dirs (`edge/build*/`) are git-ignored.
 | `include/ksi_safety/time/interpolation.hpp`, `src/time/interpolation.cpp` | SLERP/LERP/`WrapDegrees`; `InterpolatePose()` refuses unless both samples have verified source times in the SAME domain, ordered bracket, interval ≤ max, target inside. |
 | `include/ksi_safety/perception/detector.hpp` | `DetectorPort` + `Detection`/`ModelProfile` types. |
 | `include/ksi_safety/perception/pipeline.hpp`, `src/perception/pipeline.cpp` | `PerceptionPipeline::Process()`: detector called EXACTLY ONCE per frame (null-safe); detections + model id/digest always recorded; pose from `MatchFrame()`; `spatial_eligible = (quality == kSourceVerified)`. No spatial math here. |
+| `include/ksi_safety/perception/dfine.hpp`, `src/perception/dfine.cpp` | D-FINE input preprocessing + output decode (no inference): direct bilinear resize to 640×640 (no letterbox — `do_pad=false`), rescale /255, RGB→CHW float32; decode = per-query sigmoid + argmax, strict `score > threshold` from `DfineConfig`, normalized cxcywh → source-pixel xyxy, NMS-free fixed queries, ascending query order. Raw COCO label id; no ontology mapping. |
 | `include/ksi_safety/geometry/coordinate.hpp`, `src/geometry/coordinate.cpp` | `Rotate` (quaternion, internally normalized) / `NedToEnu` / `EnuToNed` / `Wgs84ToLocalEnu` (equirectangular local approximation, R = 6371008.8 m). |
 | `include/ksi_safety/geometry/projection.hpp`, `src/geometry/projection.cpp` | Pinhole `ProjectPixelToGround()`: pose is GIVEN in ENU (`CameraPoseEnu`; composition from raw telemetry topics is the deferred PSDK adapter's job). Accepts only `kSourceVerified` poses, else `kPoseUnverified`. |
 | `include/ksi_safety/spatial/distance.hpp`, `src/spatial/distance.cpp` | 2D ground-plane kernels: point↔segment, containment (boundary = inside), point↔polygon, polygon↔polygon, polygon↔segment. |
@@ -43,7 +44,7 @@ Build dirs (`edge/build*/`) are git-ignored.
 | `include/ksi_safety/risk/policy.hpp`, `src/risk/policy.cpp` | `RiskRule` mirroring `risk-policy.v1` rule fields (kind/mode/threshold/hysteresis/enter/exit/required geometry/class + revision filters); contract `ToString()`s. |
 | `include/ksi_safety/risk/episode.hpp`, `src/risk/episode.cpp` | Episode states/events/close reasons (`EXIT_CONFIRMED` / `EXIT_NOT_OBSERVED` / `OBSERVATION_LOST` / `SESSION_END`) + compact evidence summary. |
 | `include/ksi_safety/risk/engine.hpp`, `src/risk/engine.cpp` | `RiskEngine`: per-rule OFF/applicability/geometry/ACTIVE guards, interval + zone evidence classification, doc 17 §3 episode state machine per (rule, lineage) with explicit `max_gap_ms`, `Tick()` gap sweep, `EndSession()`. |
-| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `geometry`, `spatial`, `risk`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
+| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `dfine`, `geometry`, `spatial`, `risk`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
 
 ## The core rule (why this exists)
 
@@ -95,6 +96,21 @@ source times earns `kSourceVerified`, and only that grade sets
   projection (deferred).
 - Pose composition from raw telemetry topics into `CameraPoseEnu` is deferred
   to the PSDK adapter; here the ENU pose is an input, not a derivation.
+
+## D-FINE preprocessing/decode scope / limits (honest)
+
+- No ONNX/TensorRT execution here: `DecodeDfine()` consumes
+  caller-supplied logits/boxes tensors. Decode semantics (sigmoid, per-query
+  argmax, strict threshold from `DfineConfig`, cxcywh→xyxy scaling, query
+  order) are validated against constructed tensors only; conformance against
+  real D-FINE model outputs (byte-identical vs. the SI Python reference on
+  recorded frames) comes later and is NOT claimed here.
+- No letterbox: `do_pad=false` means a direct 640×640 resize that does not
+  preserve aspect ratio (documented in `dfine.hpp` R7).
+- Boxes are not clamped and labels are raw COCO indices (`class_name` left
+  empty): clipping, fail-closed drops, and ontology mapping stay with the
+  future adapter, mirroring the SI split between `dfine.py` and
+  `DetectionAdapter`.
 
 ## Risk/episode scope / limits (honest)
 

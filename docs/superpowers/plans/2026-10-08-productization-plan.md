@@ -34,7 +34,7 @@
 |---|---|---|---|
 | 판단·검증 | **W5 완료·검증(C15)** — 순수 로직·합성 GT | 실데이터 연결은 기체/GPS GT 확보 후 | 없음(실데이터만 대기) |
 | 사용 흐름(RC) | 미착수 — 환경 조사 완료(2026-10-08): JDK 8(부족)·adb/sdkmanager/gradle 부재, dl.google.com 접근 가능, 디스크 2.9T 여유 | JDK17+cmdline-tools 설치 승인 시 착수 | 설치 승인·RC 접근 경로 |
-| 실제 인식(AI) | 조사 완료 — **장치 TensorRT 8.5.2+CUDA 11.4·`trtexec` 확인**; SI 등록 D-FINE-S(coco) 로컬 가중치 sha256=레지스트리 일치 | ONNX 확보/재export→장치 engine→smoke | ONNX 산출물(sha256 `1becd2d3…`) 위치 미확인·export 툴체인(torch/transformers) 미설치; 대표 영상 없음 |
+| 실제 인식(AI) | 조사 완료 + **W6-A 완료·검증(C16)** — D-FINE 전처리/decode 모듈(호스트 10/10×2·장치 gcc9.4 10/10·runner 검증) | ONNX 확보/재export→장치 engine→smoke; **W6-B tracker 착수** | ONNX 산출물(sha256 `1becd2d3…`) 위치 미확인·export 툴체인 미설치; 대표 영상 없음 |
 
 ## 4. 첫 현장시험 범위 (추천안 — 사용자 확정 대기)
 
@@ -60,6 +60,8 @@
 - 2026-10-08: 제품화 계획·줄기 문서화(본 파일·product-state·README). 무차단 조사: Android 도구(adb/sdkmanager/gradle) 부재, 안전 검출 모델 파일 미발견 → RC/AI 줄기 외부 입력 목록화. W5 착수(developer).
 - 2026-10-08: **W5 완료·검증(C15)** — Risk/Episode 엔진(순수 로직). 호스트 9/9(default)·9/9(ASan, sanitizer-clean)·장치 gcc 9.4 9/9·독립 runner `ses_ee45f8e2cffesWYHkfGMe2UgqU`: 불변식 3종(EXIT_CONFIRMED 유일 경로·갭/불확실 종료 정직성·비-shadow 출력 guard) 성립, 하드코딩 임계 없음, git 범위 정확. 후속(비차단) 2건 기록.
 - 2026-10-08: **AI/RC 줄기 준비 조사** — ① 장치: TensorRT 8.5.2+CUDA 11.4 개발 패키지·헤더·`trtexec`(/usr/src/tensorrt/bin) 존재, 저장공간 94G 여유. ② SI 등록 모델 `ksi-person-detector-dfine-s-coco`(Apache-2.0, production=BLOCKED_LEGAL_REVIEW) 로컬 가중치 sha256 `a144baff…`=MODEL_REGISTRY 일치; export 레시피(opset 17·float64→float32)·ONNX sha256 `1becd2d3…` 기록됨 — **ONNX 산출물 위치 미확인**(재export 필요 가능성; torch/transformers 미설치). ③ 대표 영상 없음. ④ RC: JDK 8·Android 도구 부재, dl.google.com 접근 가능, ffmpeg/ffprobe 존재. ⑤ 부수: `KSI-CCTV/models`에 yolo26 계열 onnx(ppe/fire) 존재 — 별도 프로젝트, 참고만.
+- 2026-10-08: **W6-A 착수(developer)** — D-FINE 입력 전처리(640×640·/255·무정규화) + 출력 decode(sigmoid·argmax·threshold·cxcywh→xyxy·NMS-free) C++ 모듈. ONNX/TensorRT 경로 공용, host 시험. SI Python semantics(`archive .../dfine.py`) 기준, provenance 기록.
+- 2026-10-08: **W6-A 완료·검증(C16)** — 호스트 10/10(default)·10/10(ASan sanitizer-clean)·장치 gcc 9.4 10/10·독립 runner `ses_ee4497b70ffeYmAj45ifZLvcb0`(R1~R8 매핑·전처리/decode hand-check 일치·범위 정확). runner 갭(동점→최저 index 미고정) → Primary 테스트 보강·재실행(10/10×2). 부수: shadow C++ `dfine.cpp`는 global top-k·`<=`로 감사된 Python semantics와 상이 — 우리는 Python 기준 채택.
 - (이전) B0~W4·C13: `2026-10-08-reuse-audit-and-porting.md`, `docs/verification/evidence/`.
 
 ## 7. 대기 중 결정 (비차단)
