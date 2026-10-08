@@ -8,42 +8,47 @@
 
 - [ ] 기체(4E/4T) 전원 ON + RC Plus 2 전원 ON, **Manifold가 기체에 연결된 상태** 유지
   - 확인 신호: 장치에서 `ip -br link` → `l4tbr0`/`rndis0`에 carrier(현재 NO-CARRIER = 미접속)
+  - **설치 검증 때문에도 기체 연결이 필요하다(2026-10-08 실측)**: `dji_app_ctl install`은 앱을 잠깐 실행해 `DjiCore_SetFirmwareVersion` 보고와 control Version을 대조하는데, 그 보고는 `DjiCore_Init`(기체 링크 대기) 완료 후에만 도달한다. 기체가 없으면 부트 로그가 `core_init_begin`에서 멈추고 설치가 실패한다.
 - [ ] **프로펠러 분리** 확인 (읽기 전용 세션이지만 표준 안전 조건)
 - [ ] 장치 시계 정비 가능 여부 확인 (현재 −6일·RTC 1970·NTP off; 불가하면 스큐를 세션 기록에 남기고 진행)
 - [ ] **승인**: `dji_app_ctl install -i …` + `start/stop` (장치 앱 설치·기동 = 시스템 쓰기)
-- [ ] (신규 DPK 재빌드 시에만 필요) `dji_sdk_app_info` 자격증명 — **이번 세션은 기존 빌드 DPK로 불필요**
+- [ ] (신규 DPK 재빌드 시에만 필요) `dji_sdk_app_info` 자격증명 — **우리 앱 DPK는 이미 빌드되어 있음**
 
 ## 1. 세션 자산 정보 (확인됨)
 
 | 항목 | 값 |
 |---|---|
-| DPK | `/open_app/ksi-dev/dpk-staging/ksi-psdk-tap_v00.01.00.02.dpk` (Package `ksi-psdk-tap`, platform manifold3, 2026-08-12 빌드) |
-| 앱 이름 | `ksi-psdk-tap` (`dji_app_ctl list/status/start/stop` 인자) |
-| 무인자 기본값 | 출력 `/tmp/ksi-psdk-tap.ndjson`, 동작 60초(duration), num_samples 무제한 |
-| DPK 내용 | PSDK 3.16.0 정적 링크 실행파일(라이브뷰 H264 콜백 + HARD_SYNC 400Hz + perception probe 옵션) |
-| 수집 형식 | NDJSON v2: `meta`(clock anchor·capabilities·sensor_us_domain) + `sample`(frame/telemetry ep, pairing.gap_ns) + `stat`(카운터) |
+| **우리 앱 DPK(1순위)** | 장치 `/open_app/ksi-dev/safety-edge-w4f-20261008/edge/psdk-app/build/dpk/out/ksi-safety-edge_v00.01.00.00.dpk` (Package `ksi-safety-edge`) — 재빌드 시 repo `edge/psdk-app`에서 |
+| tap DPK(대체/비교) | `/open_app/ksi-dev/dpk-staging/ksi-psdk-tap_v00.01.00.02.dpk` (Package `ksi-psdk-tap`) |
+| 앱 이름 | `ksi-safety-edge` / `ksi-psdk-tap` (`dji_app_ctl list/status/start/stop` 인자) |
+| 무인자 기본값(우리 앱) | 출력 `/tmp/ksi-safety-edge.ndjson`, 부트 로그 `/tmp/ksi-safety-edge-boot.log`, 동작 60초 |
+| 수집 형식 | NDJSON: `meta`(clock anchor·capabilities) + `frame`(att/pos 정합 등급) + `stat`(카운터) |
 
 ## 2. 실행 절차 (세션 시 순서대로)
 
 ```bash
-# 0) 접속·사전확인 (읽기)
+# 0) 접속·사전확인 (읽기): 기체 링크 carrier 확인 + 미설치 확인
 ssh ksi-manifold 'ip -br link | grep -E "l4tbr0|rndis0"; dji_app_ctl list | head -5'
 
-# 1) 설치 (승인 필요)
-ssh ksi-manifold 'dji_app_ctl install -i /open_app/ksi-dev/dpk-staging/ksi-psdk-tap_v00.01.00.02.dpk'
+# 1) 설치 (승인 필요) — 우리 앱이 1순위. 기체 연결 상태에서만 성공한다.
+ssh ksi-manifold 'dji_app_ctl install -i /open_app/ksi-dev/safety-edge-w4f-20261008/edge/psdk-app/build/dpk/out/ksi-safety-edge_v00.01.00.00.dpk'
+# (대체: tap DPK  dji_app_ctl install -i /open_app/ksi-dev/dpk-staging/ksi-psdk-tap_v00.01.00.02.dpk)
 
 # 2) 상태 확인 (Not Running 예상)
-ssh ksi-manifold 'dji_app_ctl status ksi-psdk-tap'
+ssh ksi-manifold 'dji_app_ctl status ksi-safety-edge'
 
-# 3) 기동 → 60초 자동 종료 대기
-ssh ksi-manifold 'dji_app_ctl start ksi-psdk-tap; sleep 75; dji_app_ctl status ksi-psdk-tap'
+# 3) 기동 → 60초 자동 종료 대기 (기체 링크가 있어야 init 완료)
+ssh ksi-manifold 'dji_app_ctl start ksi-safety-edge; sleep 75; dji_app_ctl status ksi-safety-edge'
 
-# 4) 출력 회수 (장치 /tmp/ksi-psdk-tap.ndjson)
-scp ksi-manifold:/tmp/ksi-psdk-tap.ndjson /tmp/opencode/ksi-audit-20261008/device/SESS-<id>-tap.ndjson
+# 4) 출력 회수 (NDJSON + 부트 로그)
+scp ksi-manifold:/tmp/ksi-safety-edge.ndjson /tmp/opencode/ksi-audit-20261008/device/SESS-<id>-safety-edge.ndjson
+ssh ksi-manifold 'cat /tmp/ksi-safety-edge-boot.log'   # 단계 진행 확인
 
 # 5) 이상 시 정지 (강제 종료 필요할 때만)
-ssh ksi-manifold 'dji_app_ctl stop ksi-psdk-tap'
+ssh ksi-manifold 'dji_app_ctl stop ksi-safety-edge'
 ```
+
+- 설치 실패 시 진단 순서: ① `dji_app_ctl status` ② `/tmp/ksi-safety-edge-boot.log` 마지막 단계 ③ `/blackbox/system/app_temp_files/ksi-safety-edge_*.log`(SDK 콘솔) — `core_init_begin`에서 멈추면 기체 링크 미접속이 원인이다.
 
 - **설치 유지**가 기본(재사용). uninstall은 별도 결정 시에만.
 - DPK 런타임 로그(콘솔)는 `dji_app_mgr` 계열 로그에 섞일 수 있음 — 실패 시 `/blackbox`·app_mgr 로그 회수(권한 확인).

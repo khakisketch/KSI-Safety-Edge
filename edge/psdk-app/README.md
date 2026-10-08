@@ -69,7 +69,16 @@ stream and FC topics in FIFO subscription order, joins the worker
 - `developerAccount` in the credential header is empty (allowed, not fatal).
 - FC source timestamps (`T_DjiDataTimestamp`) are unverified by design;
   unit/domain meaning is not established, so they are counters only.
-- An aircraft must be attached for real frames; without one
-  `DjiCore_Init` fails or waits (expected, fail-closed).
+- **An aircraft must be attached for the DPK install verification as well as
+  for real frames.** dji_app_mgr briefly starts the app and compares the
+  package control Version with the version the app reports via
+  `DjiCore_SetFirmwareVersion` — reachable only after `DjiCore_Init`
+  completes, which waits for the aircraft link. Measured 2026-10-08 (no
+  aircraft): boot log stops at `core_init_begin` and install fails with
+  "verify app user_app_id or version info error". Connect the aircraft for
+  the install session.
+- Boot diagnostics: startup breadcrumbs are written to
+  `/tmp/ksi-safety-edge-boot.log` (dev-only; survives the ~8 s
+  verification start dji_app_mgr performs).
 - Host builds do not cover this tree (PSDK headers + credential required);
   device build + core regression are the gates.

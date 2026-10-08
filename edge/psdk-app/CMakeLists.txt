@@ -72,7 +72,13 @@ set_target_properties(psdk_static PROPERTIES IMPORTED_LOCATION "${KSI_PSDK_LIB_P
 set(KSI_SAFETY_EDGE_DPK_USER_APP_ID "" CACHE STRING
   "DJI-issued user_app_id for this DPK (empty means no DPK target)")
 set(KSI_SAFETY_EDGE_DPK_FIRMWARE_VERSION "00.01.00.00" CACHE STRING
-  "DPK firmware version (form 00.00.00.00)")
+  "DPK firmware version (form 00.00.00.00) — must equal the version the app
+   reports via DjiCore_SetFirmwareVersion, or dji_app_mgr install verification fails")
+if(NOT KSI_SAFETY_EDGE_DPK_FIRMWARE_VERSION MATCHES
+   "^[0-9][0-9]\\.[0-9][0-9]\\.[0-9][0-9]\\.[0-9][0-9]$")
+  message(FATAL_ERROR
+    "KSI_SAFETY_EDGE_DPK_FIRMWARE_VERSION must have the form 00.00.00.00")
+endif()
 set(KSI_SAFETY_EDGE_CAMERA_SOURCE "DJI_LIVEVIEW_CAMERA_SOURCE_M4E_VIS" CACHE STRING
   "E_DjiLiveViewCameraSource token for the RGB image stream")
 set(KSI_SAFETY_EDGE_DURATION_SEC 60 CACHE STRING
@@ -123,6 +129,8 @@ target_compile_options(${KSI_SAFETY_EDGE_BINARY} PRIVATE -Wall -Wextra -Wpedanti
 target_compile_definitions(${KSI_SAFETY_EDGE_BINARY} PRIVATE
   KSI_SAFETY_EDGE_CAMERA_SOURCE=${KSI_SAFETY_EDGE_CAMERA_SOURCE}
   KSI_SAFETY_EDGE_DURATION_SEC=${KSI_SAFETY_EDGE_DURATION_SEC}
+  KSI_SAFETY_EDGE_FW_VERSION="${KSI_SAFETY_EDGE_DPK_FIRMWARE_VERSION}"
+  KSI_SAFETY_EDGE_ALIAS="KSI Safety Edge"
 )
 target_link_libraries(${KSI_SAFETY_EDGE_BINARY} PRIVATE
   ksi_safety_edge_core psdk_static Threads::Threads m dl)
@@ -150,11 +158,6 @@ if(KSI_SAFETY_EDGE_DPK_USER_APP_ID)
     message(FATAL_ERROR
       "KSI_SAFETY_EDGE_DPK_USER_APP_ID must be at most 16 ASCII bytes "
       "(DJI build_dpk.sh limit)")
-  endif()
-  if(NOT KSI_SAFETY_EDGE_DPK_FIRMWARE_VERSION MATCHES
-     "^[0-9][0-9]\\.[0-9][0-9]\\.[0-9][0-9]\\.[0-9][0-9]$")
-    message(FATAL_ERROR
-      "KSI_SAFETY_EDGE_DPK_FIRMWARE_VERSION must have the form 00.00.00.00")
   endif()
   set(KSI_SAFETY_EDGE_DPK_BINARY "../${KSI_SAFETY_EDGE_BINARY}")
   configure_file(config/app.json.in "${CMAKE_CURRENT_BINARY_DIR}/dpk/app.json" @ONLY)

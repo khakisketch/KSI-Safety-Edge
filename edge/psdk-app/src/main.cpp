@@ -74,6 +74,16 @@ constexpr std::int64_t kPollIntervalNs = 200000000LL;  // 200 ms signal latency
 #ifndef KSI_SAFETY_EDGE_CAMERA_SOURCE
 #define KSI_SAFETY_EDGE_CAMERA_SOURCE DJI_LIVEVIEW_CAMERA_SOURCE_M4E_VIS
 #endif
+// DPK install verification (dji_app_mgr) compares the package control-file
+// Version against the version the running app REPORTS via
+// DjiCore_SetFirmwareVersion; these must match exactly. The value is injected
+// by CMake from KSI_SAFETY_EDGE_DPK_FIRMWARE_VERSION.
+#ifndef KSI_SAFETY_EDGE_FW_VERSION
+#define KSI_SAFETY_EDGE_FW_VERSION "00.01.00.00"
+#endif
+#ifndef KSI_SAFETY_EDGE_ALIAS
+#define KSI_SAFETY_EDGE_ALIAS "KSI Safety Edge"
+#endif
 
 volatile std::sig_atomic_t g_signal_requested = 0;
 
@@ -89,6 +99,20 @@ std::int64_t MonotonicNowNs() noexcept {
     }
     return static_cast<std::int64_t>(value.tv_sec) * kNsPerSec +
            static_cast<std::int64_t>(value.tv_nsec);
+}
+
+// On-device boot breadcrumbs. dji_app_mgr's install verification starts the
+// app briefly and then kills it; this file survives to show exactly how far
+// startup got (dev-only diagnostic, never a product data path).
+FILE* g_boot_log = nullptr;
+
+void BootStage(const char* stage) {
+    if (g_boot_log == nullptr) {
+        return;
+    }
+    std::fprintf(g_boot_log, "%lld\t%s\n",
+                 static_cast<long long>(MonotonicNowNs()), stage);
+    std::fflush(g_boot_log);
 }
 
 std::int64_t WallNowMs() noexcept {
@@ -413,11 +437,15 @@ int main(int argc, char** argv) {
     AppState state;
     g_state = &state;
 
+    g_boot_log = std::fopen("/tmp/ksi-safety-edge-boot.log", "w");
+    BootStage("start");
+
     state.out = std::fopen(args.out_path, "w");
     if (state.out == nullptr) {
         std::fprintf(stderr, "cannot open output file: %s\n", args.out_path);
         return 2;
     }
+    BootStage("out_open");
 
     // Meta line first, before any callback is registered: anchor clocks early.
     char started_at_utc[32];
@@ -444,6 +472,7 @@ int main(int argc, char** argv) {
     state.clocks.Verify("host_mono", TimeSourceKind::kHostReceive,
                         "in-process CLOCK_MONOTONIC");
 
+    BootStage("glues_begin");
     const char* stop_reason = "duration_exceeded";
     T_DjiReturnCode rc = KsiOsalGlue_Register();
     if (rc != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
@@ -467,6 +496,7 @@ int main(int argc, char** argv) {
         stop_reason = "error";
         goto finish;
     }
+    BootStage("glues_ok");
 
     {
         T_DjiUserInfo user_info;
@@ -476,13 +506,55 @@ int main(int argc, char** argv) {
         }
         // Blocks until the aircraft link answers (normally 2-4 s). Without an
         // attached aircraft this fails or waits here — expected, see README.
+        BootStage("core_init_begin");
         rc = DjiCore_Init(&user_info);
         if (rc != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
             std::fprintf(stderr, "DjiCore_Init failed: 0x%08X\n",
                          static_cast<unsigned>(rc));
+            BootStage("core_init_fail");
             stop_reason = "error";
             goto finish;
         }
+        BootStage("core_init_ok");
+        // DPK install verification: dji_app_mgr briefly starts the app and
+        // checks the reported identity/version against the package control
+        // file. DjiCore_SetFirmwareVersion is the required report — without
+        // it the install fails with "verify app user_app_id or version info
+        // error" (verified on device 2026-10-08).
+        rc = DjiCore_SetAlias(KSI_SAFETY_EDGE_ALIAS);
+        if (rc != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+            std::fprintf(stderr, "DjiCore_SetAlias failed: 0x%08X\n",
+                         static_cast<unsigned>(rc));
+            stop_reason = "error";
+            goto finish;
+        }
+        BootStage("alias_ok");
+        {
+            unsigned fw_major = 0U;
+            unsigned fw_minor = 0U;
+            unsigned fw_modify = 0U;
+            unsigned fw_debug = 0U;
+            if (std::sscanf(KSI_SAFETY_EDGE_FW_VERSION, "%u.%u.%u.%u",
+                            &fw_major, &fw_minor, &fw_modify, &fw_debug) != 4) {
+                std::fprintf(stderr, "invalid firmware version macro: %s\n",
+                             KSI_SAFETY_EDGE_FW_VERSION);
+                stop_reason = "error";
+                goto finish;
+            }
+            T_DjiFirmwareVersion firmware_version = {};
+            firmware_version.majorVersion = static_cast<std::uint8_t>(fw_major);
+            firmware_version.minorVersion = static_cast<std::uint8_t>(fw_minor);
+            firmware_version.modifyVersion = static_cast<std::uint8_t>(fw_modify);
+            firmware_version.debugVersion = static_cast<std::uint8_t>(fw_debug);
+            rc = DjiCore_SetFirmwareVersion(firmware_version);
+            if (rc != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
+                std::fprintf(stderr, "DjiCore_SetFirmwareVersion failed: 0x%08X\n",
+                             static_cast<unsigned>(rc));
+                stop_reason = "error";
+                goto finish;
+            }
+        }
+        BootStage("fw_ok");
         // Required so dji_app_mgr (DPK service identity check) gets a response;
         // without it an installed DPK rolls back (SI HIL lesson, 2026-08-12).
         rc = DjiCore_ApplicationStart();
@@ -492,6 +564,7 @@ int main(int argc, char** argv) {
             stop_reason = "error";
             goto finish;
         }
+        BootStage("app_start_ok");
     }
 
     {
@@ -561,6 +634,7 @@ int main(int argc, char** argv) {
         goto shutdown;
     }
     sub_gimbal = true;
+    BootStage("fc_ok");
 
     rc = DjiLiveview_Init();
     if (rc != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
@@ -570,6 +644,7 @@ int main(int argc, char** argv) {
         goto shutdown;
     }
     liveview_init = true;
+    BootStage("liveview_init_ok");
 
     {
         std::thread worker(WorkerMain, &state);
@@ -585,7 +660,7 @@ int main(int argc, char** argv) {
             goto shutdown;
         }
         image_started = true;
-
+        BootStage("stream_ok");
         const std::int64_t deadline_ns =
             MonotonicNowNs() + args.duration_sec * kNsPerSec;
         while (!state.worker_stop.load(std::memory_order_relaxed)) {
@@ -642,6 +717,8 @@ shutdown:
     (void)DjiCore_DeInit();
 
 finish: {
+    BootStage(stop_reason);
+    BootStage("finish");
     const auto qstats = state.frames.stats();
     std::fprintf(state.out,
                  "{\"type\":\"stat\",\"frames_received\":%llu,\"frames_dropped\":%llu,"

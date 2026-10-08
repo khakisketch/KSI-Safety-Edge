@@ -78,7 +78,8 @@
 - 2026-10-08: **W3 Spatial Engine 착수**(백그라운드 developer): 좌표·투영·footprint 거리·zone 관계 + Replay GT, SHADOW 전용.
 - 2026-10-08: **W3 Spatial Engine 완료(C11)** — 좌표(NED/ENU·국소 ENU)·투영(자세 등급 gate·near-horizon·교차)·footprint 거리(point-to-polygon)·zone 관계(내부/외부/BOUNDARY_UNCERTAIN/revision 고정). 호스트 8/8 ×2(기본/ASan), **장치 gcc 9.4/cmake 3.16.3 8/8**, 독립 test-runner `ses_ee4e01454ffeXNhwri8GSxT6Zi`(의미론 4건·격리·이식성 확인, mismatch 0). Primary 보강: 자세 gate 우선순위 테스트·polygon revision 단언·include 정리(재통과). 정확도·실기 검증은 미실시(합성 GT, SHADOW 전용).
 - 2026-10-08: **W4 PSDK 앱 "KSI AI Payload"(ksi-safety-edge) 완료·장치 빌드(C12)** — 우리 코어(프레임큐·provenance·matching)를 실제 PSDK 콜백에 연결한 v0 앱. 장치(gcc 9.4/cmake 3.16.3)에서 바이너리(2.78MB) + **DPK 587KB** 생성. Manifold 적응 글루 8파일을 출처·sha와 함께 추출(NOTICE). **센서 시각 fail-closed**(has_source_time=false 고정, recv 등급만). 자격증명은 gitignore 경로에만 저장(커밋 0 확인 — `git grep` 시크릿 0건). 독립 test-runner `ses_ee49b57b9ffeURavMylHEovfzq`: 자격증명 위생·호스트 8/8·장치 신규 빌드·DPK·의미론·글루 충실성 전부 통과, mismatch 0. 발견·수정: 자격증명 템플릿 주석의 `*/` 조기 종료 버그(Primary 수정 후 장치 재빌드 성공).
-- (다음) **DPK 설치·기동 세션**(기체/RC 연결 + 사용자 승인) → H1-3/4/5 1차 결과. 그 후 Spatial 엔진과 실측 연결.
+- 2026-10-08: **DPK 설치 검증 요건 규명 + 수정(C13)** — 설치 검증은 앱을 잠깐 실행해 `DjiCore_SetFirmwareVersion` 보고를 control Version과 대조하는 구조(app_mgr 문자열 실측). 수정: `SetFirmwareVersion`/`SetAlias` 호출 + 부트 로그(`/tmp/ksi-safety-edge-boot.log`). 기체 미접속 3차 시도에서 부트 로그가 `core_init_begin`에서 멈춤 → **`DjiCore_Init`이 기체 링크를 대기하며, 설치 자체가 기체 연결 세션에서만 가능**함을 확인. 증거: `docs/verification/evidence/2026-10-08-dpk-install-verification.md`.
+- (다음) 기체/RC 연결 세션에서 우리 DPK 설치·기동 → NDJSON 회수 → H1-3/4/5 1차.
 
 ## 5. 후속 결정 대기(제품을 막지 않음)
 
