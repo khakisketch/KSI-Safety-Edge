@@ -34,7 +34,7 @@
 |---|---|---|---|
 | 판단·검증 | **W5 완료·검증(C15)** — 순수 로직·합성 GT | 실데이터 연결은 기체/GPS GT 확보 후 | 없음(실데이터만 대기) |
 | 사용 흐름(RC) | 미착수 — 환경 조사 완료(2026-10-08): JDK 8(부족)·adb/sdkmanager/gradle 부재, dl.google.com 접근 가능, 디스크 2.9T 여유 | JDK17+cmdline-tools 설치 승인 시 착수 | 설치 승인·RC 접근 경로 |
-| 실제 인식(AI) | W6-A~W8 완료(C16~C19) + **ONNX 자체 export 완료**(기존 로컬 venv 재사용·설치 0; opset17 `96b8e0f3…`·opset16 `1cf17f7c…`, double fix 7=레지스트리와 일치, torch↔ORT 오차 ≤1.8e-3) | **opset16 engine 재빌드 진행 중**(TRT 8.5.2는 opset17 LayerNorm 미지원 — 실측) → engine smoke → W9 C++ 런타임 어댑터 | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
+| 실제 인식(AI) | W6-A~W8(C16~C19) + ONNX export(`96b8e0f3…`/`1cf17f7c…`) + **TRT engine 빌드 성공**(fp16 25MB `4cf3419b…`, 출력 1×300×80/1×300×4, **~62.9qps·16ms**, Orin NX·TRT 8.5.2) | **다음(재개 시): W9 C++ 런타임 어댑터**(engine 로드→추론→decode, Python 참조 대비 정확도 smoke) | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
 
 ## 4. 첫 현장시험 범위 (추천안 — 사용자 확정 대기)
 
@@ -68,6 +68,7 @@
 - 2026-10-08: **D-FINE ONNX 자체 export(설치 0)** — 로컬 LLM venv(torch 2.13.0+cu130·transformers 5.16.1) + 임시 `--target` deps(onnx 1.23.2·onnxruntime 1.30.0·pillow, `/tmp/opencode/dfine-export/deps`)로 export. opset 17·dynamo=False·640×640 static·출력 [logits,pred_boxes]·**double→float 7곳(=SI 레지스트리 기록과 일치)**. opset17 sha256 `96b8e0f3…`, **opset16 sha256 `1cf17f7c…`**(툴체인 상이로 레지스트리 digest와 다름 — manifest에 기록). 정합성: torch↔ORT max|Δlogits| ≤1.8e-3·max|Δboxes| ≤2.5e-5; smoke: single/small_person → person 0.79~0.90, non_person_car → truck 0.92·person 낮음. 장치 `/open_app/ksi-dev/dfine-export-20261008/` 복사(sha256 재확인 일치).
 - 2026-10-08: **TRT 1차 빌드 실패 → opset16 재export** — TensorRT 8.5.2가 opset-17 `LayerNormalization` 미지원(8.6+ 내장 op, 플러그인 없음) 실측 → exporter가 LayerNorm을 기본 op로 분해하는 **opset 16으로 재export**(정합성 동일 확인) 후 **engine 재빌드 진행 중**(trtexec fp16, Orin NX·TRT 8.5.2).
 - 2026-10-08: **GitHub 배포(검토용·비공개)** — `github.com/khakisketch/ksi-safety-edge` (C20 `ab5e229` 시점, main 브랜치). 배포 전 시크릿 스캔 통과(실제 DJI 자격증명은 `.gitignore`로 미추적 — 템플릿 `.example`만 추적, 과거 커밋 이력에도 실제 값 없음), 저장소 4.3MB/233파일. 목적: 사용자 검토. 공개 전환·collaborator 추가는 요청 시.
+- 2026-10-08: **TRT engine 빌드 성공(재빌드, op16·fp16)** — `dfine-s-coco.fp16.op16.engine`(25MB, sha256 `4cf3419b…`) 생성·로드·실행 **PASSED**. 출력 `logits 1×300×80`·`pred_boxes 1×300×4`(모델 계약 일치), trtexec random-input 기준 **~62.9 qps·평균 지연 16.15ms(GPU 15.85ms)**. 주의: random 입력 — 실제 정확도는 W9 런타임 어댑터에서 Python/ORT 참조와 비교 검증 예정. 경고: enqueue-bound(옵션: CUDA graph)·compute variance 3.3%.
 - (이전) B0~W4·C13: `2026-10-08-reuse-audit-and-porting.md`, `docs/verification/evidence/`.
 
 ## 7. 대기 중 결정 (비차단)
