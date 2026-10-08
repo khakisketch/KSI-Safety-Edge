@@ -34,7 +34,7 @@
 |---|---|---|---|
 | 판단·검증 | **W5 완료·검증(C15)** — 순수 로직·합성 GT | 실데이터 연결은 기체/GPS GT 확보 후 | 없음(실데이터만 대기) |
 | 사용 흐름(RC) | 미착수 — 환경 조사 완료(2026-10-08): JDK 8(부족)·adb/sdkmanager/gradle 부재, dl.google.com 접근 가능, 디스크 2.9T 여유 | JDK17+cmdline-tools 설치 승인 시 착수 | 설치 승인·RC 접근 경로 |
-| 실제 인식(AI) | 조사 완료 + W6-A(C16)·W6-B(C17)·W7(C18)·**W8 detector adapter+체인 완료·검증(C19)** — 전처리/decode·tracker·세션·주입 런타임 어댑터(호스트 13/13×2·장치 13/13·runner 검증) | **실제 런타임 어댑터(ONNX/TensorRT) — 승인 대기**; 후보: episode-event 계약·tracker 지표 | ONNX 산출물(sha256 `1becd2d3…`) 위치 미확인·export 툴체인 미설치; 대표 영상 없음 |
+| 실제 인식(AI) | W6-A~W8 완료(C16~C19) + **ONNX 자체 export 완료**(기존 로컬 venv 재사용·설치 0; opset17 `96b8e0f3…`·opset16 `1cf17f7c…`, double fix 7=레지스트리와 일치, torch↔ORT 오차 ≤1.8e-3) | **opset16 engine 재빌드 진행 중**(TRT 8.5.2는 opset17 LayerNorm 미지원 — 실측) → engine smoke → W9 C++ 런타임 어댑터 | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
 
 ## 4. 첫 현장시험 범위 (추천안 — 사용자 확정 대기)
 
@@ -65,10 +65,12 @@
 - 2026-10-08: **W6-B 완료·검증(C17)** — 결정적 IoU tracker v0(per-class greedy·coast/re-assoc 동일 id·id 비재사용·epoch reset·min_hits·결정성). 호스트 11/11(default)·11/11(ASan)·장치 gcc 9.4 11/11·독립 runner `ses_ee439a42affe33Ztam6BoOFbkU`(A1~A10 PASS; g1~g3 shipped-test 갭은 독립 probe로 확인). Primary가 g1~g3 고정 테스트 보강·재실행(11/11×2).
 - 2026-10-08: **W7 완료·검증(C18)** — 합성 안전 세션 오케스트레이터(two-engine proximity/zone, pair lineage=(epoch,person,equipment)·zone lineage=(epoch,track,0), min-geometry, Sweep/EndSession/ResetTracker). 호스트 12/12(default)·12/12(ASan)·장치 gcc 9.4 12/12·독립 runner `ses_ee43101b2ffeJ5FDnSsRXYAzQn`(6 시나리오 매핑·거리 hand-check 0.5m/14.14m 일치·범위 정확) — **갭 없음**.
 - 2026-10-08: **W8 완료·검증(C19)** — `DfineDetector`(주입 런타임 fn: 전처리→추론→decode, fail-closed F1~F8) + full-chain 통합(detector→tracker→session→episode, fake inference·결정성). 호스트 13/13(default)·13/13(ASan)·장치 gcc 9.4 13/13(최종 리비전)·독립 runner `ses_ee427dd4affeNJIPb9Cms7IDx7`(F→test 매핑·box/IoU hand-check·범위 정확). F5는 도달 불가(문서화), F8은 Primary 고정 테스트 추가 후 재실행. **장치 인프라 발견: root `/` read-only**(재부팅 후, `/open_app`·`/tmp`는 rw) — DPK 설치 전 재부팅/fsck 필요(사용자 확인 항목). runner의 'backend rotation'은 경로 오타(`/openapp`) 혼동으로 판명.
+- 2026-10-08: **D-FINE ONNX 자체 export(설치 0)** — 로컬 LLM venv(torch 2.13.0+cu130·transformers 5.16.1) + 임시 `--target` deps(onnx 1.23.2·onnxruntime 1.30.0·pillow, `/tmp/opencode/dfine-export/deps`)로 export. opset 17·dynamo=False·640×640 static·출력 [logits,pred_boxes]·**double→float 7곳(=SI 레지스트리 기록과 일치)**. opset17 sha256 `96b8e0f3…`, **opset16 sha256 `1cf17f7c…`**(툴체인 상이로 레지스트리 digest와 다름 — manifest에 기록). 정합성: torch↔ORT max|Δlogits| ≤1.8e-3·max|Δboxes| ≤2.5e-5; smoke: single/small_person → person 0.79~0.90, non_person_car → truck 0.92·person 낮음. 장치 `/open_app/ksi-dev/dfine-export-20261008/` 복사(sha256 재확인 일치).
+- 2026-10-08: **TRT 1차 빌드 실패 → opset16 재export** — TensorRT 8.5.2가 opset-17 `LayerNormalization` 미지원(8.6+ 내장 op, 플러그인 없음) 실측 → exporter가 LayerNorm을 기본 op로 분해하는 **opset 16으로 재export**(정합성 동일 확인) 후 **engine 재빌드 진행 중**(trtexec fp16, Orin NX·TRT 8.5.2).
 - (이전) B0~W4·C13: `2026-10-08-reuse-audit-and-porting.md`, `docs/verification/evidence/`.
 
 ## 7. 대기 중 결정 (비차단)
 
 - 첫 현장시험 범위 확정(§4) — 사용자.
-- 모델: D-FINE-S(coco)는 dev/평가 후보 확인(로컬 가중치 sha256=레지스트리). 현장용 class map 최종 모델·**ONNX 산출물 위치**·대표 영상(녹화) — 사용자.
+- 모델: D-FINE-S(coco) dev/평가 후보 — **ONNX는 자체 export로 확보**(`96b8e0f3…`). 현장용 class map 최종 모델·대표 영상(녹화) — 사용자.
 - Android: **JDK17+cmdline-tools 설치 승인 여부**·RC 접근 경로 — 사용자.
