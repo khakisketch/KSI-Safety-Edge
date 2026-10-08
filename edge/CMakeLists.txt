@@ -19,6 +19,7 @@ add_library(ksi_safety_edge_core STATIC
   src/time/interpolation.cpp
   src/perception/pipeline.cpp
   src/perception/dfine.cpp
+  src/perception/tracker.cpp
   src/geometry/coordinate.cpp
   src/geometry/projection.cpp
   src/spatial/distance.cpp
@@ -60,6 +61,7 @@ ksi_safety_edge_test(matching tests/test_matching.cpp)
 ksi_safety_edge_test(interpolation tests/test_interpolation.cpp)
 ksi_safety_edge_test(perception tests/test_perception.cpp)
 ksi_safety_edge_test(dfine tests/test_dfine.cpp)
+ksi_safety_edge_test(tracker tests/test_tracker.cpp)
 ksi_safety_edge_test(geometry tests/test_geometry.cpp)
 ksi_safety_edge_test(spatial tests/test_spatial.cpp)
 ksi_safety_edge_test(risk tests/test_risk.cpp)
