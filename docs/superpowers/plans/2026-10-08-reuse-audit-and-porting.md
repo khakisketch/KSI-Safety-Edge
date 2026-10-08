@@ -1,6 +1,6 @@
 # KSI Safety Edge — SI 자산 재사용 감사·이식 원장 (workstream ledger)
 
-- 작성: 2026-10-08 (Build 전환 후) · 상태: **B0 완료**, **W2 최소 코어 완료(C8, 호스트 검증)** — H1 접속·능력 파악 착수
+- 작성: 2026-10-08 (Build 전환 후) · 상태: **B0·W2·W3 완료** — W4(PSDK 앱) 장치 빌드 진행 중, H1-1 장치 온보딩 완료
 - 사용자 지시(승인 범위): ① H1 전 SI 자산 정밀 감사 ② 재사용/독립 경계와 중복 최소화 계획 ③ 격리 환경에서 실제 빌드·실행 ④ 재사용 모듈 확정 후 Safety Edge 최소 실행 파이프라인 연결 ⑤ SI 운영 코드·제품 계약 변경 금지 ⑥ H1 없이 기체 통합 완료 주장 금지.
 - 감사 정적 보고서(plan 위치): `/home/ksi/.opencode/plan/2026-10-08-ksi-safety-edge-reuse-audit.md`
 - 확정 개발 순서(2026-10-08 사용자 보정):
@@ -8,7 +8,7 @@
   2. 영상·텔레메트리 수집 계층 분리(PSDK와 Replay가 공통 계약) → **W2 완료(C8)**
   3. 영상 AI 독립 실행(자세 정합 실패와 무관하게 Detection 유지) → **W2 완료(C8)**
   4. 시간 정합 품질 엔진(표본 출처·시각·오차·거절 사유) → **W2 완료(C8)**
-  5. Spatial Engine(사람 발점·장비 footprint·최단거리, Replay GT) → 후속
+  5. Spatial Engine(사람 발점·장비 footprint·최단거리, Replay GT) → **W3 완료(C11)**
   6. Risk Engine(위험구역·근접·Episode Lifecycle, 독립 모듈) → 후속
   7. MSDK 연동(임무·MOP·오프라인 저장·증거 확인) → **사용자 방향 보정(2026-10-08): MSDK 중심 선행 검토**
   8. H1 실장비 검증 → **장비 LAN 접속됨(사용자 통보); 능력 파악 진행 중**
@@ -76,7 +76,9 @@
 - 2026-10-08: **H1-1 장치측 PASS + 개발 루프 스모크 PASS(C9)** — `ksi-manifold`(172.30.1.33) SSH, L4T R35.5.0/Ubuntu 20.04.6/gcc 9.4/cmake 3.16.3, `/open_app` 94G writable, PSDK 3.16.0 상주, KSI DPK 미설치 확인. 우리 `edge/` 코어를 장치에서 빌드·ctest **6/6**. 발견: **장치 시계 −6일·RTC 1970·NTP inactive**(H1-5 전 정비 필요), 기체 링크 인터페이스 NO-CARRIER(기체 미접속), DJI 자격증명 보유 미확인. 증거: `docs/verification/evidence/2026-10-08-h1-1/`.
 - 2026-10-08: **DPK 세션 패키지 준비** — `docs/verification/h1-dpk-session-checklist.md`. 기존 빌드 DPK(`ksi-psdk-tap` v00.01.00.02, 무인자 기본 out=/tmp/ksi-psdk-tap.ndjson·60초)로 H1-3/4/5 1차 raw 수집 가능. 실행은 사용자 승인(설치) + 기체/RC 연결 필요.
 - 2026-10-08: **W3 Spatial Engine 착수**(백그라운드 developer): 좌표·투영·footprint 거리·zone 관계 + Replay GT, SHADOW 전용.
-- (다음) W3 검증·커밋 → 사용자 세션 결정 시 DPK 세션 실행 → H1-3/4/5 1차 결과.
+- 2026-10-08: **W3 Spatial Engine 완료(C11)** — 좌표(NED/ENU·국소 ENU)·투영(자세 등급 gate·near-horizon·교차)·footprint 거리(point-to-polygon)·zone 관계(내부/외부/BOUNDARY_UNCERTAIN/revision 고정). 호스트 8/8 ×2(기본/ASan), **장치 gcc 9.4/cmake 3.16.3 8/8**, 독립 test-runner `ses_ee4e01454ffeXNhwri8GSxT6Zi`(의미론 4건·격리·이식성 확인, mismatch 0). Primary 보강: 자세 gate 우선순위 테스트·polygon revision 단언·include 정리(재통과). 정확도·실기 검증은 미실시(합성 GT, SHADOW 전용).
+- 2026-10-08: W4(PSDK 앱 "KSI AI Payload") 진행 — 자격증명 gitignore 반영(커밋 금지), 앱 구현·장치 빌드·DPK 패키징 백그라운드 진행 중.
+- (다음) W4 검증·커밋 → DPK 세션(기체/RC 연결 시) → H1-3/4/5 1차 결과.
 
 ## 5. 후속 결정 대기(제품을 막지 않음)
 

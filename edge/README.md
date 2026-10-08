@@ -36,7 +36,11 @@ Build dirs (`edge/build*/`) are git-ignored.
 | `include/ksi_safety/time/interpolation.hpp`, `src/time/interpolation.cpp` | SLERP/LERP/`WrapDegrees`; `InterpolatePose()` refuses unless both samples have verified source times in the SAME domain, ordered bracket, interval ≤ max, target inside. |
 | `include/ksi_safety/perception/detector.hpp` | `DetectorPort` + `Detection`/`ModelProfile` types. |
 | `include/ksi_safety/perception/pipeline.hpp`, `src/perception/pipeline.cpp` | `PerceptionPipeline::Process()`: detector called EXACTLY ONCE per frame (null-safe); detections + model id/digest always recorded; pose from `MatchFrame()`; `spatial_eligible = (quality == kSourceVerified)`. No spatial math here. |
-| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
+| `include/ksi_safety/geometry/coordinate.hpp`, `src/geometry/coordinate.cpp` | `Rotate` (quaternion, internally normalized) / `NedToEnu` / `EnuToNed` / `Wgs84ToLocalEnu` (equirectangular local approximation, R = 6371008.8 m). |
+| `include/ksi_safety/geometry/projection.hpp`, `src/geometry/projection.cpp` | Pinhole `ProjectPixelToGround()`: pose is GIVEN in ENU (`CameraPoseEnu`; composition from raw telemetry topics is the deferred PSDK adapter's job). Accepts only `kSourceVerified` poses, else `kPoseUnverified`. |
+| `include/ksi_safety/spatial/distance.hpp`, `src/spatial/distance.cpp` | 2D ground-plane kernels: point↔segment, containment (boundary = inside), point↔polygon, polygon↔polygon, polygon↔segment. |
+| `include/ksi_safety/spatial/relation.hpp`, `src/spatial/relation.cpp` | Person footpoint ↔ equipment footprint minimum distance (`MinDistancePersonEquipment`); point/polygon ↔ zone relations with an uncertainty envelope (`RelatePointToZone`, `RelatePolygonToZone`). |
+| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `geometry`, `spatial`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
 
 ## The core rule (why this exists)
 
@@ -68,3 +72,23 @@ source times earns `kSourceVerified`, and only that grade sets
   are not a common time axis.
 - `FrameMetadata.sensor_timestamp_ns == 0` still means "no sensor evidence"
   (inherited SI semantics) and never counts toward verification.
+
+## Geometry / spatial scope / limits (honest)
+
+- Synthetic ground truth only. Verified here: rotation/frame conversions,
+  pinhole-to-flat-plane projection math, and 2D distance/zone relations — all
+  on analytic synthetic data via `ctest` (nadir/oblique closed-form hits,
+  corner/edge distances, envelope boundaries), plus ASan/UBSan clean on this
+  host.
+- SHADOW-only. No physical capture-time verification exists yet, so under the
+  workstream principles nothing here may drive real position-based warnings:
+  projection refuses anything below `kSourceVerified`, and relation outputs
+  carry no warning semantics on their own.
+- No lens distortion, single flat ground plane (`GroundPlaneRevision.up_m`),
+  no multi-level terrain, no uncertainty-interval calibration — the interval
+  stays null until measured.
+- `Wgs84ToLocalEnu()` is a local approximation for offsets ≤ ~1 km around the
+  anchor (error grows with distance; see header). Wider areas need a proper
+  projection (deferred).
+- Pose composition from raw telemetry topics into `CameraPoseEnu` is deferred
+  to the PSDK adapter; here the ENU pose is an input, not a derivation.
