@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from conftest import AGENT, RC, fresh_uuid, make_manifest, register_flight
+from core_helpers import AGENT, RC, fresh_uuid, make_manifest, register_flight
 
 
 def _put(client, up, aid, data, start=None, end=None):

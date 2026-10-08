@@ -114,3 +114,5 @@ E01 bundle PREPARE/APPLY digest 일치·적용 이력 서버 조회 / E02 APPLY 
 
 - 2026-10-08: 저장소 골격 + 원본 snapshot + 설계 기준본 반영 (C0=3df6963).
 - 2026-10-08: W1a+W1b 완료, C1=050d80f — `pytest contracts libs` **66 passed**; 레거시 16개 파일 byte-identity; 감사 변형 8종 전부 규칙코드(INTERVAL_ORDER 등)로 거부; OpenAPI 39 ops freeze(30 paths). Primary 재실행 검증 완료.
+- 2026-10-08: W2 완료, C2=4eae807 — core 20 tests(86 total), openapi parity 39 ops, upload_state 전이(LOCAL_ONLY→UPLOADING→PARTIAL→COMPLETE) 테스트, uvicorn 스모크 200/401/200. Primary 재실행 검증 완료.
+- 2026-10-08: W3 완료 + 통합 정비, C3 — harness 26 tests(E2E 14 = E01~E12), 전체 **112 passed**(combined run). 정비 내역: 파일 분할 후 `_uid` 임포트 누락 수정, 다중 스위트 `conftest` 이름 충돌 → `core_helpers`/`harness_helpers` 분리, `scripts/run_all_tests.sh` 추가. 개발 중 프로토콜 버그 2건 발견·수정(errored-retry dedup, mark_unrecoverable 조기 포기). E12 편차: read 토큰 PUT=403(스코프 게이트), orgB rc 토큰=404 — README 기록.

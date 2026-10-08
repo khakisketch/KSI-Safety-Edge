@@ -7,7 +7,7 @@ from copy import deepcopy
 
 from ksi_contracts import set_digest
 
-from conftest import AGENT, ORGB, RC, example, make_bundle, make_snapshot, register_flight
+from core_helpers import AGENT, ORGB, RC, example, make_bundle, make_snapshot, register_flight
 
 BASE = ""  # Client already prefixes /api/v1/edge
 
@@ -41,7 +41,7 @@ def test_cross_org_matrix(client):
     # org-a creates flight + event batch + ingest session with artifact
     flight = register_flight(client)
     fid = flight["flight_id"]
-    from conftest import make_event, make_manifest
+    from core_helpers import make_event, make_manifest
 
     ev = make_event(fid)
     r = client.post(f"/flights/{fid}/events:batch", token=RC,

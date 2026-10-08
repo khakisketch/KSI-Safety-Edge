@@ -8,7 +8,7 @@ from pathlib import Path
 
 import yaml
 
-from conftest import AGENT, ORGB, RC, example, make_annotation, make_event, make_flight_summary, make_manifest, make_observation, make_spatial_summary, register_flight
+from core_helpers import AGENT, ORGB, RC, example, make_annotation, make_event, make_flight_summary, make_manifest, make_observation, make_spatial_summary, register_flight
 
 
 def _batch(client, fid, path, items, batch_id="b1", token=RC):

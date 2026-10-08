@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ksi-harness"
+version = "0.1.0"
+description = "KSI Safety Edge test harness: virtual MOP transport, RC simulator, edge replay, E2E (M1 replay slice)"
+requires-python = ">=3.12"
+dependencies = [
+  "httpx",
+  "ksi-contracts",
+]
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ksi_harness"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
