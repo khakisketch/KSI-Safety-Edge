@@ -10,9 +10,9 @@
 
 | 자산 | 위치 | 내용 | 상태 구분 |
 |---|---|---|---|
-| PSDK 콜백 수집기(C) | `…-manifold3-shadow/edge/psdk-tap/` (`liveview_tap.c`, `telemetry_tap.c`, `clock_util.c`, `shared_state.c`, `pairing.c`, `ndjson_writer.c`) | `DjiLiveview_StartH264Stream`(H264 콜백), `DjiFcSubscription_SubscribeTopic(HARD_SYNC…)`, NDJSON writer(meta: psdk_version·started_at·clock anchor·frame_timestamp_provenance·capabilities flags) | 소스 확인 |
+| PSDK 콜백 수집기(C) | `…-manifold3-shadow/edge/psdk-tap/` (`liveview_tap.c`, `telemetry_tap.c`, `clock_util.c`, `shared_state.c`, `pairing.c`, `ndjson_writer.c`) | `DjiLiveview_StartH264Stream`(H264 콜백) + `HARD_SYNC`(400Hz) 구독, **프레임 이벤트↔텔레메트리 이벤트 페어링 샘플**(`write_sample`: frame_ep·telemetry_ep 등)과 meta(psdk_version·clock anchor·frame_timestamp_provenance·capabilities) | 소스 확인 |
 | Shadow DPK | `…-manifold3-shadow/edge/psdk-app/` (`src/main.cpp`) | PSDK 3.16.0 기반, 비행제어 심볼 경계 게이트 사용 | README·파일 확인 |
-| C++17 Edge 런타임 | `…-manifold3-shadow/edge/manifold-runtime/` (`src/`: `frame_queue`, `sync`, `calibrated_projector`, `risk`, `evidence_builder`, `store_forward`, `event_timing`, `tensorrt/dfine`, `shadow`, `activation` …) | 프레임큐·정합·지면투영·위험엔진·증거·store-and-forward·서명 정책 게이트 등 | 파일·README 확인 (품질 감사 미실시) |
+| C++17 Edge 런타임 | `…-manifold3-shadow/edge/manifold-runtime/` (`src/`: `frame_queue`, `sync`, `calibrated_projector`, `risk`, `evidence_builder`, `store_forward`, `event_timing`, `tensorrt/dfine`, `shadow`, `activation` …) | **호스트 빌드 가능한 순수 C++17**(PSDK 의존 없음, CUDA/TensorRT는 opt-in), src 7,353 LOC + 테스트 2,267 LOC(conformance/control_plane/edge_runtime), cmake 3.16 호환(Manifold 온보드) | 파일·CMake·테스트 확인 (품질 감사 미실시) |
 | PSDK 계보 고정 | `…-manifold3-shadow/edge/third_party/PSDK_LOCK.yaml` | PSDK 핀 `9af08536…`(3.16.0), fetch-not-commit, MIT 표기 | 파일 확인 |
 | 시간 정합 분석 도구(Python) | `KSI-Site-Intelligence-Platform/tools/hil/capture_frame_telemetry_timing.py` | p50/p95/max·표본수 게이트·MEASURED/acceptance 2축·무결성 보호 | 소스 확인 |
 | 실기 세션 로그 | `KSI-Site-Intelligence-Platform/hil_raw_logs/SESS-2026…` (7개) | 2026-08 링크 확인 세션 포함 | 디렉터리 확인 |
@@ -22,10 +22,10 @@
 
 | 순위 | 후보 | 용도 | 근거 | 리스크·확인 필요 |
 |---|---|---|---|---|
-| 1 | psdk-tap 수집기(패턴+코드 후보) | H1-3/4/5 수집(C) + NDJSON | 실제 PSDK 콜백 사용, 수집/판정 분리 | SI 타이밍 도구와 NDJSON 스키마 호환 확인; 필요한 토픽(quaternion/gimbal/position/height) 추가 필요 여부 |
+| 1 | psdk-tap 수집기(패턴+코드 후보) | H1-3/4/5 수집(C) + NDJSON | 실제 PSDK 콜백 사용, 프레임↔hard-sync 페어링 샘플, 수집/판정 분리 | **현재 HARD_SYNC만 구독(확인)** — H1-3용 quaternion/gimbal/position/height 토픽 추가 구현 필요; SI 타이밍 도구와 NDJSON 스키마 호환 확인 |
 | 2 | `capture_frame_telemetry_timing.py` | H1-5 분석(PC) | p50/p95·표본 게이트·조작 방지 | 입력 포맷 일치 확인; 목표값(50ms)은 **우리 기준 아님**(참고만) |
-| 3 | PSDK lock/fetch 패턴 + 경계 게이트 패턴 | M2 빌드 재현성·안전 심볼 검사 | 핀 고정, 실물 비커밋 | 도구 위치가 README와 불일치(현재 미발견) — 소재 확인 필요 |
-| 4 | manifold-runtime 모듈별 후보 | M2/M3: frame_queue·sync·calibrated_projector·store_forward | 개념 일치(정합·지면·증거·WAL) | SI 제품 계약(서명 handoff·policy pack)에 강결합 — **통째 재사용 금지**, 모듈 단위 감사 후 |
+| 3 | PSDK lock/fetch 패턴 + 경계 게이트 패턴 | M2 빌드 재현성·안전 심볼 검사 | 핀 고정(3.16.0), 실물 비커밋 | 도구는 현행 mainline이 아닌 `archive/acquisition-2026/tools/edge/`·`.worktrees/…`에 존재 — 소재 확정 이력 확인 필요 |
+| 4 | manifold-runtime 모듈별 후보 | M2/M3: frame_queue·sync·calibrated_projector·store_forward | 개념 일치 + 호스트 테스트 2.3k LOC | SI 제품 계약(서명 handoff·policy pack)에 강결합 — **통째 재사용 금지**, 모듈 단위 감사 후 |
 | 5 | 절차·수용 기준 서식(SPIKE/HIL/evidence) | H1 기록 규율 정렬 | 코드 강제 증거 패턴 | 목표 수치·capability ID 체계는 우리 것으로 대체 |
 
 ## 3. 재사용 금지 (명시)
@@ -36,11 +36,17 @@
 - 비행 제어(FC) 관련 어떤 코드 경로도 Safety Edge에 반입 금지(설계 §4.2 경계 유지).
 - 자격증명 파일(`dji_sdk_app_info.h` 실물) — 예시(`.example`)만 참고, 발급은 별도.
 
-## 4. 미확인·다음 조사
+## 4. 미확인·다음 조사 (갱신: 2026-10-08 심층 확인 후)
 
-- `manifold-runtime` 테스트/빌드 상태, 라이선스 헤더, SI 계약 결합도(깊은 감사 필요).
-- `fetch_psdk.py`·`check_shadow_flight_boundary.py` 실제 소재(README 경로와 현재 트리 불일치).
-- tap NDJSON ↔ 분석 도구 스키마 정합.
-- psdk-tap이 수집하는 토픽 목록(현재 HARD_SYNC만 확인) — quaternion/gimbal/position/height 추가 필요 여부.
+**해소됨**
+- tap 토픽 범위: 현재 `HARD_SYNC` 구독만 — H1-3용 토픽 추가 구현이 필요함을 확인.
+- fetch/경계 도구 소재: 현행 mainline이 아닌 `archive/acquisition-2026/tools/edge/`와 `.worktrees/*`에 존재.
+- runtime 규모·빌드 성격: 순수 C++17 호스트 라이브러리(PSDK 비의존), 테스트 2,267 LOC.
+
+- 남은 미확인:
+  - `manifold-runtime` 코드 품질·라이선스 헤더·SI 계약 결합도(모듈 단위 감사), **호스트 빌드·테스트 실제 실행 검증**(별도 승인 하 out-of-tree `/tmp` 빌드로 가능).
+  - tap NDJSON 스키마 ↔ SI 분석 도구 입력 정합(수집기 버전차 가능).
+  - `MANIFOLD3_TOOLCHAIN.md` 소재(CMake 주석 경로와 현재 트리 불일치).
+  - archive 도구들의 이전 이력·현행성.
 
 다음 조사는 재사용 확정 전 별도 작업(M2 준비)으로 수행하고, 결과를 이 문서에 갱신한다.
