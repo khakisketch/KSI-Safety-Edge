@@ -37,6 +37,7 @@ Build dirs (`edge/build*/`) are git-ignored.
 | `include/ksi_safety/perception/detector.hpp` | `DetectorPort` + `Detection`/`ModelProfile` types. |
 | `include/ksi_safety/perception/pipeline.hpp`, `src/perception/pipeline.cpp` | `PerceptionPipeline::Process()`: detector called EXACTLY ONCE per frame (null-safe); detections + model id/digest always recorded; pose from `MatchFrame()`; `spatial_eligible = (quality == kSourceVerified)`. No spatial math here. |
 | `include/ksi_safety/perception/dfine.hpp`, `src/perception/dfine.cpp` | D-FINE input preprocessing + output decode (no inference): direct bilinear resize to 640×640 (no letterbox — `do_pad=false`), rescale /255, RGB→CHW float32; decode = per-query sigmoid + argmax, strict `score > threshold` from `DfineConfig`, normalized cxcywh → source-pixel xyxy, NMS-free fixed queries, ascending query order. Raw COCO label id; no ontology mapping. |
+| `include/ksi_safety/perception/dfine_detector.hpp`, `src/perception/dfine_detector.cpp` | `DfineDetector` runtime adapter (injected inference only): `DfineInferenceFn` takes preprocessed 1×3×640×640 CHW float32 and fills `[queries × classes]` logits + `[queries × 4]` boxes; `Detect()` runs preprocess → inference → `DecodeDfine`, fail-closed (bad args / invalid config / empty fn / preprocess refusal / inference false / tensor size mismatch → false + empty out, never partial). Standalone by design: it does not implement `DetectorPort` (which binds `FramePacket` capture/time types and exactly-once pipeline call semantics); a thin port wrapper lands with the capture path. |
 | `include/ksi_safety/perception/tracker.hpp`, `src/perception/tracker.cpp` | Deterministic per-class greedy IoU tracker v0: descending-IoU match at `iou_threshold` (ties → lower track_id, then detection order), same-class only, unmatched detections start monotonic never-reused ids, unmatched tracks coast up to `max_age_frames` then drop, re-association keeps the id, `confirmed = hits >= min_hits`, `Update()` returns every live track sorted by id, `Reset()` bumps `tracker_epoch` and drops all tracks. |
 | `include/ksi_safety/geometry/coordinate.hpp`, `src/geometry/coordinate.cpp` | `Rotate` (quaternion, internally normalized) / `NedToEnu` / `EnuToNed` / `Wgs84ToLocalEnu` (equirectangular local approximation, R = 6371008.8 m). |
 | `include/ksi_safety/geometry/projection.hpp`, `src/geometry/projection.cpp` | Pinhole `ProjectPixelToGround()`: pose is GIVEN in ENU (`CameraPoseEnu`; composition from raw telemetry topics is the deferred PSDK adapter's job). Accepts only `kSourceVerified` poses, else `kPoseUnverified`. |
@@ -46,7 +47,7 @@ Build dirs (`edge/build*/`) are git-ignored.
 | `include/ksi_safety/risk/episode.hpp`, `src/risk/episode.cpp` | Episode states/events/close reasons (`EXIT_CONFIRMED` / `EXIT_NOT_OBSERVED` / `OBSERVATION_LOST` / `SESSION_END`) + compact evidence summary. |
 | `include/ksi_safety/risk/engine.hpp`, `src/risk/engine.cpp` | `RiskEngine`: per-rule OFF/applicability/geometry/ACTIVE guards, interval + zone evidence classification, doc 17 §3 episode state machine per (rule, lineage) with explicit `max_gap_ms`, `Tick()` gap sweep, `EndSession()`. |
 | `include/ksi_safety/session/session.hpp`, `src/session/session.cpp` | `SafetySession`: synthetic orchestrator wiring one tracker + `MinDistancePersonEquipment` / point-polygon zone relations into TWO risk engines (proximity + zone; see two-engine note below). Caller-provided ground observations per track per tick; `Tick()` / gap `Sweep()` / `EndSession()` / `ResetTracker()` (epoch split, no cross-epoch merge). |
-| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `dfine`, `tracker`, `geometry`, `spatial`, `risk`, `session`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
+| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `dfine`, `tracker`, `geometry`, `spatial`, `risk`, `session`, `chain`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
 
 ## The core rule (why this exists)
 
@@ -110,9 +111,10 @@ source times earns `kSourceVerified`, and only that grade sets
 - No letterbox: `do_pad=false` means a direct 640×640 resize that does not
   preserve aspect ratio (documented in `dfine.hpp` R7).
 - Boxes are not clamped and labels are raw COCO indices (`class_name` left
-  empty): clipping, fail-closed drops, and ontology mapping stay with the
-  future adapter, mirroring the SI split between `dfine.py` and
-  `DetectionAdapter`.
+  empty): clipping and ontology mapping stay out of scope (mirroring the SI
+  split between `dfine.py` and `DetectionAdapter`). Fail-closed drops now
+  live in `DfineDetector` (see its F1–F8 list); clipping/mapping remain
+  future work.
 
 ## Tracker scope / limits (honest)
 
@@ -162,6 +164,25 @@ source times earns `kSourceVerified`, and only that grade sets
   automatic "safe"; far evidence after a gap closes `EXIT_NOT_OBSERVED`,
   never `EXIT_CONFIRMED`. Geometry-insufficient frames step the machine as
   unknown but can never confirm or close an episode.
+
+## Chain scope / limits (honest)
+
+- Host-synthetic full chain. Verified here: scripted `DfineDetector`
+  (injected fake inference, 64×48 RGB) → standalone `Tracker` id stability
+  → `SafetySession::Tick` (caller-built ground observations + one
+  3.0 m proximity rule) producing exactly one episode created at proximity
+  and closed `EXIT_CONFIRMED` at separation, stable ids throughout, two
+  identical runs → byte-identical logs; plus mid-script inference failure
+  (Detect false/empty, chain coasts without crash) and tensor size-mismatch
+  (false/empty) — all via `ctest`, plus ASan/UBSan clean on this host.
+- Injected runtime only — no ONNX/TensorRT execution here. The fake
+  inference ignores pixel content (call-counter-keyed tensors); no claim is
+  made about real D-FINE weights, real frames, or detection quality. The
+  real runtime adapter (ONNX-gated execution behind the same
+  `DfineInferenceFn` boundary) is the next step.
+- SHADOW-only. The chain inherits every limit above (synthetic ground
+  truth, point-distance proximity, no pose composition, no footpoint
+  estimation); nothing here may drive real position-based warnings.
 
 ## Session scope / limits (honest)
 

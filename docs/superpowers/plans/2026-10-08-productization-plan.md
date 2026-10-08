@@ -34,7 +34,7 @@
 |---|---|---|---|
 | 판단·검증 | **W5 완료·검증(C15)** — 순수 로직·합성 GT | 실데이터 연결은 기체/GPS GT 확보 후 | 없음(실데이터만 대기) |
 | 사용 흐름(RC) | 미착수 — 환경 조사 완료(2026-10-08): JDK 8(부족)·adb/sdkmanager/gradle 부재, dl.google.com 접근 가능, 디스크 2.9T 여유 | JDK17+cmdline-tools 설치 승인 시 착수 | 설치 승인·RC 접근 경로 |
-| 실제 인식(AI) | 조사 완료 + W6-A(C16)·W6-B(C17)·**W7 session 체인 완료·검증(C18)** — 전처리/decode·tracker·합성 세션(호스트 12/12×2·장치 12/12·runner 검증) | **W8 detector adapter(런타임 주입) 착수** → ONNX 확보/재export→장치 engine→smoke | ONNX 산출물(sha256 `1becd2d3…`) 위치 미확인·export 툴체인 미설치; 대표 영상 없음 |
+| 실제 인식(AI) | 조사 완료 + W6-A(C16)·W6-B(C17)·W7(C18)·**W8 detector adapter+체인 완료·검증(C19)** — 전처리/decode·tracker·세션·주입 런타임 어댑터(호스트 13/13×2·장치 13/13·runner 검증) | **실제 런타임 어댑터(ONNX/TensorRT) — 승인 대기**; 후보: episode-event 계약·tracker 지표 | ONNX 산출물(sha256 `1becd2d3…`) 위치 미확인·export 툴체인 미설치; 대표 영상 없음 |
 
 ## 4. 첫 현장시험 범위 (추천안 — 사용자 확정 대기)
 
@@ -64,6 +64,7 @@
 - 2026-10-08: **W6-A 완료·검증(C16)** — 호스트 10/10(default)·10/10(ASan sanitizer-clean)·장치 gcc 9.4 10/10·독립 runner `ses_ee4497b70ffeYmAj45ifZLvcb0`(R1~R8 매핑·전처리/decode hand-check 일치·범위 정확). runner 갭(동점→최저 index 미고정) → Primary 테스트 보강·재실행(10/10×2). 부수: shadow C++ `dfine.cpp`는 global top-k·`<=`로 감사된 Python semantics와 상이 — 우리는 Python 기준 채택.
 - 2026-10-08: **W6-B 완료·검증(C17)** — 결정적 IoU tracker v0(per-class greedy·coast/re-assoc 동일 id·id 비재사용·epoch reset·min_hits·결정성). 호스트 11/11(default)·11/11(ASan)·장치 gcc 9.4 11/11·독립 runner `ses_ee439a42affe33Ztam6BoOFbkU`(A1~A10 PASS; g1~g3 shipped-test 갭은 독립 probe로 확인). Primary가 g1~g3 고정 테스트 보강·재실행(11/11×2).
 - 2026-10-08: **W7 완료·검증(C18)** — 합성 안전 세션 오케스트레이터(two-engine proximity/zone, pair lineage=(epoch,person,equipment)·zone lineage=(epoch,track,0), min-geometry, Sweep/EndSession/ResetTracker). 호스트 12/12(default)·12/12(ASan)·장치 gcc 9.4 12/12·독립 runner `ses_ee43101b2ffeJ5FDnSsRXYAzQn`(6 시나리오 매핑·거리 hand-check 0.5m/14.14m 일치·범위 정확) — **갭 없음**.
+- 2026-10-08: **W8 완료·검증(C19)** — `DfineDetector`(주입 런타임 fn: 전처리→추론→decode, fail-closed F1~F8) + full-chain 통합(detector→tracker→session→episode, fake inference·결정성). 호스트 13/13(default)·13/13(ASan)·장치 gcc 9.4 13/13(최종 리비전)·독립 runner `ses_ee427dd4affeNJIPb9Cms7IDx7`(F→test 매핑·box/IoU hand-check·범위 정확). F5는 도달 불가(문서화), F8은 Primary 고정 테스트 추가 후 재실행. **장치 인프라 발견: root `/` read-only**(재부팅 후, `/open_app`·`/tmp`는 rw) — DPK 설치 전 재부팅/fsck 필요(사용자 확인 항목). runner의 'backend rotation'은 경로 오타(`/openapp`) 혼동으로 판명.
 - (이전) B0~W4·C13: `2026-10-08-reuse-audit-and-porting.md`, `docs/verification/evidence/`.
 
 ## 7. 대기 중 결정 (비차단)
