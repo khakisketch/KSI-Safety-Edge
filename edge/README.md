@@ -40,7 +40,10 @@ Build dirs (`edge/build*/`) are git-ignored.
 | `include/ksi_safety/geometry/projection.hpp`, `src/geometry/projection.cpp` | Pinhole `ProjectPixelToGround()`: pose is GIVEN in ENU (`CameraPoseEnu`; composition from raw telemetry topics is the deferred PSDK adapter's job). Accepts only `kSourceVerified` poses, else `kPoseUnverified`. |
 | `include/ksi_safety/spatial/distance.hpp`, `src/spatial/distance.cpp` | 2D ground-plane kernels: point↔segment, containment (boundary = inside), point↔polygon, polygon↔polygon, polygon↔segment. |
 | `include/ksi_safety/spatial/relation.hpp`, `src/spatial/relation.cpp` | Person footpoint ↔ equipment footprint minimum distance (`MinDistancePersonEquipment`); point/polygon ↔ zone relations with an uncertainty envelope (`RelatePointToZone`, `RelatePolygonToZone`). |
-| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `geometry`, `spatial`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
+| `include/ksi_safety/risk/policy.hpp`, `src/risk/policy.cpp` | `RiskRule` mirroring `risk-policy.v1` rule fields (kind/mode/threshold/hysteresis/enter/exit/required geometry/class + revision filters); contract `ToString()`s. |
+| `include/ksi_safety/risk/episode.hpp`, `src/risk/episode.cpp` | Episode states/events/close reasons (`EXIT_CONFIRMED` / `EXIT_NOT_OBSERVED` / `OBSERVATION_LOST` / `SESSION_END`) + compact evidence summary. |
+| `include/ksi_safety/risk/engine.hpp`, `src/risk/engine.cpp` | `RiskEngine`: per-rule OFF/applicability/geometry/ACTIVE guards, interval + zone evidence classification, doc 17 §3 episode state machine per (rule, lineage) with explicit `max_gap_ms`, `Tick()` gap sweep, `EndSession()`. |
+| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `geometry`, `spatial`, `risk`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
 
 ## The core rule (why this exists)
 
@@ -92,3 +95,30 @@ source times earns `kSourceVerified`, and only that grade sets
   projection (deferred).
 - Pose composition from raw telemetry topics into `CameraPoseEnu` is deferred
   to the PSDK adapter; here the ENU pose is an input, not a derivation.
+
+## Risk/episode scope / limits (honest)
+
+- Synthetic inputs only. Verified here: contract enum strings, per-rule
+  guards (OFF skip, equipment-class / zone-revision applicability, geometry
+  gate, ACTIVE-without-grant degrades to SHADOW with zero active outputs),
+  interval classification with hysteresis (`upper < threshold` near,
+  `lower > threshold + hysteresis` far, straddle stays unknown), zone
+  verdict mapping (`kInside`/`kOutside` near/far, `kBoundaryUncertain`
+  never confirms), and the doc 17 §3 machine (single create per episode,
+  enter/exit persistence with 0 = immediate, gap handling, lineage split on
+  tracker reassignment, deterministic ids) — all via `ctest`, plus
+  ASan/UBSan clean on this host.
+- SHADOW-only. `METRIC_VERIFIED` geometry is caller-asserted, not measured
+  here, so under the workstream principles nothing here may drive real
+  position-based warnings; ACTIVE output additionally requires an explicit
+  per-frame activation grant.
+- NOT verified here: real distance-measurement accuracy, physical zone
+  polygons, tracker behaviour, persistence/replay of episodes, or any
+  downstream alerting. Thresholds/durations come only from the policy input
+  (nothing is hardcoded); a rule misconfiguration (e.g. ACTIVE without
+  `METRIC_VERIFIED`) degrades to SHADOW rather than emitting.
+- Gap semantics: unknown/withheld frames never move `last_valid_evidence`,
+  so a long uncertain stretch still ends in `OBSERVATION_LOST`, never an
+  automatic "safe"; far evidence after a gap closes `EXIT_NOT_OBSERVED`,
+  never `EXIT_CONFIRMED`. Geometry-insufficient frames step the machine as
+  unknown but can never confirm or close an episode.

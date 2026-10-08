@@ -15,7 +15,7 @@ Updated: 2026-10-08 · Owner: Build (Primary) · Spec: `docs/superpowers/specs/2
 | M1 | 재생 기반 전체 흐름 (임무 적용→RC 오프라인 저장→업로드→조회, E01~E12) | **구현·재생 검증 완료** (C3=b2366a8, 112 passed) — 사용자 end-to-end 인수 미실시 |
 | H1 | 실제 장비 능력 확인 (PSDK/MSDK/영상/시간/MOP/RC 저장) | **진행 중** — 장비 접속·인벤토리 장치측 PASS + KSI 자체 코드 온보드 빌드 스모크 6/6(2026-10-08, `docs/verification/evidence/2026-10-08-h1-1/`). 기체 연결·DPK·시간 정합은 미실시. 계획(`docs/verification/h1-capability-plan.md`) |
 | M2 | 실제 Edge 탐지 전체 흐름 | 준비 진행 — W2 코어 + W4 PSDK 앱 장치 빌드·DPK 생성. **DPK 설치 검증 요건 확인: 기체 연결 필요(설치 시 앱 실행·버전 보고 대조)** — 기체 세션에서 설치 예정. GPU/WAL 미검증 |
-| M3 | 공간 SHADOW (지면/거리/zone 관계, episode) | **진행 중** — Spatial 코어(좌표·투영·거리·zone) 구현, 호스트 8/8×2·장치 gcc9.4 8/8 검증(2026-10-08, C11). 정확도 검증·episode는 후속. 물리 촬영 시각 미확보 시 시뮬레이션·SHADOW 유지 |
+| M3 | 공간 SHADOW (지면/거리/zone 관계, episode) | **진행 중** — Spatial 코어(C11) + **Risk/Episode 엔진(C15, 호스트 9/9×2·장치 9/9·독립 검증)** 구현. 실데이터 연결·정확도 검증은 후속. 물리 촬영 시각 미확보 시 시뮬레이션·SHADOW 유지 |
 | M4 | 제한된 규칙 ACTIVE (규칙별 승인 후) | 대기 |
 
 ## 제품화 경로 (2026-10-08 정리)
@@ -39,7 +39,7 @@ Updated: 2026-10-08 · Owner: Build (Primary) · Spec: `docs/superpowers/specs/2
 ## 현재 슬라이스
 
 - M1 acceptance(E01~E12)는 재생 하네스에서 통과: `harness/` README에 시나리오↔테스트 매핑.
-- 현재 슬라이스: **무차단 작업 우선** — W5 Risk/Episode 착수 + 실장비 세션 준비. RC/AI 줄기는 외부 입력 대기.
+- 현재 슬라이스: **W5 완료·검증(C15) + AI/RC 줄기 환경 조사 완료** — 남은 무차단 작업 탐색과 외부 입력(모델 ONNX·영상, Android 설치 승인, 기체 세션) 대기.
 - 첫 인수 목표: **L1(관측 제품)** — 사용자 방향 수용(2026-10-08); L2 병행, L3 게이트 유지.
 - 범위 밖(다음): Android 앱(빌드 환경 없음), PSDK C++ 앱(장비·SDK 환경), 제품 UI(디자인 워크스페이스), ACTIVE 경고.
 

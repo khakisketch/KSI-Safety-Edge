@@ -22,6 +22,9 @@ add_library(ksi_safety_edge_core STATIC
   src/geometry/projection.cpp
   src/spatial/distance.cpp
   src/spatial/relation.cpp
+  src/risk/policy.cpp
+  src/risk/episode.cpp
+  src/risk/engine.cpp
 )
 target_include_directories(ksi_safety_edge_core PUBLIC include)
 target_link_libraries(ksi_safety_edge_core PUBLIC Threads::Threads)
@@ -57,3 +60,4 @@ ksi_safety_edge_test(interpolation tests/test_interpolation.cpp)
 ksi_safety_edge_test(perception tests/test_perception.cpp)
 ksi_safety_edge_test(geometry tests/test_geometry.cpp)
 ksi_safety_edge_test(spatial tests/test_spatial.cpp)
+ksi_safety_edge_test(risk tests/test_risk.cpp)

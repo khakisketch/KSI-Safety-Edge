@@ -49,6 +49,7 @@ ssh ksi-manifold 'dji_app_ctl stop ksi-safety-edge'
 ```
 
 - 설치 실패 시 진단 순서: ① `dji_app_ctl status` ② `/tmp/ksi-safety-edge-boot.log` 마지막 단계 ③ `/blackbox/system/app_temp_files/ksi-safety-edge_*.log`(SDK 콘솔) — `core_init_begin`에서 멈추면 기체 링크 미접속이 원인이다.
+- H1-5 시나리오 등 수집 시간 변경: DPK 서비스는 무인자 실행이므로 재빌드 시 `-DKSI_SAFETY_EDGE_DURATION_SEC=300`으로 지정(기본 60초).
 
 - **설치 유지**가 기본(재사용). uninstall은 별도 결정 시에만.
 - DPK 런타임 로그(콘솔)는 `dji_app_mgr` 계열 로그에 섞일 수 있음 — 실패 시 `/blackbox`·app_mgr 로그 회수(권한 확인).

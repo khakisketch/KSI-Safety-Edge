@@ -1,6 +1,6 @@
 # KSI Safety Edge — 제품화 실행 계획 (workstream ledger)
 
-- 작성: 2026-10-08 · 상태: **실행 중 — W5 Risk/Episode 개발 착수**
+- 작성: 2026-10-08 · 상태: **실행 중 — W5 완료·검증(C15). AI/RC 줄기 준비 조사 완료**
 - 사용자 지시(2026-10-08): "그렇다면 문서 등 반영하고 장기적으로 개발해줘 제품을 완성하기 위해" — 6단계 경로·인수 사다리·개발 줄기를 문서로 반영하고 장기 개발을 진행.
 - 상위 기준: `docs/superpowers/specs/2026-10-08-integrated-design.md`(설계 기준본) · `docs/superpowers/plans/2026-10-08-reuse-audit-and-porting.md` §0(불변 원칙) · `docs/superpowers/product-state.md`(마일스톤).
 - 본 원장은 제품화 ①~⑥ 진행·증거·게이트를 기록한다. SI 재사용 판정·B0~W4 이력은 기존 원장에 보존.
@@ -32,9 +32,9 @@
 
 | 줄기 | 상태 | 다음 | 블로커 |
 |---|---|---|---|
-| 판단·검증 | **착수 — W5 Risk/Episode**(developer 진행 중) | 엔진+재생 GT 시험→독립 검증 | 없음 |
-| 사용 흐름(RC) | 미착수 | Android 환경 확보(승인 시 설치) | Android SDK/adb·RC 경로 미확보(부재 확인) |
-| 실제 인식(AI) | 미착수(코어·어댑터만) | 모델 산출물·대표 영상 확보 | 모델 파일 위치 미확인(제한 검색에서 미발견) |
+| 판단·검증 | **W5 완료·검증(C15)** — 순수 로직·합성 GT | 실데이터 연결은 기체/GPS GT 확보 후 | 없음(실데이터만 대기) |
+| 사용 흐름(RC) | 미착수 — 환경 조사 완료(2026-10-08): JDK 8(부족)·adb/sdkmanager/gradle 부재, dl.google.com 접근 가능, 디스크 2.9T 여유 | JDK17+cmdline-tools 설치 승인 시 착수 | 설치 승인·RC 접근 경로 |
+| 실제 인식(AI) | 조사 완료 — **장치 TensorRT 8.5.2+CUDA 11.4·`trtexec` 확인**; SI 등록 D-FINE-S(coco) 로컬 가중치 sha256=레지스트리 일치 | ONNX 확보/재export→장치 engine→smoke | ONNX 산출물(sha256 `1becd2d3…`) 위치 미확인·export 툴체인(torch/transformers) 미설치; 대표 영상 없음 |
 
 ## 4. 첫 현장시험 범위 (추천안 — 사용자 확정 대기)
 
@@ -53,14 +53,17 @@
   - lineage=(tracker_epoch, person_track, equipment_track) — tracker 재할당은 새 lineage, 합치지 않음.
   - 임계·시간 값은 정책 입력만(하드코딩 금지).
 - 시험(관찰 가능): 계약 enum 문자열 정합 · 1회 생성·중복 없음 · hysteresis/enter/exit 지속 · 경계불확실 NEAR 금지 · 관측 유실=OBSERVATION_LOST(자동 안전 종료 금지) · epoch 비합치 · geometry 보류 사유 · ACTIVE guard 양방향 · OFF 무평가 · 결정성.
+- **구현·검증 완료(C15)**: 호스트 9/9(default·ASan sanitizer-clean)·장치 gcc9.4 9/9·독립 test-runner `ses_ee45f8e2cffesWYHkfGMe2UgqU`(불변식 3종·범위 정확·하드코딩 없음). 후속(비차단): EpisodeState/EventKind ToString 직접 단언, 열린 episode 중 withheld 유지 전용 시험.
 
 ## 6. Evidence Log
 
 - 2026-10-08: 제품화 계획·줄기 문서화(본 파일·product-state·README). 무차단 조사: Android 도구(adb/sdkmanager/gradle) 부재, 안전 검출 모델 파일 미발견 → RC/AI 줄기 외부 입력 목록화. W5 착수(developer).
+- 2026-10-08: **W5 완료·검증(C15)** — Risk/Episode 엔진(순수 로직). 호스트 9/9(default)·9/9(ASan, sanitizer-clean)·장치 gcc 9.4 9/9·독립 runner `ses_ee45f8e2cffesWYHkfGMe2UgqU`: 불변식 3종(EXIT_CONFIRMED 유일 경로·갭/불확실 종료 정직성·비-shadow 출력 guard) 성립, 하드코딩 임계 없음, git 범위 정확. 후속(비차단) 2건 기록.
+- 2026-10-08: **AI/RC 줄기 준비 조사** — ① 장치: TensorRT 8.5.2+CUDA 11.4 개발 패키지·헤더·`trtexec`(/usr/src/tensorrt/bin) 존재, 저장공간 94G 여유. ② SI 등록 모델 `ksi-person-detector-dfine-s-coco`(Apache-2.0, production=BLOCKED_LEGAL_REVIEW) 로컬 가중치 sha256 `a144baff…`=MODEL_REGISTRY 일치; export 레시피(opset 17·float64→float32)·ONNX sha256 `1becd2d3…` 기록됨 — **ONNX 산출물 위치 미확인**(재export 필요 가능성; torch/transformers 미설치). ③ 대표 영상 없음. ④ RC: JDK 8·Android 도구 부재, dl.google.com 접근 가능, ffmpeg/ffprobe 존재. ⑤ 부수: `KSI-CCTV/models`에 yolo26 계열 onnx(ppe/fire) 존재 — 별도 프로젝트, 참고만.
 - (이전) B0~W4·C13: `2026-10-08-reuse-audit-and-porting.md`, `docs/verification/evidence/`.
 
 ## 7. 대기 중 결정 (비차단)
 
 - 첫 현장시험 범위 확정(§4) — 사용자.
-- 모델 산출물·대표 영상 위치 — 사용자.
-- Android 개발 환경 설치 위치·승인, RC 접근 경로 — 사용자.
+- 모델: D-FINE-S(coco)는 dev/평가 후보 확인(로컬 가중치 sha256=레지스트리). 현장용 class map 최종 모델·**ONNX 산출물 위치**·대표 영상(녹화) — 사용자.
+- Android: **JDK17+cmdline-tools 설치 승인 여부**·RC 접근 경로 — 사용자.

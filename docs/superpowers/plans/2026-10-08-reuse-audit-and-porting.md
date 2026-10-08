@@ -9,7 +9,7 @@
   3. 영상 AI 독립 실행(자세 정합 실패와 무관하게 Detection 유지) → **W2 완료(C8)**
   4. 시간 정합 품질 엔진(표본 출처·시각·오차·거절 사유) → **W2 완료(C8)**
   5. Spatial Engine(사람 발점·장비 footprint·최단거리, Replay GT) → **W3 완료(C11)**
-  6. Risk Engine(위험구역·근접·Episode Lifecycle, 독립 모듈) → 후속
+  6. Risk Engine(위험구역·근접·Episode Lifecycle, 독립 모듈) → **W5 완료(C15)**
   7. MSDK 연동(임무·MOP·오프라인 저장·증거 확인) → **사용자 방향 보정(2026-10-08): MSDK 중심 선행 검토**
   8. H1 실장비 검증 → **장비 LAN 접속됨(사용자 통보); 능력 파악 진행 중**
 
