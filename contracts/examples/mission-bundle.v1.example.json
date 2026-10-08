@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "bundle_id": "22222222-2222-4222-8222-000000000002",
+  "site_id": "22222222-2222-4222-8222-000000000001",
+  "created_at_utc": "2026-10-08T02:01:00Z",
+  "origin": "SERVER",
+  "created_by": "seed-operator",
+  "mission_snapshot": {
+    "schema_version": 1,
+    "mission_id": "22222222-2222-4222-8222-000000000003",
+    "flight_id": "22222222-2222-4222-8222-000000000004",
+    "org_id": "22222222-2222-4222-8222-000000000010",
+    "site_id": "22222222-2222-4222-8222-000000000001",
+    "mission_revision_id": "22222222-2222-4222-8222-000000000011",
+    "origin": "SERVER",
+    "created_at_utc": "2026-10-08T02:00:00Z",
+    "zones": [
+      {
+        "zone_id": "22222222-2222-4222-8222-000000000008",
+        "revision_id": "22222222-2222-4222-8222-000000000009",
+        "rule_kind": "PERSON_ENTRY",
+        "geometry_wgs84": {
+          "type": "Polygon",
+          "coordinates": [
+            [
+              [
+                127.49,
+                36.63
+              ],
+              [
+                127.4908,
+                36.63
+              ],
+              [
+                127.4908,
+                36.6307
+              ],
+              [
+                127.49,
+                36.63
+              ]
+            ]
+          ]
+        },
+        "zone_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "enabled": true
+      }
+    ],
+    "model_profiles": [
+      {
+        "model_id": "ksi-person-ppe-test",
+        "model_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "enabled": true
+      }
+    ],
+    "recording_policy": {
+      "rc_proxy": true,
+      "target_video_bitrate_bps": 1500000,
+      "target_fps": 15,
+      "segment_seconds": 300
+    },
+    "content_sha256": "dfc9157bee4b3ca2e4372f41af4ab6095fb36c64526459555310325a978b8eeb"
+  },
+  "risk_policy": {
+    "schema_version": 1,
+    "policy_id": "22222222-2222-4222-8222-000000000006",
+    "revision_id": "22222222-2222-4222-8222-000000000007",
+    "site_id": "22222222-2222-4222-8222-000000000001",
+    "content_sha256": "31662034c0613089c8280d7fda952c8159972db005eb2af5eb6f3cc2717a92e9",
+    "rules": [
+      {
+        "rule_id": "excavator-proximity-shadow",
+        "kind": "PERSON_EQUIPMENT_PROXIMITY",
+        "mode": "SHADOW",
+        "threshold_m": 4.0,
+        "hysteresis_m": 1.0,
+        "enter_duration_ms": 1200,
+        "exit_duration_ms": 1500,
+        "required_geometry_level": "METRIC_VERIFIED",
+        "enabled_equipment_classes": [
+          "excavator"
+        ],
+        "zone_revision_ids": [
+          "22222222-2222-4222-8222-000000000009"
+        ]
+      }
+    ],
+    "created_offline": false
+  },
+  "calibration_refs": [
+    {
+      "calibration_revision_id": "cal-2026-10-wide",
+      "lens_id": "wide",
+      "sha256": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "ground_model_refs": [
+    {
+      "ground_model_revision_id": "ground-plane-cheongju-01",
+      "kind": "PLANE",
+      "sha256": "3333333333333333333333333333333333333333333333333333333333333333"
+    }
+  ],
+  "bundle_sha256": "8ef766df2ab27e7c68321963fddcd3bd46e68349e98091c420dab2cb87aefad8"
+}

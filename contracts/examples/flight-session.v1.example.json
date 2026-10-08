@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "session_id": "22222222-2222-4222-8222-000000000021",
+  "flight_id": "22222222-2222-4222-8222-000000000004",
+  "edge_boot_id": "22222222-2222-4222-8222-000000000005",
+  "started_at_edge_monotonic_ns": 12883000000,
+  "ended_at_edge_monotonic_ns": 12901000000,
+  "end_reason": "COMPLETED",
+  "mission_application_ids": [
+    "22222222-2222-4222-8222-000000000020"
+  ],
+  "tracker_epochs": [
+    {
+      "camera_stream_id": "wide-0",
+      "tracker_epoch": 0,
+      "lens_id": "wide",
+      "started_at": 12883000000,
+      "ended_at": 12901000000
+    }
+  ]
+}

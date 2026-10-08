@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "event_id": "22222222-2222-4222-8222-000000000022",
+  "flight_id": "22222222-2222-4222-8222-000000000004",
+  "observation_id": "22222222-2222-4222-8222-000000000023",
+  "episode_id": null,
+  "event_type": "SPATIAL_CANDIDATE",
+  "mode": "SHADOW",
+  "detected_at_edge_monotonic_ns": 12883301000,
+  "zone_revision_id": "22222222-2222-4222-8222-000000000009",
+  "policy_revision_id": "22222222-2222-4222-8222-000000000007",
+  "evidence_artifact_ids": [
+    "22222222-2222-4222-8222-000000000024"
+  ],
+  "initial_model_output": {
+    "person": 0.91,
+    "excavator": 0.87,
+    "distance_m": 4.2
+  },
+  "observation_quality": "DEGRADED",
+  "mission_snapshot_hash": "dfc9157bee4b3ca2e4372f41af4ab6095fb36c64526459555310325a978b8eeb"
+}

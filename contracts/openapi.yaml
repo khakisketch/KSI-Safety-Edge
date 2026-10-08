@@ -1,0 +1,1652 @@
+openapi: 3.1.0
+info:
+  title: KSI Safety Edge API
+  version: 1.0.0
+  description: >-
+    Edge/RC/Core contract surface for the M1 replay slice (mission apply,
+    offline record, RC upload, evidence query). Base path is fixed to
+    /api/v1/edge. Cross-org access returns 404 (no existence leak);
+    same-org insufficient scope returns 403. Batch idempotency is keyed by
+    client_batch_id plus the canonical payload hash: same id + same content
+    is 200-idempotent, same id + different content is 409. Ingest completion
+    is honest: missing/invalid artifacts yield PARTIAL with a null
+    durable_commit_id, never a false completion.
+servers:
+  - url: http://127.0.0.1:8000/api/v1/edge
+security:
+  - bearerAuth: []
+tags:
+  - name: health
+  - name: sites
+  - name: missions
+  - name: bundles
+  - name: flights
+  - name: events
+  - name: objects
+  - name: ingest
+  - name: review
+paths:
+  /healthz:
+    get:
+      operationId: healthz
+      tags: [health]
+      summary: Liveness probe
+      security: []
+      responses:
+        '200':
+          description: Server is alive.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    const: true
+                required: [ok]
+  /sites:
+    get:
+      operationId: listSites
+      tags: [sites]
+      summary: List sites visible to the caller's org.
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Site list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Site'
+                  next_cursor:
+                    type: [string, 'null']
+                required: [items, next_cursor]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createSite
+      tags: [sites]
+      summary: Register a site (server assigns canonical id).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SiteRegister'
+      responses:
+        '200':
+          description: Site created (idempotent on same name+org).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Same name with different content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /sites/{siteId}/zone-revisions:
+    get:
+      operationId: listZoneRevisions
+      tags: [sites]
+      summary: List zone revisions for a site.
+      parameters:
+        - $ref: '#/components/parameters/SiteId'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Zone revision list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                required: [items]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createZoneRevision
+      tags: [sites]
+      summary: Append a zone revision (base revision checked optimistically).
+      parameters:
+        - $ref: '#/components/parameters/SiteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                zone_id:
+                  type: string
+                  format: uuid
+                base_revision_id:
+                  type: [string, 'null']
+                  format: uuid
+                geometry_wgs84:
+                  type: object
+                  properties:
+                    type:
+                      const: Polygon
+                    coordinates:
+                      type: array
+                      minItems: 1
+                rule_kind:
+                  type: string
+                  enum: [PERSON_ENTRY, EQUIPMENT_ENTRY, PPE_REQUIRED, RESTRICTED_AREA]
+              required: [zone_id, base_revision_id, geometry_wgs84, rule_kind]
+      responses:
+        '200':
+          description: Zone revision stored.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  zone_id:
+                    type: string
+                  revision_id:
+                    type: string
+                  durable:
+                    type: boolean
+                    const: true
+                required: [zone_id, revision_id, durable]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: base_revision_id is stale (a newer revision exists).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /sites/{siteId}/risk-policies:
+    get:
+      operationId: listRiskPolicies
+      tags: [sites]
+      summary: List risk-policy revisions for a site.
+      parameters:
+        - $ref: '#/components/parameters/SiteId'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Policy revision list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: './schemas/risk-policy.v1.schema.json'
+                  next_cursor:
+                    type: [string, 'null']
+                required: [items, next_cursor]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createRiskPolicy
+      tags: [sites]
+      summary: Append a risk-policy revision (optimistic parent check).
+      parameters:
+        - $ref: '#/components/parameters/SiteId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                expected_parent_revision_id:
+                  type: [string, 'null']
+                  format: uuid
+                policy:
+                  $ref: './schemas/risk-policy.v1.schema.json'
+              required: [expected_parent_revision_id, policy]
+      responses:
+        '200':
+          description: Policy revision stored (server verifies content_sha256).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revision_id:
+                    type: string
+                  durable:
+                    type: boolean
+                    const: true
+                required: [revision_id, durable]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: expected_parent_revision_id is stale.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /missions:
+    post:
+      operationId: createMission
+      tags: [missions]
+      summary: Register a mission snapshot row.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/mission-snapshot.v1.schema.json'
+      responses:
+        '200':
+          description: Mission row created (same revision idempotent).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mission_id:
+                    type: string
+                  mission_revision_id:
+                    type: string
+                  content_sha256:
+                    type: string
+                  site_id:
+                    type: string
+                required: [mission_id, mission_revision_id, content_sha256, site_id]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Same revision id with different content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /missions/{missionId}/snapshot:
+    get:
+      operationId: getMissionSnapshot
+      tags: [missions]
+      summary: Fetch the stored snapshot (replay uses the then-version, never latest-overwrite).
+      parameters:
+        - name: missionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The mission snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/mission-snapshot.v1.schema.json'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /mission-bundles:
+    get:
+      operationId: listMissionBundles
+      tags: [bundles]
+      summary: List mission bundles.
+      parameters:
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Bundle list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: './schemas/mission-bundle.v1.schema.json'
+                  next_cursor:
+                    type: [string, 'null']
+                required: [items, next_cursor]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createMissionBundle
+      tags: [bundles]
+      summary: Store a mission bundle (server validates bundle_sha256 and site consistency).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/mission-bundle.v1.schema.json'
+      responses:
+        '200':
+          description: Bundle stored.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bundle_id:
+                    type: string
+                  bundle_sha256:
+                    type: string
+                  status:
+                    type: string
+                    enum: [CREATED, EXISTS]
+                required: [bundle_id, bundle_sha256, status]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Same bundle id with different content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /mission-bundles/{bundleId}:
+    get:
+      operationId: getMissionBundle
+      tags: [bundles]
+      summary: Fetch a stored mission bundle.
+      parameters:
+        - name: bundleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The mission bundle.
+          content:
+            application/json:
+              schema:
+                $ref: './schemas/mission-bundle.v1.schema.json'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /flights:
+    get:
+      operationId: listFlights
+      tags: [flights]
+      summary: List flights (org-scoped).
+      parameters:
+        - name: site_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Flight list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Flight'
+                  next_cursor:
+                    type: [string, 'null']
+                required: [items, next_cursor]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: registerFlight
+      tags: [flights]
+      summary: Explicit flight registration (same flight_id + same content is 200-idempotent, different content is 409).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlightRegister'
+      responses:
+        '200':
+          description: Flight registered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flight'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Same flight_id with different content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /flights/{flightId}:
+    get:
+      operationId: getFlight
+      tags: [flights]
+      summary: Fetch a flight with derived upload state.
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      responses:
+        '200':
+          description: The flight.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Flight'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /flights/{flightId}/mission-applications:
+    get:
+      operationId: listMissionApplications
+      tags: [flights]
+      summary: Application history for a flight (config changes preserved per boot).
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      responses:
+        '200':
+          description: Application records.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: './schemas/mission-application.v1.schema.json'
+                required: [items]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: recordMissionApplication
+      tags: [flights]
+      summary: Record an Edge apply outcome (APPLY is idempotent by application_id).
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/mission-application.v1.schema.json'
+      responses:
+        '200':
+          description: Application recorded durably.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  application_id:
+                    type: string
+                  durable:
+                    type: boolean
+                    const: true
+                required: [application_id, durable]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Same application_id with different content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /flights/{flightId}/flight-sessions:
+    get:
+      operationId: listFlightSessions
+      tags: [flights]
+      summary: Edge boot sessions of a flight.
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      responses:
+        '200':
+          description: Session records.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: './schemas/flight-session.v1.schema.json'
+                required: [items]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: recordFlightSession
+      tags: [flights]
+      summary: Record an Edge session (idempotent by session_id).
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/flight-session.v1.schema.json'
+      responses:
+        '200':
+          description: Session recorded durably.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  session_id:
+                    type: string
+                  durable:
+                    type: boolean
+                    const: true
+                required: [session_id, durable]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Same session_id with different content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /flights/{flightId}/observations:batch:
+    post:
+      operationId: ingestObservationBatch
+      tags: [flights]
+      summary: Batch-upload observations (idempotent by client_batch_id + payload hash).
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObservationBatchRequest'
+      responses:
+        '200':
+          description: Batch accepted durably.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAccepted'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Same client_batch_id with different content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /flights/{flightId}/observations:
+    get:
+      operationId: listObservations
+      tags: [flights]
+      summary: List observations of a flight.
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Observation list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: './schemas/observation.v1.schema.json'
+                  next_cursor:
+                    type: [string, 'null']
+                required: [items, next_cursor]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /flights/{flightId}/events:batch:
+    post:
+      operationId: ingestEventBatch
+      tags: [flights]
+      summary: Batch-upload detection events (SHADOW only in M1).
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventBatchRequest'
+      responses:
+        '200':
+          description: Batch accepted durably.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAccepted'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Same client_batch_id with different content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /flights/{flightId}/spatial-summaries:batch:
+    post:
+      operationId: ingestSpatialSummaryBatch
+      tags: [flights]
+      summary: Batch-upload spatial summaries.
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpatialSummaryBatchRequest'
+      responses:
+        '200':
+          description: Batch accepted durably.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAccepted'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Same client_batch_id with different content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /flights/{flightId}/spatial-summaries:
+    get:
+      operationId: listSpatialSummaries
+      tags: [flights]
+      summary: List spatial summaries of a flight.
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      responses:
+        '200':
+          description: Spatial summary list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: './schemas/spatial-summary.v1.schema.json'
+                  complete:
+                    type: boolean
+                required: [items, complete]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /flights/{flightId}/flight-summaries:batch:
+    post:
+      operationId: ingestFlightSummaryBatch
+      tags: [flights]
+      summary: Batch-upload flight summaries.
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FlightSummaryBatchRequest'
+      responses:
+        '200':
+          description: Batch accepted durably.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAccepted'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Same client_batch_id with different content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /flights/{flightId}/coverage:
+    get:
+      operationId: getFlightCoverage
+      tags: [flights]
+      summary: Derived coverage from flight summaries (zero events + AI gap is still expressible).
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      responses:
+        '200':
+          description: Coverage view.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  flight_id:
+                    type: string
+                  summaries:
+                    type: array
+                    items:
+                      $ref: './schemas/flight-summary.v1.schema.json'
+                  data_completeness:
+                    type: string
+                    enum: [COMPLETE, PARTIAL, UNKNOWN]
+                required: [flight_id, summaries, data_completeness]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: Query detection events (org-scoped; cross-org rows invisible → 404 on direct access).
+      parameters:
+        - name: flight_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: site_id
+          in: query
+          required: false
+          schema:
+            type: string
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Event list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: './schemas/detection-event.v1.schema.json'
+                  next_cursor:
+                    type: [string, 'null']
+                required: [items, next_cursor]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /events/{eventId}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Fetch an event with its evidence links and annotation count.
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The event view.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event:
+                    $ref: './schemas/detection-event.v1.schema.json'
+                  evidence_artifact_ids:
+                    type: array
+                    items:
+                      type: string
+                  annotations_count:
+                    type: integer
+                    minimum: 0
+                required: [event, evidence_artifact_ids, annotations_count]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /events/{eventId}/evidence:
+    get:
+      operationId: listEventEvidence
+      tags: [events]
+      summary: Evidence artifacts linked to an event (download via /objects).
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Evidence list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        artifact_id:
+                          type: string
+                        source_kind:
+                          type: string
+                        media_type:
+                          type: string
+                        size_bytes:
+                          type: integer
+                        sha256:
+                          type: string
+                        download_url:
+                          type: string
+                      required: [artifact_id, source_kind, media_type, size_bytes, sha256, download_url]
+                required: [items]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /objects/{artifactId}:
+    get:
+      operationId: downloadObject
+      tags: [objects]
+      summary: Download a stored object (org-checked; SHA256 in header).
+      parameters:
+        - name: artifactId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Object bytes.
+          headers:
+            X-Content-SHA256:
+              description: SHA256 of the full object.
+              schema:
+                type: string
+            Content-Type:
+              description: Stored media type.
+              schema:
+                type: string
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /events/{eventId}/annotations:
+    get:
+      operationId: listAnnotations
+      tags: [events]
+      summary: List operator annotations of an event (append-only history).
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Annotation list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: './schemas/operator-annotation.v1.schema.json'
+                required: [items]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createAnnotation
+      tags: [events]
+      summary: Append an annotation (cancellation is a REVOKE_PREVIOUS record; originals immutable).
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/operator-annotation.v1.schema.json'
+      responses:
+        '200':
+          description: Annotation recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  annotation_id:
+                    type: string
+                  durable:
+                    type: boolean
+                    const: true
+                required: [annotation_id, durable]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /ingest-sessions:
+    post:
+      operationId: openIngestSession
+      tags: [ingest]
+      summary: Open an ingest session for an immutable manifest revision.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: './schemas/flight-upload-manifest.v1.schema.json'
+      responses:
+        '200':
+          description: Session opened (new or resumed).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestSessionCreated'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Same upload session bound to a different manifest.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /ingest-sessions/{uploadId}:
+    get:
+      operationId: getIngestSession
+      tags: [ingest]
+      summary: Session status for resume (server reports stored state; client resumes missing bytes).
+      parameters:
+        - name: uploadId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Session status.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestSessionStatus'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /ingest-sessions/{uploadId}/objects/{artifactId}:
+    put:
+      operationId: uploadObjectChunk
+      tags: [ingest]
+      summary: Upload object bytes (resumable via Content-Range; full-object SHA256 verified at complete).
+      parameters:
+        - name: uploadId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: artifactId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: Content-Range
+          in: header
+          required: true
+          description: Byte range of this chunk, e.g. "bytes 0-1048575/34606080".
+          schema:
+            type: string
+        - name: X-Content-SHA256
+          in: header
+          required: true
+          description: SHA256 of the full object (checked at complete time).
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        '200':
+          description: Chunk stored.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received_bytes:
+                    type: integer
+                    minimum: 0
+                  complete:
+                    type: boolean
+                required: [received_bytes, complete]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Chunk range conflicts with stored bytes.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /ingest-sessions/{uploadId}/complete:
+    post:
+      operationId: completeIngestSession
+      tags: [ingest]
+      summary: Commit a manifest revision after verifying size+SHA256 of every object. PARTIAL is honest (durable_commit_id null).
+      parameters:
+        - name: uploadId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                manifest_sha256:
+                  type: string
+                  pattern: ^[a-f0-9]{64}$
+              required: [manifest_sha256]
+      responses:
+        '200':
+          description: Commit outcome (COMMITTED or honest PARTIAL).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestCompleteResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Bound to a different manifest than the one given.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /review-jobs:
+    get:
+      operationId: listReviewJobs
+      tags: [review]
+      summary: List review jobs (P1 placeholder — record only, no execution).
+      parameters:
+        - name: flight_id
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReviewJob'
+                required: [items]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      operationId: createReviewJob
+      tags: [review]
+      summary: Submit a review job record (P1 placeholder — record only, no execution; idempotent by idempotency_key).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                flight_id:
+                  type: string
+                job_kind:
+                  type: string
+                  enum: [FP_REVIEW, FN_AUDIT_SAMPLE, COMPLEX_BEHAVIOR_REVIEW]
+                idempotency_key:
+                  type: string
+                  minLength: 1
+              required: [flight_id, job_kind, idempotency_key]
+      responses:
+        '200':
+          description: Job recorded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  job_id:
+                    type: string
+                  status:
+                    type: string
+                required: [job_id, status]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Same idempotency_key with different content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /review-jobs/{jobId}:
+    get:
+      operationId: getReviewJob
+      tags: [review]
+      summary: Fetch a review job record (P1 placeholder).
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The job record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewJob'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Development static token (KSI_DEV_TOKENS in W2).
+  parameters:
+    SiteId:
+      name: siteId
+      in: path
+      required: true
+      schema:
+        type: string
+    FlightId:
+      name: flightId
+      in: path
+      required: true
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 500
+        default: 50
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Same-org caller lacks scope (cross-org access is 404 instead).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found, or not visible to the caller's org.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unprocessable:
+      description: Schema/domain contract violation (see details).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+        message:
+          type: string
+          minLength: 1
+        request_id:
+          type: string
+        details:
+          description: Machine-readable detail (rule codes, field paths).
+      required: [code, message]
+    BatchAccepted:
+      type: object
+      additionalProperties: false
+      properties:
+        accepted_ids:
+          type: array
+          items:
+            type: string
+        duplicate_ids:
+          type: array
+          items:
+            type: string
+        durable:
+          type: boolean
+          const: true
+        server_batch_id:
+          type: string
+      required: [accepted_ids, duplicate_ids, durable, server_batch_id]
+    IngestSessionCreated:
+      type: object
+      additionalProperties: false
+      properties:
+        upload_id:
+          type: string
+        missing_artifact_ids:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [NEW, RESUMING]
+      required: [upload_id, missing_artifact_ids, status]
+    IngestSessionStatus:
+      type: object
+      additionalProperties: false
+      properties:
+        upload_id:
+          type: string
+        status:
+          type: string
+          enum: [OPEN, COMMITTED, PARTIAL]
+        uploaded_artifact_ids:
+          type: array
+          items:
+            type: string
+        missing_artifact_ids:
+          type: array
+          items:
+            type: string
+        manifest_sha256:
+          type: string
+      required: [upload_id, status, uploaded_artifact_ids, missing_artifact_ids, manifest_sha256]
+    IngestCompleteResult:
+      type: object
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum: [COMMITTED, PARTIAL]
+        durable_commit_id:
+          type: [string, 'null']
+          format: uuid
+        manifest_sha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        missing_artifact_ids:
+          type: array
+          items:
+            type: string
+        committed_at_utc:
+          type: [string, 'null']
+          format: date-time
+      required: [status, durable_commit_id, manifest_sha256, missing_artifact_ids, committed_at_utc]
+    BatchRequestBase:
+      type: object
+      properties:
+        client_batch_id:
+          type: string
+          minLength: 1
+    ObservationBatchRequest:
+      allOf:
+        - $ref: '#/components/schemas/BatchRequestBase'
+        - type: object
+          additionalProperties: false
+          properties:
+            client_batch_id:
+              type: string
+              minLength: 1
+            items:
+              type: array
+              items:
+                $ref: './schemas/observation.v1.schema.json'
+          required: [client_batch_id, items]
+    EventBatchRequest:
+      allOf:
+        - $ref: '#/components/schemas/BatchRequestBase'
+        - type: object
+          additionalProperties: false
+          properties:
+            client_batch_id:
+              type: string
+              minLength: 1
+            items:
+              type: array
+              items:
+                $ref: './schemas/detection-event.v1.schema.json'
+          required: [client_batch_id, items]
+    SpatialSummaryBatchRequest:
+      allOf:
+        - $ref: '#/components/schemas/BatchRequestBase'
+        - type: object
+          additionalProperties: false
+          properties:
+            client_batch_id:
+              type: string
+              minLength: 1
+            items:
+              type: array
+              items:
+                $ref: './schemas/spatial-summary.v1.schema.json'
+          required: [client_batch_id, items]
+    FlightSummaryBatchRequest:
+      allOf:
+        - $ref: '#/components/schemas/BatchRequestBase'
+        - type: object
+          additionalProperties: false
+          properties:
+            client_batch_id:
+              type: string
+              minLength: 1
+            items:
+              type: array
+              items:
+                $ref: './schemas/flight-summary.v1.schema.json'
+          required: [client_batch_id, items]
+    Site:
+      type: object
+      additionalProperties: false
+      properties:
+        site_id:
+          type: string
+        org_id:
+          type: string
+        name:
+          type: string
+      required: [site_id, org_id, name]
+    SiteRegister:
+      type: object
+      additionalProperties: false
+      properties:
+        org_id:
+          type: string
+        name:
+          type: string
+          minLength: 1
+      required: [org_id, name]
+    FlightRegister:
+      type: object
+      additionalProperties: false
+      properties:
+        flight_id:
+          type: string
+        site_id:
+          type: string
+        rc_device_id:
+          type: string
+        mission_id:
+          type: string
+        mission_revision_id:
+          type: string
+        bundle_sha256:
+          type: string
+          pattern: ^[a-f0-9]{64}$
+        started_at_utc:
+          type: string
+          format: date-time
+        ended_at_utc:
+          type: [string, 'null']
+          format: date-time
+      required: [flight_id, site_id, rc_device_id, mission_id, mission_revision_id, bundle_sha256, started_at_utc, ended_at_utc]
+    Flight:
+      type: object
+      additionalProperties: false
+      properties:
+        flight_id:
+          type: string
+        site_id:
+          type: string
+        org_id:
+          type: string
+        rc_device_id:
+          type: string
+        mission_id:
+          type: string
+        mission_revision_id:
+          type: string
+        bundle_sha256:
+          type: string
+        started_at_utc:
+          type: string
+          format: date-time
+        ended_at_utc:
+          type: [string, 'null']
+          format: date-time
+        upload_state:
+          type: string
+          enum: [LOCAL_ONLY, UPLOADING, PARTIAL, COMPLETE, UNKNOWN]
+        completeness:
+          type: object
+          additionalProperties: false
+          properties:
+            manifests_total:
+              type: integer
+              minimum: 0
+            manifests_committed:
+              type: integer
+              minimum: 0
+            missing_artifact_count:
+              type: integer
+              minimum: 0
+          required: [manifests_total, manifests_committed, missing_artifact_count]
+      required: [flight_id, site_id, org_id, rc_device_id, mission_id, mission_revision_id, bundle_sha256, started_at_utc, ended_at_utc, upload_state, completeness]
+    ReviewJob:
+      type: object
+      additionalProperties: false
+      description: P1 placeholder — record only, no execution.
+      properties:
+        job_id:
+          type: string
+        flight_id:
+          type: string
+        job_kind:
+          type: string
+          enum: [FP_REVIEW, FN_AUDIT_SAMPLE, COMPLEX_BEHAVIOR_REVIEW]
+        status:
+          type: string
+          enum: [SUBMITTED, QUEUED, RUNNING, SUCCEEDED, FAILED, INSUFFICIENT_EVIDENCE, SKIPPED]
+        idempotency_key:
+          type: string
+      required: [job_id, flight_id, job_kind, status, idempotency_key]

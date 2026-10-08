@@ -1,0 +1,13 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ksi-contracts"
+version = "0.1.0"
+description = "KSI Safety Edge contract canonicalization and validators (W1a)"
+requires-python = ">=3.12"
+dependencies = ["jsonschema", "referencing", "rfc8785"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ksi_contracts"]

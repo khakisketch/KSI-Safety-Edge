@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/flight-summary.v1.schema.json",
+  "title": "FlightSummary v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "summary_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "edge_boot_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "started_at_edge_monotonic_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "ended_at_edge_monotonic_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "ai_uptime_ratio": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "covered_frames": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "skipped_frames": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "gaps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "VIDEO_GAP",
+              "AI_GAP",
+              "MOP_EVENT_GAP",
+              "UNKNOWN"
+            ]
+          },
+          "start_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "duration_ms": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "kind",
+          "start_ms",
+          "duration_ms",
+          "reason"
+        ]
+      }
+    },
+    "min_verified_person_equipment_distance_m": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "person_count_max": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "equipment_count_max": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "quality_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "created_at_edge_monotonic_ns": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "schema_version",
+    "summary_id",
+    "flight_id",
+    "edge_boot_id",
+    "session_id",
+    "started_at_edge_monotonic_ns",
+    "ended_at_edge_monotonic_ns",
+    "ai_uptime_ratio",
+    "covered_frames",
+    "skipped_frames",
+    "gaps",
+    "min_verified_person_equipment_distance_m",
+    "person_count_max",
+    "equipment_count_max",
+    "quality_reasons",
+    "created_at_edge_monotonic_ns"
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "flight_id": "00000000-0000-4000-8000-000000000002",
+  "mission_revision_id": "00000000-0000-4000-8000-000000000005",
+  "mission_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "rc_device_id": "00000000-0000-4000-8000-000000000011",
+  "edge_boot_id": "00000000-0000-4000-8000-000000000009",
+  "event_count": 1,
+  "edge_last_seq": 1,
+  "rc_received_last_seq": 1,
+  "flight_started_at_utc": "2026-10-08T02:05:00Z",
+  "flight_ended_at_utc": "2026-10-08T02:35:00Z",
+  "artifacts": [
+    {
+      "artifact_id": "00000000-0000-4000-8000-000000000012",
+      "source_kind": "RC_PROXY_SEGMENT",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "size_bytes": 34560000,
+      "media_type": "video/mp4",
+      "required": true,
+      "segment_index": 0
+    },
+    {
+      "artifact_id": "00000000-0000-4000-8000-000000000013",
+      "source_kind": "EDGE_SNAPSHOT",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "size_bytes": 120000,
+      "media_type": "image/jpeg",
+      "required": true,
+      "segment_index": null
+    }
+  ],
+  "gaps": [
+    {
+      "kind": "AI_GAP",
+      "start_ms": 400000,
+      "duration_ms": 2500,
+      "reason": "edge_model_restarting"
+    }
+  ],
+  "manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+}

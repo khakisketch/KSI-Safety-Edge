@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/flight-session.v1.schema.json",
+  "title": "FlightSession v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "session_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "edge_boot_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "started_at_edge_monotonic_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "ended_at_edge_monotonic_ns": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0
+    },
+    "end_reason": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "COMPLETED",
+        "CRASHED",
+        "UNKNOWN",
+        null
+      ]
+    },
+    "mission_application_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "tracker_epochs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "camera_stream_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tracker_epoch": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "lens_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "started_at": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ended_at": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "required": [
+          "camera_stream_id",
+          "tracker_epoch",
+          "lens_id",
+          "started_at",
+          "ended_at"
+        ]
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "session_id",
+    "flight_id",
+    "edge_boot_id",
+    "started_at_edge_monotonic_ns",
+    "ended_at_edge_monotonic_ns",
+    "end_reason",
+    "mission_application_ids",
+    "tracker_epochs"
+  ]
+}

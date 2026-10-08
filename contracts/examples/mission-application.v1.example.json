@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "application_id": "22222222-2222-4222-8222-000000000020",
+  "flight_id": "22222222-2222-4222-8222-000000000004",
+  "bundle_id": "22222222-2222-4222-8222-000000000002",
+  "bundle_sha256": "8ef766df2ab27e7c68321963fddcd3bd46e68349e98091c420dab2cb87aefad8",
+  "edge_boot_id": "22222222-2222-4222-8222-000000000005",
+  "effective_edge_seq": 0,
+  "applied": true,
+  "rejection_reasons": [],
+  "excluded_items": [],
+  "applied_at_edge_monotonic_ns": 12883000000
+}

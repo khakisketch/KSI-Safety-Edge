@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "finding_id": "00000000-0000-4000-8000-000000000018",
+  "job_id": "00000000-0000-4000-8000-000000000019",
+  "flight_id": "00000000-0000-4000-8000-000000000002",
+  "event_id": "00000000-0000-4000-8000-000000000015",
+  "finding_type": "FP_CANDIDATE",
+  "model_id": "local-vlm-experiment",
+  "model_digest": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "prompt_version": "fp-review-v1",
+  "evidence_ids": [
+    "00000000-0000-4000-8000-000000000013"
+  ],
+  "time_window_ms": {
+    "from": 120000,
+    "to": 130000
+  },
+  "rationale": "예시: 가림으로 판별 신뢰가 낮음. 사람이 검토해야 함.",
+  "human_adjudication_status": "UNREVIEWED"
+}

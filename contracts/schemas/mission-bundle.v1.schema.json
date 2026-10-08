@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/mission-bundle.v1.schema.json",
+  "title": "MissionBundle v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "bundle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "site_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "created_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "origin": {
+      "type": "string",
+      "enum": [
+        "SERVER",
+        "RC_LOCAL"
+      ]
+    },
+    "created_by": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "mission_snapshot": {
+      "$ref": "./mission-snapshot.v1.schema.json"
+    },
+    "risk_policy": {
+      "$ref": "./risk-policy.v1.schema.json"
+    },
+    "calibration_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "calibration_revision_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lens_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "calibration_revision_id",
+          "lens_id",
+          "sha256"
+        ]
+      }
+    },
+    "ground_model_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "ground_model_revision_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "PLANE",
+              "DEM",
+              "UNKNOWN"
+            ]
+          },
+          "sha256": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^[a-f0-9]{64}$"
+          }
+        },
+        "required": [
+          "ground_model_revision_id",
+          "kind",
+          "sha256"
+        ]
+      }
+    },
+    "bundle_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "bundle_id",
+    "site_id",
+    "created_at_utc",
+    "origin",
+    "created_by",
+    "mission_snapshot",
+    "risk_policy",
+    "calibration_refs",
+    "ground_model_refs",
+    "bundle_sha256"
+  ]
+}

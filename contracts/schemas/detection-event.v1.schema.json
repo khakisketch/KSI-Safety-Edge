@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/detection-event.v1.schema.json",
+  "title": "DetectionEvent v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "event_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "observation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "episode_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "DETECTED_ONLY",
+        "SPATIAL_CANDIDATE",
+        "ZONE_CANDIDATE",
+        "PROXIMITY_CANDIDATE",
+        "RISK_EVENT"
+      ]
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "SHADOW",
+        "ACTIVE"
+      ]
+    },
+    "detected_at_edge_monotonic_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "zone_revision_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "policy_revision_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "evidence_artifact_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "initial_model_output": {
+      "type": "object"
+    },
+    "observation_quality": {
+      "type": "string",
+      "enum": [
+        "VALID",
+        "DEGRADED",
+        "UNKNOWN"
+      ]
+    },
+    "mission_snapshot_hash": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "event_id",
+    "flight_id",
+    "observation_id",
+    "episode_id",
+    "event_type",
+    "mode",
+    "detected_at_edge_monotonic_ns",
+    "zone_revision_id",
+    "policy_revision_id",
+    "evidence_artifact_ids",
+    "initial_model_output",
+    "observation_quality",
+    "mission_snapshot_hash"
+  ]
+}

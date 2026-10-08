@@ -1,0 +1,105 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "finding_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "job_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "event_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uuid"
+    },
+    "finding_type": {
+      "type": "string",
+      "enum": [
+        "FP_CANDIDATE",
+        "FN_CANDIDATE",
+        "UNCERTAIN",
+        "NO_ISSUE_FOUND",
+        "INSUFFICIENT_EVIDENCE"
+      ]
+    },
+    "model_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "prompt_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "evidence_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "time_window_ms": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "to": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ]
+    },
+    "rationale": {
+      "type": "string",
+      "minLength": 1
+    },
+    "human_adjudication_status": {
+      "type": "string",
+      "enum": [
+        "UNREVIEWED",
+        "ACCEPTED",
+        "REJECTED"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "finding_id",
+    "job_id",
+    "flight_id",
+    "event_id",
+    "finding_type",
+    "model_id",
+    "model_digest",
+    "prompt_version",
+    "evidence_ids",
+    "time_window_ms",
+    "rationale",
+    "human_adjudication_status"
+  ],
+  "title": "VLMReviewFinding v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/review-finding.v1.schema.json"
+}

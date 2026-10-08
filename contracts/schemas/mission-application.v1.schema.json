@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/mission-application.v1.schema.json",
+  "title": "MissionApplication v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "application_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "bundle_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "bundle_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "edge_boot_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "effective_edge_seq": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "applied": {
+      "type": "boolean"
+    },
+    "rejection_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "excluded_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "item_kind": {
+            "type": "string",
+            "enum": [
+              "ZONE",
+              "MODEL_PROFILE",
+              "RULE",
+              "CALIBRATION"
+            ]
+          },
+          "item_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "item_kind",
+          "item_id",
+          "reason"
+        ]
+      }
+    },
+    "applied_at_edge_monotonic_ns": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "required": [
+    "schema_version",
+    "application_id",
+    "flight_id",
+    "bundle_id",
+    "bundle_sha256",
+    "edge_boot_id",
+    "effective_edge_seq",
+    "applied",
+    "rejection_reasons",
+    "excluded_items",
+    "applied_at_edge_monotonic_ns"
+  ]
+}

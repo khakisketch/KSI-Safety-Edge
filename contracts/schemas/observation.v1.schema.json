@@ -1,0 +1,238 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "observation_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "mission_revision_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "edge_boot_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "source_kind": {
+      "const": "PSDK_EDGE"
+    },
+    "edge_frame_seq": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "edge_frame_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lens_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "frame_received_monotonic_ns": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "model_digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "sync_quality": {
+      "type": "string",
+      "enum": [
+        "VALID",
+        "DEGRADED",
+        "UNKNOWN",
+        "INVALID"
+      ]
+    },
+    "geometry_status": {
+      "type": "string",
+      "enum": [
+        "VERIFIED",
+        "UNVERIFIED",
+        "WITHHELD"
+      ]
+    },
+    "telemetry_refs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "topic": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_timestamp_ns": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "edge_receive_monotonic_ns": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sample_age_ms": {
+            "type": "number",
+            "minimum": 0
+          },
+          "timestamp_basis": {
+            "type": "string",
+            "enum": [
+              "PSDK_LOCAL_RECEIVE",
+              "FC_TOPIC_TIME",
+              "ESTIMATED",
+              "UNKNOWN"
+            ]
+          },
+          "quality": {
+            "type": "string",
+            "enum": [
+              "VALID",
+              "DEGRADED",
+              "UNKNOWN",
+              "INVALID"
+            ]
+          }
+        },
+        "required": [
+          "topic",
+          "edge_receive_monotonic_ns",
+          "sample_age_ms",
+          "timestamp_basis",
+          "quality"
+        ]
+      }
+    },
+    "detections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "detection_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "class_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "bbox_xyxy_px": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "items": false,
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "track_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "position_wgs84": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "lon": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "lat": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "uncertainty_radius_m": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "lon",
+              "lat",
+              "uncertainty_radius_m"
+            ]
+          }
+        },
+        "required": [
+          "detection_id",
+          "class_id",
+          "score",
+          "bbox_xyxy_px",
+          "track_id",
+          "position_wgs84"
+        ]
+      }
+    },
+    "quality_reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "zone_revision_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "observation_id",
+    "flight_id",
+    "mission_revision_id",
+    "edge_boot_id",
+    "source_kind",
+    "edge_frame_seq",
+    "edge_frame_id",
+    "lens_id",
+    "frame_received_monotonic_ns",
+    "model_digest",
+    "sync_quality",
+    "geometry_status",
+    "telemetry_refs",
+    "detections",
+    "quality_reasons",
+    "zone_revision_ids"
+  ],
+  "title": "EdgeObservation v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/observation.v1.schema.json"
+}
