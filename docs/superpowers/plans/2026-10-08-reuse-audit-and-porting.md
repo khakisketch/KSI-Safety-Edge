@@ -74,7 +74,9 @@
 - 2026-10-08: **W2 완료(C8)** — `edge/` 최소 코어 구현(developer) + Primary 수정(cross-domain bracket 금지 `kDomainMismatch`, 테스트 e4 추가). 호스트 검증: 기본/ASan-UBSan ctest **6/6 ×2**, 저장소 회귀 **112 passed**. 독립 test-runner `ses_ee521787affeS0RHz1LG0OEFux`: 빌드 6/6 ×2, 의미론 4건 인코딩 확인, 추출 diff·sha256 일치, 격리 점검, 승격 금지 경로 확인 — **mismatch 없음**. 실장비/PSDK/GPU/WAL은 여전히 미검증.
 - 2026-10-08: Manifold 3 사내 LAN 접속·전원 ON(사용자 통보) → H1 접속·능력 파악 착수. 사용자 방향: **MSDK(가시) 중심 선행 + 이후 PSDK** 검토.
 - 2026-10-08: **H1-1 장치측 PASS + 개발 루프 스모크 PASS(C9)** — `ksi-manifold`(172.30.1.33) SSH, L4T R35.5.0/Ubuntu 20.04.6/gcc 9.4/cmake 3.16.3, `/open_app` 94G writable, PSDK 3.16.0 상주, KSI DPK 미설치 확인. 우리 `edge/` 코어를 장치에서 빌드·ctest **6/6**. 발견: **장치 시계 −6일·RTC 1970·NTP inactive**(H1-5 전 정비 필요), 기체 링크 인터페이스 NO-CARRIER(기체 미접속), DJI 자격증명 보유 미확인. 증거: `docs/verification/evidence/2026-10-08-h1-1/`.
-- (다음) 사용자와 개발 순서 논의(MSDK vs PSDK) → 자격증명·DPK 세션·기체 연결·시계 정비 결정.
+- 2026-10-08: **DPK 세션 패키지 준비** — `docs/verification/h1-dpk-session-checklist.md`. 기존 빌드 DPK(`ksi-psdk-tap` v00.01.00.02, 무인자 기본 out=/tmp/ksi-psdk-tap.ndjson·60초)로 H1-3/4/5 1차 raw 수집 가능. 실행은 사용자 승인(설치) + 기체/RC 연결 필요.
+- 2026-10-08: **W3 Spatial Engine 착수**(백그라운드 developer): 좌표·투영·footprint 거리·zone 관계 + Replay GT, SHADOW 전용.
+- (다음) W3 검증·커밋 → 사용자 세션 결정 시 DPK 세션 실행 → H1-3/4/5 1차 결과.
 
 ## 5. 후속 결정 대기(제품을 막지 않음)
 
