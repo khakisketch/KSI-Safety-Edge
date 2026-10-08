@@ -112,4 +112,5 @@ E01 bundle PREPARE/APPLY digest 일치·적용 이력 서버 조회 / E02 APPLY 
 
 ## 진행 기록 (Evidence Log)
 
-- 2026-10-08: 저장소 골격 + 원본 snapshot + 설계 기준본 반영 (C0 예정).
+- 2026-10-08: 저장소 골격 + 원본 snapshot + 설계 기준본 반영 (C0=3df6963).
+- 2026-10-08: W1a+W1b 완료, C1=050d80f — `pytest contracts libs` **66 passed**; 레거시 16개 파일 byte-identity; 감사 변형 8종 전부 규칙코드(INTERVAL_ORDER 등)로 거부; OpenAPI 39 ops freeze(30 paths). Primary 재실행 검증 완료.

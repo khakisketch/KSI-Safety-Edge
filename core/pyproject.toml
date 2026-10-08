@@ -1,0 +1,21 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ksi-core"
+version = "0.1.0"
+description = "KSI Safety Edge core server (M1 replay slice)"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "sqlalchemy>=2",
+  "ksi-contracts",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "httpx"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ksi_core"]
