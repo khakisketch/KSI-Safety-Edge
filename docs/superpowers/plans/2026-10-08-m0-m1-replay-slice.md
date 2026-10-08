@@ -109,6 +109,8 @@ E01 bundle PREPARE/APPLY digest 일치·적용 이력 서버 조회 / E02 APPLY 
 - 각 W 종료 시 해당 pytest 실행 + 리뷰(개발자 보고 + Primary diff 점검).
 - 전체 통합 후 **test-runner 독립 실행**: `scripts/run_all_tests.sh` 전체 green + E2E 재실행. 결과를 본 원장에 기록.
 - 커밋: C0 골격 → C1 contracts → C2 core → C3 harness(+E2E) → C4 정비. 커밋 메시지에 작업 범위·검증 명령 기록.
+- **독립 검증 완료(세션 `ses_ee55644fbffeadowlgn4EWYwSg`, 2026-10-08, HEAD b2366a8):**
+  `bash scripts/run_all_tests.sh` → **112 passed (37.93s)**; E2E 14 passed ×2회 재현; 스냅샷 diff 0 + manifest 58/58; E07·E12 테스트 본문 확인(실질 단언). 미검증: 실기 장비·실네트워크·Android 앱.
 
 ## 진행 기록 (Evidence Log)
 

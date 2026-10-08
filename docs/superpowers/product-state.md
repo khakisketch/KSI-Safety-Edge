@@ -11,17 +11,26 @@ Updated: 2026-10-08 · Owner: Build (Primary) · Spec: `docs/superpowers/specs/2
 
 | ID | 내용 | 상태 |
 |---|---|---|
-| M0 | 설계·계약 기준선 (FR 통합, 공통 계약/해시/검증 규칙) | 진행 중 |
-| M1 | 재생 기반 전체 흐름 (임무 적용→RC 오프라인 저장→업로드→조회, 장애 복구 E01~E12) | 진행 중 |
+| M0 | 설계·계약 기준선 (스키마 13종, 도메인 검증, OpenAPI 39 ops) | **완료** (C1=050d80f, 독립 검증) |
+| M1 | 재생 기반 전체 흐름 (임무 적용→RC 오프라인 저장→업로드→조회, E01~E12) | **구현·재생 검증 완료** (C3=b2366a8, 112 passed) — 사용자 end-to-end 인수 미실시 |
 | H1 | 실제 장비 능력 확인 (PSDK/MSDK/영상/시간/MOP/RC 저장) | 대기 (장비 접속·환경 확인 필요) |
-| M2 | 실제 Edge 탐지 전체 흐름 | 대기 |
+| M2 | 실제 Edge 탐지 전체 흐름 | 대기 (H1 후) |
 | M3 | 공간 SHADOW (지면/거리/zone 관계, episode) | 대기 |
 | M4 | 제한된 규칙 ACTIVE (규칙별 승인 후) | 대기 |
 
-## 현재 슬라이스 (M0+M1)
+## 현재 슬라이스
 
-- Acceptance: `docs/superpowers/plans/2026-10-08-m0-m1-replay-slice.md`의 E01~E12가 재생 환경에서 통과.
-- 범위 밖(이번): Android 앱(빌드 환경 없음), PSDK C++ 앱(장비·SDK 환경 필요), 제품 UI(디자인 워크스페이스), ACTIVE 경고.
+- M1 acceptance(E01~E12)는 재생 하네스에서 통과: `harness/` README에 시나리오↔테스트 매핑.
+- 범위 밖(다음): Android 앱(빌드 환경 없음), PSDK C++ 앱(장비·SDK 환경), 제품 UI(디자인 워크스페이스), ACTIVE 경고.
+- 다음 후보 작업: H1 장비 능력 시험 준비(장비 환경 확인 필요) 또는 M2 준비(실제 모델·SDK 대조).
+
+## 실행 방법 (개발)
+
+```bash
+bash scripts/setup_env.sh          # 환경 (멱등)
+bash scripts/run_all_tests.sh      # 전체 검증 (112 tests)
+.venv/bin/python -m uvicorn ksi_core.app:create_app --factory --port 8000
+```
 
 ## 원칙 (변경 금지)
 
@@ -34,8 +43,6 @@ Updated: 2026-10-08 · Owner: Build (Primary) · Spec: `docs/superpowers/specs/2
 
 ## 후속 입력 대기 (제품을 막지 않는 항목)
 
-- v1.0 전체 FR 원문 (없으면 추적표 기준으로 확정)
-- 기존 `khakisketch/ksi-platform` 코드 대조 (재사용 범위)
-- 장비 SDK/펌웨어 조합·설치 환경 (H1)
-- 운영 결정: 권한 기간·보존 정책·현장 수 (D06)
-- UI/디자인 단계 착수 시 OpenDesign 연결 확인 (D08)
+- v1.0 전체 FR 원문 (없으면 추적표 기준으로 확정) · 기존 `khakisketch/ksi-platform` 코드 대조
+- 장비 SDK/펌웨어 조합·설치 환경 (H1) · 운영 결정: 권한 기간·보존 정책·현장 수 (D06)
+- UI 단계 착수 시 OpenDesign 연결 확인 (D08) · E12 관련 세부 편차는 harness/README에 기록
