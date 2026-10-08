@@ -80,6 +80,7 @@
 - 2026-10-08: **W4 PSDK 앱 "KSI AI Payload"(ksi-safety-edge) 완료·장치 빌드(C12)** — 우리 코어(프레임큐·provenance·matching)를 실제 PSDK 콜백에 연결한 v0 앱. 장치(gcc 9.4/cmake 3.16.3)에서 바이너리(2.78MB) + **DPK 587KB** 생성. Manifold 적응 글루 8파일을 출처·sha와 함께 추출(NOTICE). **센서 시각 fail-closed**(has_source_time=false 고정, recv 등급만). 자격증명은 gitignore 경로에만 저장(커밋 0 확인 — `git grep` 시크릿 0건). 독립 test-runner `ses_ee49b57b9ffeURavMylHEovfzq`: 자격증명 위생·호스트 8/8·장치 신규 빌드·DPK·의미론·글루 충실성 전부 통과, mismatch 0. 발견·수정: 자격증명 템플릿 주석의 `*/` 조기 종료 버그(Primary 수정 후 장치 재빌드 성공).
 - 2026-10-08: **DPK 설치 검증 요건 규명 + 수정(C13)** — 설치 검증은 앱을 잠깐 실행해 `DjiCore_SetFirmwareVersion` 보고를 control Version과 대조하는 구조(app_mgr 문자열 실측). 수정: `SetFirmwareVersion`/`SetAlias` 호출 + 부트 로그(`/tmp/ksi-safety-edge-boot.log`). 기체 미접속 3차 시도에서 부트 로그가 `core_init_begin`에서 멈춤 → **`DjiCore_Init`이 기체 링크를 대기하며, 설치 자체가 기체 연결 세션에서만 가능**함을 확인. 증거: `docs/verification/evidence/2026-10-08-dpk-install-verification.md`.
 - (다음) 기체/RC 연결 세션에서 우리 DPK 설치·기동 → NDJSON 회수 → H1-3/4/5 1차.
+- 이후 제품화 6단계 실행·진행은 `docs/superpowers/plans/2026-10-08-productization-plan.md`(신규 원장)에서 기록한다. 본 원장은 SI 재사용 판정·B0~W4 이력을 보존한다.
 
 ## 5. 후속 결정 대기(제품을 막지 않음)
 
