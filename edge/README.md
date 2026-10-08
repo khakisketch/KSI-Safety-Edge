@@ -45,7 +45,8 @@ Build dirs (`edge/build*/`) are git-ignored.
 | `include/ksi_safety/risk/policy.hpp`, `src/risk/policy.cpp` | `RiskRule` mirroring `risk-policy.v1` rule fields (kind/mode/threshold/hysteresis/enter/exit/required geometry/class + revision filters); contract `ToString()`s. |
 | `include/ksi_safety/risk/episode.hpp`, `src/risk/episode.cpp` | Episode states/events/close reasons (`EXIT_CONFIRMED` / `EXIT_NOT_OBSERVED` / `OBSERVATION_LOST` / `SESSION_END`) + compact evidence summary. |
 | `include/ksi_safety/risk/engine.hpp`, `src/risk/engine.cpp` | `RiskEngine`: per-rule OFF/applicability/geometry/ACTIVE guards, interval + zone evidence classification, doc 17 §3 episode state machine per (rule, lineage) with explicit `max_gap_ms`, `Tick()` gap sweep, `EndSession()`. |
-| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `dfine`, `tracker`, `geometry`, `spatial`, `risk`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
+| `include/ksi_safety/session/session.hpp`, `src/session/session.cpp` | `SafetySession`: synthetic orchestrator wiring one tracker + `MinDistancePersonEquipment` / point-polygon zone relations into TWO risk engines (proximity + zone; see two-engine note below). Caller-provided ground observations per track per tick; `Tick()` / gap `Sweep()` / `EndSession()` / `ResetTracker()` (epoch split, no cross-epoch merge). |
+| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `dfine`, `tracker`, `geometry`, `spatial`, `risk`, `session`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
 
 ## The core rule (why this exists)
 
@@ -161,3 +162,33 @@ source times earns `kSourceVerified`, and only that grade sets
   automatic "safe"; far evidence after a gap closes `EXIT_NOT_OBSERVED`,
   never `EXIT_CONFIRMED`. Geometry-insufficient frames step the machine as
   unknown but can never confirm or close an episode.
+
+## Session scope / limits (honest)
+
+- Synthetic-only orchestration. Verified here: proximity approach → single
+  `NEAR` create → separation → `EXIT_CONFIRMED`; zone inside → create,
+  envelope-boundary frames never confirm, leave → `EXIT_CONFIRMED`,
+  `zone_revision_ids` filtering (`NOT_APPLICABLE` + `ZoneRevisionNotListed`
+  for non-listed revisions); observation loss → `OBSERVATION_LOST` (never
+  `EXIT_CONFIRMED`); tracker reset → old episode lost, new-epoch evidence
+  mints a new id (no merge); below-required geometry → `WITHHELD` with no
+  episodes; two identical scripts → byte-identical logs — all via `ctest`,
+  plus ASan/UBSan clean on this host.
+- SHADOW-only. The session never grants activation, so ACTIVE rules degrade
+  to effective SHADOW; nothing here may drive real position-based warnings.
+- Ground points are caller-provided. Pose composition from telemetry and
+  footpoint/footprint estimation from pixels are NOT included — the session
+  consumes `GroundObservation`s keyed by tracker `track_id` and computes
+  from them. Duplicate observations for one id in one tick resolve last-wins;
+  observations for non-live ids are ignored.
+- Point distance only. The proximity interval is the point distance on both
+  ends (`lower_m == upper_m`); no uncertainty-interval expansion is applied.
+- Two-engine composition. `RiskEngine::Evaluate` runs every rule on one
+  frame, so proximity and zone rules live in separate engines; a pair-frame
+  never touches a zone rule and a zone-frame never touches a proximity rule.
+- Multi-revision per-tick caveat. Episode state is keyed per (rule,
+  lineage), not per revision: one zone rule fed several candidate revisions
+  in a tick steps a single lineage through each revision in configured zone
+  order (last frame wins within the tick). Prefer one revision per zone rule
+  when per-revision episodes matter.
+- `Sweep()`/`EndSession()` carry no track snapshot (tracker state untouched).

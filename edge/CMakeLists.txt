@@ -27,6 +27,7 @@ add_library(ksi_safety_edge_core STATIC
   src/risk/policy.cpp
   src/risk/episode.cpp
   src/risk/engine.cpp
+  src/session/session.cpp
 )
 target_include_directories(ksi_safety_edge_core PUBLIC include)
 target_link_libraries(ksi_safety_edge_core PUBLIC Threads::Threads)
@@ -65,3 +66,4 @@ ksi_safety_edge_test(tracker tests/test_tracker.cpp)
 ksi_safety_edge_test(geometry tests/test_geometry.cpp)
 ksi_safety_edge_test(spatial tests/test_spatial.cpp)
 ksi_safety_edge_test(risk tests/test_risk.cpp)
+ksi_safety_edge_test(session tests/test_session.cpp)
