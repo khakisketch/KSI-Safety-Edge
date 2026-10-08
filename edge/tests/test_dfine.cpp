@@ -33,6 +33,123 @@ DfineConfig SmallConfig(float threshold) {
     return cfg;
 }
 
+// Straightforward channel-outer reference bilinear with the pinned sampling
+// semantics (half-pixel-centered, edge-clamped, float32, /255, RGB->CHW).
+// Independent of PreprocessRgb's loop structure; used for equivalence checks.
+void ReferenceBilinear(const std::uint8_t* rgb, int src_w, int src_h,
+                       float* out_chw, int dst_w, int dst_h) {
+    const float scale_x = static_cast<float>(src_w) / static_cast<float>(dst_w);
+    const float scale_y = static_cast<float>(src_h) / static_cast<float>(dst_h);
+    constexpr float kRescale = 1.0F / 255.0F;
+    for (int c = 0; c < 3; ++c) {
+        float* plane = out_chw + static_cast<std::size_t>(c) *
+                                         static_cast<std::size_t>(dst_w) *
+                                         static_cast<std::size_t>(dst_h);
+        for (int dy = 0; dy < dst_h; ++dy) {
+            const float sy =
+                (static_cast<float>(dy) + 0.5F) * scale_y - 0.5F;
+            int y0 = static_cast<int>(std::floor(sy));
+            float fy = sy - static_cast<float>(y0);
+            if (y0 < 0) {
+                y0 = 0;
+                fy = 0.0F;
+            } else if (y0 >= src_h - 1) {
+                y0 = src_h - 1;
+                fy = 0.0F;
+            }
+            const int y1 = (y0 + 1 <= src_h - 1) ? y0 + 1 : y0;
+            for (int dx = 0; dx < dst_w; ++dx) {
+                const float sx =
+                    (static_cast<float>(dx) + 0.5F) * scale_x - 0.5F;
+                int x0 = static_cast<int>(std::floor(sx));
+                float fx = sx - static_cast<float>(x0);
+                if (x0 < 0) {
+                    x0 = 0;
+                    fx = 0.0F;
+                } else if (x0 >= src_w - 1) {
+                    x0 = src_w - 1;
+                    fx = 0.0F;
+                }
+                const int x1 = (x0 + 1 <= src_w - 1) ? x0 + 1 : x0;
+                const std::size_t sc = static_cast<std::size_t>(c);
+                const std::size_t sw = static_cast<std::size_t>(src_w);
+                const float v00 = static_cast<float>(
+                    rgb[(static_cast<std::size_t>(y0) * sw +
+                         static_cast<std::size_t>(x0)) *
+                            3 +
+                        sc]);
+                const float v10 = static_cast<float>(
+                    rgb[(static_cast<std::size_t>(y0) * sw +
+                         static_cast<std::size_t>(x1)) *
+                            3 +
+                        sc]);
+                const float v01 = static_cast<float>(
+                    rgb[(static_cast<std::size_t>(y1) * sw +
+                         static_cast<std::size_t>(x0)) *
+                            3 +
+                        sc]);
+                const float v11 = static_cast<float>(
+                    rgb[(static_cast<std::size_t>(y1) * sw +
+                         static_cast<std::size_t>(x1)) *
+                            3 +
+                        sc]);
+                const float top = v00 + (v10 - v00) * fx;
+                const float bottom = v01 + (v11 - v01) * fx;
+                plane[static_cast<std::size_t>(dy) *
+                          static_cast<std::size_t>(dst_w) +
+                      static_cast<std::size_t>(dx)] =
+                    (top + (bottom - top) * fy) * kRescale;
+            }
+        }
+    }
+}
+
+DfineConfig SizedConfig(int w, int h) {
+    DfineConfig cfg;
+    cfg.num_classes = 3;
+    cfg.num_queries = 2;
+    cfg.input_width = w;
+    cfg.input_height = h;
+    return cfg;
+}
+
+void FillPattern(std::vector<std::uint8_t>& rgb, int w, int h) {
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            const std::size_t b = (static_cast<std::size_t>(y) *
+                                       static_cast<std::size_t>(w) +
+                                   static_cast<std::size_t>(x)) *
+                                  3;
+            rgb[b + 0] =
+                static_cast<std::uint8_t>((x * 37 + y * 51 + 11) % 256);
+            rgb[b + 1] =
+                static_cast<std::uint8_t>((x * 53 + y * 29 + 101) % 256);
+            rgb[b + 2] =
+                static_cast<std::uint8_t>((x * 17 + y * 71 + 197) % 256);
+        }
+    }
+}
+
+bool CheckEquivalence(int src_w, int src_h, int dst_w, int dst_h,
+                      const char* label) {
+    std::vector<std::uint8_t> rgb(static_cast<std::size_t>(src_w) * src_h * 3);
+    FillPattern(rgb, src_w, src_h);
+    std::vector<float> got(static_cast<std::size_t>(3) * dst_w * dst_h);
+    std::vector<float> want(static_cast<std::size_t>(3) * dst_w * dst_h);
+    const DfineConfig cfg = SizedConfig(dst_w, dst_h);
+    if (!PreprocessRgb(rgb.data(), src_w, src_h, got.data(), cfg)) {
+        CHECK(false, label);
+        return false;
+    }
+    ReferenceBilinear(rgb.data(), src_w, src_h, want.data(), dst_w, dst_h);
+    bool ok = true;
+    for (std::size_t i = 0; i < want.size() && ok; ++i) {
+        ok = Near(got[i], want[i], 1e-6F);
+    }
+    CHECK(ok, label);
+    return ok;
+}
+
 }  // namespace
 
 int main() {
@@ -260,6 +377,16 @@ int main() {
             CHECK(Near(dets[0].score, 0.88079708F, 1e-5F),
                   "tie score is sigmoid(2)");
         }
+    }
+    // ---- 12) optimized preprocess matches reference bilinear ----
+    {
+        CheckEquivalence(3, 2, 5, 4, "3x2->5x4 matches reference");
+        CheckEquivalence(7, 5, 4, 3, "7x5->4x3 matches reference");
+        CheckEquivalence(1, 1, 4, 4, "1x1->4x4 matches reference");
+    }
+    // ---- 13) identity fast path matches the general formula ----
+    {
+        CheckEquivalence(5, 4, 5, 4, "5x4->5x4 identity matches reference");
     }
     if (edge_test::failures == 0) {
         std::printf("dfine: all checks passed\n");
