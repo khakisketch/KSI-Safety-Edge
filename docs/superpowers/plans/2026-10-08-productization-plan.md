@@ -34,7 +34,7 @@
 |---|---|---|---|
 | 판단·검증 | **W5 완료·검증(C15)** — 순수 로직·합성 GT | 실데이터 연결은 기체/GPS GT 확보 후 | 없음(실데이터만 대기) |
 | 사용 흐름(RC) | 미착수 — 환경 조사 완료(2026-10-08): JDK 8(부족)·adb/sdkmanager/gradle 부재, dl.google.com 접근 가능, 디스크 2.9T 여유 | JDK17+cmdline-tools 설치 승인 시 착수 | 설치 승인·RC 접근 경로 |
-| 실제 인식(AI) | W6-A~W8(C16~C19) + ONNX export(`96b8e0f3…`/`1cf17f7c…`) + **TRT engine 빌드 성공**(fp16 25MB `4cf3419b…`, 출력 1×300×80/1×300×4, **~62.9qps·16ms**, Orin NX·TRT 8.5.2) | **다음(재개 시): W9 C++ 런타임 어댑터**(engine 로드→추론→decode, Python 참조 대비 정확도 smoke) | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
+| 실제 인식(AI) | W6-A~W8(C16~C19) + ONNX export(`96b8e0f3…`/`1cf17f7c…`) + **TRT engine 빌드 성공**(fp16 `4cf3419b…`, ~62.9qps·16ms) + **W9 fp16 smoke PASS**(gating 9/9·2/2, top-1 0.8980/0.9161, ~62–72ms·14–16qps·RSS 1.4GB) | W9 마무리(fp32 진단→독립 검증→C23) → **W9-FU 지연 분해** → **Replay 통합**(주기 독립: Detection/Tracking/Spatial, **출처 실측/추적/예측 구분**, 15FPS+tracking 옵션·미관측 구간/지연 기록, 영상 구간→공간 판단 수행/보류 검증) | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
 
 ## 4. 첫 현장시험 범위 (추천안 — 사용자 확정 대기)
 
@@ -69,6 +69,10 @@
 - 2026-10-08: **TRT 1차 빌드 실패 → opset16 재export** — TensorRT 8.5.2가 opset-17 `LayerNormalization` 미지원(8.6+ 내장 op, 플러그인 없음) 실측 → exporter가 LayerNorm을 기본 op로 분해하는 **opset 16으로 재export**(정합성 동일 확인) 후 **engine 재빌드 진행 중**(trtexec fp16, Orin NX·TRT 8.5.2).
 - 2026-10-08: **GitHub 배포(검토용·비공개)** — `github.com/khakisketch/ksi-safety-edge` (C20 `ab5e229` 시점, main 브랜치). 배포 전 시크릿 스캔 통과(실제 DJI 자격증명은 `.gitignore`로 미추적 — 템플릿 `.example`만 추적, 과거 커밋 이력에도 실제 값 없음), 저장소 4.3MB/233파일. 목적: 사용자 검토. 공개 전환·collaborator 추가는 요청 시.
 - 2026-10-08: **TRT engine 빌드 성공(재빌드, op16·fp16)** — `dfine-s-coco.fp16.op16.engine`(25MB, sha256 `4cf3419b…`) 생성·로드·실행 **PASSED**. 출력 `logits 1×300×80`·`pred_boxes 1×300×4`(모델 계약 일치), trtexec random-input 기준 **~62.9 qps·평균 지연 16.15ms(GPU 15.85ms)**. 주의: random 입력 — 실제 정확도는 W9 런타임 어댑터에서 Python/ORT 참조와 비교 검증 예정. 경고: enqueue-bound(옵션: CUDA graph)·compute variance 3.3%.
+- 2026-10-09: **사용자 리뷰(C22 검토) 수용 — W9 진행 지시** — W9 수용 항목: ①실제 이미지 C++ 추론 성공 ②Python/ORT 참조와 클래스·점수·bbox 비교 ③전처리·후처리 일관성 ④연속 추론 FPS·지연·메모리 ⑤Detection/Tracking 계약 연결 ⑥엔진 오류 시 안전 전이. **정확도 검증 없이 공간 파이프라인에 연결 금지**. 모델: D-FINE=사람/일반차량 기반으로 사용, 중장비·PPE 모델은 실데이터 후 비교·통합(사용자 권고 — 기존 기록과 정합). 62.9qps는 engine 단독 수치 — 전체 파이프라인 60fps 검증 아님(W9에서 측정).
+- 2026-10-09: **사용자 W9 중간 리뷰 지침 수용** — ①FP32 교차검증은 **진단용**: 꼬리 차이가 FP32에서도 유지되면 정밀도 외 원인 조사, FP32에서 사라져도 FP16 오류 아님. 고신뢰 검출 일치+성능 충분 시 **FP16 기본 엔진 유지**. ②W9 후 **지연 분해 측정**(전처리/TRT 추론/후처리 단계별 ms — 비동기 실행 동기화 보정). ③Replay 통합에서 30FPS 고집 불필요 — 예: **15FPS 탐지 + 프레임 간 tracking**, 단 **미관측 시간 구간·탐지 지연 기록 필수**. ④다음 단계 핵심 기준: 모델 추가가 아니라 **영상 한 구간이 들어왔을 때 KSI Safety가 어떤 객체·공간 관계를 관측했는지 설명 가능한가**(→ Replay 통합).
+- 2026-10-09: **사용자 Replay 통합 원칙 추가 수용** — **Detection/Tracking/Spatial 갱신 주기를 독립 관리**. 탐지 사이 위치는 **추적·예측 결과이지 새 측정이 아님** — 출처(실측/추적/예측) 구분 없이 공간거리 계산에 사용 금지(잘못된 확신 방지). 지표 분리 측정: ①Detection=추론 FPS·지연 ②Tracking=갱신 주기·ID 연속성·객체 유실률 ③Spatial=유효 거리·위치 계산 비율·추정 오차·갱신 지연 ④Observation=출처·신뢰도. 14~16FPS는 처리량이며 **영상 입력→RC 경고 전체 지연이 아님**. **W9 후 핵심 검증: 실제 영상 구간에서 사람·차량 추적 + 텔레메트리 품질에 따른 공간 판단 수행/보류의 정확성 — 성공 시 핵심 파이프라인 실질 연결로 판단.**
+- 2026-10-09: **W9 완료·검증(C23)** — C++ TensorRT 런타임(`TensorRtRuntime`, fail-closed T1~T8, TRT OFF stub 경로) + `dfine_trt_smoke`(수용기준: score≥0.2 동일클래스 IoU≥0.5·|Δscore|≤0.05, top-1 필수, tail 정보 표시). 호스트 14/14×2(stub)·장치 gcc 9.4 14/14(TRT ON)·독립 runner `ses_ee382e2f6ffer4hqUUQAyN55FZ`: fp16 smoke 양 이미지 **PASS**(top-1 0.8980/0.9161 vs 참조 0.8984/0.9158, gating 9/9·2/2, tail 3/3·10/10, ~61ms·16.3qps·RSS ~1.4GB), 실패 전이 clean exit 1×2, 범위 정확. **FP32 진단(Primary)**: 꼬리 실패 라인들이 fp32에서 dscore ≤0.0013·IoU ≥0.997로 일치 → **fp16 수치 재순위가 원인 확정, FP16 기본 유지**(fp32 engine은 진단용). 미검증: 실영상·thermal soak(H1-6)·단계별 지연 분해(→ W9-FU).
 - (이전) B0~W4·C13: `2026-10-08-reuse-audit-and-porting.md`, `docs/verification/evidence/`.
 
 ## 7. 대기 중 결정 (비차단)

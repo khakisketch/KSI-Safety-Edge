@@ -47,7 +47,9 @@ Build dirs (`edge/build*/`) are git-ignored.
 | `include/ksi_safety/risk/episode.hpp`, `src/risk/episode.cpp` | Episode states/events/close reasons (`EXIT_CONFIRMED` / `EXIT_NOT_OBSERVED` / `OBSERVATION_LOST` / `SESSION_END`) + compact evidence summary. |
 | `include/ksi_safety/risk/engine.hpp`, `src/risk/engine.cpp` | `RiskEngine`: per-rule OFF/applicability/geometry/ACTIVE guards, interval + zone evidence classification, doc 17 §3 episode state machine per (rule, lineage) with explicit `max_gap_ms`, `Tick()` gap sweep, `EndSession()`. |
 | `include/ksi_safety/session/session.hpp`, `src/session/session.cpp` | `SafetySession`: synthetic orchestrator wiring one tracker + `MinDistancePersonEquipment` / point-polygon zone relations into TWO risk engines (proximity + zone; see two-engine note below). Caller-provided ground observations per track per tick; `Tick()` / gap `Sweep()` / `EndSession()` / `ResetTracker()` (epoch split, no cross-epoch merge). |
-| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `dfine`, `tracker`, `geometry`, `spatial`, `risk`, `session`, `chain`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
+| `include/ksi_safety/perception/tensorrt_runtime.hpp`, `src/perception/tensorrt_runtime.cpp` | `TensorRtRuntime`: serialized-engine adapter behind `DfineInferenceFn` (`Run` matches the injected-inference signature, so `DfineDetector` decodes engine outputs into `Detection`s with unchanged preprocess/decode). Validates bindings `pixel_values` 1×3×640×640 → `logits` 1×300×80 + `pred_boxes` 1×300×4 (float32 I/O); device buffers allocated once; H2D → enqueueV2 → sync → D2H; fail-closed T1–T8 (false + empty outputs, never partial, never throws). Stub build (`KSI_SAFETY_EDGE_ENABLE_TENSORRT=OFF`, default): `Available()==false`, no TRT/CUDA dependency. No `DetectorPort` wrapper (see `dfine_detector.hpp` rationale); no spatial/session wiring. |
+| `tools/dfine_trt_smoke.cpp` | `dfine_trt_smoke` (built only with TRT ON): real-image smoke — `--engine PATH --input PATH --expected PATH [--iters N]`; gates expected lines with score ≥ 0.2 (top-1 always gates) vs. same-class top-12 C++ detections at IoU ≥ 0.5 and \|Δscore\| ≤ 0.05; tail lines (score < 0.2) reported only; reports mean/p95 latency, qps, VmRSS before/after; `SMOKE_RESULT PASS\|FAIL`. |
+| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `dfine`, `tracker`, `geometry`, `spatial`, `risk`, `session`, `chain`, `tensorrt`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
 
 ## The core rule (why this exists)
 
@@ -164,6 +166,58 @@ source times earns `kSourceVerified`, and only that grade sets
   automatic "safe"; far evidence after a gap closes `EXIT_NOT_OBSERVED`,
   never `EXIT_CONFIRMED`. Geometry-insufficient frames step the machine as
   unknown but can never confirm or close an episode.
+
+## TensorRT runtime + smoke (W9)
+
+Off by default (host builds stay dependency-free):
+
+```sh
+# Host: stub build, all 14 groups incl. tensorrt run green.
+cmake -S edge -B edge/build -DKSI_SAFETY_EDGE_ENABLE_SANITIZERS=OFF
+cmake --build edge/build -j4
+ctest --test-dir edge/build --output-on-failure
+
+# Device (Jetson, TRT 8.5 + CUDA 11.4): real backend + smoke tool.
+cmake -S . -B build -DKSI_SAFETY_EDGE_ENABLE_TENSORRT=ON
+cmake --build build -j4
+ctest --output-on-failure
+./dfine_trt_smoke --engine /open_app/ksi-dev/dfine-export-20261008/dfine-s-coco.fp16.op16.engine \
+  --input /open_app/ksi-dev/dfine-export-20261008/trt-inputs/single_person.rgb640.bin \
+  --expected /open_app/ksi-dev/dfine-export-20261008/trt-inputs/single_person.expected.txt \
+  --iters 200
+```
+
+`KSI_SAFETY_EDGE_ENABLE_TENSORRT=ON` finds `NvInfer.h` (hint
+`/usr/include/aarch64-linux-gnu`) and `nvinfer` + `cudart` (hints
+`/usr/local/cuda-11.4`, `/usr/lib/aarch64-linux-gnu`) and stops with
+`FATAL_ERROR` if any is missing.
+
+## TensorRT scope / limits (honest)
+
+- Engine/inputs are pre-staged device artifacts
+  (`/open_app/ksi-dev/dfine-export-20261008/`): the engine
+  (`dfine-s-coco.fp16.op16.engine`), the raw-RGB inputs, and the
+  Python/ORT reference expectation files live there read-only. This repo
+  tracks no weights, no images, no reference outputs.
+- Correctness scope is reference comparison only: C++ detections vs. the
+  ORT reference at IoU ≥ 0.5 and |Δscore| ≤ 0.05 on the staged corpus
+  frames. Gating lines are expected detections with score ≥ 0.2 (the top-1
+  reference line always gates); tail lines (score < 0.2) are reported but
+  never gate. Rationale: the fp16 product engine is numerically exact at
+  high confidence, but its noise floor shifts low scores and re-ranks the
+  top-12 tail — gating all 12 lines would fail on precision noise, not on
+  transport or decode errors. Operating thresholds are policy-driven later;
+  high-confidence detections are the acceptance bar here. No
+  detection-quality, mAP, or robustness claim is made.
+- No spatial/session wiring in this milestone: the adapter stops at the
+  `Detection` contract (`DfineDetector` → `vector<Detection>`). Feeding
+  tracker/session/risk from live engine output is later work.
+- No full-pipeline 60 fps claim: `--iters` measures `Detect()` (preprocess +
+  engine + decode) latency/qps plus process VmRSS before/after. Thermal
+  soak and long-run stability are deferred to H1-6.
+- One `IExecutionContext` per `TensorRtRuntime`: concurrent `Run()` on one
+  object needs external synchronization. Engine I/O must be float32
+  (fp16-internal compute is fine; half I/O is rejected, not converted).
 
 ## Chain scope / limits (honest)
 
