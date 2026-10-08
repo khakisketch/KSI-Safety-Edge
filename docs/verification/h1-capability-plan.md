@@ -99,14 +99,15 @@
 
 | 항목 | 상태 |
 |---|---|
-| H1-1 인벤토리 | NOT_RUN |
-| H1-2 샘플 빌드 | NOT_RUN |
-| H1-3 FC/짐벌 | NOT_RUN |
-| H1-4 Liveview/프레임 | NOT_RUN |
-| H1-5 시간 정합 | NOT_RUN |
+| H1-1 인벤토리 | **부분 PASS(장치측, 2026-10-08)** — 접속·도구체인·저장·PSDK·설치앱 확인. 기체/RC 버전은 미확인(수동 항목) |
+| H1-2 샘플 빌드 | 미착수 — 단, **KSI 자체 코드 스모크 빌드 PASS**(`edge/` 코어, gcc 9.4/cmake 3.16.3, ctest 6/6. 증거: `docs/verification/evidence/2026-10-08-h1-1/`) |
+| H1-3 FC/짐벌 | NOT_RUN — 기체 링크 인터페이스(l4tbr0/rndis0) NO-CARRIER, 기체 미접속 상태 |
+| H1-4 Liveview/프레임 | NOT_RUN — 상동. DPK 설치 필요(KSI DPK 미설치 확인) |
+| H1-5 시간 정합 | NOT_RUN — 장치 시계 이상 발견(RTC=1970, NTP inactive, 호스트 대비 −6일) — 세션 전 정비 필요 |
 | H1-6 소크 | NOT_RUN |
-| H1-7 RC | NOT_RUN |
-| H1-8 DPK(H1b) | NOT_RUN |
+| H1-7 RC | NOT_RUN — RC 접근 경로 미확보 |
+| H1-8 DPK(H1b) | NOT_RUN — tap DPK 3종 staging 존재(Aug 12), 미설치 |
 
+- 장치 접속 경로: `~/.ssh/config`의 `ksi-manifold`(172.30.1.33, dji, 키 `ksi_manifold_ed25519`). 작업 루트 `/open_app/ksi-dev`(94G 여유).
 - 결과는 product-state·원장에 요약하고, 설계 변경이 필요하면 스펙 개정 이력으로 남긴다.
 - H1 PASS가 ACTIVE 승인이 아님을 유지: 규칙별 실측(G2/G3)은 별도 게이트.

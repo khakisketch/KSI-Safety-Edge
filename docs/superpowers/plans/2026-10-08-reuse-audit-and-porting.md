@@ -73,11 +73,17 @@
 - 2026-10-08: **B0 완료(C7=5662f2f)** — B0-1~B0-5 실측, 로그 `docs/verification/evidence/2026-10-08-b0/`. WAL 9그룹·GPU·PSDK 실행 경로는 BLOCKED로 명시.
 - 2026-10-08: **W2 완료(C8)** — `edge/` 최소 코어 구현(developer) + Primary 수정(cross-domain bracket 금지 `kDomainMismatch`, 테스트 e4 추가). 호스트 검증: 기본/ASan-UBSan ctest **6/6 ×2**, 저장소 회귀 **112 passed**. 독립 test-runner `ses_ee521787affeS0RHz1LG0OEFux`: 빌드 6/6 ×2, 의미론 4건 인코딩 확인, 추출 diff·sha256 일치, 격리 점검, 승격 금지 경로 확인 — **mismatch 없음**. 실장비/PSDK/GPU/WAL은 여전히 미검증.
 - 2026-10-08: Manifold 3 사내 LAN 접속·전원 ON(사용자 통보) → H1 접속·능력 파악 착수. 사용자 방향: **MSDK(가시) 중심 선행 + 이후 PSDK** 검토.
-- (다음) 장비 접속 결과·MSDK/PSDK 순서 논의 → W3(Spatial) 또는 MSDK 슬라이스 선택.
+- 2026-10-08: **H1-1 장치측 PASS + 개발 루프 스모크 PASS(C9)** — `ksi-manifold`(172.30.1.33) SSH, L4T R35.5.0/Ubuntu 20.04.6/gcc 9.4/cmake 3.16.3, `/open_app` 94G writable, PSDK 3.16.0 상주, KSI DPK 미설치 확인. 우리 `edge/` 코어를 장치에서 빌드·ctest **6/6**. 발견: **장치 시계 −6일·RTC 1970·NTP inactive**(H1-5 전 정비 필요), 기체 링크 인터페이스 NO-CARRIER(기체 미접속), DJI 자격증명 보유 미확인. 증거: `docs/verification/evidence/2026-10-08-h1-1/`.
+- (다음) 사용자와 개발 순서 논의(MSDK vs PSDK) → 자격증명·DPK 세션·기체 연결·시계 정비 결정.
 
 ## 5. 후속 결정 대기(제품을 막지 않음)
 
+- **개발 순서(2026-10-08 논의 중)**: MSDK 가시성 우선 vs PSDK 증거 우선 — 사용자 결정 대기. 권고: PSDK 주도 + MSDK 병행(§ 사용자 보고 참조).
+- DJI 자격증명(`dji_sdk_app_info.h`/user_app_id) 보유·발급 — PSDK 실행/DPK의 선행 조건.
+- DPK 설치·기동 승인(propeller-off·기체/RC 연결 세션) — H1-3~6 게이트.
+- 기체·RC를 Manifold/작업대에 연결할 세션 일정(현재 l4tbr0 NO-CARRIER).
+- 장치 시계 정비(NTP/수동, RTC 1970) — H1-5 신뢰성에 직접 영향.
+- MSDK 개발 환경 위치(이 DGX vs 별도 PC) + RC Plus 2 adb 연결 경로 — MSDK 트랙 착수 조건.
 - sqlite3-dev 확보 경로(CI 컨테이너/장비 빌드 중 택일) — WAL 재검증에 필요.
 - NvInfer/TensorRT 헤더·런타임 확보(장비 이미지) — GPU 어댑터 검증에 필요.
-- DJI 자격증명·PSDK fetch 승인 — H1-2/DPK 단계.
 - 모델 후보(기존 Safety person/equipment 산출물 vs D-FINE) 자료 확보 — W3 이후.
