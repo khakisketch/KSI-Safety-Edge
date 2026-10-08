@@ -1,17 +1,17 @@
 # KSI Safety Edge — SI 자산 재사용 감사·이식 원장 (workstream ledger)
 
-- 작성: 2026-10-08 (Build 전환 후) · 상태: **B0 완료(격리 빌드·테스트 실측)**, W2(최소 파이프라인) 진행
+- 작성: 2026-10-08 (Build 전환 후) · 상태: **B0 완료**, **W2 최소 코어 완료(C8, 호스트 검증)** — H1 접속·능력 파악 착수
 - 사용자 지시(승인 범위): ① H1 전 SI 자산 정밀 감사 ② 재사용/독립 경계와 중복 최소화 계획 ③ 격리 환경에서 실제 빌드·실행 ④ 재사용 모듈 확정 후 Safety Edge 최소 실행 파이프라인 연결 ⑤ SI 운영 코드·제품 계약 변경 금지 ⑥ H1 없이 기체 통합 완료 주장 금지.
 - 감사 정적 보고서(plan 위치): `/home/ksi/.opencode/plan/2026-10-08-ksi-safety-edge-reuse-audit.md`
 - 확정 개발 순서(2026-10-08 사용자 보정):
-  1. 기존 코드 격리 빌드·테스트 → **완료(B0)**
-  2. 영상·텔레메트리 수집 계층 분리(PSDK와 Replay가 공통 계약) → W2
-  3. 영상 AI 독립 실행(자세 정합 실패와 무관하게 Detection 유지) → W2
-  4. 시간 정합 품질 엔진(표본 출처·시각·오차·거절 사유) → W2
+  1. 기존 코드 격리 빌드·테스트 → **완료(B0=5662f2f)**
+  2. 영상·텔레메트리 수집 계층 분리(PSDK와 Replay가 공통 계약) → **W2 완료(C8)**
+  3. 영상 AI 독립 실행(자세 정합 실패와 무관하게 Detection 유지) → **W2 완료(C8)**
+  4. 시간 정합 품질 엔진(표본 출처·시각·오차·거절 사유) → **W2 완료(C8)**
   5. Spatial Engine(사람 발점·장비 footprint·최단거리, Replay GT) → 후속
   6. Risk Engine(위험구역·근접·Episode Lifecycle, 독립 모듈) → 후속
-  7. MSDK 연동(임무·MOP·오프라인 저장·증거 확인) → 후속
-  8. H1 실장비 검증 → 후속(장비 접속/세션 필요)
+  7. MSDK 연동(임무·MOP·오프라인 저장·증거 확인) → **사용자 방향 보정(2026-10-08): MSDK 중심 선행 검토**
+  8. H1 실장비 검증 → **장비 LAN 접속됨(사용자 통보); 능력 파악 진행 중**
 
 ## 0. 불변 원칙 (사용자 지시 6항 + 시간 3단 분리)
 
@@ -58,20 +58,22 @@
 | `psdk-app`/`psdk-tap`(SDK 실행 경로) | **빌드 미실행** | PSDK fetch·DJI 자격증명·장비 필요 | H1/후속. 순수 로직(pairing/ndjson)만 검증됨 |
 | `risk`/`shadow`/`pipeline` 오케스트레이션·SI Mission/Core sync/waypoint | **재사용 안 함** | 감사 §5 | W5/W6에서 SE 독립 구현 |
 
-## 3. W2 — 최소 실행 파이프라인 (수집 분리·AI 독립·시간 품질) — 진행 중
+## 3. W2 — 최소 실행 파이프라인 (수집 분리·AI 독립·시간 품질) — **완료(C8)**
 
 **범위:** SE repo에 `edge/` C++17 프로젝트 신설(호스트 빌드·ctest 가능, 외부 의존 없음).
-- capture: 공통 `IFrameSource`/`ITelemetrySource` 계약 + `frame_queue` 최소 diff 채택(출처 주석) + synthetic/replay 두 소스로 공통 계약 입증.
+- capture: `frame_queue` 최소 diff 채택(출처 주석·원본 sha256 기록) — bounded ingress.
 - time: ① `provenance`(시각 출처 등급) ② `matching`(동일 시간축 검증·최대 gap·수신 기준 등급) ③ `interpolation`(검증된 bracket에서만 SLERP 등) — 3단 분리, 각각 거절 사유.
-- perception: `DetectorPort` 추상 + 파이프라인이 **정합 실패와 무관하게 프레임당 1회 추론**, 자세 등급을 별도 필드로 부착(`DETECTED_ONLY` ↔ `SPATIAL_ELIGIBLE`), 공간 계산은 미포함.
-**필수 테스트(원칙 고정):** telemetry 0이어도 Detection 1회 실행 / recv-only는 `RECEIVE_*`에서 승격 불가 / 400Hz 근접 + 지연 프레임 시 `capture_verified=false` / rollback·동일표본 재독 구분 / bracket 없으면 보간 거부 / SLERP 수학(반각·wrap).
-**금지:** SI namespace/헤더 직수입(추출 파일 제외), flight/mission/core-sync 코드 반입, 의존성 추가, WAL 의존 설계(현재 BLOCKED).
+- perception: `DetectorPort` 추상 + 파이프라인이 **정합 실패와 무관하게 프레임당 1회 추론**, 자세 등급을 별도 필드(`kNone|kReceiveNearest|kSourceVerified`)로 부착, `spatial_eligible`은 `kSourceVerified`에서만 true. 공간 계산은 미포함.
+**필수 테스트(원칙 고정, 구현·통과):** telemetry 0이어도 Detection 1회 실행 / recv-only 승격 불가 / 400Hz 근접 + 지연 프레임 시 `capture_verified=false` / rollback·동일표본 재독 구분 / bracket 없으면 보간 거부 / SLERP 수학(반각·wrap) / **cross-domain 검증 시각은 bracket 불가(`kDomainMismatch`)**.
+**금지 준수:** SI namespace 직수입 없음(추출 파일 1쌍 예외+출처 명시), flight/mission/core-sync 코드 0, 의존성 추가 0, WAL 의존 없음.
 
 ## 4. Evidence Log
 
 - 2026-10-08: 정적 감사(산출 보고서)·독립 검증(ses_ee5420310ffe3KrAfzIdKh6LbP, ses_ee536573fffeVH1pLaV2gDgnAo) 완료. 사용자 순서 보정 반영.
-- 2026-10-08: **B0 완료** — B0-1~B0-5 실측(위 표), 로그 `docs/verification/evidence/2026-10-08-b0/`. WAL 9그룹·GPU·PSDK 실행 경로는 BLOCKED로 명시.
-- (다음) W2 구현·검증 → C7/C8 커밋 기록.
+- 2026-10-08: **B0 완료(C7=5662f2f)** — B0-1~B0-5 실측, 로그 `docs/verification/evidence/2026-10-08-b0/`. WAL 9그룹·GPU·PSDK 실행 경로는 BLOCKED로 명시.
+- 2026-10-08: **W2 완료(C8)** — `edge/` 최소 코어 구현(developer) + Primary 수정(cross-domain bracket 금지 `kDomainMismatch`, 테스트 e4 추가). 호스트 검증: 기본/ASan-UBSan ctest **6/6 ×2**, 저장소 회귀 **112 passed**. 독립 test-runner `ses_ee521787affeS0RHz1LG0OEFux`: 빌드 6/6 ×2, 의미론 4건 인코딩 확인, 추출 diff·sha256 일치, 격리 점검, 승격 금지 경로 확인 — **mismatch 없음**. 실장비/PSDK/GPU/WAL은 여전히 미검증.
+- 2026-10-08: Manifold 3 사내 LAN 접속·전원 ON(사용자 통보) → H1 접속·능력 파악 착수. 사용자 방향: **MSDK(가시) 중심 선행 + 이후 PSDK** 검토.
+- (다음) 장비 접속 결과·MSDK/PSDK 순서 논의 → W3(Spatial) 또는 MSDK 슬라이스 선택.
 
 ## 5. 후속 결정 대기(제품을 막지 않음)
 

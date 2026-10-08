@@ -15,4 +15,5 @@ harness/var/
 # build artifacts
 dist/
 build/
+edge/build*/
 *.egg-info/
