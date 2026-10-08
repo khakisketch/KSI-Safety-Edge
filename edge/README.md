@@ -47,8 +47,8 @@ Build dirs (`edge/build*/`) are git-ignored.
 | `include/ksi_safety/risk/episode.hpp`, `src/risk/episode.cpp` | Episode states/events/close reasons (`EXIT_CONFIRMED` / `EXIT_NOT_OBSERVED` / `OBSERVATION_LOST` / `SESSION_END`) + compact evidence summary. |
 | `include/ksi_safety/risk/engine.hpp`, `src/risk/engine.cpp` | `RiskEngine`: per-rule OFF/applicability/geometry/ACTIVE guards, interval + zone evidence classification, doc 17 §3 episode state machine per (rule, lineage) with explicit `max_gap_ms`, `Tick()` gap sweep, `EndSession()`. |
 | `include/ksi_safety/session/session.hpp`, `src/session/session.cpp` | `SafetySession`: synthetic orchestrator wiring one tracker + `MinDistancePersonEquipment` / point-polygon zone relations into TWO risk engines (proximity + zone; see two-engine note below). Caller-provided ground observations per track per tick; `Tick()` / gap `Sweep()` / `EndSession()` / `ResetTracker()` (epoch split, no cross-epoch merge). |
-| `include/ksi_safety/perception/tensorrt_runtime.hpp`, `src/perception/tensorrt_runtime.cpp` | `TensorRtRuntime`: serialized-engine adapter behind `DfineInferenceFn` (`Run` matches the injected-inference signature, so `DfineDetector` decodes engine outputs into `Detection`s with unchanged preprocess/decode). Validates bindings `pixel_values` 1×3×640×640 → `logits` 1×300×80 + `pred_boxes` 1×300×4 (float32 I/O); device buffers allocated once; H2D → enqueueV2 → sync → D2H; fail-closed T1–T8 (false + empty outputs, never partial, never throws). Stub build (`KSI_SAFETY_EDGE_ENABLE_TENSORRT=OFF`, default): `Available()==false`, no TRT/CUDA dependency. No `DetectorPort` wrapper (see `dfine_detector.hpp` rationale); no spatial/session wiring. |
-| `tools/dfine_trt_smoke.cpp` | `dfine_trt_smoke` (built only with TRT ON): real-image smoke — `--engine PATH --input PATH --expected PATH [--iters N]`; gates expected lines with score ≥ 0.2 (top-1 always gates) vs. same-class top-12 C++ detections at IoU ≥ 0.5 and \|Δscore\| ≤ 0.05; tail lines (score < 0.2) reported only; reports mean/p95 latency, qps, VmRSS before/after; `SMOKE_RESULT PASS\|FAIL`. |
+| `include/ksi_safety/perception/tensorrt_runtime.hpp`, `src/perception/tensorrt_runtime.cpp` | `TensorRtRuntime`: serialized-engine adapter behind `DfineInferenceFn` (`Run` matches the injected-inference signature, so `DfineDetector` decodes engine outputs into `Detection`s with unchanged preprocess/decode). Validates bindings `pixel_values` 1×3×640×640 → `logits` 1×300×80 + `pred_boxes` 1×300×4 (float32 I/O); device buffers allocated once; H2D → enqueueV3 → sync → D2H; fail-closed T1–T8 (false + empty outputs, never partial, never throws). `RunTimed` (W9-FU) adds per-stage `StageTimesMs` (h2d/enqueue/sync/d2h) with sync-serialized attribution — its sum can differ from the pipelined `Run` mean (see header caveat). Stub build (`KSI_SAFETY_EDGE_ENABLE_TENSORRT=OFF`, default): `Available()==false`, no TRT/CUDA dependency. No `DetectorPort` wrapper (see `dfine_detector.hpp` rationale); no spatial/session wiring. |
+| `tools/dfine_trt_smoke.cpp` | `dfine_trt_smoke` (built only with TRT ON): real-image smoke — `--engine PATH --input PATH --expected PATH [--iters N] [--breakdown] [--breakdown-iters N]`; gates expected lines with score ≥ 0.2 (top-1 always gates) vs. same-class top-12 C++ detections at IoU ≥ 0.5 and \|Δscore\| ≤ 0.05; tail lines (score < 0.2) reported only; reports mean/p95 latency, qps, VmRSS before/after; with `--breakdown` also prints a `breakdown_ms ...` per-stage line + `breakdown_hint` dominant-stage line (W9-FU); `SMOKE_RESULT PASS\|FAIL`. |
 | `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `dfine`, `tracker`, `geometry`, `spatial`, `risk`, `session`, `chain`, `tensorrt`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
 
 ## The core rule (why this exists)
@@ -191,6 +191,44 @@ ctest --output-on-failure
 `/usr/include/aarch64-linux-gnu`) and `nvinfer` + `cudart` (hints
 `/usr/local/cuda-11.4`, `/usr/lib/aarch64-linux-gnu`) and stops with
 `FATAL_ERROR` if any is missing.
+
+### Per-stage latency breakdown (W9-FU, user-requested measurement)
+
+```sh
+./dfine_trt_smoke --engine ...engine --input ...bin --expected ...txt \
+  --iters 100 --breakdown [--breakdown-iters 50]
+```
+
+Off by default; `--breakdown-iters N` (default 50) sets the breakdown
+loop count. After the normal loop the tool runs
+`PreprocessRgb` → `TensorRtRuntime::RunTimed` → `DecodeDfine` and prints:
+
+```text
+breakdown_ms preprocess=X h2d=Y enqueue=Z sync=W d2h=V decode=U total=SUM
+breakdown_hint dominant_stage=S note=...
+```
+
+Interpretation caveats (read before quoting numbers):
+
+- Per-stage sync serialization: `RunTimed` serializes the stages
+  (synchronous H2D, sync-after-enqueue, synchronous D2H) so each number
+  is attributable to its stage, while pipelined `Run` overlaps launch
+  latencies behind one terminal synchronize. The stage SUM can therefore
+  differ from the `latency_ms` mean in either direction — on the W9-FU
+  Jetson run it came out ~6–7% below the pipelined mean (the breakdown
+  loop skips `DfineDetector` overhead and timing conditions differ run to
+  run); treat the stages as attribution, not a total guarantee.
+- `enqueue` vs `sync` split: `enqueue` times the `enqueueV3` submit
+  call, `sync` the wait after it. Whether the submit returns immediately
+  (GPU work observed in `sync`) or blocks until kernels complete (work
+  observed in `enqueue`, `sync` residual) depends on backend/stream
+  behavior — on the W9-FU Jetson run `enqueueV3` blocked (~20 ms with
+  `sync` ~0.5 ms), so read GPU compute as `enqueue + sync` combined.
+- GPU async: host-side `steady_clock` around an async call measures
+  launch, not work — that is why `RunTimed` uses synchronous copies
+  and an explicit sync point instead of timing the pipelined path.
+- `preprocess`/`decode` are host CPU stages (bilinear resize + /255;
+  sigmoid + argmax over 300×80); they move with CPU load, not the GPU.
 
 ## TensorRT scope / limits (honest)
 

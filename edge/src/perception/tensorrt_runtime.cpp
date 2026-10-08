@@ -8,6 +8,7 @@
 #endif
 
 #include <cstdio>
+#include <chrono>
 #include <fstream>
 
 namespace ksi::safety {
@@ -260,6 +261,114 @@ fail:
     return false;
 }
 
+namespace {
+
+double MsSince(
+    const std::chrono::steady_clock::time_point& t0,
+    const std::chrono::steady_clock::time_point& t1) noexcept {
+    return std::chrono::duration<double, std::milli>(t1 - t0).count();
+}
+
+}  // namespace
+
+bool TensorRtRuntime::RunTimed(const float* input_chw,
+                               std::vector<float>* logits,
+                               std::vector<float>* boxes,
+                               StageTimesMs* out) noexcept {
+    if (logits != nullptr) {
+        try {
+            logits->clear();
+        } catch (...) {
+        }
+    }
+    if (boxes != nullptr) {
+        try {
+            boxes->clear();
+        } catch (...) {
+        }
+    }
+    if (out != nullptr) {
+        *out = StageTimesMs{};
+    }
+    if (input_chw == nullptr || logits == nullptr || boxes == nullptr ||
+        out == nullptr) {
+        return false;  // T7 (outputs already empty, timing zeroed).
+    }
+    if (!ok_) {
+        return false;  // T7.
+    }
+    try {
+        auto* ctx = static_cast<nvinfer1::IExecutionContext*>(context_);
+        auto stream = static_cast<cudaStream_t>(stream_);
+        if (ctx == nullptr || stream == nullptr ||
+            device_input_ == nullptr || device_logits_ == nullptr ||
+            device_boxes_ == nullptr) {
+            return false;  // T7 (defensive; ctor guarantees this).
+        }
+        logits->resize(kLogitsSize);
+        boxes->resize(kBoxesSize);
+        if (!ctx->setTensorAddress("pixel_values", device_input_) ||
+            !ctx->setTensorAddress("logits", device_logits_) ||
+            !ctx->setTensorAddress("pred_boxes", device_boxes_)) {
+            goto fail;  // T8.
+        }
+        // NOTE: synchronous copies + an explicit sync-after-enqueue
+        // serialize the stages (unlike the pipelined `Run`), so each
+        // field below measures exactly its named call(s).
+        {
+            const auto t0 = std::chrono::steady_clock::now();
+            if (cudaMemcpy(device_input_, input_chw,
+                           kInputSize * sizeof(float),
+                           cudaMemcpyHostToDevice) != cudaSuccess) {
+                goto fail;  // T8.
+            }
+            out->h2d_ms =
+                MsSince(t0, std::chrono::steady_clock::now());
+        }
+        {
+            const auto t0 = std::chrono::steady_clock::now();
+            if (!ctx->enqueueV3(stream)) {
+                goto fail;  // T8.
+            }
+            out->enqueue_ms =
+                MsSince(t0, std::chrono::steady_clock::now());
+        }
+        {
+            const auto t0 = std::chrono::steady_clock::now();
+            if (cudaStreamSynchronize(stream) != cudaSuccess) {
+                goto fail;  // T8.
+            }
+            out->sync_ms =
+                MsSince(t0, std::chrono::steady_clock::now());
+        }
+        {
+            const auto t0 = std::chrono::steady_clock::now();
+            if (cudaMemcpy(logits->data(), device_logits_,
+                           kLogitsSize * sizeof(float),
+                           cudaMemcpyDeviceToHost) != cudaSuccess) {
+                goto fail;  // T8.
+            }
+            if (cudaMemcpy(boxes->data(), device_boxes_,
+                           kBoxesSize * sizeof(float),
+                           cudaMemcpyDeviceToHost) != cudaSuccess) {
+                goto fail;  // T8.
+            }
+            out->d2h_ms =
+                MsSince(t0, std::chrono::steady_clock::now());
+        }
+        return true;
+    } catch (...) {
+    }
+fail:
+    try {
+        logits->clear();
+        boxes->clear();
+    } catch (...) {
+    }
+    *out = StageTimesMs{};
+    return false;
+}
+
 #else  // Stub build: no TensorRT/CUDA dependency.
 
 TensorRtRuntime::TensorRtRuntime(const std::string& /*engine_path*/) {}
@@ -280,6 +389,28 @@ bool TensorRtRuntime::Run(const float* /*input_chw*/,
             boxes->clear();
         } catch (...) {
         }
+    }
+    return false;
+}
+
+bool TensorRtRuntime::RunTimed(const float* /*input_chw*/,
+                               std::vector<float>* logits,
+                               std::vector<float>* boxes,
+                               StageTimesMs* out) noexcept {
+    if (logits != nullptr) {
+        try {
+            logits->clear();
+        } catch (...) {
+        }
+    }
+    if (boxes != nullptr) {
+        try {
+            boxes->clear();
+        } catch (...) {
+        }
+    }
+    if (out != nullptr) {
+        *out = StageTimesMs{};
     }
     return false;
 }

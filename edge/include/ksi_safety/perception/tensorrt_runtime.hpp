@@ -68,6 +68,20 @@ class TensorRtRuntime {
     static constexpr std::size_t kLogitsSize = 300U * 80U;       // 24000
     static constexpr std::size_t kBoxesSize = 300U * 4U;         // 1200
 
+    // Per-stage wall times from `RunTimed` (milliseconds, steady_clock).
+    //   h2d_ms:     host->device input upload (synchronous copy).
+    //   enqueue_ms: `enqueueV3` launch call only (async submit, no wait).
+    //   sync_ms:    `cudaStreamSynchronize` after enqueue (GPU compute +
+    //               queued work completing; typically dominant).
+    //   d2h_ms:     device->host output download, both tensors
+    //               (synchronous copies after the stream is idle).
+    struct StageTimesMs {
+        double h2d_ms = 0.0;
+        double enqueue_ms = 0.0;
+        double sync_ms = 0.0;
+        double d2h_ms = 0.0;
+    };
+
     // True iff this build links a real TensorRT backend.
     static bool Available() noexcept;
 
@@ -87,6 +101,34 @@ class TensorRtRuntime {
     // returns false with both outputs empty. Never throws.
     bool Run(const float* input_chw, std::vector<float>* logits,
              std::vector<float>* boxes) noexcept;
+
+    // Timed variant of `Run` (W9-FU, user-requested measurement): same
+    // fail-closed semantics (T7/T8 -> false + empty outputs, never
+    // throws), plus per-stage wall times in `*out` on success.
+    // Attribution: each field times exactly the named API call(s) via
+    // `steady_clock` (H2D `cudaMemcpy`, `enqueueV3`,
+    // `cudaStreamSynchronize`, D2H `cudaMemcpy` x2), so every millisecond
+    // is attributable to that stage. A null `out` is fail-closed too
+    // (false + empty outputs); on any failure a non-null `*out` is
+    // zeroed. Stub build: always false (outputs cleared, `*out` zeroed).
+    //
+    // PIPELINING CAVEAT: `Run` pipelines H2D -> enqueue -> D2H on one
+    // stream behind a single terminal synchronize, so launch latencies
+    // overlap queued work. `RunTimed` instead inserts host-visible
+    // boundaries (synchronous H2D, sync-after-enqueue, synchronous D2H),
+    // which serializes the stages. The stage SUM can therefore differ
+    // from a pipelined `Run` wall time in either direction (on the W9-FU
+    // Jetson run it came out slightly below the pipelined mean); that
+    // difference is the cost of attribution, not a regression.
+    // `enqueue_ms` times the `enqueueV3`
+    // call and `sync_ms` the subsequent wait: whether the submit returns
+    // immediately (GPU work observed in `sync_ms`) or blocks until
+    // kernels complete (work observed in `enqueue_ms`, `sync_ms`
+    // residual) depends on backend/stream behavior -- on the W9-FU
+    // Jetson run `enqueueV3` blocked (~20 ms, `sync_ms` ~0.5 ms), so
+    // read GPU compute as `enqueue_ms + sync_ms` combined.
+    bool RunTimed(const float* input_chw, std::vector<float>* logits,
+                  std::vector<float>* boxes, StageTimesMs* out) noexcept;
 
   private:
     bool ok_ = false;

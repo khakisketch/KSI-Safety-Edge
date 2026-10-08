@@ -8,11 +8,18 @@
 //
 // Usage:
 //   dfine_trt_smoke --engine PATH --input PATH --expected PATH [--iters N]
+//     [--breakdown] [--breakdown-iters N]
 //     --engine   serialized TensorRT engine (e.g. dfine-s-coco.fp16...engine)
 //     --input    exactly 640*640*3 = 1228800 bytes of raw RGB888
 //     --expected lines "class score xmin ymin xmax ymax" (`#` comments
 //                skipped; first 12 used; at least 1 required)
 //     --iters    continuous-run repeat count (default 100)
+//     --breakdown (W9-FU, user-requested, default off): after the normal
+//                loop, run a per-stage breakdown loop (default 50 iters;
+//                `--breakdown-iters N` overrides) of PreprocessRgb ->
+//                `RunTimed` -> `DecodeDfine` and print one
+//                `breakdown_ms ...` line plus a `breakdown_hint` line
+//                naming the dominant stage.
 //
 // Acceptance policy (revised 2026-10-09, Primary decision): the fp16
 // product engine is numerically exact at high confidence but its noise
@@ -32,6 +39,9 @@
 //   tail_summary lines=N iou_ge_0_5=M
 //   latency_ms mean=.. p95=.. qps=.. iters=N
 //   rss_kb before=.. after=..
+//   breakdown_ms preprocess=.. h2d=.. enqueue=.. sync=.. d2h=.. decode=..
+//     total=..                                    (only with --breakdown)
+//   breakdown_hint dominant_stage=.. note=..      (only with --breakdown)
 //   SMOKE_RESULT PASS|FAIL                             (always last)
 //
 // Built ONLY when KSI_SAFETY_EDGE_ENABLE_TENSORRT=ON.
@@ -48,6 +58,7 @@
 #include <vector>
 
 #include "ksi_safety/perception/dfine_detector.hpp"
+#include "ksi_safety/perception/dfine.hpp"
 #include "ksi_safety/perception/tensorrt_runtime.hpp"
 
 namespace {
@@ -76,7 +87,8 @@ struct Expected {
 void Usage() {
     std::fprintf(stderr,
                  "usage: dfine_trt_smoke --engine PATH --input PATH "
-                 "--expected PATH [--iters N]\n");
+                 "--expected PATH [--iters N] [--breakdown] "
+                 "[--breakdown-iters N]\n");
 }
 
 double IoU(const Expected& e, const Detection& d) {
@@ -127,6 +139,8 @@ int main(int argc, char** argv) {
     std::string input_path;
     std::string expected_path;
     long iters = 100;
+    bool breakdown = false;
+    long breakdown_iters = 50;
     for (int i = 1; i < argc; ++i) {
         const std::string arg = argv[i];
         if (arg == "--engine" && i + 1 < argc) {
@@ -138,6 +152,16 @@ int main(int argc, char** argv) {
         } else if (arg == "--iters" && i + 1 < argc) {
             if (std::sscanf(argv[++i], "%ld", &iters) != 1 || iters <= 0) {
                 std::fprintf(stderr, "error: --iters must be positive\n");
+                std::printf("SMOKE_RESULT FAIL\n");
+                return 1;
+            }
+        } else if (arg == "--breakdown") {
+            breakdown = true;
+        } else if (arg == "--breakdown-iters" && i + 1 < argc) {
+            if (std::sscanf(argv[++i], "%ld", &breakdown_iters) != 1 ||
+                breakdown_iters <= 0) {
+                std::fprintf(stderr,
+                             "error: --breakdown-iters must be positive\n");
                 std::printf("SMOKE_RESULT FAIL\n");
                 return 1;
             }
@@ -352,6 +376,104 @@ int main(int argc, char** argv) {
     std::printf("latency_ms mean=%.3f p95=%.3f qps=%.2f iters=%ld\n", mean,
                 p95, qps, iters);
     std::printf("rss_kb before=%ld after=%ld\n", rss_before, rss_after);
+    if (breakdown) {
+        // W9-FU per-stage breakdown (user-requested): time each pipeline
+        // stage separately. `RunTimed` serializes the GPU stages (see its
+        // pipelining caveat), so the stage sum exceeds the pipelined
+        // `latency_ms` mean above -- that inflation is attribution cost,
+        // not a regression.
+        const ksi::safety::DfineConfig bd_cfg;
+        std::vector<float> bd_chw(TensorRtRuntime::kInputSize);
+        std::vector<float> bd_logits;
+        std::vector<float> bd_boxes;
+        double pre_sum = 0.0;
+        double h2d_sum = 0.0;
+        double enqueue_sum = 0.0;
+        double sync_sum = 0.0;
+        double d2h_sum = 0.0;
+        double decode_sum = 0.0;
+        for (long i = 0; i < breakdown_iters; ++i) {
+            auto t0 = std::chrono::steady_clock::now();
+            if (!ksi::safety::PreprocessRgb(rgb.data(), 640, 640,
+                                            bd_chw.data(), bd_cfg)) {
+                std::fprintf(stderr,
+                             "error: breakdown preprocess failed at iter "
+                             "%ld\n",
+                             i);
+                std::printf("SMOKE_RESULT FAIL\n");
+                return 1;
+            }
+            pre_sum += std::chrono::duration<double, std::milli>(
+                           std::chrono::steady_clock::now() - t0)
+                           .count();
+            TensorRtRuntime::StageTimesMs st;
+            if (!runtime.RunTimed(bd_chw.data(), &bd_logits, &bd_boxes,
+                                  &st)) {
+                std::fprintf(stderr,
+                             "error: breakdown RunTimed failed at iter "
+                             "%ld\n",
+                             i);
+                std::printf("SMOKE_RESULT FAIL\n");
+                return 1;
+            }
+            h2d_sum += st.h2d_ms;
+            enqueue_sum += st.enqueue_ms;
+            sync_sum += st.sync_ms;
+            d2h_sum += st.d2h_ms;
+            t0 = std::chrono::steady_clock::now();
+            const std::vector<Detection> bd_dets = ksi::safety::DecodeDfine(
+                bd_logits.data(), bd_boxes.data(), 640, 640, bd_cfg);
+            (void)bd_dets;
+            decode_sum += std::chrono::duration<double, std::milli>(
+                              std::chrono::steady_clock::now() - t0)
+                              .count();
+        }
+        const double n = static_cast<double>(breakdown_iters);
+        const double pre = pre_sum / n;
+        const double h2d = h2d_sum / n;
+        const double enqueue = enqueue_sum / n;
+        const double sync = sync_sum / n;
+        const double d2h = d2h_sum / n;
+        const double decode = decode_sum / n;
+        const double total = pre + h2d + enqueue + sync + d2h + decode;
+        std::printf(
+            "breakdown_ms preprocess=%.3f h2d=%.3f enqueue=%.3f "
+            "sync=%.3f d2h=%.3f decode=%.3f total=%.3f\n",
+            pre, h2d, enqueue, sync, d2h, decode, total);
+        const char* dom_name = "preprocess";
+        const char* dom_note = "host bilinear resize+rescale; CPU-bound";
+        double dom_val = pre;
+        if (h2d > dom_val) {
+            dom_val = h2d;
+            dom_name = "h2d";
+            dom_note = "host-to-device upload; pinned memory would help";
+        }
+        if (enqueue > dom_val) {
+            dom_val = enqueue;
+            dom_name = "enqueue";
+            dom_note =
+                "TRT submit call; blocks till kernels finish on this stack";
+        }
+        if (sync > dom_val) {
+            dom_val = sync;
+            dom_name = "sync";
+            dom_note =
+                "residual stream wait; small when enqueue blocks (Jetson)";
+        }
+        if (d2h > dom_val) {
+            dom_val = d2h;
+            dom_name = "d2h";
+            dom_note = "device-to-host download of logits+boxes";
+        }
+        if (decode > dom_val) {
+            dom_val = decode;
+            dom_name = "decode";
+            dom_note = "host sigmoid+argmax over 300x80; CPU-bound";
+        }
+        (void)dom_val;
+        std::printf("breakdown_hint dominant_stage=%s note=%s\n", dom_name,
+                    dom_note);
+    }
     std::printf("SMOKE_RESULT %s\n", all_pass ? "PASS" : "FAIL");
     return all_pass ? 0 : 1;
 }

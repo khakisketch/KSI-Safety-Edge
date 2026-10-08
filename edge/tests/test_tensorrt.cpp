@@ -29,6 +29,28 @@ int main() {
         CHECK(!rt.Run(in.data(), &logits, &boxes), "Run false when not ok");
         CHECK(logits.empty() && boxes.empty(), "failed Run leaves no output");
     }
+    // RunTimed fail-closed (both builds: stub always false; TRT build
+    // false when not ok). Same empty-output posture as Run, plus the
+    // timing struct is zeroed; a null timing pointer is false too.
+    {
+        TensorRtRuntime rt("/nonexistent-ksi-safety-edge.engine");
+        std::vector<float> in(TensorRtRuntime::kInputSize, 0.0F);
+        std::vector<float> logits(7, 1.0F);
+        std::vector<float> boxes(7, 1.0F);
+        TensorRtRuntime::StageTimesMs st;
+        st.h2d_ms = 1.0;
+        CHECK(!rt.RunTimed(in.data(), &logits, &boxes, &st),
+              "RunTimed false when not ok");
+        CHECK(logits.empty() && boxes.empty(),
+              "failed RunTimed leaves no output");
+        CHECK(st.h2d_ms == 0.0 && st.enqueue_ms == 0.0 &&
+                  st.sync_ms == 0.0 && st.d2h_ms == 0.0,
+              "failed RunTimed zeroes timing");
+        CHECK(!rt.RunTimed(in.data(), &logits, &boxes, nullptr),
+              "null timing RunTimed false");
+        CHECK(logits.empty() && boxes.empty(),
+              "null timing RunTimed leaves no output");
+    }
     // Empty path: same posture.
     {
         TensorRtRuntime rt("");
