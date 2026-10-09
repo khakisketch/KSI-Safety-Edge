@@ -104,3 +104,19 @@
 | R5 | End-to-End(사건·증거·재현성·성능) + Replay/PSDK 동일 코드 입증 | RC Emulator E2E vs 실장비 E2E 구분; 실장비 전용 항목은 미검증으로 명시 | **완료·검증(C32)** |
 
 - 각 단계: 구현 → 테스트(호스트 14그룹+신규, ASan, 장치) → 독립 검증 → 커밋(C28~) → 원장 증거 기록.
+
+## 9. Android RC(MSDK) 트랙 착수 + H1 병행 (사용자 승인 2026-10-09)
+
+- 사용자 지시(2026-10-09): Replay 통합은 완료로 확인. 다음은 **실제 조종사 사용 흐름 완성** — ① **MSDK 개발 환경 준비 승인**(JDK17+Android SDK) → RC 앱(임무 설정·MOP 연동·로컬 증거·업로드·조회), ② **H1 실장비 검증 병행**(장치 재부팅·fs·시계 점검부터 → 기체 연결 시 PSDK 영상·텔레메트리·시간·DPK·장시간 안정성), ③ 실영상 평가(대표 영상·독립 GT 확보 시). Replay 기능 추가보다 사용 흐름 완성을 우선.
+- 사용자 명확화: **54 SHADOW episode ≠ 실제 위험 54건** — corpus+합성·미보정 정책의 파이프라인 검증(본 원장 §8·product-state에 명시). Replay 검증 완료와 L1 인수는 구분.
+- 게이트 유지: 기체 비행·운영 배포·ACTIVE 경고.
+
+| 단계 | 내용 | 상태 |
+|---|---|---|
+| A0 | 개발 환경: JDK17 + Android SDK cmdline-tools + platform/build-tools (+호스트 aarch64 도구 지원 확인) | **완료**(JDK17·adb·Gradle 8.10.2·amd64 컨테이너 에뮬레이션; aapt2는 x86_64 컨테이너 경로) |
+| A1 | `android-rc/` 골격(Kotlin·Gradle) + 빌드·테스트 | **진행** — `rc-core`(Kotlin/JVM) MOP 계약 포팅 + Python 골든 6/6 PASS |
+| A2 | 임무 설정·MOP 클라이언트(기존 계약 재사용) | 대기 |
+| A3 | 로컬 증거·업로드·조회 | 대기 |
+| H1-now | 장치 재부팅·fs·시계·root ro 점검 | **차단** — dji 계정 polkit/sudo 권한 거부(사용자 조치 필요) |
+
+- 2026-10-09 A0 결과: JDK17=17.0.20.1(apt)·adb 34.0.4(apt, arm64)·Gradle 8.10.2(`/home/ksi/Android/tools`, 사용자 공간). **Google Maven에 aapt2 linux-aarch64 없음 확인**(x86_64만) → `qemu-user-static` 설치 후 **`docker run --platform linux/amd64` 동작 확인**(x86_64) — APK 빌드는 x86_64 컨테이너에서 수행하는 경로로 확정. H1-now 장치 관찰: root `/` **ro**(27G·66%·8.7G 여유)·시계 **2026-10-03(≈6일 지연)**·RTC 1970·NTP inactive·dmesg 비공개·재부팅은 **"Interactive authentication required"**(비밀번호 필요) — 재부팅/시계 정비는 사용자 권한 필요. `rc-core`: Uuid5(RFC4122 v5)·CanonicalJson(JCS, erdtman 1.1)·Mop envelope — Python 실모듈 생성 골든(NAMESPACE `bcf20008…`, msg_id `f922155e…`, digest 4종, envelope/tamper) **6/6 PASS**(교차언어 F9 갭의 실행 가능 벡터).

@@ -1,0 +1,10 @@
+# Gradle / Kotlin
+.gradle/
+build/
+.kotlin/
+# Android local config (never committed)
+local.properties
+*.apk
+*.aab
+*.iml
+.idea/
