@@ -15,11 +15,12 @@ import ksi.rc.Mop
  *
  * Retired the moment the MSDK link delivers real Edge bytes (H1/A9).
  *
- * HONESTY NOTE: these rows land in the real store with schema-valid shapes
- * and WILL upload through the normal path if the operator syncs. They are
- * marked SIMULATED_FEED / DEGRADED / UNVERIFIED / synthetic_replay_geometry
- * so the server side can tell them apart — never run a demo tick on a
- * flight whose evidence matters.
+ * HONESTY NOTE (A5 fix): these rows are written ONLY into the isolated
+ * demo store (`rc-demo-store`) by [DemoSession], whose Core configuration
+ * is null — the demo bench can never upload and never mixes with
+ * operational evidence. Each row still carries SIMULATED_FEED / DEGRADED
+ * / UNVERIFIED / synthetic_replay_geometry markers so even a bench export
+ * is self-describing.
  */
 class DemoFeed(
     private val flightId: String,

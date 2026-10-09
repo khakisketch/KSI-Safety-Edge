@@ -175,6 +175,7 @@ class FileRcStore(
 
     // -- RcStore -------------------------------------------------------------
 
+    @Synchronized
     override fun nextMsgCounter(): Long {
         val current = if (counterFile.exists()) {
             val text = counterFile.readText().trim()
@@ -193,22 +194,27 @@ class FileRcStore(
         return next
     }
 
+    @Synchronized
     override fun isProcessed(msgId: String): Boolean = msgId in processed
 
+    @Synchronized
     override fun storeMessage(env: ObjectNode) {
         appendNode(messagesFile, env)
         indexSeq(env)
         indexBoot(env)
     }
 
+    @Synchronized
     override fun markProcessed(msgId: String) {
         if (processed.add(msgId)) {
             durableAppend(processedFile, msgId + "\n")
         }
     }
 
+    @Synchronized
     override fun processedMsgIds(): Set<String> = processed.toSet()
 
+    @Synchronized
     override fun recordApplication(application: ObjectNode) {
         val id = application.get("application_id").asText()
         if (applications.putIfAbsent(id, application) == null) {
@@ -216,27 +222,33 @@ class FileRcStore(
         }
     }
 
+    @Synchronized
     override fun applicationsFor(flightId: String): List<ObjectNode> =
         applications.values.filter { it.get("flight_id")?.asText() == flightId }
 
     // -- EvidenceStore ---------------------------------------------------------
 
+    @Synchronized
     override fun storeObservation(observation: ObjectNode, bootId: String) {
         storeBootNode(obsFile, "observation_id", observation, bootId, observations)
     }
 
+    @Synchronized
     override fun storeEvent(event: ObjectNode, bootId: String) {
         storeBootNode(eventsFile, "event_id", event, bootId, events)
     }
 
+    @Synchronized
     override fun storeFlightSummary(summary: ObjectNode, bootId: String) {
         storeBootNode(summariesFile, "summary_id", summary, bootId, summaries)
     }
 
+    @Synchronized
     override fun announceArtifact(announce: ObjectNode, bootId: String) {
         storeBootNode(artifactsFile, "artifact_id", announce, bootId, artifacts)
     }
 
+    @Synchronized
     override fun writeChunk(artifactId: String, offset: Long, bytes: ByteArray) {
         if (offset < 0L) {
             throw IllegalArgumentException("chunk offset must be >= 0")
@@ -269,6 +281,7 @@ class FileRcStore(
         addRange(artifactId, offset, bytes.size.toLong())
     }
 
+    @Synchronized
     override fun artifactBytes(artifactId: String): ByteArray? {
         val announce = artifacts[artifactId]?.node ?: return null
         val declaredSize = announce.get("size_bytes")?.asLong() ?: return null
@@ -313,42 +326,51 @@ class FileRcStore(
         }
     }
 
+    @Synchronized
     override fun observationsFor(flightId: String): List<ObjectNode> =
         observations.values.map { it.node }
             .filter { it.get("flight_id")?.asText() == flightId }
 
+    @Synchronized
     override fun eventsFor(flightId: String): List<ObjectNode> =
         events.values.map { it.node }
             .filter { it.get("flight_id")?.asText() == flightId }
 
+    @Synchronized
     override fun summariesFor(flightId: String): List<ObjectNode> =
         summaries.values.map { it.node }
             .filter { it.get("flight_id")?.asText() == flightId }
 
+    @Synchronized
     override fun artifactsFor(flightId: String): List<ObjectNode> =
         artifacts.values.map { it.node }
             .filter { it.get("flight_id")?.asText() == flightId }
 
     // -- UploadStore: boot-scoped reads --------------------------------------
 
+    @Synchronized
     override fun observationsFor(flightId: String, bootId: String): List<ObjectNode> =
         observations.values.filter { it.bootId == bootId }
             .map { it.node }
             .filter { it.get("flight_id")?.asText() == flightId }
 
+    @Synchronized
     override fun eventsFor(flightId: String, bootId: String): List<ObjectNode> =
         events.values.filter { it.bootId == bootId }
             .map { it.node }
             .filter { it.get("flight_id")?.asText() == flightId }
 
+    @Synchronized
     override fun artifactsFor(flightId: String, bootId: String): List<ObjectNode> =
         artifacts.values.filter { it.bootId == bootId }
             .map { it.node }
             .filter { it.get("flight_id")?.asText() == flightId }
 
+    @Synchronized
     override fun receivedSeqs(bootId: String, channel: String): Set<Long> =
         seqs[bootId to channel]?.toSet() ?: emptySet()
 
+    @Synchronized
     override fun recordGap(gap: ObjectNode) {
         val boot = gap.get("edge_boot_id")?.asText() ?: return
         val channel = gap.get("channel")?.asText() ?: return
@@ -361,6 +383,7 @@ class FileRcStore(
         }
     }
 
+    @Synchronized
     override fun receivedFirstLastUtc(flightId: String, bootId: String): Pair<String, String>? {
         val times = mutableListOf<String>()
         fun collect(entries: Collection<BootNode>) {
@@ -388,6 +411,7 @@ class FileRcStore(
         return instants.min().toString() to instants.max().toString()
     }
 
+    @Synchronized
     override fun gapsForBoot(bootId: String): List<ObjectNode> =
         gaps.entries.filter { it.key.first == bootId }
             .sortedWith(compareBy({ it.key.second }, { it.key.third }))
@@ -395,15 +419,18 @@ class FileRcStore(
 
     // -- UploadStore: receipts ----------------------------------------------
 
+    @Synchronized
     override fun markApplicationUploaded(applicationId: String) {
         if (uploadedApps.add(applicationId)) {
             durableAppend(appUploadsFile, applicationId + "\n")
         }
     }
 
+    @Synchronized
     override fun isApplicationUploaded(applicationId: String): Boolean =
         applicationId in uploadedApps
 
+    @Synchronized
     override fun recordBatchReceipt(kind: String, clientBatchId: String, serverBatchId: String) {
         if (batchReceipts.putIfAbsent(kind to clientBatchId, serverBatchId) == null) {
             val node = Mop.json.createObjectNode()
@@ -414,20 +441,24 @@ class FileRcStore(
         }
     }
 
+    @Synchronized
     override fun batchReceipt(kind: String, clientBatchId: String): String? =
         batchReceipts[kind to clientBatchId]
 
+    @Synchronized
     override fun markArtifactSynced(artifactId: String) {
         if (syncedArtifacts.add(artifactId)) {
             durableAppend(syncedFile, artifactId + "\n")
         }
     }
 
+    @Synchronized
     override fun isArtifactSynced(artifactId: String): Boolean =
         artifactId in syncedArtifacts
 
     // -- MissionStore: flight records ----------------------------------------
 
+    @Synchronized
     override fun startFlight(record: ObjectNode) {
         val flightId = record.get("flight_id")?.asText() ?: return
         if (flightLog.any { it.get("flight_id")?.asText() == flightId }) return
@@ -435,6 +466,7 @@ class FileRcStore(
         appendNode(flightsFile, record)
     }
 
+    @Synchronized
     override fun updateFlight(flightId: String, state: String, endedAtUtc: String?) {
         val latest = flight(flightId) ?: return
         val snapshot = latest.deepCopy()
@@ -444,9 +476,11 @@ class FileRcStore(
         appendNode(flightsFile, snapshot)
     }
 
+    @Synchronized
     override fun flight(flightId: String): ObjectNode? =
         flightLog.lastOrNull { it.get("flight_id")?.asText() == flightId }
 
+    @Synchronized
     override fun flights(): List<ObjectNode> {
         val latest = linkedMapOf<String, ObjectNode>()
         for (node in flightLog) {
@@ -455,6 +489,7 @@ class FileRcStore(
         return latest.values.toList()
     }
 
+    @Synchronized
     override fun activeFlight(): ObjectNode? =
         flights().lastOrNull { it.get("state")?.asText() != "ENDED" }
 
@@ -482,14 +517,18 @@ class FileRcStore(
         appendNode(file, node)
     }
 
+    @Synchronized
     override fun saveSite(site: ObjectNode) {
         saveImmutable(site, "site_id", sitesById, sitesFile, "site")
     }
 
+    @Synchronized
     override fun site(siteId: String): ObjectNode? = sitesById[siteId]
 
+    @Synchronized
     override fun sites(): List<ObjectNode> = sitesById.values.toList()
 
+    @Synchronized
     override fun saveZoneRevision(revision: ObjectNode) {
         saveImmutable(
             revision, "revision_id", zoneRevisionsById, zoneRevisionsFile,
@@ -497,12 +536,15 @@ class FileRcStore(
         )
     }
 
+    @Synchronized
     override fun zoneRevision(revisionId: String): ObjectNode? =
         zoneRevisionsById[revisionId]
 
+    @Synchronized
     override fun zoneRevisions(siteId: String): List<ObjectNode> =
         zoneRevisionsById.values.filter { it.get("site_id")?.asText() == siteId }
 
+    @Synchronized
     override fun saveMissionSnapshot(snapshot: ObjectNode) {
         saveImmutable(
             snapshot, "mission_revision_id", snapshotsByRevision,
@@ -510,20 +552,26 @@ class FileRcStore(
         )
     }
 
+    @Synchronized
     override fun missionSnapshot(missionRevisionId: String): ObjectNode? =
         snapshotsByRevision[missionRevisionId]
 
+    @Synchronized
     override fun missionSnapshots(): List<ObjectNode> =
         snapshotsByRevision.values.toList()
 
+    @Synchronized
     override fun saveMissionBundle(bundle: ObjectNode) {
         saveImmutable(bundle, "bundle_id", bundlesById, bundlesFile, "bundle")
     }
 
+    @Synchronized
     override fun missionBundle(bundleId: String): ObjectNode? = bundlesById[bundleId]
 
+    @Synchronized
     override fun missionBundles(): List<ObjectNode> = bundlesById.values.toList()
 
+    @Synchronized
     override fun bootsFor(flightId: String): List<String> =
         (
             observations.values.filter {
@@ -543,6 +591,7 @@ class FileRcStore(
                 messageBoots[flightId].orEmpty()
             ).distinct()
 
+    @Synchronized
     override fun firstLastNs(flightId: String, bootId: String): Pair<Long, Long>? {
         val times = mutableListOf<Long>()
         for (entry in observations.values) {

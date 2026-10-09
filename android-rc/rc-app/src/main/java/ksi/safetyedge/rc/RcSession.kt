@@ -5,6 +5,7 @@ import java.io.File
 import java.time.Instant
 import java.util.UUID
 import java.util.concurrent.Executors
+import ksi.rc.CanonicalJson
 import ksi.rc.EvidenceIngest
 import ksi.rc.EvidenceUploader
 import ksi.rc.FileRcStore
@@ -54,7 +55,11 @@ class RcSession(
 
     init {
         // Restart restore: an unfinished flight whose bundle is in the local
-        // mission store re-attaches its controller automatically.
+        // mission store re-attaches its controller automatically. NOTE: the
+        // controller itself always starts at IDLE with lastApplication=null
+        // (in-memory); a flight whose record says APPLIED keeps that record
+        // (syncFlightState only advances STARTED->APPLIED), and the operator
+        // re-runs Prepare/Apply per the re-apply-after-reboot contract.
         store.activeFlight()?.let { active ->
             store.missionBundle(active.get("bundle_id").asText())?.let { stored ->
                 attachController(stored, active.get("flight_id").asText())
@@ -199,8 +204,17 @@ class RcSession(
      * after this point (Prepare/Apply) needs no network.
      */
     fun startFlightFromBundle(bundle: ObjectNode): ObjectNode {
+        // Defensive: only digest-verified bundles may be pinned (today the
+        // caller always passes a store-verified record; this closes the
+        // path structurally).
+        check(CanonicalJson.verifyDigest(bundle, "bundle_sha256")) {
+            "bundle digest mismatch; refusing to pin"
+        }
         val snapshot = bundle.get("mission_snapshot") as? ObjectNode
             ?: throw IllegalStateException("bundle is missing its mission snapshot")
+        check(CanonicalJson.verifyDigest(snapshot, "content_sha256")) {
+            "embedded snapshot digest mismatch; refusing to pin"
+        }
         val zoneIds = mutableListOf<String>()
         snapshot.get("zones")?.forEach { zone ->
             zone.get("revision_id")?.asText()?.let { zoneIds.add(it) }

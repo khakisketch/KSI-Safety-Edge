@@ -50,9 +50,10 @@ class MissionSyncE2ETest {
             .start()
         try {
             val base = "http://127.0.0.1:$port/api/v1/edge"
-            val transport = JdkCoreTransport(base, "tok-rc")
-            waitForHealth(transport)
-            val core = CoreApi(transport)
+            val counting = CountingTransport(JdkCoreTransport(base, "tok-rc"))
+            waitForHealth(counting)
+            val core = CoreApi(counting)
+            val transport = counting
 
             // -- web-side seeding (the RC never creates missions) -------------
             val site = postJson(
@@ -125,6 +126,7 @@ class MissionSyncE2ETest {
             offlineStore.startFlight(flightRecord)
 
             // Prepare/Apply needs no server: the link loop is local.
+            val offlineWindowStart = counting.methods.size
             val controller = MissionController(
                 flightId, localBundle, offlineStore, { 0L },
                 EvidenceIngest(offlineStore),
@@ -135,6 +137,10 @@ class MissionSyncE2ETest {
             controller.apply()
             pump(controller.endpoint, edge)
             assertEquals(MissionState.APPLIED, controller.state)
+            assertEquals(
+                offlineWindowStart, counting.methods.size,
+                "offline apply must not make any Core call",
+            )
             assertEquals(
                 bundleSha,
                 offlineStore.applicationsFor(flightId).single()
@@ -250,6 +256,23 @@ class MissionSyncE2ETest {
         }
     }
 
+    /** Records every transport call so the offline window can be asserted. */
+    private class CountingTransport(
+        private val delegate: CoreTransport,
+    ) : CoreTransport {
+        val methods = mutableListOf<String>()
+
+        override fun request(
+            method: String,
+            path: String,
+            headers: Map<String, String>,
+            body: ByteArray?,
+        ): CoreHttpResponse {
+            methods.add(method)
+            return delegate.request(method, path, headers, body)
+        }
+    }
+
     private fun wrap(field: String, node: ObjectNode): ObjectNode =
         Mop.json.createObjectNode().apply { set<com.fasterxml.jackson.databind.JsonNode>(field, node) }
 
@@ -267,7 +290,7 @@ class MissionSyncE2ETest {
         return Mop.json.readTree(response.body) as ObjectNode
     }
 
-    private fun waitForHealth(transport: JdkCoreTransport) {
+    private fun waitForHealth(transport: CoreTransport) {
         val deadline = System.nanoTime() + 25_000_000_000L
         while (true) {
             try {
