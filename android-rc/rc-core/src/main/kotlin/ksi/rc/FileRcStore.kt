@@ -74,13 +74,18 @@ class FileRcStore(root: Path) : RcStore, EvidenceStore {
 
     override fun nextMsgCounter(): Long {
         val current = if (counterFile.exists()) {
-            counterFile.readText().trim().toLongOrNull() ?: 0L
+            val text = counterFile.readText().trim()
+            text.toLongOrNull()
+                ?: throw IOException(
+                    "msg_counter corrupt; refusing to risk id reuse: $counterFile",
+                )
         } else {
             0L
         }
         val next = current + 1
         // Persist BEFORE the value is used: a crash between this write and
         // the send skips an id (safe); the value is never handed out twice.
+        // Single-writer assumption: one RC process owns the directory.
         durableWrite(counterFile, "$next\n")
         return next
     }

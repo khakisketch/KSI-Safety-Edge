@@ -10,6 +10,7 @@ import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
@@ -87,6 +88,15 @@ class RobustnessTest {
         assertNotEquals(firstId, secondId,
             "a restarted RC must not reuse message ids (the Edge would dedup them)")
         assertEquals(Mop.newMsgId("rc", "flt-1", "2", "MISSION_PREPARE"), secondId)
+    }
+
+    @Test
+    fun corrupt_counter_fails_closed() {
+        val root = tempRoot()
+        FileRcStore(root).nextMsgCounter()
+        File(root.toFile(), "msg_counter").writeText("garbage")
+        val store = FileRcStore(root)
+        assertFailsWith<IOException> { store.nextMsgCounter() }
     }
 
     // 2) artifact completeness -------------------------------------------------
