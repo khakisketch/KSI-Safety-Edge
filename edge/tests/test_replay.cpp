@@ -724,19 +724,72 @@ int main() {
             }
             CHECK(detector.calls == kFrames, "psdk path detected all");
         };
+        // Third input path: the replay manifest + raw frames + telemetry
+        // source, driven through the SAME runner — records must be
+        // byte-identical to the direct path.
+        auto drive_replay_sources = [](std::vector<std::string>* log) {
+            TempDir dir;
+            const std::string frame_path = dir.File("frame.rgb");
+            {
+                std::ofstream out(frame_path, std::ios::binary);
+                std::string zeros(8U * 6U * 3U, '\0');
+                out.write(zeros.data(),
+                          static_cast<std::streamsize>(zeros.size()));
+            }
+            const std::string manifest_path = dir.File("manifest.txt");
+            {
+                std::ofstream out(manifest_path);
+                for (int i = 0; i < kFrames; ++i) {
+                    out << "frame " << i << " " << (1000 + 100 * i)
+                        << " 8 6 frame.rgb\n";
+                }
+                for (int i = 0; i < kFrames; ++i) {
+                    out << "pose " << (i + 1) << " " << (i + 1) << " "
+                        << (1000 + 100 * i) << " - 0 1 0 0 0\n";
+                }
+            }
+            ClockRegistry clocks;
+            ReplayFrameSource source(manifest_path, "F", "B", "S", &clocks);
+            CHECK(source.ok(), "replay manifest loads");
+            SessionRunner runner(RunnerCfg(), SessionCfg(), {}, {}, {},
+                                 Profile());
+            CountingOkDetector detector;
+            ReplayTelemetrySource telemetry(source.manifest(), "host_mono",
+                                            clocks);
+            for (std::size_t i = 0; i < source.frame_count(); ++i) {
+                FramePacket packet;
+                FrameContext ctx;
+                CHECK(source.ReadFrame(i, &packet, &ctx),
+                      "replay frame reads");
+                telemetry.PushDue(ctx.receive_monotonic_ns, runner);
+                log->push_back(
+                    Describe(runner.ProcessFrame(packet, ctx, &detector)));
+            }
+            CHECK(detector.calls == kFrames, "replay path detected all");
+        };
         std::vector<std::string> direct_log;
         std::vector<std::string> queue_log;
+        std::vector<std::string> replay_log;
         std::vector<std::string> direct_again;
         drive_direct(&direct_log);
         drive_psdk_queue(&queue_log);
+        drive_replay_sources(&replay_log);
         drive_direct(&direct_again);
-        CHECK(direct_log.size() == kFrames && queue_log.size() == kFrames,
-              "both paths produced records");
+        CHECK(direct_log.size() == kFrames && queue_log.size() == kFrames &&
+                  replay_log.size() == kFrames,
+              "all three paths produced records");
         bool identical = direct_log.size() == queue_log.size();
         for (std::size_t i = 0; identical && i < direct_log.size(); ++i) {
             identical = direct_log[i] == queue_log[i];
         }
         CHECK(identical, "PSDK queue path == direct path (same product code)");
+        bool identical_replay = direct_log.size() == replay_log.size();
+        for (std::size_t i = 0; identical_replay && i < direct_log.size();
+             ++i) {
+            identical_replay = direct_log[i] == replay_log[i];
+        }
+        CHECK(identical_replay,
+              "replay-source path == direct path (same product code)");
         bool deterministic = direct_log.size() == direct_again.size();
         for (std::size_t i = 0; deterministic && i < direct_log.size(); ++i) {
             deterministic = direct_log[i] == direct_again[i];

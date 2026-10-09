@@ -1,0 +1,11 @@
+# synthetic replay policy (generated; UNcalibrated geometry —
+# pipeline demonstration only, never metric evidence)
+spatial intrinsics 512 512 320 320 640 640
+spatial ground 0
+spatial min-ray-z 0.05
+spatial person-class 0
+spatial equipment-class 2 car
+spatial equipment-class 7 truck
+zone zone-demo -200 -200 200 -200 200 200 -200 200
+proximity prox-demo 30 0 0 0 GEO_ESTIMATE
+zone-rule zone-demo-rule 0 0 GEO_ESTIMATE

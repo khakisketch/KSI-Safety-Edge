@@ -22,9 +22,8 @@
 #include "ksi_safety/replay/telemetry_source.hpp"
 #include "ksi_safety/runtime/session_runner.hpp"
 
-#if defined(KSI_SAFETY_EDGE_HAS_TENSORRT)
+// The header is stub-compatible without TensorRT (Available()==false).
 #include "ksi_safety/perception/tensorrt_runtime.hpp"
-#endif
 
 #include <algorithm>
 #include <chrono>
@@ -60,11 +59,9 @@ using ksi::safety::SessionRunner;
 using ksi::safety::TickRecord;
 using ksi::safety::TimeSourceKind;
 using ksi::safety::ToString;
+using ksi::safety::TensorRtRuntime;
 using ksi::safety::TrackRecord;
 using ksi::safety::ZoneRevision;
-#if defined(KSI_SAFETY_EDGE_HAS_TENSORRT)
-using ksi::safety::TensorRtRuntime;
-#endif
 
 constexpr std::int64_t kNsPerMs = 1000000LL;
 
@@ -88,6 +85,7 @@ struct Args {
     long long session_gap_ms = 5000;
     double zone_envelope_m = 1.0;
     bool null_detector = false;
+    bool stage_times = false;
 };
 
 void PrintUsage() {
@@ -95,7 +93,7 @@ void PrintUsage() {
                  "usage: replay_run --manifest PATH [--out PATH] "
                  "[--null-detector]\n"
                  "       [--engine PATH] [--model-id ID] [--model-digest D]\n"
-                 "       [--policy PATH] [--score-threshold F]\n"
+                 "       [--policy PATH] [--score-threshold F] [--stage-times]\n"
                  "       [--detect-every N] [--max-receive-gap-ms N] "
                  "[--max-bracket-ms N]\n"
                  "       [--tracker-iou F] [--tracker-max-age N] "
@@ -185,6 +183,8 @@ bool ParseArgs(int argc, char** argv, Args* args) {
             }
         } else if (key == "--null-detector") {
             args->null_detector = true;
+        } else if (key == "--stage-times") {
+            args->stage_times = true;
         } else {
             std::fprintf(stderr, "unknown or incomplete argument: %s\n",
                          key.c_str());
@@ -246,7 +246,8 @@ void WriteTick(std::FILE* out, const TickRecord& record) {
     std::fprintf(
         out,
         "{\"type\":\"tick\",\"i\":%llu,\"frame_id\":%u,\"stream\":\"%s\","
-        "\"recv_mono_ns\":%lld,\"model\":\"%s\",\"exposure_verified\":%s,"
+        "\"recv_mono_ns\":%lld,\"model\":\"%s\",\"model_digest\":\"%s\","
+        "\"exposure_verified\":%s,"
         "\"detect\":\"%s\",\"dets\":%zu,"
         "\"att\":{\"q\":\"%s\",\"r\":\"%s\",\"gap_ns\":%lld},"
         "\"pos\":{\"q\":\"%s\",\"r\":\"%s\",\"gap_ns\":%lld},"
@@ -254,7 +255,8 @@ void WriteTick(std::FILE* out, const TickRecord& record) {
         static_cast<unsigned long long>(record.tick_index), record.frame_id,
         record.stream_id.c_str(),
         static_cast<long long>(record.receive_mono_ns),
-        record.model_id.c_str(), record.exposure_verified ? "true" : "false",
+        record.model_id.c_str(), record.model_digest.c_str(),
+        record.exposure_verified ? "true" : "false",
         ToString(record.detection_status), record.detections.size(),
         ToString(record.attitude_quality), ToString(record.attitude_reason),
         static_cast<long long>(record.attitude_gap_ns),
@@ -415,6 +417,8 @@ int main(int argc, char** argv) {
 
     DetectorPort* detector = nullptr;
     std::unique_ptr<DfineDetectorPort> dfine_port;
+    TensorRtRuntime::StageTimesMs engine_totals{};
+    long long engine_runs = 0;
 #if defined(KSI_SAFETY_EDGE_HAS_TENSORRT)
     std::unique_ptr<TensorRtRuntime> runtime;
     if (!args.engine_path.empty()) {
@@ -428,9 +432,22 @@ int main(int argc, char** argv) {
         dfine_config.score_threshold = static_cast<float>(args.score_threshold);
         dfine_port = std::make_unique<DfineDetectorPort>(
             dfine_config,
-            [&runtime](const float* input, std::vector<float>* logits,
-                       std::vector<float>* boxes) {
-                return runtime->Run(input, logits, boxes);
+            [&runtime, &args, &engine_totals,
+             &engine_runs](const float* input, std::vector<float>* logits,
+                           std::vector<float>* boxes) {
+                if (!args.stage_times) {
+                    return runtime->Run(input, logits, boxes);
+                }
+                TensorRtRuntime::StageTimesMs times;
+                const bool ok = runtime->RunTimed(input, logits, boxes, &times);
+                if (ok) {
+                    engine_totals.h2d_ms += times.h2d_ms;
+                    engine_totals.enqueue_ms += times.enqueue_ms;
+                    engine_totals.sync_ms += times.sync_ms;
+                    engine_totals.d2h_ms += times.d2h_ms;
+                    ++engine_runs;
+                }
+                return ok;
             });
         detector = dfine_port.get();
     }
@@ -550,6 +567,8 @@ int main(int argc, char** argv) {
                   }
                   return sum / static_cast<double>(stats.tick_ms.size());
               }();
+    const double engine_denominator =
+        engine_runs > 0 ? static_cast<double>(engine_runs) : 1.0;
     std::fprintf(
         out,
         "{\"type\":\"stat\",\"frames\":%zu,\"ok_ticks\":%zu,"
@@ -560,14 +579,21 @@ int main(int argc, char** argv) {
         "\"episodes_closed\":%zu,\"poses_pushed\":%zu,"
         "\"positions_pushed\":%zu,\"duplicates\":%zu,\"rollbacks\":%zu,"
         "\"telemetry_pending_end\":%zu,\"tick_ms_mean\":%.3f,"
-        "\"tick_ms_p95\":%.3f,\"detect_every\":%lld}\n",
+        "\"tick_ms_p95\":%.3f,\"detect_every\":%lld,"
+        "\"engine_runs\":%lld,\"engine_h2d_ms_mean\":%.3f,"
+        "\"engine_enqueue_ms_mean\":%.3f,\"engine_sync_ms_mean\":%.3f,"
+        "\"engine_d2h_ms_mean\":%.3f}\n",
         stats.frames, stats.ok_ticks, stats.failure_ticks, stats.notrun_ticks,
         stats.detections_total, stats.observations_total,
         stats.spatial_estimated_ticks, stats.spatial_noteligible_ticks,
         stats.episodes_created, stats.episodes_closed, stats.poses_pushed,
         stats.positions_pushed, stats.duplicates, stats.rollbacks,
         telemetry.pending_count(), tick_mean, Percentile(stats.tick_ms, 0.95),
-        args.detect_every);
+        args.detect_every, engine_runs,
+        engine_totals.h2d_ms / engine_denominator,
+        engine_totals.enqueue_ms / engine_denominator,
+        engine_totals.sync_ms / engine_denominator,
+        engine_totals.d2h_ms / engine_denominator);
     std::fclose(out);
     std::printf("replay_run: %zu frames -> %s\n", stats.frames,
                 args.out_path.c_str());

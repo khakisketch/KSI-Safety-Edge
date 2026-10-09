@@ -34,7 +34,7 @@
 |---|---|---|---|
 | 판단·검증 | **W5 완료·검증(C15)** — 순수 로직·합성 GT | 실데이터 연결은 기체/GPS GT 확보 후 | 없음(실데이터만 대기) |
 | 사용 흐름(RC) | 미착수 — 환경 조사 완료(2026-10-08): JDK 8(부족)·adb/sdkmanager/gradle 부재, dl.google.com 접근 가능, 디스크 2.9T 여유 | JDK17+cmdline-tools 설치 승인 시 착수 | 설치 승인·RC 접근 경로 |
-| 실제 인식(AI) | W6-A~W8(C16~C19) + ONNX export + TRT engine(fp16) + W9 PASS + W9-FU2(C25) + W10(C27) + **R1(C28)·R2(C29)·R3(C30) 완료** | **R4 Spatial Observation**(발점/footprint→기존 투영·거리·구역; 조건 부족 시 보류) → R5 E2E(원장 §8) | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
+| 실제 인식(AI) | W6-A~W8(C16~C19) + ONNX export + TRT engine(fp16) + W9 PASS + W9-FU2(C25) + W10(C27) + **R1~R4 완료(C28~C31: 공통 러너·Tracking·Telemetry·Spatial)** | **R5 End-to-End**(사건·증거·재현성·성능 + Replay/PSDK 동일 코드 입증; RC Emulator E2E vs 실장비 E2E 구분) | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
 
 ## 4. 첫 현장시험 범위 (추천안 — 사용자 확정 대기)
 
@@ -81,6 +81,7 @@
 - 2026-10-09: **R2 완료·검증(C29)** — Tracking 출처·주기 분리: `SessionRunner::ResetTracker()`(epoch +1·id 비재사용) + R2 테스트 5종(주기 스킵 간 id 연속성·**held box 전 좌표 불변(예측 아님)**·소실→재획득 id 유지·epoch 분리·held≠신규측정(detector 미호출 포함)·한 detection tick 혼합 출처 OBSERVED/MISSED) + 문서(**v0 예측 없음 명시** — 미래 모션 모델은 별도 PREDICTED 출처 필요; age/misses는 detection tick 기준). 검증: 호스트 15/15×2(ASan)·장치 gcc9.4 15/15·독립 runner `ses_ee08369b3ffePE2jIUshi7b9Ft`(4과제 PASS, 무의미 통과 없음). 커버리지 갭 2건: ①held 전좌표 비교 → Primary 보강·재실행 15/15(호스트·장치), ②lineage 비합치 직접 시험은 W5 세션 시험(`ResetTracker` 후 구 episode OBSERVATION_LOST·신 epoch 새 id)으로 커버 — 추론 근거로 기록.
 - 2026-10-09: **R3 완료·검증(C30)** — Telemetry Replay 시간 의미: manifest `exposure <frame_id> <domain> <source_ns>`(**시뮬레이션 검증 촬영시각** — registry verify로만 검증, 미지 frame/중복은 후처리 거부) + `ReplayFrameSource` registry 게이트(데이터는 스스로 검증 불가) + `replay_run` registry 우선 구성 + `make_replay_frames.py` 합성 타이밍 모델(프레임 지연 30ms·텔레메트리 지연 5ms·`--synthetic-exposure`; 텔레메트리가 프레임보다 먼저 도착하는 현실 순서) + 테스트 5종(검증 브래킷 SOURCE_VERIFIED·도메인 불일치·미검증 도메인·지연/no-future(NO_BRACKET→도착 후 SOURCE_VERIFIED·갭 OUTSIDE_MAX_GAP)·중복/롤백/동일값 신규표본). 검증: 호스트 15/15×2(ASan)·장치 fresh staging 15/15·실엔진 재현 **전 6프레임 SOURCE_VERIFIED/OK**·컨트롤 2종(데이터 단독 승격 불가: NONE/RECEIVE)·독립 runner `ses_ee0750513ffe2PjvHRgG77QQ83`(Task1·2 PASS + 잔여 4항목 이어서 PASS).
 - 2026-10-09: **R4 완료·검증(C31)** — Spatial Observation: `GroundEstimator`(검증 브래킷을 촬영시각에 SLERP/LERP 보간 → 나디르 closed-form 검증; 발점=bbox 하단중앙, footprint=하단변 지면투영; **GEO_ESTIMATE — METRIC_VERIFIED 주장 없음**; 미지 class/투영 거부는 사유와 함께 보류) + `SafetySession` 2단계(`UpdateTracks`/`Evaluate`, Tick 등가 — 기존 시험 불변) + `replay/policy_file`(spatial/zone/rule, **SHADOW 전용**) + 러너 `enable_spatial`·`spatial_status`(DISABLED/NOT_ELIGIBLE/ESTIMATED)·**fresh-track 한정 관측** + 툴 `--policy`·공간 NDJSON + 스크립트 `--synthetic-spatial`. 검증: 호스트 16/16×2(ASan)·장치 fresh staging 16/16·독립 runner `ses_ee0529624ffeyS5wYV0KhQoe3Z`(6과제 PASS — closed-form 수계산·세션 리팩터 등가·wiring·정책 엄격성·장치·재현: **7 tick ESTIMATED·118 관측·48 episode(prox 거리 2.57/8.05m 등)·DISABLED 컨트롤에서 검출 147 동일**).
+- 2026-10-09: **R5 완료·검증(C32)** — End-to-End: (a) **RC Emulator E2E** — 장치 실녹화(`docs/verification/evidence/2026-10-09-r5/`, RelWithDebInfo·fp16·tick 해시 `ec2ccf07…`)를 `harness/.../replay_evidence.py`로 M1 메시지에 매핑 → 적용→저장→업로드→Core 조회(`test_r5_e2e.py`): **실에피소드 54**·`UNVERIFIED`/`WITHHELD` 정직 표기·좌표 날조 없음; 보류 녹화(6프레임)는 0건·WITHHELD. (b) **Replay/PSDK 동일 코드 입증** — `test_replay.cpp` §8 3경로(직접/PSDK BoundedFrameQueue/Replay 소스) `TickRecord` byte-identical + 정적 계약 `test_r5_same_code.py` + PSDK 앱 TRT ON 장치 빌드. (c) **재현성** — 동일 바이너리 3회 실행 tick 스트림 SHA256 동일(양 라운드). (d) **성능** — tick mean ~35ms/p95 ~36ms, 엔진 단계 h2d 1.1/enqueue 29.1/sync 0.8/d2h 0.1ms(`enqueue` blocking — W9-FU 주의). **검증 라운드가 발견·수정**: 미설정 빌드(-O0) vs Release 간 전처리 FP 코드젠 차이(경계 1 uint8·tick 2× 느림; 검출 집합·개수 동일) — 교차실험(r5v 바이너리×r1 프레임=r5v 해시)과 `preprocess_dump` 바이트 0.03% 차이로 확정 → `edge/CMakeLists.txt` **기본 빌드 타입(RelWithDebInfo) 고정** 후 녹화물 재생성. 회귀: 호스트 16/16(기본 빌드·ASan)·장치 fresh staging 16/16·Python 115. 독립 검증: 1차(정적·녹화물 분석) `ses_ee03ae593ffepjYapUHp3KYkww` + 최종(4/4 PASS) `ses_ee031c48bffe8QlG31AZqerIQD`.
 - (이전) B0~W4·C13: `2026-10-08-reuse-audit-and-porting.md`, `docs/verification/evidence/`.
 
 ## 7. 대기 중 결정 (비차단)
@@ -99,7 +100,7 @@
 | R1 | 공통 Frame/Telemetry 입력 계약(`SessionRunner`) + Replay 프레임/텔레메트리 소스 + `DfineDetectorPort`(실 D-FINE) + PSDK 앱 동일 러너 사용 | 프레임 ID·수신시각·출처 보존; 정상 무검출 vs 추론 실패 vs 주기 생략 구분; 장치 실엔진 Replay 추론 | **완료·검증(C28)** |
 | R2 | Tracking 출처(관측/미관측/유지) 기록·주기 분리 | ID 연속성·소실·재획득·epoch 분리; IoU 마지막 bbox 유지를 새 측정/움직임 추적으로 기록하지 않음 | **완료·검증(C29)** |
 | R3 | Telemetry Replay(도착 순서·미래 미참조) | 누락·지연·시계 불일치·동일값 재수신 구분; 검증 등급 상향 금지 | **완료·검증(C30)** |
-| R4 | Spatial Observation(발점/footprint 후보 → 기존 투영·거리·구역) | 조건 부족 시 Detection 유지·Spatial만 보류; 합성 GT는 평가에만 | 대기 |
+| R4 | Spatial Observation(발점/footprint 후보 → 기존 투영·거리·구역) | 조건 부족 시 Detection 유지·Spatial만 보류; 합성 GT는 평가에만 | **완료·검증(C31)** |
 | R5 | End-to-End(사건·증거·재현성·성능) + Replay/PSDK 동일 코드 입증 | RC Emulator E2E vs 실장비 E2E 구분; 실장비 전용 항목은 미검증으로 명시 | 대기 |
 
 - 각 단계: 구현 → 테스트(호스트 14그룹+신규, ASan, 장치) → 독립 검증 → 커밋(C28~) → 원장 증거 기록.

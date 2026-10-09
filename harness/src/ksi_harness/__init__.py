@@ -8,6 +8,7 @@ from .flight_fixtures import flight_a, flight_b, flight_c
 from .mop import CHANNELS, EDGE_TO_RC, RC_TO_EDGE, FaultTransport, make_envelope, verify_envelope
 from .rc_sim import RCSimulator
 from .rc_store import RCStore
+from .replay_evidence import flight_from_replay, load_replay_run
 
 __all__ = [
     "CHANNELS",
@@ -23,6 +24,8 @@ __all__ = [
     "flight_a",
     "flight_b",
     "flight_c",
+    "flight_from_replay",
+    "load_replay_run",
     "make_envelope",
     "verify_envelope",
     "world",

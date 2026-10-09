@@ -322,7 +322,7 @@ Interpretation caveats (read before quoting numbers):
   when per-revision episodes matter.
 - `Sweep()`/`EndSession()` carry no track snapshot (tracker state untouched).
 
-## Session runner + replay (R1–R4) scope / limits (honest)
+## Session runner + replay (R1–R5) scope / limits (honest)
 
 - ONE product processing path. `SessionRunner` (cadence gate → detector →
   matching → session step) is driven by BOTH the PSDK application and the
@@ -375,12 +375,41 @@ Interpretation caveats (read before quoting numbers):
   stable track ids with `MISSED`→`OBSERVED` across scene changes, and the
   R4 spatial demo (synthetic UNcalibrated policy): all ticks `ESTIMATED`,
   120 observations, 54 SHADOW episodes created — zone intrusions plus
-  mixed-scene person-vehicle proximity (2.56 m / 8.04 m at the synthetic
-  scale). A pipeline demonstration on staged corpus frames — never a
-  performance, detection-quality or metric-accuracy claim.
+  mixed-scene person-vehicle proximity (1.4–8.1 m at the synthetic scale).
+  A pipeline demonstration on staged corpus frames — never a performance,
+  detection-quality or metric-accuracy claim.
+- R5 end-to-end (RC emulator): the committed recordings under
+  `docs/verification/evidence/2026-10-09-r5/` are mapped by
+  `harness/src/ksi_harness/replay_evidence.py` into the M1 message shapes
+  and pushed through the RC emulator → Core upload → query
+  (`harness/tests/test_r5_e2e.py`): Core serves the REAL pipeline's 54
+  SHADOW episodes back with honest labels (geometry `UNVERIFIED`, no
+  fabricated lon/lat), while the withheld recording (pose/exposure
+  unverified) uploads COMPLETE with 0 episodes and `WITHHELD`
+  observations. This is the RC-EMULATOR E2E; the real MSDK flight path
+  (RC app + aircraft) stays explicitly unverified.
+- R5 same-code proof: `tests/test_replay.cpp` §8 drives identical content
+  through THREE input paths (direct / PSDK `BoundedFrameQueue` / replay
+  manifest + raw frames) and requires byte-identical `TickRecord`s;
+  `harness/tests/test_r5_same_code.py` adds the static contract (both
+  entry points drive the shared `SessionRunner`; neither re-implements
+  matching). Compile-time evidence: the PSDK app builds against the same
+  core with TensorRT ON on the device.
+- R5 reproducibility + performance (device, 2026-10-09, pinned
+  `RelWithDebInfo` build): three identical runs produced byte-identical
+  tick-line streams (sha256 `ec2ccf07…`); per-tick mean ~35 ms / p95
+  ~36 ms including non-640 preprocessing, with engine stages h2d 1.1 ms /
+  enqueue 29.1 ms / sync 0.8 ms / d2h 0.1 ms (`enqueue` blocks on this
+  stack — read GPU compute as enqueue+sync; W9-FU caveat applies). An
+  unset build type (-O0) was measured to run ~2× slower with 1-uint8
+  preprocess boundary differences (same detection set and counts):
+  `edge/CMakeLists.txt` now pins the default build type so recordings and
+  numbers are mode-explicit. Dev measurements, not guarantees;
+  RC-transfer latency is not measured here.
 - NOT verified here: capture-time alignment on real hardware, calibrated
   intrinsics/ground plane and metric distance accuracy, telemetry scenarios
-  beyond the pinned no-future case, real-video tracking quality, or any
-  on-aircraft behavior. Synthetic telemetry/policy from
-  `scripts/make_replay_frames.py` is plumbing material (simulated domain,
-  clearly labelled) and can never lift a grade above `RECEIVE_*` by itself.
+  beyond the pinned no-future case, real-video tracking quality, RC
+  transfer latency, or any on-aircraft behavior. Synthetic telemetry/policy
+  from `scripts/make_replay_frames.py` is plumbing material (simulated
+  domain, clearly labelled) and can never lift a grade above `RECEIVE_*`
+  by itself.

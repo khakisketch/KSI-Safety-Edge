@@ -6,6 +6,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Pin a default build type (same convention as psdk-app): an unset type means
+# -O0, and optimization level changes FP codegen (observed: preprocess
+# boundary pixels flip by 1 uint8 between -O0 and -O2), so recordings and
+# measurements must come from an explicitly known build mode.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set(CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "build type" FORCE)
+endif()
+
 option(KSI_SAFETY_EDGE_ENABLE_SANITIZERS
   "Enable AddressSanitizer + UndefinedBehaviorSanitizer (Debug recommended)" OFF)
 

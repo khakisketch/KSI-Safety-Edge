@@ -13,6 +13,7 @@
 | `rc_store.py` | RC 로컬 저장(SQLite WAL). **영속 commit 후 ACK** |
 | `rc_sim.py` / `rc_upload.py` | RC 시뮬레이터: 적용 합의, flight-session 합성, 업로드(재개·중단·손상 주입) |
 | `core_client.py` | Core HTTP 클라이언트(OpenAPI 표면) |
+| `replay_evidence.py` | **R5 브리지**: 실제 `replay_run` NDJSON 녹화 → M1 메시지 형태(관측/이벤트/요약). RC Emulator E2E용 테스트 하네스 코드(제품 로직 아님; Edge MOP emitter의 대역이며 실장비 경로는 미검증) |
 | `fixtures.py` / `flight_fixtures.py` | 결정적 fixture: world/A(일반)/B(0건+AI gap)/C(중간 재설정·2회 부팅) |
 
 ## 실행
@@ -39,6 +40,8 @@ bash scripts/run_all_tests.sh              # 전체(contracts+libs+core+harness)
 | E10 0건+AI gap 정직 표현 | `test_e10_zero_events_with_ai_gap_is_honest_complete` |
 | E11 annotation append-only·원본 불변 | `test_e11_annotations_append_only_event_immutable` |
 | E12 교차 조직 접근 차단 | `test_e12_cross_org_access_denied` |
+| **R5 RC Emulator E2E** | `test_r5_e2e.py` — **실제 장치 녹화**(`docs/verification/evidence/2026-10-09-r5/`)를 M1 메시지로 매핑해 적용→저장→업로드→조회; 보류(정합 불가) 녹화는 0건·`WITHHELD`로 정직 표시 |
+| **R5 동일 코드 계약** | `test_r5_same_code.py` — 정적 소스 계약(양 진입점이 공유 `SessionRunner` 구동); 런타임 3경로 동일성은 `edge/tests/test_replay.cpp` §8 |
 
 단위: `test_mop.py`(dedup/ack/retry/gap), `test_offline_store.py`(commit-before-ACK·재시작), `test_apply.py`(적용·재부팅).
 
@@ -53,6 +56,7 @@ bash scripts/run_all_tests.sh              # 전체(contracts+libs+core+harness)
 ## 알려진 한계·편차
 
 - 전송은 in-proc 가상 MOP(실기 MOP 대체 아님). 실기 처리량·지연은 H1에서 검증.
+- R5 녹화물은 Jetson에서 생성된 **실제 녹화**이며 브리지는 그 기록만 매핑한다(지리 좌표 날조 없음 — position은 null + UNVERIFIED/WITHHELD, GEO_ESTIMATE 한정). 실장비 MSDK E2E(앱+기체)는 미검증.
 - E12 편차: `tok-orgB-read`(read 전용)로 PUT 시 서버는 org 조회 전 **403**(스코프 게이트)을 반환.
   rc 스코프의 orgB 토큰(`tok-orgB-rc`)으로는 교차 org 리소스에 **404**. 존재 여부 누출 없음 — 의도된 동작으로 기록.
 - 개발 중 수정된 프로토콜 버그 2건: (1) 오류 후 재시도 메시지가 dedup으로 삼켜지던 문제(processed 플래그로 재처리),

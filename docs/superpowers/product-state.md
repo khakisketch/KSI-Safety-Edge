@@ -14,8 +14,8 @@ Updated: 2026-10-08 · Owner: Build (Primary) · Spec: `docs/superpowers/specs/2
 | M0 | 설계·계약 기준선 (스키마 13종, 도메인 검증, OpenAPI 39 ops) | **완료** (C1=050d80f, 독립 검증) |
 | M1 | 재생 기반 전체 흐름 (임무 적용→RC 오프라인 저장→업로드→조회, E01~E12) | **구현·재생 검증 완료** (C3=b2366a8, 112 passed) — 사용자 end-to-end 인수 미실시 |
 | H1 | 실제 장비 능력 확인 (PSDK/MSDK/영상/시간/MOP/RC 저장) | **진행 중** — 장비 접속·인벤토리 장치측 PASS + KSI 자체 코드 온보드 빌드 스모크 6/6(2026-10-08, `docs/verification/evidence/2026-10-08-h1-1/`). 기체 연결·DPK·시간 정합은 미실시. 계획(`docs/verification/h1-capability-plan.md`) |
-| M2 | 실제 Edge 탐지 전체 흐름 | 준비 진행 — W2 코어 + W4 PSDK 앱 장치 빌드·DPK 생성 + D-FINE 전처리/decode(C16) + tracker(C17) + 세션 체인(W7/C18) + detector adapter(W8/C19) + ONNX export + **W9 C++ TensorRT 런타임·smoke PASS(C23, fp16; fp32 진단 — fp16 기본)**. DPK 설치 검증 요건 확인(기체 세션 예정 — 장치 root `/` ro 이슈로 재부팅 필요 가능). GPU 추론: 합성 입력에서 검증 — 실영상·Replay 통합 후속. WAL 미검증 |
-| M3 | 공간 SHADOW (지면/거리/zone 관계, episode) | **진행 중** — Spatial 코어(C11) + **Risk/Episode 엔진(C15, 호스트 9/9×2·장치 9/9·독립 검증)** 구현. 실데이터 연결·정확도 검증은 후속. 물리 촬영 시각 미확보 시 시뮬레이션·SHADOW 유지 |
+| M2 | 실제 Edge 탐지 전체 흐름 | 진행 — W2 코어 + W4 PSDK 앱 장치 빌드·DPK 생성 + D-FINE 전처리/decode(C16) + tracker(C17) + 세션 체인(W7/C18) + detector adapter(W8/C19) + ONNX export + W9 TRT 런타임·smoke(fp16) + W10 + **R1~R4 완료(C28~C31: 공통 `SessionRunner`·실엔진 Replay·Tracking 출처·Telemetry 정합·Spatial 관측)** + **R5 RC Emulator E2E(C32: 실녹화→RC emulator→Core 업로드→조회, 동일 코드 3경로 동일성)**. GPU 추론: corpus 녹화 Replay에서 검증 — 실영상·DPK 설치(기체 세션)·MSDK E2E·WAL 미검증 |
+| M3 | 공간 SHADOW (지면/거리/zone 관계, episode) | 진행 — Spatial 코어(C11) + Risk/Episode 엔진(C15) + **R4 공간 관측(발점/bottom-edge footprint, GEO_ESTIMATE; 정합 불가 시 Detection 유지·Spatial만 보류)** — 합성 정책으로 E2E 검증(에피소드·거리 기록). 실측 calibration·GT·정확도 검증은 후속. 물리 촬영 시각 미확보 시 시뮬레이션·SHADOW 유지 |
 | M4 | 제한된 규칙 ACTIVE (규칙별 승인 후) | 대기 |
 
 ## 제품화 경로 (2026-10-08 정리)
@@ -31,15 +31,15 @@ Updated: 2026-10-08 · Owner: Build (Primary) · Spec: `docs/superpowers/specs/2
 | 줄기 | 즉시 할 일 | 막는 외부 입력 |
 |---|---|---|
 | 사용 흐름 | Android RC 앱(임무→적용→증거→업로드→조회)+재생 연동 | Android SDK/adb·RC 접근 경로 |
-| 실제 인식 | 모델 선정·녹화 영상 추론·추론 프레임 증거·Manifold 성능 | 모델 산출물·대표 영상 |
-| 판단·검증 | W5 Risk/Episode(재생 GT·SHADOW)·실장비 시험 준비 | 기체 연결 세션(④단계) |
+| 실제 인식 | **R1~R5 완료** — 실녹화 Replay로 탐지·추적·공간·E2E·성능 측정 완료(corpus/합성). 대표 영상 확보 시 평가·중장비 비교 | 대표 영상 |
+| 판단·검증 | 실측 calibration·GT·정책 임계 확보 시 L2 평가 | 기체 연결 세션(④단계) |
 
 실행 상세·진행·증거: `docs/superpowers/plans/2026-10-08-productization-plan.md`.
 
 ## 현재 슬라이스
 
 - M1 acceptance(E01~E12)는 재생 하네스에서 통과: `harness/` README에 시나리오↔테스트 매핑.
-- 현재 슬라이스: **W5 완료·검증(C15) + AI/RC 줄기 환경 조사 완료** — 남은 무차단 작업 탐색과 외부 입력(모델 ONNX·영상, Android 설치 승인, 기체 세션) 대기.
+- 현재 슬라이스: **Replay 통합 R1~R5 구현·테스트 완료(원장 §8)** — R5 RC Emulator E2E(실녹화→업로드→조회) + 동일 코드 입증; 독립 검증 진행. 실장비 E2E·설치는 기체 세션 게이트 유지.
 - 첫 인수 목표: **L1(관측 제품)** — 사용자 방향 수용(2026-10-08); L2 병행, L3 게이트 유지.
 - 범위 밖(다음): Android 앱(빌드 환경 없음), PSDK C++ 앱(장비·SDK 환경), 제품 UI(디자인 워크스페이스), ACTIVE 경고.
 
