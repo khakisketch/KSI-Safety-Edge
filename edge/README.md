@@ -320,7 +320,7 @@ Interpretation caveats (read before quoting numbers):
   when per-revision episodes matter.
 - `Sweep()`/`EndSession()` carry no track snapshot (tracker state untouched).
 
-## Session runner + replay (R1/R2) scope / limits (honest)
+## Session runner + replay (R1–R3) scope / limits (honest)
 
 - ONE product processing path. `SessionRunner` (cadence gate → detector →
   matching → session step) is driven by BOTH the PSDK application and the
@@ -342,6 +342,17 @@ Interpretation caveats (read before quoting numbers):
   detection tick can carry mixed provenance (one track `OBSERVED`, another
   `MISSED`). Tracker age/misses advance per detection tick, not per frame
   tick.
+- R3 telemetry semantics (pinned by tests): `exposure` manifest lines are
+  SIMULATED verified capture times (registry-gated and clearly labelled —
+  never real DJI capture evidence, and the live PSDK path carries no
+  exposure). Verified same-domain brackets grade `SOURCE_VERIFIED`; two
+  verified clocks in different domains stay `RECEIVE_NEAREST /
+  DOMAIN_MISMATCH`; unverified source domains stay `SOURCE_TIME_UNVERIFIED`
+  (data never verifies itself). A delayed sample is invisible to an earlier
+  frame (`NO_BRACKET` — no future), becomes the bracket once it arrives,
+  and a telemetry gap grades `OUTSIDE_MAX_GAP`. Duplicate `sample_id` and
+  receive rollback are counted and never stored; a same-value sample with a
+  new id is a NEW sample (only `sample_id` dedups).
 - Replay frames carry no exposure time (`has_exposure=false`,
   `sensor_timestamp_ns=0`): grades stay `RECEIVE_*` and `spatial_eligible`
   is false in replay v1 (it requires BOTH attitude and position

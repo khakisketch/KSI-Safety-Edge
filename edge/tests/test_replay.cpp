@@ -312,6 +312,7 @@ int main() {
                         "verify cam0 device_sensor cam0_calib\n"
                         "frame 1 1000 8 6 f1.rgb\n"
                         "frame 2 1100 8 6 f2.rgb\n"
+                        "exposure 1 cam0 800\n"
                         "pose 1 1 900 cam0 900 1.0 0.1 0.2 0.3\n"
                         "pose 2 2 950 - 0 1.0 0.0 0.0 0.0\n"
                         "position 1 1 920 cam0 920 10.0 20.0 30.0\n"),
@@ -321,6 +322,13 @@ int main() {
         CHECK(LoadReplayManifest(manifest_path, &manifest, &error),
               "valid manifest loads");
         CHECK(manifest.frames.size() == 2, "two frames parsed");
+        CHECK(manifest.exposures.size() == 1, "one exposure parsed");
+        if (manifest.exposures.size() == 1) {
+            CHECK(manifest.exposures[0].frame_id == 1 &&
+                      manifest.exposures[0].domain == "cam0" &&
+                      manifest.exposures[0].source_ns == 800,
+                  "exposure fields parsed");
+        }
         CHECK(manifest.poses.size() == 2, "two poses parsed");
         CHECK(manifest.positions.size() == 1, "one position parsed");
         CHECK(manifest.verifications.size() == 2, "two verifies parsed");
@@ -370,6 +378,8 @@ int main() {
             {"frame extra field", "frame 1 1000 8 6 f.rgb extra\n"},
             {"short position", "position 1 1 100 - 0 1 2\n"},
             {"bad quaternion", "pose 1 1 100 - 0 1 0 nan 0\n"},
+            {"exposure zero source", "exposure 1 cam0 0\n"},
+            {"exposure dash domain", "exposure 1 - 100\n"},
         };
         for (const BadCase& bad : cases) {
             TempDir dir;
@@ -382,6 +392,29 @@ int main() {
             CHECK(!loaded, (std::string("rejected: ") + bad.name).c_str());
             CHECK(error.find("line 1") != std::string::npos,
                   (std::string("line number reported: ") + bad.name).c_str());
+        }
+        // Post-parse exposure cross-checks (no line number; by frame id).
+        struct PostCase {
+            const char* name;
+            const char* text;
+        };
+        const PostCase post_cases[] = {
+            {"exposure unknown frame",
+             "frame 1 1000 8 6 f.rgb\nexposure 9 cam0 100\n"},
+            {"duplicate exposure",
+             "frame 1 1000 8 6 f.rgb\nexposure 1 cam0 100\n"
+             "exposure 1 cam1 200\n"},
+        };
+        for (const PostCase& post : post_cases) {
+            TempDir dir;
+            const std::string manifest_path = dir.File("post.manifest");
+            CHECK(WriteText(manifest_path, post.text),
+                  "post manifest written");
+            ReplayManifest manifest;
+            std::string error;
+            CHECK(!LoadReplayManifest(manifest_path, &manifest, &error),
+                  (std::string("rejected: ") + post.name).c_str());
+            CHECK(!error.empty(), "post error message present");
         }
     }
     // ---- 3) frame source: fidelity and failure modes ----
@@ -396,7 +429,9 @@ int main() {
                         "frame 10 1000 8 6 f1.rgb\n"
                         "frame 11 1100 8 6 f2.rgb\n"),
               "frames manifest written");
-        ReplayFrameSource source(manifest_path, "FLT", "BOOT", "STREAM");
+        ClockRegistry clocks;
+        ReplayFrameSource source(manifest_path, "FLT", "BOOT", "STREAM",
+                                 &clocks);
         CHECK(source.ok(), "frame source ok");
         CHECK(source.frame_count() == 2, "frame count 2");
         FramePacket packet;
@@ -420,7 +455,7 @@ int main() {
         const std::string missing_manifest = dir.File("missing.manifest");
         CHECK(WriteText(missing_manifest, "frame 1 1000 8 6 nope.rgb\n"),
               "missing manifest written");
-        ReplayFrameSource missing(missing_manifest, "F", "B", "S");
+        ReplayFrameSource missing(missing_manifest, "F", "B", "S", &clocks);
         CHECK(missing.ok(), "missing-frame manifest still loads");
         CHECK(!missing.ReadFrame(0, &packet, &ctx),
               "missing frame file fails");
@@ -430,7 +465,8 @@ int main() {
         const std::string short_manifest = dir.File("short.manifest");
         CHECK(WriteText(short_manifest, "frame 1 1000 8 6 short.rgb\n"),
               "short manifest written");
-        ReplayFrameSource short_source(short_manifest, "F", "B", "S");
+        ReplayFrameSource short_source(short_manifest, "F", "B", "S",
+                                       &clocks);
         CHECK(!short_source.ReadFrame(0, &packet, &ctx),
               "short frame file fails");
 
@@ -443,7 +479,7 @@ int main() {
         const std::string long_manifest = dir.File("long.manifest");
         CHECK(WriteText(long_manifest, "frame 1 1000 8 6 long.rgb\n"),
               "long manifest written");
-        ReplayFrameSource long_source(long_manifest, "F", "B", "S");
+        ReplayFrameSource long_source(long_manifest, "F", "B", "S", &clocks);
         CHECK(!long_source.ReadFrame(0, &packet, &ctx),
               "trailing-byte frame file fails");
     }
@@ -1018,6 +1054,193 @@ int main() {
                 }
             }
         }
+    }
+    // ---- 17) R3: simulated verified exposure + bracket through replay ----
+    {
+        TempDir dir;
+        const std::string f = dir.File("f.rgb");
+        CHECK(WriteRgb(f, 8, 6, 3), "r3 frame written");
+        const std::string manifest_path = dir.File("bracket.manifest");
+        CHECK(WriteText(manifest_path,
+                        "verify host_mono host_receive replay_clock\n"
+                        "verify cam0 device_sensor cam0_calib\n"
+                        "frame 1 5000000000 8 6 f.rgb\n"
+                        "exposure 1 cam0 1500000000\n"
+                        "pose 1 1 4950000000 cam0 1499000000 1 0 0 0\n"
+                        "pose 2 2 5000000000 cam0 1501000000 1 0 0 0\n"),
+              "bracket manifest written");
+        ClockRegistry clocks;
+        clocks.Verify("host_mono", TimeSourceKind::kHostReceive, "harness");
+        ReplayFrameSource source(manifest_path, "F", "B", "S", &clocks);
+        CHECK(source.ok(), "bracket manifest loads");
+        ApplyManifestVerifications(source.manifest(), &clocks);
+        FramePacket packet;
+        FrameContext ctx;
+        CHECK(source.ReadFrame(0, &packet, &ctx), "bracket frame readable");
+        CHECK(ctx.has_exposure && ctx.exposure.verified &&
+                  ctx.exposure.domain == "cam0" &&
+                  ctx.exposure.value_ns == 1500000000,
+              "simulated verified exposure attached");
+        SessionRunner runner(RunnerCfg(), SessionCfg(), {}, {}, {},
+                             Profile());
+        ReplayTelemetrySource telemetry(source.manifest(), "host_mono",
+                                        clocks);
+        telemetry.PushDue(ctx.receive_monotonic_ns, runner);
+        const TickRecord record = runner.ProcessFrame(packet, ctx, nullptr);
+        CHECK(record.exposure_verified, "exposure_verified recorded");
+        CHECK(record.attitude_quality == PoseQuality::kSourceVerified &&
+                  record.attitude_reason == PoseReason::kOk,
+              "verified bracket -> SOURCE_VERIFIED");
+        CHECK(!record.spatial_eligible,
+              "attitude alone is not spatially eligible");
+    }
+    // ---- 18) R3: verified clocks in different domains do not align ----
+    {
+        TempDir dir;
+        const std::string f = dir.File("f.rgb");
+        CHECK(WriteRgb(f, 8, 6, 4), "domain frame written");
+        const std::string manifest_path = dir.File("domain.manifest");
+        CHECK(WriteText(manifest_path,
+                        "verify host_mono host_receive replay_clock\n"
+                        "verify cam0 device_sensor cam0_calib\n"
+                        "verify cam1 device_sensor cam1_calib\n"
+                        "frame 1 5000000000 8 6 f.rgb\n"
+                        "exposure 1 cam0 1500000000\n"
+                        "pose 1 1 4950000000 cam1 1499000000 1 0 0 0\n"
+                        "pose 2 2 5000000000 cam1 1501000000 1 0 0 0\n"),
+              "domain manifest written");
+        ClockRegistry clocks;
+        clocks.Verify("host_mono", TimeSourceKind::kHostReceive, "harness");
+        ReplayFrameSource source(manifest_path, "F", "B", "S", &clocks);
+        CHECK(source.ok(), "domain manifest loads");
+        ApplyManifestVerifications(source.manifest(), &clocks);
+        FramePacket packet;
+        FrameContext ctx;
+        CHECK(source.ReadFrame(0, &packet, &ctx), "domain frame readable");
+        SessionRunner runner(RunnerCfg(), SessionCfg(), {}, {}, {},
+                             Profile());
+        ReplayTelemetrySource telemetry(source.manifest(), "host_mono",
+                                        clocks);
+        telemetry.PushDue(ctx.receive_monotonic_ns, runner);
+        const TickRecord record = runner.ProcessFrame(packet, ctx, nullptr);
+        CHECK(record.attitude_quality == PoseQuality::kReceiveNearest &&
+                  record.attitude_reason == PoseReason::kDomainMismatch,
+              "two verified clocks are not a common time axis");
+    }
+    // ---- 19) R3: unverified source times never promote ----
+    {
+        TempDir dir;
+        const std::string f = dir.File("f.rgb");
+        CHECK(WriteRgb(f, 8, 6, 5), "unverified frame written");
+        const std::string manifest_path = dir.File("unverified.manifest");
+        CHECK(WriteText(manifest_path,
+                        "verify host_mono host_receive replay_clock\n"
+                        "verify cam0 device_sensor cam0_calib\n"
+                        "frame 1 5000000000 8 6 f.rgb\n"
+                        "exposure 1 cam0 1500000000\n"
+                        "pose 1 1 4950000000 cam9 1499000000 1 0 0 0\n"
+                        "pose 2 2 5000000000 cam9 1501000000 1 0 0 0\n"),
+              "unverified manifest written");
+        ClockRegistry clocks;
+        clocks.Verify("host_mono", TimeSourceKind::kHostReceive, "harness");
+        ReplayFrameSource source(manifest_path, "F", "B", "S", &clocks);
+        CHECK(source.ok(), "unverified manifest loads");
+        ApplyManifestVerifications(source.manifest(), &clocks);
+        FramePacket packet;
+        FrameContext ctx;
+        CHECK(source.ReadFrame(0, &packet, &ctx), "unverified frame readable");
+        SessionRunner runner(RunnerCfg(), SessionCfg(), {}, {}, {},
+                             Profile());
+        ReplayTelemetrySource telemetry(source.manifest(), "host_mono",
+                                        clocks);
+        telemetry.PushDue(ctx.receive_monotonic_ns, runner);
+        const TickRecord record = runner.ProcessFrame(packet, ctx, nullptr);
+        CHECK(record.attitude_quality == PoseQuality::kReceiveNearest &&
+                  record.attitude_reason == PoseReason::kSourceTimeUnverified,
+              "unverified source domain stays receive grade");
+        CHECK(!record.spatial_eligible, "unverified never eligible");
+    }
+    // ---- 20) R3: delayed telemetry — invisible to an earlier frame ----
+    {
+        TempDir dir;
+        const std::string f = dir.File("f.rgb");
+        CHECK(WriteRgb(f, 8, 6, 6), "delayed frame written");
+        const std::string manifest_path = dir.File("delayed.manifest");
+        CHECK(WriteText(manifest_path,
+                        "verify host_mono host_receive replay_clock\n"
+                        "verify cam0 device_sensor cam0_calib\n"
+                        "frame 1 5000000000 8 6 f.rgb\n"
+                        "frame 2 8000000000 8 6 f.rgb\n"
+                        "frame 3 9000000000 8 6 f.rgb\n"
+                        "exposure 1 cam0 1500000000\n"
+                        "exposure 2 cam0 1500000000\n"
+                        "exposure 3 cam0 1500000000\n"
+                        "pose 1 1 4990000000 cam0 1499000000 1 0 0 0\n"
+                        "pose 2 2 8000000000 cam0 1501000000 1 0 0 0\n"),
+              "delayed manifest written");
+        ClockRegistry clocks;
+        clocks.Verify("host_mono", TimeSourceKind::kHostReceive, "harness");
+        ReplayFrameSource source(manifest_path, "F", "B", "S", &clocks);
+        CHECK(source.ok(), "delayed manifest loads");
+        ApplyManifestVerifications(source.manifest(), &clocks);
+        SessionRunner runner(RunnerCfg(), SessionCfg(), {}, {}, {},
+                             Profile());
+        ReplayTelemetrySource telemetry(source.manifest(), "host_mono",
+                                        clocks);
+        FramePacket packet;
+        FrameContext ctx;
+
+        CHECK(source.ReadFrame(0, &packet, &ctx), "delayed frame 1 readable");
+        ReplayTelemetrySource::PushResult pushed =
+            telemetry.PushDue(ctx.receive_monotonic_ns, runner);
+        CHECK(pushed.poses_pushed == 1 && telemetry.pending_count() == 1,
+              "delayed pose 2 not delivered early");
+        TickRecord record = runner.ProcessFrame(packet, ctx, nullptr);
+        CHECK(record.attitude_quality == PoseQuality::kReceiveNearest &&
+                  record.attitude_reason == PoseReason::kNoBracket,
+              "before-only bracket -> NO_BRACKET (no future sample)");
+
+        CHECK(source.ReadFrame(1, &packet, &ctx), "delayed frame 2 readable");
+        pushed = telemetry.PushDue(ctx.receive_monotonic_ns, runner);
+        CHECK(pushed.poses_pushed == 1 && telemetry.pending_count() == 0,
+              "delayed pose 2 arrives for frame 2");
+        record = runner.ProcessFrame(packet, ctx, nullptr);
+        CHECK(record.attitude_quality == PoseQuality::kSourceVerified,
+              "arrived bracket -> SOURCE_VERIFIED");
+
+        CHECK(source.ReadFrame(2, &packet, &ctx), "delayed frame 3 readable");
+        telemetry.PushDue(ctx.receive_monotonic_ns, runner);
+        record = runner.ProcessFrame(packet, ctx, nullptr);
+        CHECK(record.attitude_quality == PoseQuality::kNone &&
+                  record.attitude_reason == PoseReason::kOutsideMaxGap,
+              "telemetry gap -> OUTSIDE_MAX_GAP");
+    }
+    // ---- 21) R3: duplicates, receive rollback, same-value new sample ----
+    {
+        TempDir dir;
+        const std::string manifest_path = dir.File("ring.manifest");
+        CHECK(WriteText(manifest_path,
+                        "pose 1 1 1000000000 - 0 1 0.1 0 0\n"
+                        "pose 1 1 1100000000 - 0 1 0.1 0 0\n"
+                        "pose 2 2 1050000000 - 0 1 0.2 0 0\n"
+                        "pose 3 3 900000000 - 0 1 0.3 0 0\n"
+                        "pose 4 4 1200000000 - 0 1 0.2 0 0\n"),
+              "ring manifest written");
+        ReplayManifest manifest;
+        std::string error;
+        CHECK(LoadReplayManifest(manifest_path, &manifest, &error),
+              "ring manifest loads");
+        ClockRegistry clocks;
+        ReplayTelemetrySource telemetry(manifest, "host_mono", clocks);
+        SessionRunner runner(RunnerCfg(), SessionCfg(), {}, {}, {},
+                             Profile());
+        const ReplayTelemetrySource::PushResult pushed =
+            telemetry.PushDue(2000000000, runner);
+        CHECK(pushed.poses_pushed == 3,
+              "id1 + id2 + id4 recorded (id4: same value, new sample)");
+        CHECK(pushed.duplicates == 1, "same sample_id -> duplicate");
+        CHECK(pushed.rollbacks == 1, "receive rollback counted");
+        CHECK(runner.AttitudeSamples() == 3, "ring holds only recorded");
     }
     if (edge_test::failures == 0) {
         std::printf("replay: all checks passed\n");

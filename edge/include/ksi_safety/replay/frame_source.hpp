@@ -2,11 +2,13 @@
 // and fills the SAME FramePacket/FrameContext types the PSDK capture path
 // produces — the shared SessionRunner cannot tell the sources apart.
 //
-// Provenance rules (R1):
+// Provenance rules (R1/R3):
 // - width/height/frame_id/received_monotonic_ns mirror the manifest entry.
-// - sensor_timestamp_ns stays 0 (replay v1 has no sensor clock) and
-//   has_exposure stays false: receive time is never promoted to a capture
-//   time (R3 concerns; receive-nearest matching grades stay receive grade).
+// - sensor_timestamp_ns stays 0 (replay v1 has no sensor clock).
+// - has_exposure is false unless the manifest declares an `exposure` line
+//   for the frame; then ctx.exposure is built through the caller's clock
+//   registry (SIMULATED capture time — verified only if the registry says
+//   so; never evidence of a real DJI capture time).
 // - A frame file must be exactly width*height*3 bytes of raw RGB; a missing
 //   file, a short read, or trailing bytes fails ReadFrame.
 //
@@ -16,11 +18,13 @@
 #define KSI_SAFETY_REPLAY_FRAME_SOURCE_HPP
 
 #include <cstddef>
+#include <map>
 #include <string>
 
 #include "ksi_safety/capture/frame_queue.hpp"
 #include "ksi_safety/replay/replay_manifest.hpp"
 #include "ksi_safety/time/matching.hpp"
+#include "ksi_safety/time/provenance.hpp"
 
 namespace ksi::safety {
 
@@ -29,9 +33,12 @@ class ReplayFrameSource {
     // Loads and validates the manifest. `ok()` is false when the manifest
     // cannot be read/parsed (`error()` says why). flight/boot/stream ids are
     // stamped into every FrameContext (they identify the replay run, exactly
-    // as the PSDK app stamps its own).
+    // as the PSDK app stamps its own). `clocks` must outlive the source and
+    // must already hold the manifest's verify lines when ReadFrame runs
+    // (exposure verification is a registry lookup, never inferred).
     ReplayFrameSource(const std::string& manifest_path, std::string flight_id,
-                      std::string boot_id, std::string stream_id);
+                      std::string boot_id, std::string stream_id,
+                      const ClockRegistry* clocks);
 
     bool ok() const { return ok_; }
     const std::string& error() const { return error_; }
@@ -50,6 +57,8 @@ class ReplayFrameSource {
     std::string flight_id_;
     std::string boot_id_;
     std::string stream_id_;
+    const ClockRegistry* clocks_ = nullptr;
+    std::map<std::uint32_t, std::size_t> exposure_by_frame_;
     bool ok_ = false;
     std::string error_;
 };

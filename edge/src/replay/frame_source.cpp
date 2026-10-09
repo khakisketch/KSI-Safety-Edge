@@ -33,12 +33,19 @@ std::string ResolvePath(const std::string& dir, const std::string& path) {
 ReplayFrameSource::ReplayFrameSource(const std::string& manifest_path,
                                      std::string flight_id,
                                      std::string boot_id,
-                                     std::string stream_id)
+                                     std::string stream_id,
+                                     const ClockRegistry* clocks)
     : dir_(DirOf(manifest_path)),
       flight_id_(std::move(flight_id)),
       boot_id_(std::move(boot_id)),
-      stream_id_(std::move(stream_id)) {
+      stream_id_(std::move(stream_id)),
+      clocks_(clocks) {
     ok_ = LoadReplayManifest(manifest_path, &manifest_, &error_);
+    if (ok_) {
+        for (std::size_t i = 0; i < manifest_.exposures.size(); ++i) {
+            exposure_by_frame_[manifest_.exposures[i].frame_id] = i;
+        }
+    }
 }
 
 bool ReplayFrameSource::ReadFrame(std::size_t index, FramePacket* packet,
@@ -79,7 +86,17 @@ bool ReplayFrameSource::ReadFrame(std::size_t index, FramePacket* packet,
     ctx->stream_id = stream_id_;
     ctx->frame_id = entry.frame_id;
     ctx->receive_monotonic_ns = entry.receive_mono_ns;
-    ctx->has_exposure = false;  // receive grade only (never a capture claim)
+    ctx->has_exposure = false;
+    const std::map<std::uint32_t, std::size_t>::const_iterator exposure_it =
+        exposure_by_frame_.find(entry.frame_id);
+    if (exposure_it != exposure_by_frame_.end() && clocks_ != nullptr) {
+        const ReplayExposureEntry& exposure =
+            manifest_.exposures[exposure_it->second];
+        ctx->has_exposure = true;
+        ctx->exposure = clocks_->Make(exposure.domain,
+                                      TimeSourceKind::kDeviceSensor,
+                                      exposure.source_ns);
+    }
     return true;
 }
 

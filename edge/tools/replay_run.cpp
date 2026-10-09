@@ -354,8 +354,12 @@ int main(int argc, char** argv) {
         return 2;
     }
 
+    ClockRegistry clocks;
+    clocks.Verify("host_mono", TimeSourceKind::kHostReceive,
+                  "replay harness clock");
+
     ReplayFrameSource frames(args.manifest, args.flight_id, args.boot_id,
-                             args.stream_id);
+                             args.stream_id, &clocks);
     if (!frames.ok()) {
         std::fprintf(stderr, "manifest error: %s\n", frames.error().c_str());
         return 1;
@@ -365,10 +369,6 @@ int main(int argc, char** argv) {
                      args.manifest.c_str());
         return 1;
     }
-
-    ClockRegistry clocks;
-    clocks.Verify("host_mono", TimeSourceKind::kHostReceive,
-                  "replay harness clock");
     ksi::safety::ApplyManifestVerifications(frames.manifest(), &clocks);
 
     DetectorPort* detector = nullptr;

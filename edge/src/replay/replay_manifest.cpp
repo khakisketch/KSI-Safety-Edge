@@ -172,6 +172,23 @@ bool LoadReplayManifest(const std::string& path, ReplayManifest* out,
                 return Fail(label, "empty frame path", error);
             }
             out->frames.push_back(entry);
+        } else if (keyword == "exposure") {
+            ReplayExposureEntry entry;
+            if (!ParseUint32(&iss, &entry.frame_id) ||
+                !(iss >> entry.domain) ||
+                !ParseInt64(&iss, &entry.source_ns)) {
+                return Fail(label, "malformed exposure line", error);
+            }
+            if (HasExtraField(&iss)) {
+                return Fail(label, "too many fields on exposure line", error);
+            }
+            if (entry.domain == "-") {
+                return Fail(label, "exposure domain must be named", error);
+            }
+            if (entry.source_ns <= 0) {
+                return Fail(label, "exposure source_ns must be > 0", error);
+            }
+            out->exposures.push_back(entry);
         } else if (keyword == "pose" || keyword == "position") {
             const bool is_pose = keyword == "pose";
             ReplayPoseEntry pose_entry;
@@ -237,6 +254,34 @@ bool LoadReplayManifest(const std::string& path, ReplayManifest* out,
             *error = "read error on manifest: " + path;
         }
         return false;
+    }
+    // Exposure cross-checks (after the whole file, since exposure lines may
+    // precede their frame): the frame must exist and be unique per exposure.
+    for (std::size_t i = 0; i < out->exposures.size(); ++i) {
+        const ReplayExposureEntry& exposure = out->exposures[i];
+        bool frame_found = false;
+        for (std::size_t f = 0; f < out->frames.size(); ++f) {
+            if (out->frames[f].frame_id == exposure.frame_id) {
+                frame_found = true;
+                break;
+            }
+        }
+        if (!frame_found) {
+            if (error != nullptr) {
+                *error = "exposure references unknown frame " +
+                         std::to_string(exposure.frame_id);
+            }
+            return false;
+        }
+        for (std::size_t j = 0; j < i; ++j) {
+            if (out->exposures[j].frame_id == exposure.frame_id) {
+                if (error != nullptr) {
+                    *error = "duplicate exposure for frame " +
+                             std::to_string(exposure.frame_id);
+                }
+                return false;
+            }
+        }
     }
     return true;
 }
