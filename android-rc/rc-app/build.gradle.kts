@@ -44,4 +44,13 @@ dependencies {
     // here (rc-core itself is unchanged).
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
     implementation("androidx.appcompat:appcompat:1.7.0")
+
+    // A6 host-side unit tests for the pure observation model.
+    testImplementation("junit:junit:4.13.2")
+}
+
+android {
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
 }

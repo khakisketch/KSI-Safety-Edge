@@ -20,6 +20,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvMission: TextView
     private lateinit var tvFlight: TextView
     private lateinit var tvLink: TextView
+    private lateinit var tvStatus: TextView
+    private lateinit var tvVideo: TextView
+    private lateinit var tvAi: TextView
+    private lateinit var tvEvents: TextView
     private lateinit var tvDemo: TextView
     private lateinit var tvEvidence: TextView
     private lateinit var tvSync: TextView
@@ -31,6 +35,8 @@ class MainActivity : AppCompatActivity() {
     private var hasSyncReport = false
     private var selectedSiteId: String? = null
     private var selectedBundleId: String? = null
+    private var videoFrames = 0L
+    private var eventGeneration = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +48,10 @@ class MainActivity : AppCompatActivity() {
         tvMission = findViewById(R.id.tvMission)
         tvFlight = findViewById(R.id.tvFlight)
         tvLink = findViewById(R.id.tvLink)
+        tvStatus = findViewById(R.id.tvStatus)
+        tvVideo = findViewById(R.id.tvVideo)
+        tvAi = findViewById(R.id.tvAi)
+        tvEvents = findViewById(R.id.tvEvents)
         tvDemo = findViewById(R.id.tvDemo)
         tvEvidence = findViewById(R.id.tvEvidence)
         tvSync = findViewById(R.id.tvSync)
@@ -73,6 +83,14 @@ class MainActivity : AppCompatActivity() {
             val sent = session.retryUnacked()
             show("re-sent $sent unacked envelope(s), same msg_id")
         }
+
+        // -- A6 video seam
+        app.videoSource.setListener(object : VideoSource.Listener {
+            override fun onState(state: VideoSource.State) { refresh() }
+            override fun onFrame(frameCount: Long) { videoFrames = frameCount }
+        })
+        on(R.id.btnVideoConnect) { app.videoSource.connect(); refresh() }
+        on(R.id.btnVideoDisconnect) { app.videoSource.disconnect(); refresh() }
 
         // -- demo bench (isolated store; NEVER uploads)
         on(R.id.btnDemoTick) {
@@ -171,6 +189,27 @@ class MainActivity : AppCompatActivity() {
             "out: pending=${endpoint?.pendingCount() ?: 0} " +
             "acked=${endpoint?.ackedCount ?: 0}"
 
+        // A6: three INDEPENDENT connection facts — never merged.
+        val aircraft = when (session.link.aircraftConnected) {
+            true -> "connected"
+            false -> "not connected"
+            null -> "unknown (link cannot report)"
+        }
+        tvStatus.text = "aircraft=$aircraft" +
+            (if (session.link.isSimulated) " [SIMULATED link]" else "") + "\n" +
+            "manifold/link=${session.link.state}$simulatedTag\n" +
+            "internet=${internetStatus()}"
+
+        val videoSim = if (app.videoSource.isSimulated) "SIMULATED" else "MSDK"
+        val overlay = if (app.videoSource.frameMappingVerified) {
+            "overlay=allowed (mapping verified)"
+        } else {
+            "overlay=DISABLED (frame<->observation mapping unverified; detections are listed, not drawn)"
+        }
+        tvVideo.text = "video[$videoSim]=${app.videoSource.state} frames=$videoFrames\n$overlay"
+
+        refreshObservation(flight?.get("flight_id")?.asText())
+
         val demoStore = demo.session.store
         val demoFlight = demo.activeFlight()
         tvDemo.text = "DEMO (isolated store, no upload)\n" +
@@ -216,6 +255,78 @@ class MainActivity : AppCompatActivity() {
         }
         lines.append("artifacts=${artifacts.size} synced=$synced (SYNCED only after COMMITTED)")
         tvEvidence.text = lines.toString()
+    }
+
+    /** A6: AI/observation status + event cards — derived from the store only. */
+    private fun refreshObservation(flightId: String?) {
+        if (flightId == null) {
+            tvAi.text = "AI: no active flight (start a flight first)"
+            tvEvents.text = "-"
+            return
+        }
+        val pulse = ObservationModel.observationPulse(session.store, flightId)
+        val ageMs = ObservationModel.lastDataAgeMs(
+            pulse.lastReceivedUtc, ReceiptClock.now(),
+        )
+        val ageText = when {
+            ageMs == null -> "no data received yet (receipt clock)"
+            ageMs >= ObservationModel.STALE_DATA_MS ->
+                "NO DATA for ${ageMs / 1000.0}s (receipt clock) — check Edge/link"
+            else -> "last data ${ageMs / 1000.0}s ago (receipt clock)"
+        }
+        tvAi.text = "observations=${pulse.count} withheld=${pulse.withheld} " +
+            "degraded=${pulse.degraded}\n" +
+            "events are SHADOW candidates — no warning was issued\n" +
+            ageText
+
+        val generation = ++eventGeneration
+        session.bg.execute {
+            val cards = ObservationModel.eventCards(session.store, flightId)
+            val text = buildString {
+                if (cards.isEmpty()) {
+                    append("no events received (local store)")
+                } else {
+                    for (card in cards.take(10)) {
+                        append(if (card.detectionOnly) "[DETECT·관측]" else "[SHADOW·위험후보]")
+                        append(" ${card.eventType} q=${card.observationQuality}")
+                        append(" edge_ns=${card.detectedAtEdgeNs}")
+                        if (card.evidence.isNotEmpty()) {
+                            append(
+                                " · " + when {
+                                    card.evidenceSynced -> "증거: 동기화됨"
+                                    card.evidenceComplete -> "증거: 로컬 저장 완료(미동기화)"
+                                    else -> "증거: 미완료"
+                                },
+                            )
+                        }
+                        append("\n")
+                    }
+                }
+            }
+            runOnUiThread {
+                if (generation == eventGeneration && !isDestroyed) {
+                    tvEvents.text = text
+                }
+            }
+        }
+    }
+
+    private fun internetStatus(): String {
+        val manager = getSystemService(android.net.ConnectivityManager::class.java)
+            ?: return "unknown"
+        val network = manager.activeNetwork ?: return "none"
+        val capabilities = manager.getNetworkCapabilities(network) ?: return "unknown"
+        val internet = capabilities.hasCapability(
+            android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET,
+        )
+        val validated = capabilities.hasCapability(
+            android.net.NetworkCapabilities.NET_CAPABILITY_VALIDATED,
+        )
+        return when {
+            validated -> "validated"
+            internet -> "connected (unvalidated)"
+            else -> "no internet"
+        }
     }
 
     private fun syncSites() {

@@ -157,6 +157,64 @@
                 android:text="@string/btn_retry" />
         </LinearLayout>
 
+        <!-- A6: independent status + video + AI/events -->
+        <TextView
+            android:id="@+id/tvStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="14sp"
+            android:paddingTop="4dp" />
+
+        <TextView
+            android:id="@+id/tvVideo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="14sp"
+            android:paddingTop="4dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/btnVideoConnect"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_video_connect" />
+            <Button
+                android:id="@+id/btnVideoDisconnect"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_video_disconnect" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvAi"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="14sp"
+            android:paddingTop="4dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/label_events"
+            android:textSize="13sp"
+            android:paddingTop="4dp" />
+
+        <TextView
+            android:id="@+id/tvEvents"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="13sp"
+            android:typeface="monospace" />
+
         <!-- Demo bench (isolated) -->
         <TextView
             android:layout_width="match_parent"

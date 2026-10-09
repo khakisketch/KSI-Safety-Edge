@@ -21,6 +21,10 @@ interface DroneLink {
     val state: State
     /** True for bench/demo links; the MSDK implementation reports false. */
     val isSimulated: Boolean
+    /** Aircraft connection, INDEPENDENT of the link state.
+     *  null = the link cannot report it (Fake/dev link) — shown as
+     *  "unknown", never guessed. */
+    val aircraftConnected: Boolean?
     fun setListener(listener: Listener?)
     fun connect()
     fun disconnect()
@@ -41,6 +45,7 @@ class FakeDroneLink : DroneLink {
     override var state: DroneLink.State = DroneLink.State.DISCONNECTED
         private set
     override val isSimulated: Boolean = true
+    override val aircraftConnected: Boolean? = null
 
     val sentBytes = mutableListOf<ByteArray>()
 

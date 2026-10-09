@@ -412,6 +412,32 @@ class FileRcStore(
     }
 
     @Synchronized
+    override fun lastReceivedUtc(flightId: String): String? {
+        var latest: java.time.Instant? = null
+        fun scan(entries: Collection<BootNode>) {
+            for (entry in entries) {
+                if (entry.node.get("flight_id")?.asText() != flightId) continue
+                val instant = entry.receivedUtc
+                    ?.let { runCatching { java.time.Instant.parse(it) }.getOrNull() }
+                    ?: continue
+                if (latest == null || instant.isAfter(latest)) latest = instant
+            }
+        }
+        scan(observations.values)
+        scan(events.values)
+        scan(summaries.values)
+        scan(artifacts.values)
+        for ((_, node) in gaps) {
+            if (node.get("flight_id")?.asText() != flightId) continue
+            val instant = node.get("received_wall_utc")?.takeIf { it.isTextual }?.asText()
+                ?.let { runCatching { java.time.Instant.parse(it) }.getOrNull() }
+                ?: continue
+            if (latest == null || instant.isAfter(latest)) latest = instant
+        }
+        return latest?.toString()
+    }
+
+    @Synchronized
     override fun gapsForBoot(bootId: String): List<ObjectNode> =
         gaps.entries.filter { it.key.first == bootId }
             .sortedWith(compareBy({ it.key.second }, { it.key.third }))

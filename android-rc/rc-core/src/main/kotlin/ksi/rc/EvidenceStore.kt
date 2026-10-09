@@ -42,6 +42,14 @@ interface EvidenceStore {
      */
     fun receivedFirstLastUtc(flightId: String, bootId: String): Pair<String, String>?
 
+    /**
+     * Latest RC receipt wall-clock across all received records of a flight
+     * (observations/events/summaries/artifacts/gaps), or null. Drives
+     * honest "no data for N s" indicators — receipt-based, never a
+     * converted Edge timestamp.
+     */
+    fun lastReceivedUtc(flightId: String): String?
+
     /** Data-plane sequence numbers received for a (boot, channel). */
     fun receivedSeqs(bootId: String, channel: String): Set<Long>
 

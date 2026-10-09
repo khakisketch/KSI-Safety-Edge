@@ -19,6 +19,9 @@
     <string name="btn_connect">Connect</string>
     <string name="btn_disconnect">Disconnect</string>
     <string name="btn_retry">Retry unacked</string>
+    <string name="btn_video_connect">Connect video</string>
+    <string name="btn_video_disconnect">Disconnect video</string>
+    <string name="label_events">Events — [DETECT] object detections vs [SHADOW] risk candidates (NOT warnings). Times shown are Edge-monotonic (device domain), freshness uses the RC receipt clock.</string>
     <string name="btn_demo_tick">Demo tick</string>
     <string name="btn_demo_new_flight">New demo flight</string>
     <string name="btn_refresh_evidence">Refresh (local)</string>

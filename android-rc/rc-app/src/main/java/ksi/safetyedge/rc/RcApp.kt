@@ -18,6 +18,11 @@ class RcApp : Application() {
     lateinit var config: AppConfig
         private set
 
+    /** A6: live-video seam. MSDK v5 implementation is H1-gated; the bench
+     *  source delivers no frames and never allows overlays. */
+    lateinit var videoSource: VideoSource
+        private set
+
     override fun onCreate() {
         super.onCreate()
         config = AppConfig(this)
@@ -32,5 +37,7 @@ class RcApp : Application() {
             },
         )
         demoSession = DemoSession(filesDir, { ReceiptClock.now() })
+        // H1: replace with the DJI MSDK v5 video implementation (same interface).
+        videoSource = FakeVideoSource()
     }
 }
