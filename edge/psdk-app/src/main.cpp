@@ -1,9 +1,12 @@
 // edge/psdk-app — KSI Safety Edge PSDK application, v0.
 //
 // Scope: RGB liveview ingress (bounded, callback-safe) + FC subscription
-// provenance + receive-grade temporal matching, written as NDJSON. No
-// detector, no capture-time claims: every match grade stays at RECEIVE_*
-// because neither frames nor telemetry carry a verified sensor timestamp.
+// provenance, processed by the SAME SessionRunner the Replay driver uses
+// (edge/src/runtime/session_runner.cpp): detection cadence gate -> detector
+// -> temporal matching -> session, written as NDJSON. The detector is the
+// real D-FINE path when built with TensorRT and given --engine; otherwise
+// every tick stays NOT_RUN. No capture-time claims: RGB liveview carries no
+// verified exposure time, so match grades stay at RECEIVE_*.
 //
 // Callback discipline (from the SI psdk-tap from which the platform glue
 // came): timestamp FIRST, then a bounded try-push only. No file I/O, no
@@ -25,8 +28,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <memory>
 #include <mutex>
 #include <thread>
+#include <vector>
 
 extern "C" {
 #include "platform/logger_console_glue.h"
@@ -36,6 +41,9 @@ extern "C" {
 }
 
 #include "ksi_safety/capture/frame_queue.hpp"
+#include "ksi_safety/perception/dfine_detector_port.hpp"
+#include "ksi_safety/perception/tensorrt_runtime.hpp"
+#include "ksi_safety/runtime/session_runner.hpp"
 #include "ksi_safety/time/interpolation.hpp"
 #include "ksi_safety/time/matching.hpp"
 #include "ksi_safety/time/provenance.hpp"
@@ -45,18 +53,28 @@ namespace {
 
 using ksi::safety::BoundedFrameQueue;
 using ksi::safety::ClockRegistry;
+using ksi::safety::DetectorPort;
+using ksi::safety::DfineConfig;
+using ksi::safety::DfineDetectorPort;
 using ksi::safety::FrameContext;
 using ksi::safety::FrameDropReason;
 using ksi::safety::FrameMetadata;
 using ksi::safety::FramePacket;
-using ksi::safety::MatchFrame;
-using ksi::safety::MatchPolicy;
+using ksi::safety::ModelProfile;
+using ksi::safety::PushVerdict;
 using ksi::safety::Quaternion;
+using ksi::safety::RiskRule;
+using ksi::safety::RunnerConfig;
 using ksi::safety::Sample;
+using ksi::safety::SessionConfig;
+using ksi::safety::SessionRunner;
+using ksi::safety::TensorRtRuntime;
+using ksi::safety::TickRecord;
 using ksi::safety::TimeSourceKind;
 using ksi::safety::ToString;
-using ksi::safety::TopicRing;
+using ksi::safety::TrackerConfig;
 using ksi::safety::Vec3;
+using ksi::safety::ZoneRevision;
 
 constexpr int kAppVersion = 0;
 constexpr const char* kDefaultOutPath = "/tmp/ksi-safety-edge.ndjson";
@@ -134,8 +152,12 @@ void FormatWallUtc(std::int64_t wall_ms, char* out, std::size_t out_size) {
 struct AppState {
     ClockRegistry clocks;
     BoundedFrameQueue frames{kFrameSlots, kMaxRgbFrameBytes};
-    TopicRing<Quaternion> attitude{kAttitudeRingCapacity};
-    TopicRing<Vec3> position{kPositionRingCapacity};
+    // R1: the shared product runner (same code path as the Replay driver).
+    // Telemetry callbacks push under the two mutexes below; the runner
+    // itself is not thread-safe.
+    std::unique_ptr<SessionRunner> runner;
+    std::unique_ptr<TensorRtRuntime> runtime;
+    std::unique_ptr<DetectorPort> detector;  // null when no engine is given
     std::mutex attitude_mutex;
     std::mutex position_mutex;
     std::FILE* out = nullptr;
@@ -150,9 +172,11 @@ struct AppState {
     std::atomic<std::uint64_t> hard_sync_sdk_ts_seen{0};
     std::atomic<std::uint64_t> hard_sync_malformed{0};
     std::atomic<std::uint64_t> att_ring_contended{0};
+    std::atomic<std::uint64_t> att_rejected{0};
     std::atomic<std::uint64_t> position_fused{0};
     std::atomic<std::uint64_t> position_malformed{0};
     std::atomic<std::uint64_t> pos_ring_contended{0};
+    std::atomic<std::uint64_t> pos_rejected{0};
     std::atomic<std::uint64_t> velocity{0};
     std::atomic<std::uint64_t> gimbal{0};
     std::atomic<std::uint64_t> gps_details{0};
@@ -221,9 +245,13 @@ T_DjiReturnCode OnHardSync(const std::uint8_t* data, std::uint16_t data_size,
     sample.value.z = static_cast<double>(hard_sync->q.q3);
     sample.has_source_time = false;  // unverified by design (see above).
     if (g_state->attitude_mutex.try_lock()) {
-        g_state->attitude.Push(sample);
+        const PushVerdict verdict = g_state->runner->PushPose(sample);
         g_state->attitude_mutex.unlock();
-        g_state->hard_sync.fetch_add(1, std::memory_order_relaxed);
+        if (verdict == PushVerdict::kRecorded) {
+            g_state->hard_sync.fetch_add(1, std::memory_order_relaxed);
+        } else {
+            g_state->att_rejected.fetch_add(1, std::memory_order_relaxed);
+        }
     } else {
         g_state->att_ring_contended.fetch_add(1, std::memory_order_relaxed);
     }
@@ -254,9 +282,13 @@ T_DjiReturnCode OnPositionFused(const std::uint8_t* data, std::uint16_t data_siz
     sample.value.z = static_cast<double>(pos->altitude);
     sample.has_source_time = false;  // unverified by design.
     if (g_state->position_mutex.try_lock()) {
-        g_state->position.Push(sample);
+        const PushVerdict verdict = g_state->runner->PushPosition(sample);
         g_state->position_mutex.unlock();
-        g_state->position_fused.fetch_add(1, std::memory_order_relaxed);
+        if (verdict == PushVerdict::kRecorded) {
+            g_state->position_fused.fetch_add(1, std::memory_order_relaxed);
+        } else {
+            g_state->pos_rejected.fetch_add(1, std::memory_order_relaxed);
+        }
     } else {
         g_state->pos_ring_contended.fetch_add(1, std::memory_order_relaxed);
     }
@@ -293,23 +325,9 @@ T_DjiReturnCode OnGpsDetails(const std::uint8_t* data, std::uint16_t data_size,
     return DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS;
 }
 
-// --- Worker (non-callback thread: matching + file I/O live here) --------------
-
-void WriteMatchAtt(std::FILE* out, const ksi::safety::MatchResult<Quaternion>& m) {
-    std::fprintf(out, "\"att\":{\"q\":\"%s\",\"r\":\"%s\",\"gap_ns\":%lld}",
-                 ToString(m.quality), ToString(m.reason),
-                 static_cast<long long>(m.nearest_gap_ns));
-}
-
-void WriteMatchPos(std::FILE* out, const ksi::safety::MatchResult<Vec3>& m) {
-    std::fprintf(out, "\"pos\":{\"q\":\"%s\",\"r\":\"%s\",\"gap_ns\":%lld}",
-                 ToString(m.quality), ToString(m.reason),
-                 static_cast<long long>(m.nearest_gap_ns));
-}
+// --- Worker (non-callback thread: runner + file I/O live here) ----------------
 
 void WorkerMain(AppState* state) {
-    const MatchPolicy policy{/*max_receive_gap_ns=*/50LL * kNsPerMs,
-                             /*max_bracket_interval_ns=*/20LL * kNsPerMs};
     FramePacket packet;
     for (;;) {
         if (!state->frames.TryPop(&packet)) {
@@ -323,30 +341,28 @@ void WorkerMain(AppState* state) {
         ctx.frame_id = packet.metadata.frame_id;
         ctx.receive_monotonic_ns = packet.metadata.received_monotonic_ns;
         ctx.has_exposure = false;  // recv-grade only: no verified exposure time.
-
-        ksi::safety::MatchResult<Quaternion> att;
-        {
-            std::lock_guard<std::mutex> lock(state->attitude_mutex);
-            att = MatchFrame(ctx, state->attitude, policy);
-        }
-        ksi::safety::MatchResult<Vec3> pos;
-        {
-            std::lock_guard<std::mutex> lock(state->position_mutex);
-            pos = MatchFrame(ctx, state->position, policy);
-        }
+        const TickRecord record =
+            state->runner->ProcessFrame(packet, ctx, state->detector.get());
         const std::uint64_t i =
             state->samples_written.fetch_add(1, std::memory_order_relaxed);
-        std::fprintf(state->out,
-                     "{\"type\":\"frame\",\"i\":%llu,\"frame_id\":%u,\"w\":%u,\"h\":%u,"
-                     "\"recv_mono_ns\":%lld,",
-                     static_cast<unsigned long long>(i),
-                     packet.metadata.frame_id, packet.metadata.width,
-                     packet.metadata.height,
-                     static_cast<long long>(packet.metadata.received_monotonic_ns));
-        WriteMatchAtt(state->out, att);
-        std::fputc(',', state->out);
-        WriteMatchPos(state->out, pos);
-        std::fputs("}\n", state->out);
+        std::fprintf(
+            state->out,
+            "{\"type\":\"frame\",\"i\":%llu,\"frame_id\":%u,\"w\":%u,"
+            "\"h\":%u,\"recv_mono_ns\":%lld,"
+            "\"detect\":\"%s\",\"dets\":%zu,"
+            "\"att\":{\"q\":\"%s\",\"r\":\"%s\",\"gap_ns\":%lld},"
+            "\"pos\":{\"q\":\"%s\",\"r\":\"%s\",\"gap_ns\":%lld},"
+            "\"spatial_eligible\":%s,\"tracks\":%zu}\n",
+            static_cast<unsigned long long>(i), packet.metadata.frame_id,
+            packet.metadata.width, packet.metadata.height,
+            static_cast<long long>(packet.metadata.received_monotonic_ns),
+            ToString(record.detection_status), record.detections.size(),
+            ToString(record.attitude_quality), ToString(record.attitude_reason),
+            static_cast<long long>(record.attitude_gap_ns),
+            ToString(record.position_quality), ToString(record.position_reason),
+            static_cast<long long>(record.position_gap_ns),
+            record.spatial_eligible ? "true" : "false",
+            record.tracks.size());
         if ((i & 15U) == 0U) {
             std::fflush(state->out);
         }
@@ -388,6 +404,8 @@ bool FillUserInfo(T_DjiUserInfo* user_info) {
 struct CliArgs {
     const char* out_path = kDefaultOutPath;
     long long duration_sec = KSI_SAFETY_EDGE_DURATION_SEC;
+    const char* engine_path = nullptr;  // optional serialized TRT engine
+    long long detect_every = 1;
 };
 
 bool ParseArgs(int argc, char** argv, CliArgs* args) {
@@ -396,19 +414,30 @@ bool ParseArgs(int argc, char** argv, CliArgs* args) {
             args->out_path = argv[++i];
         } else if (std::strcmp(argv[i], "--duration-sec") == 0 && i + 1 < argc) {
             args->duration_sec = std::atoll(argv[++i]);
+        } else if (std::strcmp(argv[i], "--engine") == 0 && i + 1 < argc) {
+            args->engine_path = argv[++i];
+        } else if (std::strcmp(argv[i], "--detect-every") == 0 && i + 1 < argc) {
+            args->detect_every = std::atoll(argv[++i]);
         } else if (std::strcmp(argv[i], "--help") == 0) {
-            std::fprintf(stderr, "usage: %s [--out PATH] [--duration-sec N]\n",
+            std::fprintf(stderr,
+                         "usage: %s [--out PATH] [--duration-sec N] "
+                         "[--engine PATH] [--detect-every N]\n",
                          argv[0]);
             std::exit(0);
         } else {
             std::fprintf(stderr, "unknown argument: %s\nusage: %s [--out PATH] "
-                                 "[--duration-sec N]\n",
+                                 "[--duration-sec N] [--engine PATH] "
+                                 "[--detect-every N]\n",
                          argv[i], argv[0]);
             return false;
         }
     }
     if (args->out_path[0] == '\0' || args->duration_sec <= 0) {
         std::fprintf(stderr, "--out must be non-empty and --duration-sec > 0\n");
+        return false;
+    }
+    if (args->detect_every < 1) {
+        std::fprintf(stderr, "--detect-every must be >= 1\n");
         return false;
     }
     return true;
@@ -436,6 +465,53 @@ int main(int argc, char** argv) {
 
     AppState state;
     g_state = &state;
+
+    // R1: the shared product runner + optional real D-FINE detector. This is
+    // the same processing code path as edge/tools/replay_run.cpp; only the
+    // input source differs. Risk rules/zones are empty for now (SHADOW-only,
+    // no spatial observations yet — R4 wires them).
+    {
+        RunnerConfig runner_config;
+        runner_config.match.max_receive_gap_ns = 50LL * kNsPerMs;
+        runner_config.match.max_bracket_interval_ns = 20LL * kNsPerMs;
+        runner_config.detect_every_n_frames =
+            static_cast<std::uint64_t>(args.detect_every);
+        runner_config.attitude_ring_capacity = kAttitudeRingCapacity;
+        runner_config.position_ring_capacity = kPositionRingCapacity;
+        SessionConfig session_config;
+        session_config.tracker = TrackerConfig{};
+        session_config.max_gap_ms = 5000;
+        session_config.zone_envelope_m = 1.0;
+        ModelProfile profile;
+        profile.model_id = "dfine-s-coco";
+        profile.backend = "tensorrt";
+        state.runner = std::make_unique<SessionRunner>(
+            runner_config, session_config, std::vector<RiskRule>(),
+            std::vector<RiskRule>(), std::vector<ZoneRevision>(), profile);
+    }
+#if defined(KSI_SAFETY_EDGE_HAS_TENSORRT)
+    if (args.engine_path != nullptr) {
+        state.runtime = std::make_unique<TensorRtRuntime>(args.engine_path);
+        if (!state.runtime->ok()) {
+            std::fprintf(stderr, "engine load failed: %s\n", args.engine_path);
+            return 2;
+        }
+        state.detector = std::make_unique<DfineDetectorPort>(
+            DfineConfig{},
+            [runtime = state.runtime.get()](const float* input,
+                                            std::vector<float>* logits,
+                                            std::vector<float>* boxes) {
+                return runtime->Run(input, logits, boxes);
+            });
+    }
+#else
+    if (args.engine_path != nullptr) {
+        std::fprintf(stderr,
+                     "built without TensorRT; configure with "
+                     "-DKSI_SAFETY_EDGE_ENABLE_TENSORRT=ON to use --engine\n");
+        return 2;
+    }
+#endif
 
     g_boot_log = std::fopen("/tmp/ksi-safety-edge-boot.log", "w");
     BootStage("start");
@@ -725,9 +801,12 @@ finish: {
                  "\"queue_busy\":%llu,\"queue_full\":%llu,\"frame_too_large\":%llu,"
                  "\"malformed\":%llu,\"hard_sync\":%llu,\"hard_sync_sdk_ts_seen\":%llu,"
                  "\"hard_sync_malformed\":%llu,\"att_ring_contended\":%llu,"
+                 "\"att_rejected\":%llu,"
                  "\"position_fused\":%llu,\"position_malformed\":%llu,"
-                 "\"pos_ring_contended\":%llu,\"velocity\":%llu,\"gimbal\":%llu,"
+                 "\"pos_ring_contended\":%llu,\"pos_rejected\":%llu,"
+                 "\"velocity\":%llu,\"gimbal\":%llu,"
                  "\"gps_details\":%llu,\"samples_written\":%llu,"
+                 "\"detector\":\"%s\","
                  "\"stop_reason\":\"%s\"}\n",
                  static_cast<unsigned long long>(state.frames_received.load()),
                  static_cast<unsigned long long>(state.frames_dropped.load()),
@@ -739,13 +818,16 @@ finish: {
                  static_cast<unsigned long long>(state.hard_sync_sdk_ts_seen.load()),
                  static_cast<unsigned long long>(state.hard_sync_malformed.load()),
                  static_cast<unsigned long long>(state.att_ring_contended.load()),
+                 static_cast<unsigned long long>(state.att_rejected.load()),
                  static_cast<unsigned long long>(state.position_fused.load()),
                  static_cast<unsigned long long>(state.position_malformed.load()),
                  static_cast<unsigned long long>(state.pos_ring_contended.load()),
+                 static_cast<unsigned long long>(state.pos_rejected.load()),
                  static_cast<unsigned long long>(state.velocity.load()),
                  static_cast<unsigned long long>(state.gimbal.load()),
                  static_cast<unsigned long long>(state.gps_details.load()),
                  static_cast<unsigned long long>(state.samples_written.load()),
+                 args.engine_path != nullptr ? "tensorrt" : "none",
                  stop_reason);
     std::fclose(state.out);
     state.out = nullptr;

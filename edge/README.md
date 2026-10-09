@@ -2,8 +2,10 @@
 
 Minimal C++17 Edge core: bounded frame ingress (ported SI `frame_queue`),
 timestamp provenance, per-topic sample rings, frame↔telemetry matching with
-graded pose quality, verified-bracket pose interpolation, and a perception
-pipeline that keeps detection independent of alignment grades.
+graded pose quality, verified-bracket pose interpolation, a perception
+pipeline that keeps detection independent of alignment grades, and the R1
+shared session runner + replay inputs — the PSDK application and the Replay
+driver run the SAME processing path; only the input source differs.
 
 No external dependencies beyond the C++ standard library + Threads.
 No network, no GPU, no PSDK, no database.
@@ -34,10 +36,13 @@ Build dirs (`edge/build*/`) are git-ignored.
 | `include/ksi_safety/time/topic_ring.hpp` (+ `src/time/topic_ring.cpp` compile-check TU) | `TopicRing<T>`: duplicate `sample_id` → `kDuplicate`; `received` strictly decreasing → `kClockRollback`; capacity overwrite drops oldest; receive-nearest (ties → newest); source-time bracket only when both sides exist. |
 | `include/ksi_safety/time/matching.hpp`, `src/time/matching.cpp` | `MatchFrame()` ordered policy: `kNone` → `kReceiveNearest` → `kSourceVerified`. A receive-proximity result is NEVER `kSourceVerified`. |
 | `include/ksi_safety/time/interpolation.hpp`, `src/time/interpolation.cpp` | SLERP/LERP/`WrapDegrees`; `InterpolatePose()` refuses unless both samples have verified source times in the SAME domain, ordered bracket, interval ≤ max, target inside. |
-| `include/ksi_safety/perception/detector.hpp` | `DetectorPort` + `Detection`/`ModelProfile` types. |
+| `include/ksi_safety/perception/detector.hpp`, `src/perception/detector.cpp` | `DetectorPort` + `Detection`/`DetectionStatus`/`DetectionBatch`/`ModelProfile`. `DetectionStatus` separates "no attempt" (`NOT_RUN`: cadence skip / no detector) from "attempt failed" (`INFERENCE_FAILURE`: an observation gap) from "clean negative" (`OK` with empty detections: real evidence). Consumers must never treat the first two as "no objects present". |
 | `include/ksi_safety/perception/pipeline.hpp`, `src/perception/pipeline.cpp` | `PerceptionPipeline::Process()`: detector called EXACTLY ONCE per frame (null-safe); detections + model id/digest always recorded; pose from `MatchFrame()`; `spatial_eligible = (quality == kSourceVerified)`. No spatial math here. |
 | `include/ksi_safety/perception/dfine.hpp`, `src/perception/dfine.cpp` | D-FINE input preprocessing + output decode (no inference): **PIL-compatible resample** to 640×640 (triangle weights over a max(1, scale) support — antialias-scaled on downscale — with PIL's uint8 intermediate quantization; golden values from actual PIL pinned in `tests/test_dfine.cpp`; identity-size fast path), no letterbox (`do_pad=false`), rescale /255, RGB→CHW float32; decode = per-query sigmoid + argmax, strict `score > threshold` from `DfineConfig`, normalized cxcywh → source-pixel xyxy, NMS-free fixed queries, ascending query order. Raw COCO label id; no ontology mapping. |
-| `include/ksi_safety/perception/dfine_detector.hpp`, `src/perception/dfine_detector.cpp` | `DfineDetector` runtime adapter (injected inference only): `DfineInferenceFn` takes preprocessed 1×3×640×640 CHW float32 and fills `[queries × classes]` logits + `[queries × 4]` boxes; `Detect()` runs preprocess → inference → `DecodeDfine`, fail-closed (bad args / invalid config / empty fn / preprocess refusal / inference false / tensor size mismatch → false + empty out, never partial). Standalone by design: it does not implement `DetectorPort` (which binds `FramePacket` capture/time types and exactly-once pipeline call semantics); a thin port wrapper lands with the capture path. |
+| `include/ksi_safety/perception/dfine_detector.hpp`, `src/perception/dfine_detector.cpp` | `DfineDetector` runtime adapter (injected inference only): `DfineInferenceFn` takes preprocessed 1×3×640×640 CHW float32 and fills `[queries × classes]` logits + `[queries × 4]` boxes; `Detect()` runs preprocess → inference → `DecodeDfine`, fail-closed (bad args / invalid config / empty fn / preprocess refusal / inference false / tensor size mismatch → false + empty out, never partial). Standalone by design: the thin `DetectorPort` wrapper is `dfine_detector_port.hpp` (next row), so this module stays RGB→Detection maths. |
+| `include/ksi_safety/perception/dfine_detector_port.hpp`, `src/perception/dfine_detector_port.cpp` | `DfineDetectorPort`: binds `DfineDetector` to `DetectorPort` for the session runner. Success → `kOk` (empty = clean negative, still evidence); every failure path (preprocess refusal F1–F5 / runtime failure F6 / size mismatch F7 / malformed frame) → `kInferenceFailure` with no detections. Stateless bridge: no thresholds, no clock, no I/O. |
+| `include/ksi_safety/runtime/session_runner.hpp`, `src/runtime/session_runner.cpp` | `SessionRunner` (R1): the product processing path shared by the PSDK app and the Replay driver — detection cadence gate (`detect_every_n_frames`; skipped ticks are `NOT_RUN`), detector called at most once per tick and never gated by telemetry, `MatchFrame` on the attitude + position rings, `SafetySession::Tick` only on `kOk` ticks (clean negatives advance tracker misses; skip/failure ticks carry state unchanged), gap `Sweep` every tick. `TickRecord` carries detection status/detections, both match grades, `spatial_eligible` (both rings `SOURCE_VERIFIED`), `TrackRecord`s with `OBSERVED`/`MISSED`/`HELD` provenance, model id/digest, and session outputs. No spatial math, no ACTIVE activation. |
+| `include/ksi_safety/replay/replay_manifest.hpp`, `src/replay/replay_manifest.cpp` (+ `frame_source`, `telemetry_source`) | Replay inputs (R1): strict manifest v1 parser (frames + pose/position samples in arrival order + clock-registry `verify` lines; failures name their line), `ReplayFrameSource` (raw RGB files, exactly `w*h*3`; fills the SAME `FramePacket`/`FrameContext` the PSDK capture path produces — `has_exposure=false`, `sensor_timestamp_ns=0`), `ReplayTelemetrySource::PushDue(now)` (delivers only samples with receive time ≤ now — a frame can never see a future sample; ring verdicts counted). |
 | `include/ksi_safety/perception/tracker.hpp`, `src/perception/tracker.cpp` | Deterministic per-class greedy IoU tracker v0: descending-IoU match at `iou_threshold` (ties → lower track_id, then detection order), same-class only, unmatched detections start monotonic never-reused ids, unmatched tracks coast up to `max_age_frames` then drop, re-association keeps the id, `confirmed = hits >= min_hits`, `Update()` returns every live track sorted by id, `Reset()` bumps `tracker_epoch` and drops all tracks. |
 | `include/ksi_safety/geometry/coordinate.hpp`, `src/geometry/coordinate.cpp` | `Rotate` (quaternion, internally normalized) / `NedToEnu` / `EnuToNed` / `Wgs84ToLocalEnu` (equirectangular local approximation, R = 6371008.8 m). |
 | `include/ksi_safety/geometry/projection.hpp`, `src/geometry/projection.cpp` | Pinhole `ProjectPixelToGround()`: pose is GIVEN in ENU (`CameraPoseEnu`; composition from raw telemetry topics is the deferred PSDK adapter's job). Accepts only `kSourceVerified` poses, else `kPoseUnverified`. |
@@ -50,7 +55,8 @@ Build dirs (`edge/build*/`) are git-ignored.
 | `include/ksi_safety/perception/tensorrt_runtime.hpp`, `src/perception/tensorrt_runtime.cpp` | `TensorRtRuntime`: serialized-engine adapter behind `DfineInferenceFn` (`Run` matches the injected-inference signature, so `DfineDetector` decodes engine outputs into `Detection`s with unchanged preprocess/decode). Validates bindings `pixel_values` 1×3×640×640 → `logits` 1×300×80 + `pred_boxes` 1×300×4 (float32 I/O); device buffers allocated once; H2D → enqueueV3 → sync → D2H; fail-closed T1–T8 (false + empty outputs, never partial, never throws). `RunTimed` (W9-FU) adds per-stage `StageTimesMs` (h2d/enqueue/sync/d2h) with sync-serialized attribution — its sum can differ from the pipelined `Run` mean (see header caveat). Stub build (`KSI_SAFETY_EDGE_ENABLE_TENSORRT=OFF`, default): `Available()==false`, no TRT/CUDA dependency. No `DetectorPort` wrapper (see `dfine_detector.hpp` rationale); no spatial/session wiring. |
 | `tools/dfine_trt_smoke.cpp` | `dfine_trt_smoke` (built only with TRT ON): real-image smoke — `--engine PATH --input PATH --expected PATH [--iters N] [--breakdown] [--breakdown-iters N]`; gates expected lines with score ≥ 0.2 (top-1 always gates) vs. same-class top-12 C++ detections at IoU ≥ 0.5 and \|Δscore\| ≤ 0.05; tail lines (score < 0.2) reported only; reports mean/p95 latency, qps, VmRSS before/after; with `--breakdown` also prints a `breakdown_ms ...` per-stage line + `breakdown_hint` dominant-stage line (W9-FU); `SMOKE_RESULT PASS\|FAIL`. |
 | `tools/preprocess_dump.cpp` | `preprocess_dump` (host tool, no TensorRT): `--input PATH --width W --height H [--out PATH]` runs `PreprocessRgb` on raw RGB and writes the CHW float32 tensor; used by `scripts/check_resize_fidelity.py` to compare the actual C++ output against PIL/RTDetrImageProcessor. |
-| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `dfine`, `tracker`, `geometry`, `spatial`, `risk`, `session`, `chain`, `tensorrt`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
+| `tools/replay_run.cpp` | `replay_run` (host + device): `--manifest PATH [--out PATH] [--null-detector] [--engine PATH] [--model-id ID] [--model-digest D] [--detect-every N] [--max-receive-gap-ms N] [--max-bracket-ms N] [--tracker-iou F] [--tracker-max-age N] [--tracker-min-hits N] [--session-gap-ms N] [--zone-envelope-m F] [--flight-id ID] [--boot-id ID] [--stream-id ID]` — drives the shared `SessionRunner` from a replay manifest and writes one NDJSON tick line + a final stat line. `--engine` requires a TRT build. `scripts/make_replay_frames.py` (host, Pillow) converts images to raw RGB + manifest for it. |
+| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `dfine`, `tracker`, `geometry`, `spatial`, `risk`, `session`, `chain`, `replay`, `tensorrt`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
 
 ## The core rule (why this exists)
 
@@ -313,3 +319,38 @@ Interpretation caveats (read before quoting numbers):
   order (last frame wins within the tick). Prefer one revision per zone rule
   when per-revision episodes matter.
 - `Sweep()`/`EndSession()` carry no track snapshot (tracker state untouched).
+
+## Session runner + replay (R1) scope / limits (honest)
+
+- ONE product processing path. `SessionRunner` (cadence gate → detector →
+  matching → session step) is driven by BOTH the PSDK application and the
+  Replay driver; only the input source differs. `tests/test_replay.cpp`
+  proves the PSDK-style `BoundedFrameQueue` path and the direct path produce
+  byte-identical `TickRecord`s for identical inputs.
+- Evidence semantics are pinned: `NOT_RUN` (cadence skip / no detector) and
+  `INFERENCE_FAILURE` never touch the tracker — their tracks record `HELD`
+  provenance (last state carried; NOT a new measurement and NOT motion
+  tracking) — while a clean negative (`OK`, empty) advances misses
+  (`MISSED`) and matched detections record `OBSERVED` with
+  `since_observed_ns`. A control test shows the same sequence without the
+  failure drops one tick earlier.
+- Replay frames carry no exposure time (`has_exposure=false`,
+  `sensor_timestamp_ns=0`): grades stay `RECEIVE_*` and `spatial_eligible`
+  is false in replay v1 (it requires BOTH attitude and position
+  `SOURCE_VERIFIED` — pinned by test; receive proximity never qualifies).
+- `ReplayTelemetrySource::PushDue(now)` is the no-future guarantee: a frame
+  processed at T can only see samples that arrived by T (pinned by test).
+- Device evidence (2026-10-09, Jetson, fp16 engine, 6-frame corpus replay
+  through `replay_run`): all frames `OK` with real D-FINE (top-1 person
+  0.898 / multiple people 0.875 / truck 0.914 — consistent with the W9
+  smoke), stable track ids with `MISSED`→`OBSERVED` across a scene change,
+  mean tick 73 ms including non-640 PIL-compatible preprocessing. This is a
+  dev measurement on staged corpus frames — not a performance or
+  detection-quality claim, and no real-video tracking quality is implied.
+- NOT verified here: capture-time alignment (no verified exposure exists in
+  replay v1 or the PSDK RGB stream), spatial observations (R4), telemetry
+  loss/delay/clock-domain scenarios beyond the pinned no-future case (R3),
+  real-video tracking quality (R2/R5), or any on-aircraft behavior.
+  Synthetic telemetry from `scripts/make_replay_frames.py --pose-hz` is
+  plumbing material (simulated domain, clearly labelled) and can never lift
+  a grade above `RECEIVE_*` by itself.

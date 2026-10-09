@@ -9,6 +9,7 @@
 
 using ksi::safety::Detection;
 using ksi::safety::DetectionBatch;
+using ksi::safety::DetectionStatus;
 using ksi::safety::DetectorPort;
 using ksi::safety::FrameContext;
 using ksi::safety::FramePacket;
@@ -36,6 +37,7 @@ public:
     DetectionBatch Detect(const FramePacket&) override {
         ++calls;
         DetectionBatch batch;
+        batch.status = DetectionStatus::kOk;
         Detection a;
         a.x_min = 1.0F;
         a.y_min = 2.0F;
@@ -122,6 +124,8 @@ int main() {
             pipe.Process(frame, Ctx(1500), ring, &det, Profile());
         CHECK(det.calls == 1, "detector called once on empty ring");
         CHECK(o.detections.size() == 2, "detections returned w/o telemetry");
+        CHECK(o.detection_status == DetectionStatus::kOk,
+              "ok status propagated");
         CHECK(o.pose.quality == PoseQuality::kNone, "empty pose none");
         CHECK(o.pose.reason == PoseReason::kNoSamples, "empty pose no-samples");
         CHECK(!o.spatial_eligible, "empty not spatial eligible");
@@ -184,10 +188,33 @@ int main() {
         PixelObservation o =
             pipe.Process(frame, Ctx(1500), ring, nullptr, Profile());
         CHECK(o.detections.empty(), "null detector -> empty detections");
+        CHECK(o.detection_status == DetectionStatus::kNotRun,
+              "null detector -> not-run status");
         CHECK(o.pose.quality == PoseQuality::kNone, "null-det pose still graded");
         CHECK(!o.spatial_eligible, "null-det not eligible on empty ring");
         CHECK(o.model_digest == "sha256:abc123",
               "model digest kept with null detector");
+    }
+    // Failure status passes through unchanged (R1 evidence semantics: a
+    // failed attempt is an observation gap, never a negative).
+    {
+        class FailDetector : public DetectorPort {
+        public:
+            DetectionBatch Detect(const FramePacket&) override {
+                DetectionBatch batch;
+                batch.status = DetectionStatus::kInferenceFailure;
+                return batch;
+            }
+        };
+        PerceptionPipeline pipe(Policy());
+        FailDetector fail;
+        TopicRing<PoseValue> ring(8);
+        FramePacket frame;
+        PixelObservation o =
+            pipe.Process(frame, Ctx(1500), ring, &fail, Profile());
+        CHECK(o.detection_status == DetectionStatus::kInferenceFailure,
+              "failure status passes through");
+        CHECK(o.detections.empty(), "failure carries no detections");
     }
     if (edge_test::failures == 0) {
         std::printf("perception: all checks passed\n");

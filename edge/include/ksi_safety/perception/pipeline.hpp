@@ -2,6 +2,9 @@
 // time-match grade. Detection NEVER depends on the pose grade; spatial
 // eligibility is a downstream gate (spatial_eligible is true only for
 // kSourceVerified). No spatial computation happens here (later phases).
+// The batch's DetectionStatus is propagated unchanged so callers can tell
+// "no attempt" / "failed attempt" / "clean negative" apart (R1 evidence
+// semantics; see detector.hpp).
 
 #ifndef KSI_SAFETY_PERCEPTION_PIPELINE_HPP
 #define KSI_SAFETY_PERCEPTION_PIPELINE_HPP
@@ -28,6 +31,7 @@ struct PixelObservation {
     std::int64_t receive_monotonic_ns = 0;
     std::string model_id;
     std::string model_digest;
+    DetectionStatus detection_status = DetectionStatus::kNotRun;
     std::vector<Detection> detections;
     PoseAttachment pose;
     bool spatial_eligible = false;

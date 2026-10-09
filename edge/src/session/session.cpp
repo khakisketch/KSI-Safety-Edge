@@ -209,4 +209,8 @@ std::uint64_t SafetySession::TrackerEpoch() const {
     return tracker_.Epoch();
 }
 
+std::vector<Track> SafetySession::LiveTracks() const {
+    return tracker_.Tracks();
+}
+
 }  // namespace ksi::safety

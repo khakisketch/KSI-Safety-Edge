@@ -34,7 +34,7 @@
 |---|---|---|---|
 | 판단·검증 | **W5 완료·검증(C15)** — 순수 로직·합성 GT | 실데이터 연결은 기체/GPS GT 확보 후 | 없음(실데이터만 대기) |
 | 사용 흐름(RC) | 미착수 — 환경 조사 완료(2026-10-08): JDK 8(부족)·adb/sdkmanager/gradle 부재, dl.google.com 접근 가능, 디스크 2.9T 여유 | JDK17+cmdline-tools 설치 승인 시 착수 | 설치 승인·RC 접근 경로 |
-| 실제 인식(AI) | W6-A~W8(C16~C19) + ONNX export + TRT engine(fp16) + W9 PASS + W9-FU2(C25: preprocess 35.3→3.6ms·Detect ~27ms) + **W10 완료(C27): PIL 호환 리샘플 — 충실도 tensor max|d| 0.170→0.0039·gating 32/32(최악)** | **Replay 통합**(주기 독립: Detection/Tracking/Spatial, **출처 실측/추적/예측 구분**, 15FPS+tracking 옵션·미관측 구간/지연 기록, 영상 구간→공간 판단 수행/보류 검증) | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
+| 실제 인식(AI) | W6-A~W8(C16~C19) + ONNX export + TRT engine(fp16) + W9 PASS + W9-FU2(C25) + W10(C27) + **R1 완료(C28: 공통 SessionRunner·Replay 소스·실 D-FINE 연결·PSDK 동일 러너)** | **R2 Tracking 출처·주기 분리** → R3 Telemetry Replay → R4 Spatial → R5 E2E(원장 §8) | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
 
 ## 4. 첫 현장시험 범위 (추천안 — 사용자 확정 대기)
 
@@ -77,6 +77,7 @@
 - 2026-10-09: **W9-FU2 완료·검증(C25)** — `PreprocessRgb` 재구성(열·행 계수 1회·픽셀당 인덱스 1회·3채널 단일 패스·identity fast path) + 등가 시험(3×2→5×4·7×5→4×3·1×1→4×4 @1e-6·identity 5×4). 장치 fp16: **preprocess 35.3→3.6ms(≈10×)**, **Detect mean ~61→~27–28ms(~35–37qps)**; gating·SMOKE PASS 불변; runner `ses_ee36e1452ffelo9SoTnZ8EguL0` 전 항목 PASS. **미검증: 비640 입력 일반 경로 실측 성능**(등가만 검증) — Replay 통합에서 실영상 크기로 확인. **검토 필요(Replay 전)**: 다운스케일 보간 충실도 — PIL(RTDetrImageProcessor) 안티앨리어스 지원 스케일 vs 우리 2-tap bilinear 차이(비640 입력에서만 발생; 정량화·필요 시 C++ 개선).
 - 2026-10-09: **다운스케일 보간 충실도 정량화(Primary, C26)** — PIL(RTDetrImageProcessor) vs 우리 2-tap: tensor max|d| 0.022(381×680 업스케일)·**0.124(800×538 다운스케일)**·0.042(615×800)·**0.170(1080p NEAREST 최악)**. **top-1 안정**(cls 동일, |Δscore|≤0.003, IoU ≥0.96)이지만 **mid/low-confidence 검출 이동**(gating miss 0/9·**1/2**·**7/39**·**11/32**). → **C++ 리샘플을 PIL 호환(다운스케일 안티앨리어스)으로 정렬 필요 — W10**. 분석 스크립트: `scripts/check_resize_fidelity.py`.
 - 2026-10-09: **W10 완료·검증(C27)** — `PreprocessRgb` **PIL 호환 리샘플**(center=(d+0.5)*scale·support=max(1,scale)·triangle 가중·창 클립·정규화·**uint8 중간 양자화**(round-half-up) — 실제 PIL과 golden 4건 일치) + identity fast path; `preprocess_dump` tool; fidelity 스크립트 C++ 출력 기준 전환. 검증: 호스트 14/14×2·장치 gcc9.4 14/14·fidelity **tensor max|d| 0.170→0.0039(1 uint8)**·gating **9/9·2/2·37/39·32/32**·smoke PASS(preprocess 3.5ms·mean ~28ms)·독립 검증 `ses_ee1a30f54ffeIcBzu8MfZ8Olw4`(5과제 PASS + 자체 PIL/C++ sanity) + DecodeDfine 무변경 확인. 잔여: person.jpg 2/39 mid-confidence miss(IoU 0.95·dscore 0.107 — 1-unit 입력차 증폭, 수용 범위).
+- 2026-10-09: **R1 완료·검증(C28)** — 공통 제품 처리 경로 `SessionRunner`(주기 게이트→검출→정합→세션; `TickRecord`에 검출 상태/등급/`TrackRecord` 출처 OBSERVED·MISSED·HELD·`since_observed_ns`·model id/digest) + `DetectionStatus` 증거 의미(NOT_RUN vs INFERENCE_FAILURE vs OK-빈검출) + `DfineDetectorPort`(실 D-FINE→DetectorPort, fail-closed) + Replay 소스(manifest v1·raw RGB·`PushDue` no-future·검증 등급은 registry만) + `replay_run` 툴 + **PSDK 앱 동일 러너 전환**(콜백 Push, 워커 ProcessFrame). 검증: 호스트 15/15×2(ASan)·장치 gcc9.4 15/15·**독립 runner `ses_ee08e97ddffeH51tqaZizIGPCU`**(6과제 PASS — fresh 빌드·코드 판독·장치·재현·앱 컴파일·범위). 실엔진 Replay 6프레임 전부 OK(top-1 person 0.898·truck 0.914, 프레임5 MISSED→프레임6 OBSERVED, tick mean ~74ms — 개발 측정). 관찰(비차단): fp16 저점수 꼬리 — 0.05 바닥에서 106검출, 정책 입력 `--score-threshold` 추가(0.2에서 9/39/2) — W8 fp16 꼬리 특성과 함께 R4/R5 임계 정책에서 다룸. 파생: `Tracker::Tracks()`/`SafetySession::LiveTracks()` 접근자.
 - (이전) B0~W4·C13: `2026-10-08-reuse-audit-and-porting.md`, `docs/verification/evidence/`.
 
 ## 7. 대기 중 결정 (비차단)
@@ -84,3 +85,18 @@
 - 첫 현장시험 범위 확정(§4) — 사용자.
 - 모델: D-FINE-S(coco) dev/평가 후보 — **ONNX는 자체 export로 확보**(`96b8e0f3…`). 현장용 class map 최종 모델·대표 영상(녹화) — 사용자.
 - Android: **JDK17+cmdline-tools 설치 승인 여부**·RC 접근 경로 — 사용자.
+
+## 8. R1~R5 Replay 통합 (사용자 승인 2026-10-09, 새 goal)
+
+- 원칙: **Replay 전용 제품 로직 금지** — PSDK와 Replay는 동일한 공통 제품 처리 코드(공통 Frame/Telemetry 입력 → 독립 주기 Detection/Tracking/Spatial → SHADOW Episode·증거)를 사용하고 입력 소스만 교체한다. R5에서 테스트로 입증한다.
+- 보존: W10 완료 기준선(C27=`5cea6e4`)·기존 계약·검증 기록. W5~W10 재수행 금지, 승인 범위 임의 확장 금지. ACTIVE 비활성 유지. 기체 비행·운영 환경 변경·별도 승인 장비 작업은 기존 게이트.
+
+| 단계 | 구현 | 통과 기준 | 상태 |
+|---|---|---|---|
+| R1 | 공통 Frame/Telemetry 입력 계약(`SessionRunner`) + Replay 프레임/텔레메트리 소스 + `DfineDetectorPort`(실 D-FINE) + PSDK 앱 동일 러너 사용 | 프레임 ID·수신시각·출처 보존; 정상 무검출 vs 추론 실패 vs 주기 생략 구분; 장치 실엔진 Replay 추론 | **완료·검증(C28)** |
+| R2 | Tracking 출처(관측/미관측/유지) 기록·주기 분리 | ID 연속성·소실·재획득·epoch 분리; IoU 마지막 bbox 유지를 새 측정/움직임 추적으로 기록하지 않음 | 대기 |
+| R3 | Telemetry Replay(도착 순서·미래 미참조) | 누락·지연·시계 불일치·동일값 재수신 구분; 검증 등급 상향 금지 | 대기 |
+| R4 | Spatial Observation(발점/footprint 후보 → 기존 투영·거리·구역) | 조건 부족 시 Detection 유지·Spatial만 보류; 합성 GT는 평가에만 | 대기 |
+| R5 | End-to-End(사건·증거·재현성·성능) + Replay/PSDK 동일 코드 입증 | RC Emulator E2E vs 실장비 E2E 구분; 실장비 전용 항목은 미검증으로 명시 | 대기 |
+
+- 각 단계: 구현 → 테스트(호스트 14그룹+신규, ASan, 장치) → 독립 검증 → 커밋(C28~) → 원장 증거 기록.

@@ -158,18 +158,31 @@ std::vector<Track> Tracker::Update(
     // Rule A6: report every live track with its confirmation flag.
     out.reserve(tracks_.size());
     for (const Entry& e : tracks_) {
-        Track t;
-        t.track_id = e.track_id;
-        t.class_id = e.class_id;
-        t.box = e.box;
-        t.confirmed = (e.hits >= config_.min_hits);
-        t.hits = e.hits;
-        t.age = e.age;
-        t.last_seen_ns = e.last_seen_ns;
-        t.epoch = e.epoch;
-        out.push_back(t);
+        out.push_back(ToTrack(e));
     }
     return out;
+}
+
+std::vector<Track> Tracker::Tracks() const {
+    std::vector<Track> out;
+    out.reserve(tracks_.size());
+    for (const Entry& e : tracks_) {
+        out.push_back(ToTrack(e));
+    }
+    return out;
+}
+
+Track Tracker::ToTrack(const Entry& e) const {
+    Track t;
+    t.track_id = e.track_id;
+    t.class_id = e.class_id;
+    t.box = e.box;
+    t.confirmed = (e.hits >= config_.min_hits);
+    t.hits = e.hits;
+    t.age = e.age;
+    t.last_seen_ns = e.last_seen_ns;
+    t.epoch = e.epoch;
+    return t;
 }
 
 void Tracker::Reset() {

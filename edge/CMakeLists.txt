@@ -23,8 +23,14 @@ add_library(ksi_safety_edge_core STATIC
   src/perception/pipeline.cpp
   src/perception/dfine.cpp
   src/perception/dfine_detector.cpp
+  src/perception/dfine_detector_port.cpp
+  src/perception/detector.cpp
   src/perception/tensorrt_runtime.cpp
   src/perception/tracker.cpp
+  src/runtime/session_runner.cpp
+  src/replay/replay_manifest.cpp
+  src/replay/frame_source.cpp
+  src/replay/telemetry_source.cpp
   src/geometry/coordinate.cpp
   src/geometry/projection.cpp
   src/spatial/distance.cpp
@@ -95,6 +101,16 @@ if(KSI_SAFETY_EDGE_ENABLE_SANITIZERS)
     -fsanitize=address,undefined -fno-sanitize-recover=all)
 endif()
 
+add_executable(replay_run tools/replay_run.cpp)
+target_link_libraries(replay_run PRIVATE ksi_safety_edge_core)
+target_compile_options(replay_run PRIVATE -Wall -Wextra -Wpedantic -Werror)
+if(KSI_SAFETY_EDGE_ENABLE_SANITIZERS)
+  target_compile_options(replay_run PRIVATE
+    -fsanitize=address,undefined -fno-sanitize-recover=all -g)
+  target_link_options(replay_run PRIVATE
+    -fsanitize=address,undefined -fno-sanitize-recover=all)
+endif()
+
 enable_testing()
 
 function(ksi_safety_edge_test name source)
@@ -124,4 +140,5 @@ ksi_safety_edge_test(spatial tests/test_spatial.cpp)
 ksi_safety_edge_test(risk tests/test_risk.cpp)
 ksi_safety_edge_test(session tests/test_session.cpp)
 ksi_safety_edge_test(chain tests/test_chain.cpp)
+ksi_safety_edge_test(replay tests/test_replay.cpp)
 ksi_safety_edge_test(tensorrt tests/test_tensorrt.cpp)

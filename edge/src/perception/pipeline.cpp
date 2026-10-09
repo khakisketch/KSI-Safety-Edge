@@ -26,6 +26,7 @@ PixelObservation PerceptionPipeline::Process(const FramePacket& frame,
     out.receive_monotonic_ns = ctx.receive_monotonic_ns;
     out.model_id = profile.model_id;
     out.model_digest = profile.model_digest;
+    out.detection_status = batch.status;
     out.detections = std::move(batch.detections);
     out.pose.quality = match.quality;
     out.pose.reason = match.reason;

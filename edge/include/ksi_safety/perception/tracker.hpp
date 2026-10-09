@@ -111,6 +111,11 @@ class Tracker {
     std::vector<Track> Update(std::uint64_t received_mono_ns,
                               const std::vector<Detection>& detections);
 
+    // Current live tracks in the same shape and order (ascending track_id)
+    // as Update() returns them. No state change: no aging, no miss advance,
+    // no id minting. Fail-closed config: empty.
+    std::vector<Track> Tracks() const;
+
     // Explicit reset for stream/model switches: tracker_epoch += 1, all
     // tracks dropped, the id counter keeps counting (no reuse).
     void Reset();
@@ -126,6 +131,9 @@ class Tracker {
         std::uint64_t last_seen_ns = 0;
         std::uint64_t epoch = 0;
     };
+
+    // Shared Track assembly for Update() output and Tracks() snapshots.
+    Track ToTrack(const Entry& e) const;
 
     TrackerConfig config_;
     std::uint64_t epoch_ = 1;

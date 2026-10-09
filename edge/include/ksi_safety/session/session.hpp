@@ -121,6 +121,11 @@ class SafetySession {
 
     std::uint64_t TrackerEpoch() const;
 
+    // Current live tracks (same shape/order as the snapshot Tick returns;
+    // no state change). Used by the R1 session runner to carry tracker state
+    // through ticks with no detection evidence.
+    std::vector<Track> LiveTracks() const;
+
   private:
     SessionConfig config_;
     Tracker tracker_;
