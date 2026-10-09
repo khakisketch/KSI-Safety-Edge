@@ -8,40 +8,39 @@ import androidx.appcompat.app.AppCompatActivity
 import ksi.rc.EvidenceSource
 
 /**
- * A4 shell: four sections, every value read from the single [RcSession]
- * (real rc-core state). No screen keeps its own copy; an action that is
- * not valid from the current state shows the core's reason instead of
- * pretending. The demo feed is the only simulated input and is labeled.
+ * A5 shell: operational sections read the single [RcSession] live state;
+ * the demo bench reads/is confined to the physically isolated
+ * [DemoSession]. No screen keeps its own copy of core state.
  */
 class MainActivity : AppCompatActivity() {
-    private lateinit var session: RcSession
     private lateinit var app: RcApp
-    private var shownError: String? = null
-    private var hasSyncReport = false
+    private lateinit var session: RcSession
+    private lateinit var demo: DemoSession
 
     private lateinit var tvMission: TextView
+    private lateinit var tvFlight: TextView
     private lateinit var tvLink: TextView
+    private lateinit var tvDemo: TextView
     private lateinit var tvEvidence: TextView
     private lateinit var tvSync: TextView
     private lateinit var tvError: TextView
     private lateinit var etCoreUrl: EditText
     private lateinit var etCoreToken: EditText
 
+    private var shownError: String? = null
+    private var hasSyncReport = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         app = application as RcApp
         session = app.session
+        demo = app.demoSession
         setContentView(R.layout.activity_main)
 
-        val clockNote = findViewById<TextView>(R.id.tvClockNote)
-        clockNote.text = if (app.edgeClock.verified) {
-            "Clock anchor VERIFIED (H1 Edge sync)."
-        } else {
-            getString(R.string.clock_unverified)
-        }
-
         tvMission = findViewById(R.id.tvMission)
+        tvFlight = findViewById(R.id.tvFlight)
         tvLink = findViewById(R.id.tvLink)
+        tvDemo = findViewById(R.id.tvDemo)
         tvEvidence = findViewById(R.id.tvEvidence)
         tvSync = findViewById(R.id.tvSync)
         tvError = findViewById(R.id.tvError)
@@ -50,26 +49,36 @@ class MainActivity : AppCompatActivity() {
         etCoreUrl.setText(app.config.coreUrl)
         etCoreToken.setText(app.config.coreToken)
 
-        on(R.id.btnDemoBundle) {
-            val bundle = session.newDemoBundle()
-            show("demo bundle loaded: ${bundle.get("bundle_id").asText()}")
-        }
+        // -- operational mission (A5: bundle attach comes from the synced
+        //    mission store; until then the controller shows "not attached").
         on(R.id.btnPrepare) { run("prepare") { session.controller?.prepare() } }
         on(R.id.btnApply) { run("apply") { session.controller?.apply() } }
         on(R.id.btnReconcile) { run("reconcile") { session.controller?.reconcile() } }
         on(R.id.btnStart) { run("start") { session.controller?.startSession() } }
         on(R.id.btnStop) { run("stop") { session.controller?.stopSession() } }
+        on(R.id.btnEndFlight) {
+            val ended = session.endFlight()
+            show(if (ended != null) "flight ended: ${ended.get("flight_id").asText().take(8)}" else "no active flight")
+        }
 
+        // -- operational link
         on(R.id.btnConnect) { session.link.connect(); session.pumpOutbound(); refresh() }
         on(R.id.btnDisconnect) { session.link.disconnect(); refresh() }
-        on(R.id.btnDemoTick) {
-            val count = session.demoTick()
-            show("SIMULATED tick: $count envelopes through real ingest")
-        }
         on(R.id.btnRetry) {
             val sent = session.retryUnacked()
             show("re-sent $sent unacked envelope(s), same msg_id")
         }
+
+        // -- demo bench (isolated store; NEVER uploads)
+        on(R.id.btnDemoTick) {
+            val count = demo.tick()
+            show("SIMULATED demo tick: $count envelopes into the demo store")
+        }
+        on(R.id.btnDemoNewFlight) {
+            val record = demo.startNewFlight()
+            show("demo flight: ${record.get("flight_id").asText().take(8)}")
+        }
+
         on(R.id.btnRefreshEvidence) { refreshEvidence() }
 
         on(R.id.btnSaveCore) {
@@ -93,12 +102,6 @@ class MainActivity : AppCompatActivity() {
         refresh()
     }
 
-    override fun onDestroy() {
-        // The background executor is app-scoped (RcSession.bg) so rotation
-        // does not abort an in-flight upload; it dies with the process.
-        super.onDestroy()
-    }
-
     private fun on(id: Int, action: () -> Unit) {
         findViewById<Button>(id).setOnClickListener {
             session.clearError()
@@ -107,6 +110,7 @@ class MainActivity : AppCompatActivity() {
             } catch (exc: Exception) {
                 show("error: ${exc.message}")
             }
+            session.syncFlightState()
             refresh()
         }
     }
@@ -114,7 +118,7 @@ class MainActivity : AppCompatActivity() {
     private fun run(label: String, action: () -> Unit) {
         val active = session.controller
         if (active == null) {
-            show("no bundle loaded (Demo bundle first)")
+            show("$label unavailable: no bundle attached (A5 mission sync, or demo section)")
             return
         }
         try {
@@ -133,23 +137,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
-        val active = session.controller
-        val bundleLine = if (active == null) {
-            "bundle: none"
+        val flight = session.activeFlight
+        tvMission.text = "controller: ${session.missionSummary()}"
+        tvFlight.text = if (flight == null) {
+            "flight: none active — A5: sync a mission, then start a flight"
         } else {
-            "bundle=${active.bundleId.take(8)} state=${session.missionSummary()}"
+            "flight=${flight.get("flight_id").asText().take(8)} " +
+                "state=${flight.get("state").asText()} " +
+                "missionRev=${flight.get("mission_revision_id").asText().take(8)} " +
+                "bundle=${flight.get("bundle_sha256").asText().take(8)}\n" +
+                "started(receipt)=${flight.get("started_at_utc").asText()}"
         }
-        tvMission.text = "$bundleLine\nflight=${session.config.flightId.take(8)}"
-        val endpoint = active?.endpoint
+
+        val endpoint = session.controller?.endpoint
         val simulatedTag = if (session.link.isSimulated) " SIMULATED" else ""
         tvLink.text = "link=${session.link.state}$simulatedTag\n" +
             "in (this session): stored=${session.stored} dup=${session.duplicates} " +
             "failed=${session.failed} last=${session.lastInbound}\n" +
             "out: pending=${endpoint?.pendingCount() ?: 0} " +
             "acked=${endpoint?.ackedCount ?: 0}"
+
+        val demoStore = demo.session.store
+        val demoFlight = demo.activeFlight()
+        tvDemo.text = "DEMO (isolated store, no upload)\n" +
+            "flight=${demoFlight?.get("flight_id")?.asText()?.take(8) ?: "-"} " +
+            "state=${demoFlight?.get("state")?.asText() ?: "-"} " +
+            "controller: ${demo.missionSummary()}\n" +
+            "demo store: obs=${demoStore.observationsFor(demoFlight?.get("flight_id")?.asText() ?: "-").size}"
+
         refreshEvidence()
-        val cfg = app.config
-        val coreLine = if (cfg.coreConfigured) "core=${cfg.coreUrl}" else "core=NOT CONFIGURED (upload disabled)"
+        val coreLine =
+            if (app.config.coreConfigured) "core=${app.config.coreUrl}"
+            else "core=NOT CONFIGURED (upload disabled)"
         if (!hasSyncReport) {
             tvSync.text = coreLine
         }
@@ -161,15 +180,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshEvidence() {
-        val fid = session.config.flightId
+        val flight = session.activeFlight
+        val flightId = flight?.get("flight_id")?.asText()
+        if (flightId == null) {
+            tvEvidence.text = "no active flight (evidence is per-flight)"
+            return
+        }
         val store = session.store
-        val events = store.eventsFor(fid)
-        val observations = store.observationsFor(fid)
-        val artifacts = store.artifactsFor(fid)
+        val events = store.eventsFor(flightId)
+        val observations = store.observationsFor(flightId)
+        val artifacts = store.artifactsFor(flightId)
         val synced = artifacts.count { store.isArtifactSynced(it.get("artifact_id").asText()) }
         val lines = StringBuilder()
         lines.append("LOCAL observations=${observations.size} events=${events.size} ")
-        lines.append("summaries=${store.summariesFor(fid).size}\n")
+        lines.append("summaries=${store.summariesFor(flightId).size}\n")
         for (artifact in artifacts) {
             val id = artifact.get("artifact_id").asText()
             val complete = store.artifactBytes(id) != null
@@ -177,9 +201,6 @@ class MainActivity : AppCompatActivity() {
                 "complete=$complete synced=${store.isArtifactSynced(id)}\n")
         }
         lines.append("artifacts=${artifacts.size} synced=$synced (SYNCED only after COMMITTED)")
-        if (session.hasSimulatedRows()) {
-            lines.append("\nWARNING: store holds SIMULATED-feed rows — they WILL upload")
-        }
         tvEvidence.text = lines.toString()
     }
 
@@ -200,12 +221,13 @@ class MainActivity : AppCompatActivity() {
             try {
                 val report = uploader.uploadFlight(spec)
                 val lines = StringBuilder()
-                lines.append("state=${report.uploadState} " +
+                lines.append("state=${report.uploadState} timeBasis=${report.timeBasis} " +
                     "apps=${report.applicationsUploaded} sessions=${report.sessionsUploaded}\n")
                 for (boot in report.boots) {
                     lines.append("boot ${boot.bootId.take(8)} ${boot.status} " +
                         "chunks=${boot.chunksSent} missing=${boot.missingArtifacts.size} " +
-                        "synced=${boot.synced.size}\n")
+                        "synced=${boot.synced.size} " +
+                        "receipt=${boot.receivedStartedUtc ?: "-"}\n")
                 }
                 if (report.sessionDrift.isNotEmpty()) {
                     lines.append("session drift: ${report.sessionDrift.size} (server holds older snapshot)\n")
@@ -227,17 +249,20 @@ class MainActivity : AppCompatActivity() {
             show("upload disabled: configure Core URL + token first")
             return
         }
+        val flight = session.activeFlight
+        if (flight == null) {
+            show("no active flight to query")
+            return
+        }
+        val flightId = flight.get("flight_id").asText()
         session.bg.execute {
             try {
                 val api = ksi.rc.CoreApi(
-                    AndroidCoreTransport(
-                        app.config.coreUrl,
-                        app.config.coreToken,
-                    ),
+                    AndroidCoreTransport(app.config.coreUrl, app.config.coreToken),
                 )
-                val flight = api.getFlight(session.config.flightId)
-                val uploadState = flight.get("upload_state")?.asText() ?: "UNKNOWN"
-                val serverEvents = query.events(session.config.flightId)
+                val view = api.getFlight(flightId)
+                val uploadState = view.get("upload_state")?.asText() ?: "UNKNOWN"
+                val serverEvents = query.events(flightId)
                 runOnUiThread {
                     hasSyncReport = true
                     tvSync.text = "core=server upload_state=$uploadState " +

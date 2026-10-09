@@ -19,7 +19,16 @@ import java.nio.file.Path
  * message store and markProcessed leaves the message reprocessable, which
  * every record handler tolerates. Nothing here deletes evidence.
  */
-class FileRcStore(root: Path) : UploadStore {
+class FileRcStore(
+    root: Path,
+    /**
+     * RC receipt clock: the wall-clock instant recorded alongside every
+     * received record. This is the ONLY UTC time source in the store —
+     * Edge monotonic ns is preserved as-is inside the records and never
+     * converted (no verified cross-device clock mapping exists before H1).
+     */
+    private val wallClock: () -> String = { java.time.Instant.now().toString() },
+) : UploadStore, MissionStore {
     private val rootDir = root.toFile()
     private val messagesFile = File(rootDir, "messages.ndjson")
     private val processedFile = File(rootDir, "processed.ndjson")
@@ -34,9 +43,15 @@ class FileRcStore(root: Path) : UploadStore {
     private val appUploadsFile = File(rootDir, "app_uploads.ndjson")
     private val batchReceiptsFile = File(rootDir, "batch_receipts.ndjson")
     private val syncedFile = File(rootDir, "synced.ndjson")
+    private val flightsFile = File(rootDir, "flights.ndjson")
     private val blobsDir = File(rootDir, "blobs")
 
-    private data class BootNode(val bootId: String, val node: ObjectNode)
+    private data class BootNode(
+        val bootId: String,
+        val node: ObjectNode,
+        /** RC receipt wall-clock (ISO-8601); null only for legacy files. */
+        val receivedUtc: String? = null,
+    )
 
     private val processed = linkedSetOf<String>()
     private val applications = linkedMapOf<String, ObjectNode>()
@@ -44,6 +59,9 @@ class FileRcStore(root: Path) : UploadStore {
     private val events = linkedMapOf<String, BootNode>()
     private val summaries = linkedMapOf<String, BootNode>()
     private val artifacts = linkedMapOf<String, BootNode>()
+
+    /** Flight record snapshots in log order (latest per id wins). */
+    private val flightLog = mutableListOf<ObjectNode>()
 
     /** Received data-plane seqs per (edge_boot_id, channel); rebuilt from
      *  messages.ndjson at construction (restart contract). */
@@ -104,6 +122,10 @@ class FileRcStore(root: Path) : UploadStore {
         }
         for (line in readLines(syncedFile)) {
             if (line.isNotBlank()) syncedArtifacts.add(line.trim())
+        }
+        for (node in readNodes(flightsFile)) {
+            if (node.get("flight_id")?.asText().isNullOrEmpty()) continue
+            flightLog.add(node)
         }
         // Rebuild the seq/boot indexes from the durable envelopes (a restart
         // must not lose the bookkeeping the manifest depends on).
@@ -309,9 +331,39 @@ class FileRcStore(root: Path) : UploadStore {
         val boot = gap.get("edge_boot_id")?.asText() ?: return
         val channel = gap.get("channel")?.asText() ?: return
         val seq = gap.get("seq")?.asLong() ?: return
+        if (gap.get("received_wall_utc") == null) {
+            gap.put("received_wall_utc", wallClock())
+        }
         if (gaps.putIfAbsent(Triple(boot, channel, seq), gap) == null) {
             appendNode(gapsFile, gap)
         }
+    }
+
+    override fun receivedFirstLastUtc(flightId: String, bootId: String): Pair<String, String>? {
+        val times = mutableListOf<String>()
+        fun collect(entries: Collection<BootNode>) {
+            for (entry in entries) {
+                if (entry.bootId != bootId) continue
+                if (entry.node.get("flight_id")?.asText() != flightId) continue
+                entry.receivedUtc?.let { times.add(it) }
+            }
+        }
+        collect(observations.values)
+        collect(events.values)
+        collect(summaries.values)
+        collect(artifacts.values)
+        for ((key, node) in gaps) {
+            if (key.first != bootId) continue
+            if (node.get("flight_id")?.asText() != flightId) continue
+            node.get("received_wall_utc")?.takeIf { it.isTextual }?.asText()
+                ?.let { times.add(it) }
+        }
+        val instants = times.mapNotNull {
+            runCatching { java.time.Instant.parse(it) }.getOrNull()
+        }
+        if (instants.isEmpty()) return null
+        // Normalize through Instant so mixed precisions compare correctly.
+        return instants.min().toString() to instants.max().toString()
     }
 
     override fun gapsForBoot(bootId: String): List<ObjectNode> =
@@ -351,6 +403,38 @@ class FileRcStore(root: Path) : UploadStore {
 
     override fun isArtifactSynced(artifactId: String): Boolean =
         artifactId in syncedArtifacts
+
+    // -- MissionStore: flight records ----------------------------------------
+
+    override fun startFlight(record: ObjectNode) {
+        val flightId = record.get("flight_id")?.asText() ?: return
+        if (flightLog.any { it.get("flight_id")?.asText() == flightId }) return
+        flightLog.add(record.deepCopy())
+        appendNode(flightsFile, record)
+    }
+
+    override fun updateFlight(flightId: String, state: String, endedAtUtc: String?) {
+        val latest = flight(flightId) ?: return
+        val snapshot = latest.deepCopy()
+        snapshot.put("state", state)
+        if (endedAtUtc != null) snapshot.put("ended_at_utc", endedAtUtc)
+        flightLog.add(snapshot)
+        appendNode(flightsFile, snapshot)
+    }
+
+    override fun flight(flightId: String): ObjectNode? =
+        flightLog.lastOrNull { it.get("flight_id")?.asText() == flightId }
+
+    override fun flights(): List<ObjectNode> {
+        val latest = linkedMapOf<String, ObjectNode>()
+        for (node in flightLog) {
+            latest[node.get("flight_id")?.asText() ?: continue] = node
+        }
+        return latest.values.toList()
+    }
+
+    override fun activeFlight(): ObjectNode? =
+        flights().lastOrNull { it.get("state")?.asText() != "ENDED" }
 
     override fun bootsFor(flightId: String): List<String> =
         (
@@ -400,10 +484,12 @@ class FileRcStore(root: Path) : UploadStore {
     ) {
         val id = node.get(idField).asText()
         if (index.containsKey(id)) return
-        index[id] = BootNode(bootId, node)
+        val receivedUtc = wallClock()
+        index[id] = BootNode(bootId, node, receivedUtc)
         val line = Mop.json.createObjectNode()
         line.put("boot_id", bootId)
         line.set<JsonNode>("node", node)
+        line.put("received_wall_utc", receivedUtc)
         appendNode(file, line)
     }
 
@@ -415,7 +501,12 @@ class FileRcStore(root: Path) : UploadStore {
         for (lineNode in readNodes(file)) {
             val node = lineNode.get("node") as? ObjectNode ?: continue
             val bootId = lineNode.get("boot_id")?.asText() ?: ""
-            index.putIfAbsent(node.get(idField)?.asText() ?: continue, BootNode(bootId, node))
+            val receivedUtc = lineNode.get("received_wall_utc")
+                ?.takeIf { it.isTextual }?.asText()
+            index.putIfAbsent(
+                node.get(idField)?.asText() ?: continue,
+                BootNode(bootId, node, receivedUtc),
+            )
         }
     }
 

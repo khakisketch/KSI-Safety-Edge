@@ -166,14 +166,17 @@ class CoreUploadE2ETest {
             )
 
             // -- Upload to the real Core --------------------------------------
-            val uploader = EvidenceUploader(core, store, ::testToUtc)
+            val uploader = EvidenceUploader(core, store)
             val report = uploader.uploadFlight(spec)
             assertEquals("COMPLETE", report.uploadState)
+            assertEquals(FlightUploadReport.TIME_BASIS, report.timeBasis)
             assertEquals(1, report.boots.size)
             assertTrue(report.boots[0].committed, "boot must commit: $report")
             assertTrue(report.boots[0].missingArtifacts.isEmpty())
             assertTrue(report.boots[0].synced.contains(artifactId))
             assertTrue(store.isArtifactSynced(artifactId))
+            assertNotNull(report.boots[0].receivedStartedUtc)
+            assertNotNull(report.boots[0].receivedEndedUtc)
 
             // -- Real read-back ------------------------------------------------
             val flight = core.getFlight(spec.flightId)

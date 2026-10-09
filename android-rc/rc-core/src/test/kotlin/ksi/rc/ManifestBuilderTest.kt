@@ -50,7 +50,21 @@ class ManifestBuilderTest {
             missionSha256 = Fixture.hex('b'),
             bundleSha256 = Fixture.hex('c'),
         )
-        val store = FileRcStore(tempRoot())
+        val store = FileRcStore(
+            tempRoot(),
+            // Receipt clock: fixed sequence covering observation x2, event,
+            // announce and the declared gap (min .000001Z / max .000005Z —
+            // the pinned golden's manifest window).
+            wallClock = ClockQueue(
+                listOf(
+                    "2026-10-08T02:05:00.000001Z",
+                    "2026-10-08T02:05:00.000005Z",
+                    "2026-10-08T02:05:00.000003Z",
+                    "2026-10-08T02:05:00.000004Z",
+                    "2026-10-08T02:05:00.000002Z",
+                ),
+            ),
+        )
         for (seq in longArrayOf(1, 2, 4)) {
             store.storeMessage(seqEnvelope(flight, boot, "EVENT_RELIABLE", seq))
         }
@@ -87,7 +101,7 @@ class ManifestBuilderTest {
         declaredGap.put("flight_id", flight)
         store.recordGap(declaredGap)
 
-        val manifest = ManifestBuilder(store, ::testToUtc).build(spec, boot)
+        val manifest = ManifestBuilder(store).build(spec, boot)
 
         // Pinned by libs/ksi_contracts (set_digest over the identical data):
         assertEquals(
@@ -134,7 +148,14 @@ class ManifestBuilderTest {
         for (seq in longArrayOf(1, 2, 4)) {
             quiet.storeMessage(seqEnvelope(spec.flightId, boot, "EVENT_RELIABLE", seq))
         }
-        val quietManifest = ManifestBuilder(quiet, ::testToUtc).build(spec, boot)
+        quiet.storeObservation(
+            observationRecord(
+                spec.flightId, boot, spec.missionRevisionId,
+                Fixture.uuid(1003), 1, 1000,
+            ),
+            boot,
+        )
+        val quietManifest = ManifestBuilder(quiet).build(spec, boot)
         assertEquals(0, quietManifest.get("gaps").size())
         assertTrue(quiet.gapsForBoot(boot).isEmpty())
 
@@ -153,7 +174,7 @@ class ManifestBuilderTest {
         declared.put("flight_id", spec.flightId)
         store.recordGap(declared)
 
-        val manifest = ManifestBuilder(store, ::testToUtc).build(spec, boot)
+        val manifest = ManifestBuilder(store).build(spec, boot)
         val gaps = manifest.get("gaps")
         assertEquals(2, gaps.size())
         assertEquals(99, gaps[0].get("start_ms").asInt()) // seq 3 run
@@ -161,7 +182,7 @@ class ManifestBuilderTest {
         assertEquals(165, gaps[1].get("start_ms").asInt()) // seq 5 run
         assertEquals("UNRECOVERABLE:EVENT_RELIABLE", gaps[1].get("reason").asText())
         // Rebuilding is idempotent (recorded gaps dedupe by boot/channel/seq).
-        val again = ManifestBuilder(store, ::testToUtc).build(spec, boot)
+        val again = ManifestBuilder(store).build(spec, boot)
         assertEquals(2, again.get("gaps").size())
         assertEquals(2, store.gapsForBoot(boot).size)
     }

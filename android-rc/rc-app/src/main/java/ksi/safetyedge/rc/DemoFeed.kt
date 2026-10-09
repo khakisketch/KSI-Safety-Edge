@@ -144,12 +144,14 @@ class DemoFeed(
     }
 
     /** Digest-valid local bundle so Prepare/Apply run without an Edge. */
-    fun demoBundle(bundleId: String, siteId: String): ObjectNode {
-        val bundle = Mop.json.createObjectNode()
-        bundle.put("schema_version", 1)
-        bundle.put("bundle_id", bundleId)
-        bundle.put("site_id", siteId)
-        bundle.put("bundle_sha256", CanonicalJson.digestExcluding(bundle, "bundle_sha256"))
-        return bundle
+    companion object {
+        fun demoBundle(bundleId: String, siteId: String): ObjectNode {
+            val bundle = Mop.json.createObjectNode()
+            bundle.put("schema_version", 1)
+            bundle.put("bundle_id", bundleId)
+            bundle.put("site_id", siteId)
+            bundle.put("bundle_sha256", CanonicalJson.digestExcluding(bundle, "bundle_sha256"))
+            return bundle
+        }
     }
 }

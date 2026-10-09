@@ -8,24 +8,24 @@ import com.fasterxml.jackson.databind.node.ObjectNode
  * harness (`rc_upload.build_manifest` + `_synthesize_missing_gaps`); the
  * digest is the same RFC 8785 field-excluded SHA256 the server verifies.
  *
+ * TIME BASIS (A5 fix): the manifest's UTC instants are **RC receipt
+ * times** (`received_wall_utc`), the only verified wall-clock the RC has.
+ * Edge monotonic ns lives in a different device domain and is preserved
+ * inside the records — it is NEVER converted into UTC here. A boot with
+ * no receipt time cannot be manifested (the uploader reports it instead
+ * of inventing a timestamp).
+ *
  * The RC never invents gaps: it records only the Edge's declarations
  * ([EvidenceIngest] HEARTBEAT); `SYNTHESIZED:*` rows are added solely for
  * seqs missing inside a channel where the Edge already declared a gap.
- *
- * Time mapping: manifest UTC instants are the Edge monotonic ns mapped by
- * [toUtc]. In the harness this mapper is a fixture epoch; on the real RC it
- * is supplied by the app from the Edge's clock anchor (H1/MSDK follow-up).
- * The first/last sample instants come from stored observation/event sample
- * times (the harness used message sent times — a self-consistent,
- * server-agnostic choice; both live in the Edge-monotonic domain).
  */
-class ManifestBuilder(
-    private val store: UploadStore,
-    private val toUtc: (Long) -> String,
-) {
+class ManifestBuilder(private val store: UploadStore) {
     fun build(spec: FlightUploadSpec, bootId: String): ObjectNode {
         synthesizeMissingGaps(spec.flightId, bootId)
-        val (firstNs, lastNs) = store.firstLastNs(spec.flightId, bootId) ?: (0L to 0L)
+        val (startedUtc, endedUtc) = store.receivedFirstLastUtc(spec.flightId, bootId)
+            ?: throw IllegalStateException(
+                "no RC receipt time for boot $bootId (nothing received)",
+            )
         val topSeq = maxOf(
             store.receivedSeqs(bootId, "EVENT_RELIABLE").maxOrNull() ?: 0L,
             store.receivedSeqs(bootId, "EVIDENCE_TRANSFER").maxOrNull() ?: 0L,
@@ -40,8 +40,8 @@ class ManifestBuilder(
         manifest.put("event_count", store.eventsFor(spec.flightId, bootId).size)
         manifest.put("edge_last_seq", topSeq)
         manifest.put("rc_received_last_seq", topSeq)
-        manifest.put("flight_started_at_utc", toUtc(firstNs))
-        manifest.put("flight_ended_at_utc", toUtc(lastNs))
+        manifest.put("flight_started_at_utc", startedUtc)
+        manifest.put("flight_ended_at_utc", endedUtc)
         val artifacts = manifest.putArray("artifacts")
         for (artifact in store.artifactsFor(spec.flightId, bootId)) {
             val entry = artifacts.addObject()

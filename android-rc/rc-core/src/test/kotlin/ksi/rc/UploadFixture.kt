@@ -9,9 +9,15 @@ object Fixture {
     fun hex(ch: Char): String = ch.toString().repeat(64)
 }
 
-/** Edge monotonic ns -> UTC, matching the pinned manifest golden. */
-fun testToUtc(ns: Long): String =
-    "2026-10-08T02:05:00." + (ns / 1000).toString().padStart(6, '0') + "Z"
+/** Fixed-sequence receipt clock for deterministic manifest times. */
+class ClockQueue(private val values: List<String>) : () -> String {
+    private var index = 0
+    override fun invoke(): String {
+        val value = values[minOf(index, values.size - 1)]
+        index += 1
+        return value
+    }
+}
 
 fun uploadSpec(
     flightId: String = Fixture.uuid(1),

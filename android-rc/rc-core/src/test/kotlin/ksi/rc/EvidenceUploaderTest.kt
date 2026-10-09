@@ -8,6 +8,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
@@ -48,7 +49,7 @@ class EvidenceUploaderTest {
         seedFlightEvidence(store, spec, boot, artifactId, bytes, chunkSize = 8)
         seedApplication(store, spec, boot)
         val fake = FakeCore()
-        val uploader = EvidenceUploader(CoreApi(fake), store, ::testToUtc, chunkBytes = 8)
+        val uploader = EvidenceUploader(CoreApi(fake), store, chunkBytes = 8)
 
         val report = uploader.uploadFlight(spec)
         assertEquals("COMPLETE", report.uploadState)
@@ -98,7 +99,7 @@ class EvidenceUploaderTest {
         seedFlightEvidence(store, spec, boot, artifactId, bytes, chunkSize = 4)
         val fake = FakeCore()
         fake.failAtChunkPut = 2
-        val uploader = EvidenceUploader(CoreApi(fake), store, ::testToUtc, chunkBytes = 4)
+        val uploader = EvidenceUploader(CoreApi(fake), store, chunkBytes = 4)
 
         assertFailsWith<IOException> { uploader.uploadFlight(spec) }
         assertFalse(store.isArtifactSynced(artifactId))
@@ -107,7 +108,7 @@ class EvidenceUploaderTest {
         // "Restart": fresh store instance over the same directory.
         val restarted = FileRcStore(root)
         fake.failAtChunkPut = null
-        val resumed = EvidenceUploader(CoreApi(fake), restarted, ::testToUtc, chunkBytes = 4)
+        val resumed = EvidenceUploader(CoreApi(fake), restarted, chunkBytes = 4)
         val report = resumed.uploadFlight(spec)
         assertEquals("COMPLETE", report.uploadState)
         assertTrue(report.boots[0].committed)
@@ -133,7 +134,7 @@ class EvidenceUploaderTest {
         )
         store.writeChunk(artifactId, 0, bytes.copyOfRange(0, 8))
         val fake = FakeCore()
-        val uploader = EvidenceUploader(CoreApi(fake), store, ::testToUtc, chunkBytes = 8)
+        val uploader = EvidenceUploader(CoreApi(fake), store, chunkBytes = 8)
 
         val partial = uploader.uploadFlight(spec)
         assertFalse(partial.boots[0].committed)
@@ -162,7 +163,7 @@ class EvidenceUploaderTest {
         val bytes = ByteArray(16) { it.toByte() }
         val endpoint = seedFlightEvidence(store, spec, boot, artifactId, bytes)
         val fake = FakeCore()
-        val uploader = EvidenceUploader(CoreApi(fake), store, ::testToUtc)
+        val uploader = EvidenceUploader(CoreApi(fake), store)
 
         assertEquals("COMPLETE", uploader.uploadFlight(spec).uploadState)
 
@@ -227,7 +228,7 @@ class EvidenceUploaderTest {
         )
 
         val fake = FakeCore()
-        val report = EvidenceUploader(CoreApi(fake), store, ::testToUtc).uploadFlight(spec)
+        val report = EvidenceUploader(CoreApi(fake), store).uploadFlight(spec)
         assertEquals("COMPLETE", report.uploadState)
         assertEquals(2, report.boots.size)
         val gapBootReport = report.boots.first { it.bootId == gapBoot }
@@ -243,5 +244,34 @@ class EvidenceUploaderTest {
             "UNRECOVERABLE:EVENT_RELIABLE",
             gapSession.manifest.get("gaps")[0].get("reason").asText(),
         )
+    }
+
+    @Test
+    fun boot_without_any_receipt_is_reported_not_invented() {
+        val store = FileRcStore(tempRoot())
+        val spec = uploadSpec()
+        val ghostBoot = Fixture.uuid(71)
+        // Only an envelope was stored (seq/boot index only): no stamped
+        // evidence record exists, so there is no honest receipt time.
+        val envelope = Mop.json.createObjectNode()
+        envelope.put("channel", "EVENT_RELIABLE")
+        envelope.put("seq", 1)
+        envelope.put("edge_boot_id", ghostBoot)
+        envelope.put("flight_id", spec.flightId)
+        store.storeMessage(envelope)
+
+        // A normal boot keeps the flight uploadable.
+        val boot = Fixture.uuid(12)
+        seedFlightEvidence(store, spec, boot, Fixture.uuid(13), ByteArray(16) { it.toByte() })
+        val fake = FakeCore()
+        val report = EvidenceUploader(CoreApi(fake), store).uploadFlight(spec)
+
+        val ghost = report.boots.first { it.bootId == ghostBoot }
+        assertEquals("NO_RECEIPT_TIME", ghost.status)
+        assertFalse(ghost.committed)
+        assertNull(ghost.receivedStartedUtc)
+        assertNull(ghost.receivedEndedUtc)
+        assertTrue(report.boots.first { it.bootId == boot }.committed)
+        assertEquals(FlightUploadReport.TIME_BASIS, report.timeBasis)
     }
 }

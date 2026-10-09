@@ -33,7 +33,7 @@ class LocalFirstEvidenceTest {
         val bytes = ByteArray(16) { it.toByte() }
         seedFlightEvidence(store, spec, boot, artifactId, bytes)
         val fake = FakeCore()
-        val uploader = EvidenceUploader(CoreApi(fake), store, ::testToUtc)
+        val uploader = EvidenceUploader(CoreApi(fake), store)
         assertEquals("COMPLETE", uploader.uploadFlight(spec).uploadState)
         return Seeded(store, fake, spec, artifactId, bytes)
     }

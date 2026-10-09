@@ -1,6 +1,10 @@
 package ksi.safetyedge.rc
 
-import java.util.concurrent.atomic.AtomicReference
+import com.fasterxml.jackson.databind.node.ObjectNode
+import java.io.File
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.Executors
 import ksi.rc.EvidenceIngest
 import ksi.rc.EvidenceUploader
 import ksi.rc.FileRcStore
@@ -8,36 +12,35 @@ import ksi.rc.FlightUploadSpec
 import ksi.rc.Inbound
 import ksi.rc.LocalFirstEvidence
 import ksi.rc.MissionController
-import ksi.rc.MissionState
 
 /**
- * App-scoped RC session (A4): the single owner of all rc-core state.
- * Every screen reads and drives THIS object — no screen keeps its own
- * copy of mission/evidence/sync state, so the UI can never disagree with
- * the core.
+ * App-scoped real-flight RC session (A5 fix): the single owner of all
+ * rc-core state for OPERATIONAL data. It no longer carries any demo feed —
+ * simulated data lives in its own store ([DemoSession]).
  *
- * - store: FileRcStore under the app files dir (survives process death;
- *   evidence is never deleted here);
- * - controller: mission lifecycle (Prepare/Apply/Start/Stop + reconcile);
- * - bridge: endpoint outbox <-> DroneLink bytes, inbound counters;
- * - uploader/query: built on demand from the current Core config.
- *
- * Storage-full / IO failures surface as [lastError] text; the session
- * never marks or deletes anything it did not durably complete.
+ * - `rcDeviceId` is install-scoped; a FLIGHT is started with a new id and
+ *   pins the mission/bundle/zone revisions of that flight (immutable);
+ * - the store stamps RC receipt times (the only honest UTC we have — Edge
+ *   monotonic is a different device domain and is never converted);
+ * - an unfinished flight is restored from the store after a restart;
+ * - upload/query are available only when a Core endpoint is configured,
+ *   and uploads require an active flight record.
  */
 class RcSession(
-    storeDir: java.io.File,
-    val config: AppConfig,
-    val clock: EdgeClock,
+    storeDir: File,
+    val rcDeviceId: String,
+    val wallClock: () -> String,
     val link: DroneLink,
-    initialBundle: com.fasterxml.jackson.databind.node.ObjectNode?,
+    /** (url, token) when the operator configured a Core; null = no upload. */
+    private val coreConfig: () -> Pair<String, String>?,
+    initialBundle: ObjectNode? = null,
 ) {
-    val store = FileRcStore(storeDir.toPath())
+    val store = FileRcStore(storeDir.toPath(), wallClock)
     private val ingest = EvidenceIngest(store)
 
     var controller: MissionController? = null
         private set
-    var bundle: com.fasterxml.jackson.databind.node.ObjectNode? = initialBundle
+    var bundle: ObjectNode? = initialBundle
         private set
 
     var stored = 0; private set
@@ -46,45 +49,91 @@ class RcSession(
     var lastInbound: String = "-"; private set
     var lastError: String? = null; private set
 
-    private val demoFeed = DemoFeed(config.flightId, demoBootId(), config.missionRevisionId)
-    private val demoArtifact = ByteArray(8192) { (it % 251).toByte() }
+    /** App-scoped background work (upload/query): survives rotation. */
+    val bg: java.util.concurrent.ExecutorService =
+        Executors.newSingleThreadExecutor()
 
     init {
-        bundle?.let { attachController(it) }
+        if (initialBundle != null && store.activeFlight() != null) {
+            attachController(
+                initialBundle, store.activeFlight()!!.get("flight_id").asText(),
+            )
+        }
         link.setListener(object : DroneLink.Listener {
             override fun onBytes(bytes: ByteArray) = onLinkBytes(bytes)
             override fun onState(state: DroneLink.State) { /* pulled by UI */ }
         })
     }
 
-    fun demoBootId(): String {
-        val id = config.flightId
-        require(id.length == 36) { "flight id is not a uuid" }
-        return id.replaceRange(24, 36, "b007b007b007")
+    // -- flight lifecycle ------------------------------------------------------
+
+    val activeFlight: ObjectNode? get() = store.activeFlight()
+
+    /**
+     * Starts a NEW flight (new flight id) pinned to the given mission /
+     * bundle / zone revisions. Callers must hold the verified digests
+     * (mission store / sync layer); nothing is invented here.
+     */
+    fun startFlight(
+        siteId: String,
+        missionId: String,
+        missionRevisionId: String,
+        missionSha256: String,
+        bundleId: String,
+        bundleSha256: String,
+        zoneRevisionIds: List<String>,
+    ): ObjectNode {
+        check(store.activeFlight() == null) {
+            "a flight is already active; end it before starting a new one"
+        }
+        val record = ksi.rc.Mop.json.createObjectNode()
+        record.put("schema_version", 1)
+        record.put("flight_id", UUID.randomUUID().toString())
+        record.put("site_id", siteId)
+        record.put("mission_id", missionId)
+        record.put("mission_revision_id", missionRevisionId)
+        record.put("mission_sha256", missionSha256)
+        record.put("bundle_id", bundleId)
+        record.put("bundle_sha256", bundleSha256)
+        val zones = record.putArray("zone_revision_ids")
+        zoneRevisionIds.forEach { zones.add(it) }
+        record.put("started_at_utc", wallClock())
+        record.putNull("ended_at_utc")
+        record.put("state", "STARTED")
+        store.startFlight(record)
+        return store.flight(record.get("flight_id").asText())!!
     }
 
-    fun attachController(bundle: com.fasterxml.jackson.databind.node.ObjectNode) {
+    fun endFlight(): ObjectNode? {
+        val active = store.activeFlight() ?: return null
+        val flightId = active.get("flight_id").asText()
+        store.updateFlight(flightId, "ENDED", wallClock())
+        return store.flight(flightId)
+    }
+
+    /** STARTED -> APPLIED once the Edge confirmed the pinned bundle. */
+    fun syncFlightState() {
+        val active = store.activeFlight() ?: return
+        if (active.get("state")?.asText() != "STARTED") return
+        val pinnedSha = active.get("bundle_sha256")?.asText() ?: return
+        val application = controller?.lastApplication ?: return
+        if (application.get("bundle_sha256")?.asText() == pinnedSha) {
+            store.updateFlight(active.get("flight_id").asText(), "APPLIED", null)
+        }
+    }
+
+    // -- mission controller / link ----------------------------------------------
+
+    fun attachController(bundle: ObjectNode, flightId: String) {
         this.bundle = bundle
         controller = MissionController(
-            config.flightId, bundle, store,
+            flightId, bundle, store,
             { android.os.SystemClock.elapsedRealtimeNanos() }, ingest,
         )
         lastError = null
     }
 
-    fun newDemoBundle(): com.fasterxml.jackson.databind.node.ObjectNode {
-        // Best effort: flush the previous endpoint's queue before swapping
-        // (queued control bytes belong to the old session).
-        pumpOutbound()
-        val bundle = demoFeed.demoBundle(
-            java.util.UUID.randomUUID().toString(), config.siteId,
-        )
-        attachController(bundle)
-        return bundle
-    }
-
-    /** Outbound: drain endpoint outbox into the link (unsent stays queued).
-     *  Returns how many envelopes actually left the device. */
+    /** Outbound: drain endpoint outbox into the link (unsent stays queued). */
     fun pumpOutbound(): Int {
         val endpoint = controller?.endpoint ?: return 0
         var sent = 0
@@ -112,11 +161,9 @@ class RcSession(
     /** Inbound: Edge/link bytes through the real endpoint ingest path. */
     fun onLinkBytes(bytes: ByteArray) {
         val endpoint = controller?.endpoint ?: run {
-            lastError = "no mission controller (load a bundle first)"
+            lastError = "no mission controller (start a flight first)"
             return
         }
-        // String(bytes, UTF_8) never throws (malformed input becomes U+FFFD);
-        // a non-envelope then fails honestly in verifyEnvelope below.
         when (val outcome = endpoint.onRawEnvelope(String(bytes, Charsets.UTF_8))) {
             is Inbound.Stored -> { stored += 1; lastInbound = outcome.type }
             is Inbound.Duplicate -> { duplicates += 1; lastInbound = "dup:${outcome.type}" }
@@ -129,91 +176,57 @@ class RcSession(
         }
     }
 
-    /** One SIMULATED Edge tick through the real ingest path (dev only). */
-    fun demoTick(): Int {
-        var count = 0
-        for (bytes in demoFeed.tick(demoArtifact)) {
-            onLinkBytes(bytes)
-            count += 1
-        }
-        pumpOutbound()
-        return count
-    }
-
-    fun uploadSpec(): FlightUploadSpec {
-        val active = controller
-            ?: throw IllegalStateException("load a bundle first")
-        active.lastApplication
-            ?: throw IllegalStateException("apply the bundle first (no APPLIED application)")
-        // The mission digest is resolved from the server's mission
-        // snapshot — never invented locally. The configured revision must
-        // match, otherwise the manifest would certify the wrong mission.
-        val api = ksi.rc.CoreApi(
-            AndroidCoreTransport(config.coreUrl, config.coreToken),
-        )
-        val snapshot = api.getMissionSnapshot(config.missionId)
-        val snapshotRev = snapshot.get("mission_revision_id")?.asText()
-        if (snapshotRev != config.missionRevisionId) {
-            throw IllegalStateException(
-                "mission revision mismatch: app=${config.missionRevisionId.take(8)} " +
-                    "server=$snapshotRev (A5 mission download pending)",
-            )
-        }
-        val missionSha = snapshot.get("content_sha256")?.asText()
-            ?: throw IllegalStateException("server snapshot has no content_sha256")
-        return FlightUploadSpec(
-            flightId = config.flightId,
-            siteId = config.siteId,
-            rcDeviceId = config.rcDeviceId,
-            missionId = config.missionId,
-            missionRevisionId = config.missionRevisionId,
-            missionSha256 = missionSha,
-            bundleSha256 = active.bundleSha,
-        )
-    }
-
-    fun uploader(): EvidenceUploader? {
-        if (!config.coreConfigured) return null
-        val transport = AndroidCoreTransport(config.coreUrl, config.coreToken)
-        return EvidenceUploader(ksi.rc.CoreApi(transport), store, clock::toUtc)
-    }
-
-    fun query(): LocalFirstEvidence? {
-        if (!config.coreConfigured) return null
-        val transport = AndroidCoreTransport(config.coreUrl, config.coreToken)
-        return LocalFirstEvidence(store, ksi.rc.CoreApi(transport))
-    }
-
     fun clearError() {
         lastError = null
     }
 
-    /** True when the store holds SIMULATED-feed rows (they are real store
-     *  rows and WILL upload — the operator must know before syncing). */
-    fun hasSimulatedRows(): Boolean {
-        val fid = config.flightId
-        return (store.observationsFor(fid) + store.eventsFor(fid)).any { node ->
-            node.get("quality_reasons")?.any {
-                it.asText() == "SIMULATED_FEED"
-            } == true
-        }
+    // -- upload / query -----------------------------------------------------------
+
+    fun coreConfigured(): Boolean = coreConfig() != null
+
+    fun uploader(): EvidenceUploader? {
+        val (url, token) = coreConfig() ?: return null
+        return EvidenceUploader(ksi.rc.CoreApi(AndroidCoreTransport(url, token)), store)
     }
 
-    /** App-scoped background work (upload/query): survives rotation, unlike
-     *  an activity-scoped executor. Shut down only with the process. */
-    val bg: java.util.concurrent.ExecutorService =
-        java.util.concurrent.Executors.newSingleThreadExecutor()
+    fun query(): LocalFirstEvidence? {
+        val (url, token) = coreConfig() ?: return null
+        return LocalFirstEvidence(store, ksi.rc.CoreApi(AndroidCoreTransport(url, token)))
+    }
+
+    /** Spec built ONLY from the active flight record — no invented ids and
+     *  no server round-trip; digests came in with the flight's mission. */
+    fun uploadSpec(): FlightUploadSpec {
+        val active = store.activeFlight()
+            ?: throw IllegalStateException("no active flight")
+        return FlightUploadSpec(
+            flightId = active.get("flight_id").asText(),
+            siteId = active.get("site_id").asText(),
+            rcDeviceId = rcDeviceId,
+            missionId = active.get("mission_id").asText(),
+            missionRevisionId = active.get("mission_revision_id").asText(),
+            missionSha256 = active.get("mission_sha256").asText(),
+            bundleSha256 = active.get("bundle_sha256").asText(),
+        )
+    }
 
     fun missionSummary(): String {
-        val active = controller ?: return "no bundle loaded"
+        val active = controller ?: return "no bundle attached"
         val state = active.state
         val extra = when (state) {
-            MissionState.APPLIED -> "app=${active.lastApplication?.get("application_id")?.asText()}"
-            MissionState.RUNNING, MissionState.STOPPED, MissionState.SESSION_PENDING ->
+            ksi.rc.MissionState.APPLIED ->
+                "app=${active.lastApplication?.get("application_id")?.asText()}"
+            ksi.rc.MissionState.RUNNING, ksi.rc.MissionState.STOPPED,
+            ksi.rc.MissionState.SESSION_PENDING ->
                 "session=${active.sessionId} active=${active.sessionActive} " +
                     "edgeRunning=${active.edgeReportedRunning}"
             else -> ""
         }
         return "$state $extra transitions=${active.transitions.size}"
     }
+}
+
+/** Device wall clock used as the RC receipt clock (store stamping only). */
+object ReceiptClock {
+    fun now(): String = Instant.now().toString()
 }

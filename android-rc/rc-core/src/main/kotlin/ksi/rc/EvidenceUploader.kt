@@ -15,6 +15,10 @@ data class BootUploadReport(
     /** Artifacts marked SYNCED by THIS run (COMMITTED only). */
     val synced: List<String>,
     val chunksSent: Int,
+    /** RC receipt-time window carried into the manifest (may be null when
+     *  the boot had nothing receivable and was reported instead). */
+    val receivedStartedUtc: String?,
+    val receivedEndedUtc: String?,
 )
 
 data class BatchUploadReport(
@@ -38,7 +42,15 @@ data class FlightUploadReport(
     val batches: List<BatchUploadReport>,
     val boots: List<BootUploadReport>,
     val uploadState: String,
-)
+    /** Where the manifest UTC instants come from. A verified Edge clock
+     *  anchor does not exist yet (H1): this is RC receipt time, NOT the
+     *  confirmed event time. */
+    val timeBasis: String = TIME_BASIS,
+) {
+    companion object {
+        const val TIME_BASIS = "RC_RECEIVE_APPROX"
+    }
+}
 
 /**
  * RC -> Core upload orchestration (A3-b). Semantics (user contract,
@@ -66,7 +78,6 @@ data class FlightUploadReport(
 class EvidenceUploader(
     private val core: CoreApi,
     private val store: UploadStore,
-    private val toUtc: (Long) -> String,
     /** Chunk size for resumable object upload (default 64 KiB). */
     private val chunkBytes: Int = 64 * 1024,
 ) {
@@ -74,15 +85,30 @@ class EvidenceUploader(
         require(chunkBytes > 0) { "chunkBytes must be positive" }
     }
 
-    private val manifestBuilder = ManifestBuilder(store, toUtc)
+    private val manifestBuilder = ManifestBuilder(store)
     private val sessionBuilder = SessionBuilder(store)
 
     fun uploadFlight(spec: FlightUploadSpec): FlightUploadReport {
         val boots = sessionBuilder.sortedBoots(spec.flightId)
-        val firstNs = boots.mapNotNull {
-            store.firstLastNs(spec.flightId, it)?.first
+        // Register time is the earliest RC receipt instant — never a
+        // converted Edge monotonic value (no verified cross-device clock).
+        val firstUtc = boots.mapNotNull {
+            store.receivedFirstLastUtc(spec.flightId, it)?.first
         }.minOrNull()
-        core.registerFlight(registerBody(spec, firstNs))
+        if (firstUtc == null) {
+            // Nothing stamped was ever received: there is no honest time
+            // for a register body, so nothing is sent.
+            return FlightUploadReport(
+                flightView = null,
+                applicationsUploaded = 0,
+                sessionsUploaded = 0,
+                sessionDrift = emptyList(),
+                batches = emptyList(),
+                boots = emptyList(),
+                uploadState = "NO_DATA",
+            )
+        }
+        core.registerFlight(registerBody(spec, firstUtc))
 
         val applicationsUploaded = uploadApplications(spec)
         val (sessionsUploaded, sessionDrift) = uploadSessions(spec, boots)
@@ -100,7 +126,7 @@ class EvidenceUploader(
         )
     }
 
-    private fun registerBody(spec: FlightUploadSpec, firstNs: Long?): ObjectNode {
+    private fun registerBody(spec: FlightUploadSpec, firstUtc: String): ObjectNode {
         val body = Mop.json.createObjectNode()
         body.put("flight_id", spec.flightId)
         body.put("site_id", spec.siteId)
@@ -108,10 +134,9 @@ class EvidenceUploader(
         body.put("mission_id", spec.missionId)
         body.put("mission_revision_id", spec.missionRevisionId)
         body.put("bundle_sha256", spec.bundleSha256)
-        body.put("started_at_utc", toUtc(firstNs ?: 0L))
-        // The register body is immutable on the server (same_content retry);
-        // the end instant lives in the manifest, so it is null here
-        // (harness parity).
+        // RC receipt time (approximate flight window); the register body is
+        // immutable on the server, so the end instant stays null here.
+        body.put("started_at_utc", firstUtc)
         body.putNull("ended_at_utc")
         return body
     }
@@ -208,7 +233,23 @@ class EvidenceUploader(
     }
 
     private fun uploadBoot(spec: FlightUploadSpec, bootId: String): BootUploadReport {
-        val manifest = manifestBuilder.build(spec, bootId)
+        val manifest = try {
+            manifestBuilder.build(spec, bootId)
+        } catch (exc: IllegalStateException) {
+            // No stamped receipt time for this boot: nothing honest to send.
+            return BootUploadReport(
+                bootId = bootId,
+                uploadId = null,
+                status = "NO_RECEIPT_TIME",
+                committed = false,
+                missingArtifacts = emptyList(),
+                incompleteLocal = emptyList(),
+                synced = emptyList(),
+                chunksSent = 0,
+                receivedStartedUtc = null,
+                receivedEndedUtc = null,
+            )
+        }
         val manifestSha = manifest.get("manifest_sha256").asText()
         val open = core.openIngest(manifest)
         val uploadId = open.get("upload_id")?.asText() ?: ""
@@ -270,6 +311,8 @@ class EvidenceUploader(
             incompleteLocal = incompleteLocal,
             synced = synced,
             chunksSent = chunksSent,
+            receivedStartedUtc = manifest.get("flight_started_at_utc").asText(),
+            receivedEndedUtc = manifest.get("flight_ended_at_utc").asText(),
         )
     }
 }

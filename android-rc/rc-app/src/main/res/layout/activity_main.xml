@@ -23,7 +23,7 @@
             android:text="@string/clock_unverified"
             android:textSize="13sp" />
 
-        <!-- 1. Mission -->
+        <!-- 1. Mission / flight -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -39,16 +39,17 @@
             android:text="-"
             android:textSize="14sp" />
 
+        <TextView
+            android:id="@+id/tvFlight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="14sp" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal">
-            <Button
-                android:id="@+id/btnDemoBundle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_demo_bundle" />
             <Button
                 android:id="@+id/btnPrepare"
                 android:layout_width="0dp"
@@ -61,17 +62,17 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/btn_apply" />
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
             <Button
                 android:id="@+id/btnReconcile"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/btn_reconcile" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
             <Button
                 android:id="@+id/btnStart"
                 android:layout_width="0dp"
@@ -84,9 +85,15 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/btn_stop" />
+            <Button
+                android:id="@+id/btnEndFlight"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_end_flight" />
         </LinearLayout>
 
-        <!-- 2. Observe / link -->
+        <!-- 2. Link -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -119,17 +126,45 @@
                 android:layout_weight="1"
                 android:text="@string/btn_disconnect" />
             <Button
+                android:id="@+id/btnRetry"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_retry" />
+        </LinearLayout>
+
+        <!-- Demo bench (isolated) -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/section_demo"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingTop="16dp" />
+
+        <TextView
+            android:id="@+id/tvDemo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button
                 android:id="@+id/btnDemoTick"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="@string/btn_demo_tick" />
             <Button
-                android:id="@+id/btnRetry"
+                android:id="@+id/btnDemoNewFlight"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="@string/btn_retry" />
+                android:text="@string/btn_demo_new_flight" />
         </LinearLayout>
 
         <!-- 3. Evidence -->

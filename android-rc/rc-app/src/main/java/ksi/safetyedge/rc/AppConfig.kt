@@ -4,10 +4,10 @@ import android.content.Context
 import java.util.UUID
 
 /**
- * Stable per-install identities + Core endpoint config (A4). The flight,
- * site, mission and device ids persist across app restarts so a rebooted
- * app resumes the same upload identity instead of forking a new flight.
- * Upload stays disabled until the operator configures a Core URL + token.
+ * Install-scoped app configuration. The RC DEVICE id is stable per install
+ * (upload identity); FLIGHT ids are per-flight and live in the flight
+ * records — never here. Upload stays disabled until the operator configures
+ * a Core URL + token.
  */
 class AppConfig(context: Context) {
     private val prefs = context.getSharedPreferences("ksi_rc", Context.MODE_PRIVATE)
@@ -21,10 +21,6 @@ class AppConfig(context: Context) {
         return id
     }
 
-    val flightId: String get() = stableId("flight_id")
-    val siteId: String get() = stableId("site_id")
-    val missionId: String get() = stableId("mission_id")
-    val missionRevisionId: String get() = stableId("mission_revision_id")
     val rcDeviceId: String get() = stableId("rc_device_id")
 
     var coreUrl: String

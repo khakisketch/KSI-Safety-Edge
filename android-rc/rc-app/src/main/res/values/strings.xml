@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">KSI Safety RC (A4 shell)</string>
-    <string name="clock_unverified">Clock anchor UNVERIFIED (device wall clock until H1 Edge sync). Times are not surveyed.</string>
-    <string name="section_mission">1. Mission (rc-core state)</string>
-    <string name="section_observe">2. Observe / link (SIMULATED feed)</string>
+    <string name="app_name">KSI Safety RC (A5 shell)</string>
+    <string name="clock_unverified">UTC shown is RC RECEIPT time (approx). Edge monotonic times are preserved in records and never converted; no verified clock anchor yet (H1).</string>
+    <string name="section_mission">1. Mission / flight (rc-core state)</string>
+    <string name="section_observe">2. Link (MOP bytes)</string>
+    <string name="section_demo">Demo bench — ISOLATED store, never uploads</string>
     <string name="section_evidence">3. Evidence (local-first, offline OK)</string>
     <string name="section_sync">4. Sync (COMMITTED gate)</string>
-    <string name="btn_demo_bundle">Demo bundle</string>
     <string name="btn_prepare">Prepare</string>
     <string name="btn_apply">Apply</string>
     <string name="btn_reconcile">Reconcile</string>
     <string name="btn_start">Start</string>
     <string name="btn_stop">Stop</string>
+    <string name="btn_end_flight">End flight</string>
     <string name="btn_connect">Connect</string>
     <string name="btn_disconnect">Disconnect</string>
-    <string name="btn_demo_tick">Demo tick</string>
     <string name="btn_retry">Retry unacked</string>
+    <string name="btn_demo_tick">Demo tick</string>
+    <string name="btn_demo_new_flight">New demo flight</string>
     <string name="btn_refresh_evidence">Refresh (local)</string>
     <string name="hint_core_url">Core URL, e.g. http://192.168.1.5:8000/api/v1/edge</string>
     <string name="hint_core_token">Core token (rc scope)</string>

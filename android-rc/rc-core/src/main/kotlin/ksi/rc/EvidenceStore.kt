@@ -34,6 +34,14 @@ interface EvidenceStore {
     /** Earliest/latest received sample time for a (flight, boot), or null. */
     fun firstLastNs(flightId: String, bootId: String): Pair<Long, Long>?
 
+    /**
+     * Earliest/latest **RC receipt wall-clock** (ISO-8601) for a (flight,
+     * boot), or null. This is the only honest time base the RC has without
+     * a verified Edge clock anchor: Edge monotonic ns is a different device
+     * domain and is NEVER converted into UTC here.
+     */
+    fun receivedFirstLastUtc(flightId: String, bootId: String): Pair<String, String>?
+
     /** Data-plane sequence numbers received for a (boot, channel). */
     fun receivedSeqs(bootId: String, channel: String): Set<Long>
 
