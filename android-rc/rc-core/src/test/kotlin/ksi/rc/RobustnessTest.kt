@@ -108,7 +108,15 @@ class RobustnessTest {
             store.writeChunk("a-4", 1L shl 30, ByteArray(1))
         }
         assertFailsWith<IllegalArgumentException> {
+            store.writeChunk("a-4", Long.MAX_VALUE, ByteArray(4))
+        }
+        assertFailsWith<IllegalArgumentException> {
             store.writeChunk("a-4", -1L, ByteArray(1))
+        }
+        // Chunks must arrive after the announce (ordered evidence channel):
+        // an unannounced chunk is rejected instead of poisoning coverage.
+        assertFailsWith<IllegalArgumentException> {
+            store.writeChunk("never-announced", 0, ByteArray(4))
         }
         // The artifact must still complete with correct chunks afterwards.
         store.writeChunk("a-4", 0, bytes.copyOfRange(0, 8))

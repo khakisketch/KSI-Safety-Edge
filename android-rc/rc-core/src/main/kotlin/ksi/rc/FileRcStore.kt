@@ -140,10 +140,15 @@ class FileRcStore(root: Path) : RcStore, EvidenceStore {
         if (offset < 0L) {
             throw IllegalArgumentException("chunk offset must be >= 0")
         }
-        val declaredSize = artifacts[artifactId]?.get("size_bytes")?.asLong()
-        if (declaredSize != null && offset + bytes.size.toLong() > declaredSize) {
-            // Without this guard an oversized offset extends a sparse file
-            // and the artifact could never become complete again.
+        val announce = artifacts[artifactId]
+            ?: throw IllegalArgumentException(
+                "chunk for unannounced artifact $artifactId (announce first)",
+            )
+        val declaredSize = announce.get("size_bytes")?.asLong()
+            ?: throw IllegalArgumentException("announce without size_bytes")
+        // Overflow-safe range check: without it an offset near Long.MAX_VALUE
+        // would wrap the sum and poison the artifact's coverage forever.
+        if (offset > declaredSize || bytes.size.toLong() > declaredSize - offset) {
             throw IllegalArgumentException(
                 "chunk range exceeds the announced size of $artifactId",
             )
