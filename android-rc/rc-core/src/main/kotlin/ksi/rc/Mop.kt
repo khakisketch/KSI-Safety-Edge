@@ -40,6 +40,9 @@ object Mop {
 
     private val mapper = ObjectMapper()
 
+    /** Public mapper for payload construction (shared JSON semantics). */
+    val json: ObjectMapper get() = mapper
+
     fun newMsgId(vararg parts: String): String =
         Uuid5.of(NAMESPACE, parts.joinToString("|")).toString()
 
