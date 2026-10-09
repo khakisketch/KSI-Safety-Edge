@@ -61,19 +61,56 @@ class MissionControllerTest {
 
         f.controller.startSession()
         f.pump()
-        assertEquals(MissionState.RUNNING, f.controller.state)
-        assertTrue(f.controller.sessionActive)
+        assertEquals(MissionState.SESSION_PENDING, f.controller.state,
+            "a command ACK does not confirm the Edge is running")
+        assertFalse(f.controller.sessionActive)
         assertEquals(
             Uuid5.of(Mop.NAMESPACE, "session|flt-1|boot-1").toString(),
             f.controller.sessionId,
         )
         assertTrue(f.edge.running)
 
+        f.controller.reconcile()
+        f.pump()
+        assertEquals(MissionState.RUNNING, f.controller.state)
+        assertTrue(f.controller.sessionActive)
+        assertEquals(true, f.controller.edgeReportedRunning)
+
         f.controller.stopSession()
+        f.pump()
+        assertEquals(MissionState.SESSION_PENDING, f.controller.state,
+            "stop is not confirmed by its ACK either")
+        assertTrue(f.controller.sessionActive, "edge still reported running")
+
+        f.controller.reconcile()
         f.pump()
         assertEquals(MissionState.STOPPED, f.controller.state)
         assertFalse(f.controller.sessionActive)
+        assertEquals(false, f.controller.edgeReportedRunning)
         assertFalse(f.edge.running)
+    }
+
+    @Test
+    fun session_state_never_exaggerates_beyond_edge_reports() {
+        val f = Fixture()
+        f.controller.prepare()
+        f.pump()
+        f.controller.apply()
+        f.pump()
+        f.controller.startSession()
+        f.pump()
+        assertEquals(MissionState.SESSION_PENDING, f.controller.state)
+        assertFalse(f.controller.sessionActive)
+
+        // The Edge ACKed the start but reports it is NOT running (e.g. its
+        // analysis failed to start): the RC must stay pending, not RUNNING.
+        f.edge.running = false
+        f.controller.reconcile()
+        f.pump()
+        assertEquals(MissionState.SESSION_PENDING, f.controller.state,
+            "start stays unconfirmed while the edge reports not running")
+        assertFalse(f.controller.sessionActive)
+        assertEquals(false, f.controller.edgeReportedRunning)
     }
 
     @Test

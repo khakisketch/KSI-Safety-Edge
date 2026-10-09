@@ -53,12 +53,11 @@ class MopEndpoint(
     val outbox = ArrayDeque<ObjectNode>()
     private val unacked = LinkedHashMap<String, ObjectNode>()
     private val seen: MutableSet<String> = store.processedMsgIds().toMutableSet()
-    private var counter = 0
     var ackedCount = 0
         private set
 
     fun sendControl(type: String, payload: ObjectNode): ObjectNode {
-        counter += 1
+        val counter = store.nextMsgCounter()
         val env = Mop.makeEnvelope(
             msgId = Mop.newMsgId("rc", flightId, counter.toString(), type),
             channel = "CONTROL_RELIABLE",
@@ -76,7 +75,7 @@ class MopEndpoint(
     }
 
     private fun sendAck(forEnv: ObjectNode) {
-        counter += 1
+        val counter = store.nextMsgCounter()
         val msgId = forEnv.get("msg_id").asText()
         val payload = Mop.json.createObjectNode().put("ack_of", msgId)
         val boot = forEnv.get("edge_boot_id")
@@ -111,6 +110,11 @@ class MopEndpoint(
         val msgId = env.get("msg_id").asText()
         val type = env.get("type").asText()
         if (msgId in seen || store.isProcessed(msgId)) {
+            // Idempotent re-ACK for non-ACK duplicates: an already-processed
+            // message whose ACK was lost must not make the Edge retry
+            // forever. (Deliberate strengthening over the Python harness,
+            // which returns dedup without re-ACKing.)
+            if (type != "ACK") ackSafely(env)
             return Inbound.Duplicate(type)
         }
         if (type == "ACK") {
@@ -119,12 +123,17 @@ class MopEndpoint(
             onAcked?.invoke(ackOf)
             return Inbound.Acked(ackOf)
         }
-        // Persist BEFORE the domain handler and the ACK (commit-before-ACK).
-        store.storeMessage(env)
+        // Persist BEFORE the domain handler and the ACK (commit-before-ACK);
+        // a persist failure must not ACK (and must not advance anything).
+        try {
+            store.storeMessage(env)
+        } catch (exc: Exception) {
+            return Inbound.Failed(type, "persist failed: ${exc.message}")
+        }
         if (type !in Mop.EDGE_TO_RC) {
             // Harness parity: unknown types are ACKed (terminal) and counted
             // as errors, never retried by the Edge.
-            sendAck(env)
+            ackSafely(env)
             return Inbound.Failed(type, "unknown type")
         }
         val failure = try {
@@ -137,9 +146,25 @@ class MopEndpoint(
             // stored envelope lets reprocessing resume safely.
             return Inbound.Failed(type, failure)
         }
-        store.markProcessed(msgId)
+        try {
+            store.markProcessed(msgId)
+        } catch (exc: Exception) {
+            return Inbound.Failed(type, "markProcessed failed: ${exc.message}")
+        }
         seen.add(msgId)
-        sendAck(env)
+        if (!ackSafely(env)) {
+            // Domain work is durable; the ACK itself failed to persist. The
+            // Edge retry hits the duplicate path above and is re-ACKed.
+            return Inbound.Failed(type, "ack could not be persisted")
+        }
         return Inbound.Stored(type)
+    }
+
+    /** Best-effort ACK emission; false when even the ACK could not persist. */
+    private fun ackSafely(env: ObjectNode): Boolean = try {
+        sendAck(env)
+        true
+    } catch (exc: Exception) {
+        false
     }
 }

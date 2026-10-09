@@ -12,6 +12,8 @@ enum class MissionState {
     /** Apply reply lost / link lost: reconcile via MISSION_STATUS_QUERY. */
     STATUS_UNKNOWN,
     APPLIED,
+    /** A session command was ACKed; the Edge running state is unconfirmed. */
+    SESSION_PENDING,
     RUNNING,
     STOPPED,
     REJECTED,
@@ -54,10 +56,16 @@ data class IgnoredStale(
  *    the protocol carries no attempt id; the accepted response's
  *    `edge_boot_id` becomes [activeBootId]. After an Edge reboot the RC
  *    must re-apply (a session must not silently trust the previous boot).
- * 5. SESSION state uses the command ACK (SESSION_START/STOP are Edge-local
- *    state, durably accepted when acked); the session id is derived as
- *    `uuid5(NAMESPACE, "session|flight|boot")` — identical to the Python
- *    uploader's derivation. RUNNING/STOPPED are set on those ACKs only.
+ * 5. SESSION state is marked RUNNING/STOPPED ONLY from Edge-reported status
+ *    (MISSION_STATUS.running). A command ACK (SESSION_START/STOP) proves
+ *    durable acceptance by the Edge, NOT that its analysis is actually
+ *    running: the ACK moves the state to SESSION_PENDING and the UI must
+ *    not claim more. [sessionActive] follows the confirmed state. The
+ *    session id is derived as `uuid5(NAMESPACE, "session|flight|boot")`.
+ * 6. Message ids come from a durable monotonic counter ([RcStore
+ *    nextMsgCounter]): ids are never reused after an RC process restart
+ *    (the Edge dedups by msg_id, so a reused id would silence a new
+ *    command).
  *
  * NOTE: this is the KSI message contract on top of a transport. DJI MOP (or
  * a test link) is only how bytes travel; nothing here proves the real
@@ -90,6 +98,10 @@ class MissionController(
         private set
     var sessionActive: Boolean = false
         private set
+
+    /** Latest Edge-reported running flag (MISSION_STATUS.running), or null. */
+    var edgeReportedRunning: Boolean? = null
+        private set
     val ignoredStale = mutableListOf<IgnoredStale>()
 
     val bundleId: String get() = bundle.get("bundle_id").asText()
@@ -101,7 +113,10 @@ class MissionController(
 
     private data class ApplyCtx(val bundleId: String, val bundleSha: String)
 
+    private enum class SessionCommand { START, STOP }
+
     private var applying: ApplyCtx? = null
+    private var pendingSession: SessionCommand? = null
     private var sessionStartMsgId: String? = null
     private var sessionStopMsgId: String? = null
 
@@ -148,19 +163,30 @@ class MissionController(
     }
 
     fun stopSession() {
-        check(sessionActive) { "no active session to stop" }
+        check(sessionActive || pendingSession == SessionCommand.START) {
+            "no active or pending session to stop"
+        }
         sessionStopMsgId =
             endpoint.sendControl("SESSION_STOP", Mop.json.createObjectNode())
                 .get("msg_id").asText()
     }
 
     private fun onCommandAcked(ackOf: String) {
-        if (ackOf == sessionStartMsgId) {
-            sessionActive = true
-            transition(MissionState.RUNNING, "SESSION_START acked")
-        } else if (ackOf == sessionStopMsgId) {
-            sessionActive = false
-            transition(MissionState.STOPPED, "SESSION_STOP acked")
+        when (ackOf) {
+            sessionStartMsgId -> {
+                pendingSession = SessionCommand.START
+                transition(
+                    MissionState.SESSION_PENDING,
+                    "SESSION_START acked; edge running state unconfirmed",
+                )
+            }
+            sessionStopMsgId -> {
+                pendingSession = SessionCommand.STOP
+                transition(
+                    MissionState.SESSION_PENDING,
+                    "SESSION_STOP acked; edge stopped state unconfirmed",
+                )
+            }
         }
     }
 
@@ -243,6 +269,44 @@ class MissionController(
                     activeBootId = statusBoot
                     transition(MissionState.APPLIED, "reconciled via MISSION_STATUS")
                 }
+                payload.get("running")?.takeIf { it.isBoolean }?.asBoolean()
+                    ?.let { reported ->
+                        edgeReportedRunning = reported
+                        when {
+                            pendingSession == SessionCommand.START && reported -> {
+                                pendingSession = null
+                                sessionActive = true
+                                transition(
+                                    MissionState.RUNNING,
+                                    "edge status confirms running",
+                                )
+                            }
+                            pendingSession == SessionCommand.STOP && !reported -> {
+                                pendingSession = null
+                                sessionActive = false
+                                transition(
+                                    MissionState.STOPPED,
+                                    "edge status confirms stopped",
+                                )
+                            }
+                            pendingSession == null &&
+                                state == MissionState.RUNNING && !reported -> {
+                                sessionActive = false
+                                transition(
+                                    MissionState.STOPPED,
+                                    "edge status reports not running",
+                                )
+                            }
+                            pendingSession == null &&
+                                state == MissionState.STOPPED && reported -> {
+                                sessionActive = true
+                                transition(
+                                    MissionState.RUNNING,
+                                    "edge status reports running",
+                                )
+                            }
+                        }
+                    }
                 // A non-matching status is diagnostics only: no state change,
                 // no record (stale or another flight's apply).
                 null

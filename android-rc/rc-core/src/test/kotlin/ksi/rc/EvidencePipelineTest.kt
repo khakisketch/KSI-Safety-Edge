@@ -58,18 +58,25 @@ class EvidencePipelineTest {
         return summary
     }
 
-    private fun announce(artifactId: String, size: Long): ObjectNode {
+    private fun announce(artifactId: String, bytes: ByteArray): ObjectNode {
         val announce = Mop.json.createObjectNode()
         announce.put("artifact_id", artifactId)
         announce.put("flight_id", "flt-1")
         announce.put("edge_boot_id", "boot-1")
         announce.put("source_kind", "EDGE_SNAPSHOT")
-        announce.put("sha256", "ab".repeat(32))
-        announce.put("size_bytes", size)
+        announce.put("sha256", sha256Hex(bytes))
+        announce.put("size_bytes", bytes.size.toLong())
         announce.put("media_type", "image/jpeg")
         announce.put("required", true)
         announce.put("segment_index", 0)
         return announce
+    }
+
+    private fun sha256Hex(bytes: ByteArray): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        return digest.digest(bytes).joinToString("") {
+            (it.toInt() and 0xFF).toString(16).padStart(2, '0')
+        }
     }
 
     private fun application(): ObjectNode {
@@ -113,7 +120,7 @@ class EvidencePipelineTest {
             store.storeObservation(obs, "boot-1")
             store.storeEvent(event(obs.get("observation_id").asText()), "boot-1")
             store.storeFlightSummary(summary(), "boot-1")
-            store.announceArtifact(announce("artifact-1", 16), "boot-1")
+            store.announceArtifact(announce("artifact-1", bytes), "boot-1")
             store.writeChunk("artifact-1", 0, bytes.copyOfRange(0, 8))
             store.writeChunk("artifact-1", 8, bytes.copyOfRange(8, 16))
             store.recordApplication(application())
@@ -146,11 +153,12 @@ class EvidencePipelineTest {
     @Test
     fun incomplete_artifact_is_not_available() {
         val store = FileRcStore(tempRoot())
-        store.announceArtifact(announce("artifact-x", 16), "boot-1")
-        store.writeChunk("artifact-x", 0, ByteArray(8))
+        val bytes = ByteArray(16)
+        store.announceArtifact(announce("artifact-x", bytes), "boot-1")
+        store.writeChunk("artifact-x", 0, bytes.copyOfRange(0, 8))
         assertNull(store.artifactBytes("artifact-x"),
             "partial artifact bytes must never be exposed")
-        store.writeChunk("artifact-x", 8, ByteArray(8))
+        store.writeChunk("artifact-x", 8, bytes.copyOfRange(8, 16))
         assertNotNull(store.artifactBytes("artifact-x"))
     }
 
@@ -186,7 +194,7 @@ class EvidencePipelineTest {
             is Inbound.Stored)
 
         assertTrue(endpoint.onRawEnvelope(
-            edgeEnvelope("ARTIFACT_ANNOUNCE", 3, announce("artifact-1", 16)).toString(),
+            edgeEnvelope("ARTIFACT_ANNOUNCE", 3, announce("artifact-1", bytes)).toString(),
         ) is Inbound.Stored)
         val chunk0 = Mop.json.createObjectNode()
         chunk0.put("artifact_id", "artifact-1")

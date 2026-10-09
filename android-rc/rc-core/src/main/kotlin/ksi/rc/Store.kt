@@ -13,6 +13,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode
  * the persistent (file/SQLite) implementation lands with A3.
  */
 interface RcStore {
+    /** Durable monotonic counter for RC message ids; never returns a value
+     *  twice, including across process restarts (ids must not be reused:
+     *  the Edge dedups by msg_id and a reused id would silence a new
+     *  command). The value must be persisted BEFORE the message that uses
+     *  it is sent. */
+    fun nextMsgCounter(): Long
+
     fun isProcessed(msgId: String): Boolean
 
     /** Persist the raw envelope (idempotent by msg_id). */
@@ -33,6 +40,9 @@ class InMemoryRcStore : RcStore {
     private val processed = linkedSetOf<String>()
     private val messages = linkedMapOf<String, ObjectNode>()
     private val applications = linkedMapOf<String, ObjectNode>()
+    private var counter = 0L
+
+    override fun nextMsgCounter(): Long = ++counter
 
     override fun isProcessed(msgId: String): Boolean = msgId in processed
 
