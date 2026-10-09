@@ -55,8 +55,10 @@ Build dirs (`edge/build*/`) are git-ignored.
 | `include/ksi_safety/perception/tensorrt_runtime.hpp`, `src/perception/tensorrt_runtime.cpp` | `TensorRtRuntime`: serialized-engine adapter behind `DfineInferenceFn` (`Run` matches the injected-inference signature, so `DfineDetector` decodes engine outputs into `Detection`s with unchanged preprocess/decode). Validates bindings `pixel_values` 1×3×640×640 → `logits` 1×300×80 + `pred_boxes` 1×300×4 (float32 I/O); device buffers allocated once; H2D → enqueueV3 → sync → D2H; fail-closed T1–T8 (false + empty outputs, never partial, never throws). `RunTimed` (W9-FU) adds per-stage `StageTimesMs` (h2d/enqueue/sync/d2h) with sync-serialized attribution — its sum can differ from the pipelined `Run` mean (see header caveat). Stub build (`KSI_SAFETY_EDGE_ENABLE_TENSORRT=OFF`, default): `Available()==false`, no TRT/CUDA dependency. No `DetectorPort` wrapper (see `dfine_detector.hpp` rationale); no spatial/session wiring. |
 | `tools/dfine_trt_smoke.cpp` | `dfine_trt_smoke` (built only with TRT ON): real-image smoke — `--engine PATH --input PATH --expected PATH [--iters N] [--breakdown] [--breakdown-iters N]`; gates expected lines with score ≥ 0.2 (top-1 always gates) vs. same-class top-12 C++ detections at IoU ≥ 0.5 and \|Δscore\| ≤ 0.05; tail lines (score < 0.2) reported only; reports mean/p95 latency, qps, VmRSS before/after; with `--breakdown` also prints a `breakdown_ms ...` per-stage line + `breakdown_hint` dominant-stage line (W9-FU); `SMOKE_RESULT PASS\|FAIL`. |
 | `tools/preprocess_dump.cpp` | `preprocess_dump` (host tool, no TensorRT): `--input PATH --width W --height H [--out PATH]` runs `PreprocessRgb` on raw RGB and writes the CHW float32 tensor; used by `scripts/check_resize_fidelity.py` to compare the actual C++ output against PIL/RTDetrImageProcessor. |
-| `tools/replay_run.cpp` | `replay_run` (host + device): `--manifest PATH [--out PATH] [--null-detector] [--engine PATH] [--model-id ID] [--model-digest D] [--detect-every N] [--max-receive-gap-ms N] [--max-bracket-ms N] [--tracker-iou F] [--tracker-max-age N] [--tracker-min-hits N] [--session-gap-ms N] [--zone-envelope-m F] [--flight-id ID] [--boot-id ID] [--stream-id ID]` — drives the shared `SessionRunner` from a replay manifest and writes one NDJSON tick line + a final stat line. `--engine` requires a TRT build. `scripts/make_replay_frames.py` (host, Pillow) converts images to raw RGB + manifest for it. |
-| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `dfine`, `tracker`, `geometry`, `spatial`, `risk`, `session`, `chain`, `replay`, `tensorrt`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
+| `include/ksi_safety/spatial/ground_estimator.hpp`, `src/spatial/ground_estimator.cpp` | `GroundEstimator` (R4): fresh tracks + verified interpolated pose -> the session's `GroundObservation`s. Person footpoint = bbox bottom-centre projected to the ground; equipment footprint = ground projection of the bbox bottom edge (both `GEO_ESTIMATE` — estimates, never `METRIC_VERIFIED`). Eligibility requires BOTH rings `SOURCE_VERIFIED` + a verified exposure; the pose is SLERP/LERP-interpolated at the exposure time (attitude ring = camera->ENU, position ring = ENU metres). Unmapped classes / refused projections are withheld with reasons; nothing is fabricated. |
+| `include/ksi_safety/replay/policy_file.hpp`, `src/replay/policy_file.cpp` | Replay policy v1 (scenario input): `spatial` lines (intrinsics/ground/horizon/class map), `zone` polygons per revision, `proximity`/`zone-rule` rules — SHADOW-only by construction (ACTIVE never comes from a replay file). Strict, line-numbered errors. |
+| `tools/replay_run.cpp` | `replay_run` (host + device): `--manifest PATH [--out PATH] [--null-detector] [--engine PATH] [--model-id ID] [--model-digest D] [--policy PATH] [--score-threshold F] [--detect-every N] [--max-receive-gap-ms N] [--max-bracket-ms N] [--tracker-iou F] [--tracker-max-age N] [--tracker-min-hits N] [--session-gap-ms N] [--zone-envelope-m F] [--flight-id ID] [--boot-id ID] [--stream-id ID]` — drives the shared `SessionRunner` from a replay manifest and writes one NDJSON tick line (detections, tracks, spatial records, rule events) + a final stat line. `--engine` requires a TRT build; `--policy` enables spatial estimation and risk rules. `scripts/make_replay_frames.py` (host, Pillow) converts images to raw RGB + manifest (+ optional synthetic exposure/spatial policy) for it. |
+| `tests/` | One `ctest` binary per group (`capture_queue`, `provenance`, `ring`, `matching`, `interpolation`, `perception`, `dfine`, `tracker`, `geometry`, `spatial`, `ground_estimator`, `risk`, `session`, `chain`, `replay`, `tensorrt`), plain `CHECK(cond, msg)` style, nonzero exit on failure. |
 
 ## The core rule (why this exists)
 
@@ -320,7 +322,7 @@ Interpretation caveats (read before quoting numbers):
   when per-revision episodes matter.
 - `Sweep()`/`EndSession()` carry no track snapshot (tracker state untouched).
 
-## Session runner + replay (R1–R3) scope / limits (honest)
+## Session runner + replay (R1–R4) scope / limits (honest)
 
 - ONE product processing path. `SessionRunner` (cadence gate → detector →
   matching → session step) is driven by BOTH the PSDK application and the
@@ -353,23 +355,32 @@ Interpretation caveats (read before quoting numbers):
   and a telemetry gap grades `OUTSIDE_MAX_GAP`. Duplicate `sample_id` and
   receive rollback are counted and never stored; a same-value sample with a
   new id is a NEW sample (only `sample_id` dedups).
-- Replay frames carry no exposure time (`has_exposure=false`,
-  `sensor_timestamp_ns=0`): grades stay `RECEIVE_*` and `spatial_eligible`
-  is false in replay v1 (it requires BOTH attitude and position
-  `SOURCE_VERIFIED` — pinned by test; receive proximity never qualifies).
+- R4 spatial (pinned by tests + a device demo): with `enable_spatial`,
+  spatially eligible ticks (BOTH rings `SOURCE_VERIFIED` + verified
+  exposure) interpolate the pose at the exposure time and estimate per
+  FRESH track — person footpoint (bbox bottom-centre) and equipment
+  footprint (bbox bottom-edge ground projection) as `GEO_ESTIMATE`
+  observations that feed the SAME W5 session rules. Unmapped classes and
+  refused projections (near horizon / no intersection / bad pixel) are
+  recorded `WITHHELD` with reasons; ineligible ticks keep detection and
+  tracking and withhold spatial only. The attitude ring is camera->ENU and
+  the position ring is ENU metres — composing raw PSDK topics into that
+  pose is the deferred, H1-gated adapter's job (the live PSDK app leaves
+  `enable_spatial` off).
 - `ReplayTelemetrySource::PushDue(now)` is the no-future guarantee: a frame
   processed at T can only see samples that arrived by T (pinned by test).
-- Device evidence (2026-10-09, Jetson, fp16 engine, 6-frame corpus replay
-  through `replay_run`): all frames `OK` with real D-FINE (top-1 person
-  0.898 / multiple people 0.875 / truck 0.914 — consistent with the W9
-  smoke), stable track ids with `MISSED`→`OBSERVED` across a scene change,
-  mean tick 73 ms including non-640 PIL-compatible preprocessing. This is a
-  dev measurement on staged corpus frames — not a performance or
-  detection-quality claim, and no real-video tracking quality is implied.
-- NOT verified here: capture-time alignment (no verified exposure exists in
-  replay v1 or the PSDK RGB stream), spatial observations (R4), telemetry
-  loss/delay/clock-domain scenarios beyond the pinned no-future case (R3),
-  real-video tracking quality (R2/R5), or any on-aircraft behavior.
-  Synthetic telemetry from `scripts/make_replay_frames.py --pose-hz` is
-  plumbing material (simulated domain, clearly labelled) and can never lift
-  a grade above `RECEIVE_*` by itself.
+- Device evidence (2026-10-09, Jetson, fp16 engine, corpus replay through
+  `replay_run`): 7 frames all `OK` with real D-FINE (top-1 person 0.898 /
+  multiple people 0.875 / truck 0.914, consistent with the W9 smoke),
+  stable track ids with `MISSED`→`OBSERVED` across scene changes, and the
+  R4 spatial demo (synthetic UNcalibrated policy): all ticks `ESTIMATED`,
+  120 observations, 54 SHADOW episodes created — zone intrusions plus
+  mixed-scene person-vehicle proximity (2.56 m / 8.04 m at the synthetic
+  scale). A pipeline demonstration on staged corpus frames — never a
+  performance, detection-quality or metric-accuracy claim.
+- NOT verified here: capture-time alignment on real hardware, calibrated
+  intrinsics/ground plane and metric distance accuracy, telemetry scenarios
+  beyond the pinned no-future case, real-video tracking quality, or any
+  on-aircraft behavior. Synthetic telemetry/policy from
+  `scripts/make_replay_frames.py` is plumbing material (simulated domain,
+  clearly labelled) and can never lift a grade above `RECEIVE_*` by itself.

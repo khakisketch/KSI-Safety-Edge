@@ -18,6 +18,7 @@
 
 #include "ksi_safety/perception/dfine_detector_port.hpp"
 #include "ksi_safety/replay/frame_source.hpp"
+#include "ksi_safety/replay/policy_file.hpp"
 #include "ksi_safety/replay/telemetry_source.hpp"
 #include "ksi_safety/runtime/session_runner.hpp"
 
@@ -71,6 +72,7 @@ struct Args {
     std::string manifest;
     std::string out_path = "replay_run.ndjson";
     std::string engine_path;
+    std::string policy_path;
     std::string model_id = "dfine-s-coco";
     std::string model_digest;
     std::string flight_id = "replay-flight";
@@ -93,7 +95,7 @@ void PrintUsage() {
                  "usage: replay_run --manifest PATH [--out PATH] "
                  "[--null-detector]\n"
                  "       [--engine PATH] [--model-id ID] [--model-digest D]\n"
-                 "       [--score-threshold F]\n"
+                 "       [--policy PATH] [--score-threshold F]\n"
                  "       [--detect-every N] [--max-receive-gap-ms N] "
                  "[--max-bracket-ms N]\n"
                  "       [--tracker-iou F] [--tracker-max-age N] "
@@ -133,6 +135,8 @@ bool ParseArgs(int argc, char** argv, Args* args) {
             args->out_path = argv[++i];
         } else if (key == "--engine" && has_value) {
             args->engine_path = argv[++i];
+        } else if (key == "--policy" && has_value) {
+            args->policy_path = argv[++i];
         } else if (key == "--model-id" && has_value) {
             args->model_id = argv[++i];
         } else if (key == "--model-digest" && has_value) {
@@ -294,6 +298,41 @@ void WriteTick(std::FILE* out, const TickRecord& record) {
             static_cast<double>(track.box.x_max),
             static_cast<double>(track.box.y_max));
     }
+    std::fputs("],\"spatial_status\":\"", out);
+    std::fputs(ToString(record.spatial_status), out);
+    std::fputs("\",\"spatial\":[", out);
+    for (std::size_t i = 0; i < record.spatial.size(); ++i) {
+        const ksi::safety::SpatialObservationRecord& spatial =
+            record.spatial[i];
+        if (i != 0U) {
+            std::fputc(',', out);
+        }
+        std::fprintf(out, "{\"track\":%llu,\"class\":%u,\"ok\":%s,\"reason\":\"%s\"",
+                     static_cast<unsigned long long>(spatial.track_id),
+                     spatial.class_id, spatial.has_observation ? "true" : "false",
+                     ToString(spatial.reason));
+        if (spatial.has_observation) {
+            if (spatial.observation.kind == ksi::safety::GroundTrackKind::kPerson) {
+                std::fprintf(out, ",\"foot\":[%g,%g]",
+                             spatial.observation.person_footpoint.x,
+                             spatial.observation.person_footpoint.y);
+            } else {
+                std::fputs(",\"poly\":[", out);
+                for (std::size_t p = 0;
+                     p < spatial.observation.equipment_footprint.size(); ++p) {
+                    if (p != 0U) {
+                        std::fputc(',', out);
+                    }
+                    std::fprintf(out, "[%g,%g]",
+                                 spatial.observation.equipment_footprint[p].x,
+                                 spatial.observation.equipment_footprint[p].y);
+                }
+                std::fprintf(out, "],\"name\":\"%s\"",
+                             spatial.observation.equipment_class.c_str());
+            }
+        }
+        std::fputc('}', out);
+    }
     std::fputs("],\"prox\":", out);
     WriteOutputs(out, record.proximity);
     std::fputs(",\"zone\":", out);
@@ -323,6 +362,9 @@ struct Stats {
     std::size_t failure_ticks = 0;
     std::size_t notrun_ticks = 0;
     std::size_t detections_total = 0;
+    std::size_t observations_total = 0;
+    std::size_t spatial_estimated_ticks = 0;
+    std::size_t spatial_noteligible_ticks = 0;
     std::size_t episodes_created = 0;
     std::size_t episodes_closed = 0;
     std::size_t poses_pushed = 0;
@@ -404,12 +446,24 @@ int main(int argc, char** argv) {
         detector = nullptr;
     }
 
+    ksi::safety::ReplayPolicy policy;
+    if (!args.policy_path.empty()) {
+        std::string policy_error;
+        if (!ksi::safety::LoadReplayPolicy(args.policy_path, &policy,
+                                           &policy_error)) {
+            std::fprintf(stderr, "policy error: %s\n", policy_error.c_str());
+            return 1;
+        }
+    }
+
     RunnerConfig runner_config;
     runner_config.match.max_receive_gap_ns =
         args.max_receive_gap_ms * kNsPerMs;
     runner_config.match.max_bracket_interval_ns = args.max_bracket_ms * kNsPerMs;
     runner_config.detect_every_n_frames =
         static_cast<std::uint64_t>(args.detect_every);
+    runner_config.enable_spatial = policy.has_spatial;
+    runner_config.spatial = policy.spatial;
     SessionConfig session_config;
     session_config.tracker.iou_threshold =
         static_cast<float>(args.tracker_iou);
@@ -423,9 +477,8 @@ int main(int argc, char** argv) {
     profile.model_digest = args.model_digest;
     profile.backend = "tensorrt";
 
-    SessionRunner runner(runner_config, session_config,
-                         std::vector<RiskRule>(), std::vector<RiskRule>(),
-                         std::vector<ZoneRevision>(), profile);
+    SessionRunner runner(runner_config, session_config, policy.proximity_rules,
+                         policy.zone_rules, policy.zones, profile);
     ReplayTelemetrySource telemetry(frames.manifest(), "host_mono", clocks);
 
     std::FILE* out = std::fopen(args.out_path.c_str(), "w");
@@ -470,6 +523,18 @@ int main(int argc, char** argv) {
                 break;
         }
         stats.detections_total += record.detections.size();
+        for (const ksi::safety::SpatialObservationRecord& spatial :
+             record.spatial) {
+            if (spatial.has_observation) {
+                ++stats.observations_total;
+            }
+        }
+        if (record.spatial_status == ksi::safety::SpatialTickReason::kEstimated) {
+            ++stats.spatial_estimated_ticks;
+        } else if (record.spatial_status ==
+                   ksi::safety::SpatialTickReason::kNotEligible) {
+            ++stats.spatial_noteligible_ticks;
+        }
         CountEvents(record.proximity, &stats);
         CountEvents(record.zone, &stats);
         WriteTick(out, record);
@@ -489,16 +554,20 @@ int main(int argc, char** argv) {
         out,
         "{\"type\":\"stat\",\"frames\":%zu,\"ok_ticks\":%zu,"
         "\"failure_ticks\":%zu,\"notrun_ticks\":%zu,"
-        "\"detections_total\":%zu,\"episodes_created\":%zu,"
+        "\"detections_total\":%zu,\"observations_total\":%zu,"
+        "\"spatial_estimated_ticks\":%zu,\"spatial_noteligible_ticks\":%zu,"
+        "\"episodes_created\":%zu,"
         "\"episodes_closed\":%zu,\"poses_pushed\":%zu,"
         "\"positions_pushed\":%zu,\"duplicates\":%zu,\"rollbacks\":%zu,"
         "\"telemetry_pending_end\":%zu,\"tick_ms_mean\":%.3f,"
         "\"tick_ms_p95\":%.3f,\"detect_every\":%lld}\n",
         stats.frames, stats.ok_ticks, stats.failure_ticks, stats.notrun_ticks,
-        stats.detections_total, stats.episodes_created, stats.episodes_closed,
-        stats.poses_pushed, stats.positions_pushed, stats.duplicates,
-        stats.rollbacks, telemetry.pending_count(), tick_mean,
-        Percentile(stats.tick_ms, 0.95), args.detect_every);
+        stats.detections_total, stats.observations_total,
+        stats.spatial_estimated_ticks, stats.spatial_noteligible_ticks,
+        stats.episodes_created, stats.episodes_closed, stats.poses_pushed,
+        stats.positions_pushed, stats.duplicates, stats.rollbacks,
+        telemetry.pending_count(), tick_mean, Percentile(stats.tick_ms, 0.95),
+        args.detect_every);
     std::fclose(out);
     std::printf("replay_run: %zu frames -> %s\n", stats.frames,
                 args.out_path.c_str());

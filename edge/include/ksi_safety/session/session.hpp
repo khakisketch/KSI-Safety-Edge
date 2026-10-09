@@ -107,6 +107,16 @@ class SafetySession {
                        const std::vector<Detection>& detections,
                        const std::vector<GroundObservation>& ground_observations);
 
+    // R4 two-phase API: tracker update and rule evaluation are split so
+    // callers (the session runner) can build ground observations from the
+    // FRESH tracks before evaluation. Tick() = UpdateTracks() + Evaluate()
+    // with identical behaviour; Evaluate uses tracker_.Epoch() for lineage.
+    std::vector<Track> UpdateTracks(std::uint64_t received_mono_ns,
+                                    const std::vector<Detection>& detections);
+    SessionOutput Evaluate(
+        std::uint64_t received_mono_ns, const std::vector<Track>& tracks,
+        const std::vector<GroundObservation>& ground_observations);
+
     // Gap sweep without new evidence: both engines' Tick(now). No track
     // snapshot (tracker untouched).
     SessionOutput Sweep(std::uint64_t now_mono_ns);

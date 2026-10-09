@@ -7,7 +7,8 @@ header) and writes a ksi replay manifest v1 with one frame per image.
 
 usage: make_replay_frames.py --out-dir DIR [--manifest PATH] [--fps F]
        [--start-ns N] [--pose-hz F] [--synthetic-exposure]
-       [--frame-delay-ms MS] [--telemetry-delay-ms MS] IMAGE [IMAGE ...]
+       [--synthetic-spatial] [--frame-delay-ms MS] [--telemetry-delay-ms MS]
+       IMAGE [IMAGE ...]
 
 - Frames are spaced 1/fps seconds apart starting at --start-ns (default 1e9).
 - Synthetic timing model (for the plumbing scenarios): a frame's exposure is
@@ -20,9 +21,12 @@ usage: make_replay_frames.py --out-dir DIR [--manifest PATH] [--fps F]
   SOURCE_VERIFIED — while a frame can still never see a future sample.
 - --pose-hz adds SYNTHETIC attitude samples (identity quaternion) with a
   verify line for the replay_fc device domain. --synthetic-exposure adds
-  SIMULATED verified exposure lines (replay_fc domain). Synthetic telemetry
-  exists for pipeline plumbing tests (R1/R3); it makes no capture-time
-  claim and is never product evidence.
+  SIMULATED verified exposure lines (replay_fc domain). --synthetic-spatial
+  (requires --pose-hz > 0) instead emits nadir attitude (0,1,0,0) + ENU
+  position samples (0,0,10) + exposure lines and writes a policy.txt with
+  UNcalibrated synthetic intrinsics/zones/rules for the R4 spatial pipeline
+  demo. Synthetic telemetry exists for pipeline plumbing tests (R1/R3/R4);
+  it makes no capture-time or metric claim and is never product evidence.
 - Requires Pillow. Host-only helper; the product never depends on it.
 """
 
@@ -50,8 +54,17 @@ def main() -> None:
         "the R3 capture-time alignment policy can be exercised; not real "
         "capture evidence",
     )
+    parser.add_argument(
+        "--synthetic-spatial",
+        action="store_true",
+        help="nadir attitude + ENU position samples + exposure lines + a "
+        "generated policy.txt (UNcalibrated synthetic geometry for the R4 "
+        "spatial pipeline demo; requires --pose-hz > 0)",
+    )
     parser.add_argument("images", nargs="+")
     args = parser.parse_args()
+    if args.synthetic_spatial and args.pose_hz <= 0:
+        parser.error("--synthetic-spatial requires --pose-hz > 0")
 
     os.makedirs(args.out_dir, exist_ok=True)
     manifest_path = args.manifest or os.path.join(args.out_dir, "manifest.txt")
@@ -83,21 +96,46 @@ def main() -> None:
         t = frame_records[0][0]
         # One step past the last exposure so it still has an after-bracket.
         last = frame_records[-1][0] + pose_step_ns
+        quaternion = "0 1 0 0" if args.synthetic_spatial else "1 0 0 0"
         while t <= last:
             sample_id += 1
-            # Synthetic identity attitude; source time = pose grid, receive =
-            # source + telemetry delay (simulated clock, clearly labelled).
+            recv_ns = t + telemetry_delay_ns
+            # Synthetic attitude; source time = pose grid, receive = source +
+            # telemetry delay (simulated clock, clearly labelled).
             lines.append(
-                f"pose {sample_id} {sample_id} {t + telemetry_delay_ns} "
-                f"replay_fc {t} 1 0 0 0"
+                f"pose {sample_id} {sample_id} {recv_ns} replay_fc {t} "
+                f"{quaternion}"
             )
+            if args.synthetic_spatial:
+                lines.append(
+                    f"position {sample_id} {sample_id} {recv_ns} replay_fc "
+                    f"{t} 0 0 10"
+                )
             t += pose_step_ns
 
-    if args.synthetic_exposure and frame_records:
+    if (args.synthetic_exposure or args.synthetic_spatial) and frame_records:
         if not (args.pose_hz > 0):
             lines.append("verify replay_fc device_sensor replay_fc_sim")
         for index, (exposure_ns, _recv) in enumerate(frame_records):
             lines.append(f"exposure {index + 1} replay_fc {exposure_ns}")
+
+    if args.synthetic_spatial:
+        policy_path = os.path.join(args.out_dir, "policy.txt")
+        with open(policy_path, "w", encoding="utf-8") as handle:
+            handle.write(
+                "# synthetic replay policy (generated; UNcalibrated geometry —\n"
+                "# pipeline demonstration only, never metric evidence)\n"
+                "spatial intrinsics 512 512 320 320 640 640\n"
+                "spatial ground 0\n"
+                "spatial min-ray-z 0.05\n"
+                "spatial person-class 0\n"
+                "spatial equipment-class 2 car\n"
+                "spatial equipment-class 7 truck\n"
+                "zone zone-demo -200 -200 200 -200 200 200 -200 200\n"
+                "proximity prox-demo 30 0 0 0 GEO_ESTIMATE\n"
+                "zone-rule zone-demo-rule 0 0 GEO_ESTIMATE\n"
+            )
+        print(f"wrote policy: {policy_path}")
 
     with open(manifest_path, "w", encoding="utf-8") as handle:
         handle.write("\n".join(lines) + "\n")

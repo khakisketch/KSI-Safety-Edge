@@ -58,6 +58,7 @@
 #include "ksi_safety/risk/episode.hpp"
 #include "ksi_safety/risk/policy.hpp"
 #include "ksi_safety/session/session.hpp"
+#include "ksi_safety/spatial/ground_estimator.hpp"
 #include "ksi_safety/time/interpolation.hpp"
 #include "ksi_safety/time/matching.hpp"
 #include "ksi_safety/time/topic_ring.hpp"
@@ -73,6 +74,13 @@ struct RunnerConfig {
     // Telemetry ring capacities (must be > 0; TopicRing contract).
     std::size_t attitude_ring_capacity = 2048;
     std::size_t position_ring_capacity = 512;
+    // R4 spatial estimation. When false, every tick records spatial as
+    // DISABLED and no observations are built (detection/tracking unchanged).
+    // When true, observations are estimated only on spatially eligible
+    // ticks (verified pose + verified exposure) from FRESH tracks; the
+    // session evaluates proximity/zone rules with them.
+    bool enable_spatial = false;
+    SpatialEstimatorConfig spatial;
 };
 
 // True iff detect_every_n_frames >= 1 and both ring capacities are > 0.
@@ -88,6 +96,16 @@ enum class TrackProvenance {
 };
 
 const char* ToString(TrackProvenance provenance);
+
+// Tick-level spatial outcome (R4).
+enum class SpatialTickReason {
+    kDisabled,     // enable_spatial = false (or no fresh evidence on the tick)
+    kNotEligible,  // no fresh detection evidence, or pose/exposure unverified:
+                   // detection/tracking kept, spatial withheld
+    kEstimated,    // eligible; per-track records in TickRecord::spatial
+};
+
+const char* ToString(SpatialTickReason reason);
 
 struct TrackRecord {
     Track track;
@@ -116,6 +134,8 @@ struct TickRecord {
     PoseReason position_reason = PoseReason::kNoSamples;
     std::int64_t position_gap_ns = 0;
     bool spatial_eligible = false;
+    SpatialTickReason spatial_status = SpatialTickReason::kDisabled;
+    std::vector<SpatialObservationRecord> spatial;  // fresh tracks only
     std::vector<TrackRecord> tracks;
     std::vector<RuleOutput> proximity;  // Tick outputs, then sweep outputs
     std::vector<RuleOutput> zone;
@@ -157,6 +177,7 @@ class SessionRunner {
     TopicRing<Quaternion> attitude_;
     TopicRing<Vec3> position_;
     SafetySession session_;
+    GroundEstimator estimator_;
     ModelProfile profile_;
 };
 

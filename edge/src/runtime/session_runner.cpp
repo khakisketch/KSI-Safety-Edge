@@ -34,6 +34,18 @@ const char* ToString(TrackProvenance provenance) {
     return "UNKNOWN";
 }
 
+const char* ToString(SpatialTickReason reason) {
+    switch (reason) {
+        case SpatialTickReason::kDisabled:
+            return "DISABLED";
+        case SpatialTickReason::kNotEligible:
+            return "NOT_ELIGIBLE";
+        case SpatialTickReason::kEstimated:
+            return "ESTIMATED";
+    }
+    return "UNKNOWN";
+}
+
 SessionRunner::SessionRunner(const RunnerConfig& config,
                              const SessionConfig& session_config,
                              const std::vector<RiskRule>& proximity_rules,
@@ -45,6 +57,7 @@ SessionRunner::SessionRunner(const RunnerConfig& config,
       attitude_(config.attitude_ring_capacity),
       position_(config.position_ring_capacity),
       session_(session_config, proximity_rules, zone_rules, zones),
+      estimator_(config.spatial),
       profile_(profile) {}
 
 PushVerdict SessionRunner::PushPose(const Sample<Quaternion>& sample) {
@@ -103,12 +116,38 @@ TickRecord SessionRunner::ProcessFrame(const FramePacket& frame,
     const std::uint64_t now_ns =
         static_cast<std::uint64_t>(ctx.receive_monotonic_ns);
     if (out.detection_status == DetectionStatus::kOk) {
+        const std::vector<Track> tracks =
+            session_.UpdateTracks(now_ns, out.detections);
+        // R4: build ground observations from the FRESH tracks (observed
+        // this tick) with the verified, interpolated pose, then evaluate.
+        std::vector<GroundObservation> observations;
+        if (config_.enable_spatial) {
+            std::vector<Track> fresh;
+            fresh.reserve(tracks.size());
+            for (const Track& track : tracks) {
+                if (track.last_seen_ns == now_ns) {
+                    fresh.push_back(track);
+                }
+            }
+            const SpatialEstimate estimate = estimator_.Estimate(
+                fresh, attitude, position, ctx, frame.metadata.width,
+                frame.metadata.height);
+            out.spatial_status = estimate.eligible
+                                     ? SpatialTickReason::kEstimated
+                                     : SpatialTickReason::kNotEligible;
+            out.spatial = estimate.records;
+            for (const SpatialObservationRecord& record : estimate.records) {
+                if (record.has_observation) {
+                    observations.push_back(record.observation);
+                }
+            }
+        }
         const SessionOutput session_out =
-            session_.Tick(now_ns, out.detections, {});
+            session_.Evaluate(now_ns, tracks, observations);
         out.proximity = session_out.proximity;
         out.zone = session_out.zone;
-        out.tracks.reserve(session_out.tracks.size());
-        for (const Track& track : session_out.tracks) {
+        out.tracks.reserve(tracks.size());
+        for (const Track& track : tracks) {
             TrackRecord record;
             record.track = track;
             record.provenance = track.last_seen_ns == now_ns
@@ -119,6 +158,10 @@ TickRecord SessionRunner::ProcessFrame(const FramePacket& frame,
             out.tracks.push_back(record);
         }
     } else {
+        if (config_.enable_spatial) {
+            // No fresh detection evidence this tick: spatial withheld.
+            out.spatial_status = SpatialTickReason::kNotEligible;
+        }
         const std::vector<Track> live = session_.LiveTracks();
         out.tracks.reserve(live.size());
         for (const Track& track : live) {

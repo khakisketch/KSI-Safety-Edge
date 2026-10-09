@@ -20,6 +20,7 @@
 
 #include "ksi_safety/perception/dfine_detector_port.hpp"
 #include "ksi_safety/replay/frame_source.hpp"
+#include "ksi_safety/replay/policy_file.hpp"
 #include "ksi_safety/replay/telemetry_source.hpp"
 #include "ksi_safety/runtime/session_runner.hpp"
 
@@ -44,22 +45,31 @@ using ksi::safety::DetectionStatus;
 using ksi::safety::DetectorPort;
 using ksi::safety::DfineConfig;
 using ksi::safety::DfineDetectorPort;
+using ksi::safety::EpisodeEventKind;
 using ksi::safety::FrameContext;
 using ksi::safety::FrameDropReason;
 using ksi::safety::FrameMetadata;
 using ksi::safety::FramePacket;
+using ksi::safety::GeometryLevel;
 using ksi::safety::LoadReplayManifest;
+using ksi::safety::LoadReplayPolicy;
 using ksi::safety::ModelProfile;
 using ksi::safety::PoseQuality;
 using ksi::safety::PoseReason;
 using ksi::safety::Quaternion;
 using ksi::safety::ReplayFrameSource;
 using ksi::safety::ReplayManifest;
+using ksi::safety::ReplayPolicy;
 using ksi::safety::ReplayTelemetrySource;
+using ksi::safety::RiskRule;
+using ksi::safety::RuleEvalStatus;
+using ksi::safety::RuleKind;
+using ksi::safety::RuleMode;
 using ksi::safety::RunnerConfig;
 using ksi::safety::Sample;
 using ksi::safety::SessionConfig;
 using ksi::safety::SessionRunner;
+using ksi::safety::SpatialTickReason;
 using ksi::safety::TickRecord;
 using ksi::safety::TimeSourceKind;
 using ksi::safety::Timestamp;
@@ -210,6 +220,40 @@ Sample<Vec3> VerifiedPositionSample(std::uint64_t id, std::int64_t recv_ns,
     sample.source_time.value_ns = src_ns;
     sample.source_time.verified = verified;
     return sample;
+}
+
+// 180 deg about x: camera +z -> ENU -z (nadir).
+Quaternion NadirQ() {
+    Quaternion q;
+    q.w = 0.0;
+    q.x = 1.0;
+    q.y = 0.0;
+    q.z = 0.0;
+    return q;
+}
+
+Sample<Quaternion> VerifiedPoseQ(std::uint64_t id, std::int64_t recv_ns,
+                                 std::int64_t src_ns, const Quaternion& q) {
+    Sample<Quaternion> sample = VerifiedPoseSample(id, recv_ns, src_ns, true);
+    sample.value = q;
+    return sample;
+}
+
+Sample<Vec3> VerifiedPositionV(std::uint64_t id, std::int64_t recv_ns,
+                               std::int64_t src_ns, const Vec3& v) {
+    Sample<Vec3> sample = VerifiedPositionSample(id, recv_ns, src_ns, true);
+    sample.value = v;
+    return sample;
+}
+
+FrameContext WithExposure(const FrameContext& base, std::int64_t exposure_ns) {
+    FrameContext ctx = base;
+    ctx.has_exposure = true;
+    ctx.exposure.kind = TimeSourceKind::kDeviceSensor;
+    ctx.exposure.domain = "cam0";
+    ctx.exposure.value_ns = exposure_ns;
+    ctx.exposure.verified = true;
+    return ctx;
 }
 
 class CountingOkDetector : public DetectorPort {
@@ -1241,6 +1285,196 @@ int main() {
         CHECK(pushed.duplicates == 1, "same sample_id -> duplicate");
         CHECK(pushed.rollbacks == 1, "receive rollback counted");
         CHECK(runner.AttitudeSamples() == 3, "ring holds only recorded");
+    }
+    // ---- 22) R4: spatial observations reach the session (episode) ----
+    {
+        class TwoClassDetector : public DetectorPort {
+          public:
+            DetectionBatch Detect(const FramePacket&) override {
+                DetectionBatch batch;
+                batch.status = DetectionStatus::kOk;
+                Detection person;
+                person.x_min = 1.0F;
+                person.y_min = 1.0F;
+                person.x_max = 5.0F;
+                person.y_max = 5.0F;
+                person.score = 0.9F;
+                person.class_id = 0;
+                batch.detections.push_back(person);
+                Detection equipment;
+                equipment.x_min = 3.0F;
+                equipment.y_min = 1.0F;
+                equipment.x_max = 7.0F;
+                equipment.y_max = 5.0F;
+                equipment.score = 0.8F;
+                equipment.class_id = 7;
+                batch.detections.push_back(equipment);
+                return batch;
+            }
+        };
+        RunnerConfig config = RunnerCfg();
+        config.enable_spatial = true;
+        config.spatial.classes.person_class_id = 0;
+        config.spatial.classes.equipment_classes.push_back({7, "truck"});
+        config.spatial.intrinsics.fx = 5.0;
+        config.spatial.intrinsics.fy = 5.0;
+        config.spatial.intrinsics.cx = 4.0;
+        config.spatial.intrinsics.cy = 3.0;
+        config.spatial.intrinsics.ref_width = 8;
+        config.spatial.intrinsics.ref_height = 6;
+        config.spatial.ground.up_m = 0.0;
+        config.spatial.min_ray_z = 0.05;
+        RiskRule rule;
+        rule.rule_id = "prox";
+        rule.kind = RuleKind::kPersonEquipmentProximity;
+        rule.mode = RuleMode::kShadow;
+        rule.threshold_m = 3.0;
+        rule.hysteresis_m = 0.0;
+        rule.enter_duration_ms = 0;
+        rule.exit_duration_ms = 0;
+        rule.required_geometry_level = GeometryLevel::kGeoEstimate;
+        SessionRunner runner(config, SessionCfg(), {rule}, {}, {}, Profile());
+        runner.PushPose(VerifiedPoseQ(1, 4950 * kMs, 1499 * kMs, NadirQ()));
+        runner.PushPose(VerifiedPoseQ(2, 5000 * kMs, 1501 * kMs, NadirQ()));
+        runner.PushPosition(
+            VerifiedPositionV(1, 4950 * kMs, 1499 * kMs, Vec3{0.0, 0.0, 10.0}));
+        runner.PushPosition(
+            VerifiedPositionV(2, 5000 * kMs, 1501 * kMs, Vec3{0.0, 0.0, 10.0}));
+        // Second bracket for the next frame (receive gap must stay within
+        // the policy's max_receive_gap_ns).
+        runner.PushPose(VerifiedPoseQ(3, 5050 * kMs, 1599 * kMs, NadirQ()));
+        runner.PushPose(VerifiedPoseQ(4, 5100 * kMs, 1601 * kMs, NadirQ()));
+        runner.PushPosition(
+            VerifiedPositionV(3, 5050 * kMs, 1599 * kMs, Vec3{0.0, 0.0, 10.0}));
+        runner.PushPosition(
+            VerifiedPositionV(4, 5100 * kMs, 1601 * kMs, Vec3{0.0, 0.0, 10.0}));
+        TwoClassDetector detector;
+        FramePacket frame = MakeFrame(1, 5000 * kMs);
+        const TickRecord first = runner.ProcessFrame(
+            frame, WithExposure(MakeCtx(frame), 1500 * kMs), &detector);
+        CHECK(first.detection_status == DetectionStatus::kOk &&
+                  first.detections.size() == 2,
+              "detections kept with spatial enabled");
+        CHECK(first.spatial_eligible, "verified pose eligible");
+        CHECK(first.spatial_status == SpatialTickReason::kEstimated,
+              "spatial estimated");
+        CHECK(first.spatial.size() == 2,
+              "one spatial record per fresh track");
+        for (const auto& spatial : first.spatial) {
+            CHECK(spatial.has_observation, "both observations estimated");
+        }
+        CHECK(first.proximity.size() == 1 &&
+                  first.proximity[0].status == RuleEvalStatus::kEvaluated &&
+                  first.proximity[0].is_shadow,
+              "proximity rule evaluated in SHADOW");
+        std::size_t created = 0;
+        if (first.proximity.size() == 1) {
+            for (const auto& event : first.proximity[0].events) {
+                if (event.kind == EpisodeEventKind::kCreated) {
+                    ++created;
+                    CHECK(event.evidence.lower_m <= 1e-9 &&
+                              event.evidence.upper_m <= 1e-9,
+                          "distance 0 evidence (person on footprint edge)");
+                }
+            }
+        }
+        CHECK(created == 1, "exactly one episode created");
+        FramePacket frame2 = MakeFrame(2, 5100 * kMs);
+        const TickRecord second = runner.ProcessFrame(
+            frame2, WithExposure(MakeCtx(frame2), 1600 * kMs), &detector);
+        CHECK(second.spatial_status == SpatialTickReason::kEstimated,
+              "second tick estimated");
+        std::size_t created2 = 0;
+        for (const auto& output : second.proximity) {
+            for (const auto& event : output.events) {
+                if (event.kind == EpisodeEventKind::kCreated) {
+                    ++created2;
+                }
+            }
+        }
+        CHECK(created2 == 0, "no duplicate episode create");
+        // Withhold control: attitude only (no verified position) -> detection
+        // kept, spatial withheld, no rule frames.
+        SessionRunner withhold(config, SessionCfg(), {rule}, {}, {},
+                               Profile());
+        withhold.PushPose(VerifiedPoseQ(1, 4950 * kMs, 1499 * kMs, NadirQ()));
+        withhold.PushPose(VerifiedPoseQ(2, 5000 * kMs, 1501 * kMs, NadirQ()));
+        const TickRecord withheld = withhold.ProcessFrame(
+            frame, WithExposure(MakeCtx(frame), 1500 * kMs), &detector);
+        CHECK(withheld.detections.size() == 2,
+              "detections kept when spatial is withheld");
+        CHECK(withheld.spatial_status == SpatialTickReason::kNotEligible &&
+                  withheld.spatial.empty(),
+              "spatial withheld without a verified position");
+        CHECK(withheld.proximity.empty(),
+              "no rule frames without observations");
+    }
+    // ---- 23) R4: replay policy file parsing ----
+    {
+        TempDir dir;
+        const std::string path = dir.File("policy.txt");
+        CHECK(WriteText(path,
+                        "# replay policy\n"
+                        "spatial intrinsics 5 5 4 3 8 6\n"
+                        "spatial ground 0\n"
+                        "spatial min-ray-z 0.05\n"
+                        "spatial person-class 0\n"
+                        "spatial equipment-class 7 truck\n"
+                        "zone zone-a 0 0 10 0 10 10 0 10\n"
+                        "zone zone-a 20 0 30 0 30 10 20 10\n"
+                        "proximity prox-1 3.0 0.5 100 200 GEO_ESTIMATE truck\n"
+                        "zone-rule zone-1 0 0 GEO_ESTIMATE\n"),
+              "policy written");
+        ReplayPolicy policy;
+        std::string error;
+        CHECK(LoadReplayPolicy(path, &policy, &error), "policy loads");
+        CHECK(policy.has_spatial, "spatial present");
+        CHECK(policy.spatial.intrinsics.ref_width == 8 &&
+                  policy.spatial.intrinsics.ref_height == 6 &&
+                  policy.spatial.min_ray_z == 0.05 &&
+                  policy.spatial.classes.person_class_id == 0 &&
+                  policy.spatial.classes.equipment_classes.size() == 1,
+              "spatial fields parsed");
+        CHECK(policy.zones.size() == 1 && policy.zones[0].polygons.size() == 2,
+              "zone polygons accumulated per revision");
+        CHECK(policy.proximity_rules.size() == 1 &&
+                  policy.proximity_rules[0].threshold_m == 3.0 &&
+                  policy.proximity_rules[0].hysteresis_m == 0.5 &&
+                  policy.proximity_rules[0].enter_duration_ms == 100 &&
+                  policy.proximity_rules[0].exit_duration_ms == 200 &&
+                  policy.proximity_rules[0].mode == RuleMode::kShadow &&
+                  policy.proximity_rules[0].required_geometry_level ==
+                      GeometryLevel::kGeoEstimate &&
+                  policy.proximity_rules[0].enabled_equipment_classes.size() ==
+                      1,
+              "proximity rule parsed (SHADOW only)");
+        CHECK(policy.zone_rules.size() == 1 &&
+                  policy.zone_rules[0].zone_revision_ids.size() == 1 &&
+                  policy.zone_rules[0].zone_revision_ids[0] == "zone-a",
+              "zone rule lists every declared revision");
+        struct PolicyBad {
+            const char* name;
+            const char* text;
+        };
+        const PolicyBad bad[] = {
+            {"unknown keyword", "bogus 1\n"},
+            {"bad geometry", "proximity p 3 0 0 0 NOPE\n"},
+            {"short polygon", "zone z 0 0 1 1\n"},
+            {"odd polygon", "zone z 0 0 1 1 2\n"},
+            {"bad zone coordinate", "zone z 0 0 1 1 2 x\n"},
+            {"spatial without intrinsics", "spatial ground 0\n"},
+            {"bad min-ray-z", "spatial min-ray-z nan\n"},
+        };
+        for (const PolicyBad& entry : bad) {
+            TempDir bad_dir;
+            const std::string bad_path = bad_dir.File("bad.txt");
+            CHECK(WriteText(bad_path, entry.text), "bad policy written");
+            ReplayPolicy rejected;
+            std::string bad_error;
+            CHECK(!LoadReplayPolicy(bad_path, &rejected, &bad_error),
+                  (std::string("rejected: ") + entry.name).c_str());
+            CHECK(!bad_error.empty(), "policy error message present");
+        }
     }
     if (edge_test::failures == 0) {
         std::printf("replay: all checks passed\n");

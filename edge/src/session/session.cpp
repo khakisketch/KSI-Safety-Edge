@@ -52,12 +52,17 @@ SafetySession::SafetySession(const SessionConfig& config,
     }
 }
 
-SessionOutput SafetySession::Tick(
+std::vector<Track> SafetySession::UpdateTracks(
     std::uint64_t received_mono_ns,
-    const std::vector<Detection>& detections,
+    const std::vector<Detection>& detections) {
+    return tracker_.Update(received_mono_ns, detections);
+}
+
+SessionOutput SafetySession::Evaluate(
+    std::uint64_t received_mono_ns, const std::vector<Track>& tracks,
     const std::vector<GroundObservation>& ground_observations) {
     SessionOutput out;
-    out.tracks = tracker_.Update(received_mono_ns, detections);
+    out.tracks = tracks;
 
     // Index observations by track_id (std::map: deterministic order;
     // duplicates: last wins).
@@ -71,14 +76,14 @@ SessionOutput SafetySession::Tick(
     std::vector<ObservedTrack> persons;
     std::vector<ObservedTrack> equipments;
     std::vector<ObservedTrack> zoned;
-    for (std::size_t i = 0; i < out.tracks.size(); ++i) {
+    for (std::size_t i = 0; i < tracks.size(); ++i) {
         const std::map<std::uint64_t, const GroundObservation*>::const_iterator
-            it = observed.find(out.tracks[i].track_id);
+            it = observed.find(tracks[i].track_id);
         if (it == observed.end()) {
             continue;
         }
         ObservedTrack entry;
-        entry.track = &out.tracks[i];
+        entry.track = &tracks[i];
         entry.observation = it->second;
         zoned.push_back(entry);
         if (it->second->kind == GroundTrackKind::kPerson) {
@@ -185,6 +190,15 @@ SessionOutput SafetySession::Tick(
     }
 
     return out;
+}
+
+SessionOutput SafetySession::Tick(
+    std::uint64_t received_mono_ns,
+    const std::vector<Detection>& detections,
+    const std::vector<GroundObservation>& ground_observations) {
+    const std::vector<Track> tracks =
+        UpdateTracks(received_mono_ns, detections);
+    return Evaluate(received_mono_ns, tracks, ground_observations);
 }
 
 SessionOutput SafetySession::Sweep(std::uint64_t now_mono_ns) {

@@ -31,10 +31,12 @@ add_library(ksi_safety_edge_core STATIC
   src/replay/replay_manifest.cpp
   src/replay/frame_source.cpp
   src/replay/telemetry_source.cpp
+  src/replay/policy_file.cpp
   src/geometry/coordinate.cpp
   src/geometry/projection.cpp
   src/spatial/distance.cpp
   src/spatial/relation.cpp
+  src/spatial/ground_estimator.cpp
   src/risk/policy.cpp
   src/risk/episode.cpp
   src/risk/engine.cpp
@@ -137,6 +139,7 @@ ksi_safety_edge_test(dfine tests/test_dfine.cpp)
 ksi_safety_edge_test(tracker tests/test_tracker.cpp)
 ksi_safety_edge_test(geometry tests/test_geometry.cpp)
 ksi_safety_edge_test(spatial tests/test_spatial.cpp)
+ksi_safety_edge_test(ground_estimator tests/test_ground_estimator.cpp)
 ksi_safety_edge_test(risk tests/test_risk.cpp)
 ksi_safety_edge_test(session tests/test_session.cpp)
 ksi_safety_edge_test(chain tests/test_chain.cpp)
