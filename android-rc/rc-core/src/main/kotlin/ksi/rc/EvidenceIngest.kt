@@ -8,8 +8,8 @@ import java.util.Base64
  * FLIGHT_SUMMARY / ARTIFACT_ANNOUNCE / ARTIFACT_CHUNK payloads into an
  * [EvidenceStore]. Failure returns a reason, which leaves the envelope
  * un-ACKed so the Edge retries the same msg_id (commit-before-ACK lives in
- * [MopEndpoint]). HEARTBEAT is accepted with no side effect here (gap
- * bookkeeping belongs to the uploader, A3-b).
+ * [MopEndpoint]). HEARTBEAT records the Edge's `unrecoverable_gaps`
+ * declarations (A3-b manifest input); the RC never declares gaps itself.
  */
 class EvidenceIngest(private val store: EvidenceStore) : ControlHandler {
     override fun handle(env: ObjectNode, payload: ObjectNode): String? {
@@ -62,7 +62,33 @@ class EvidenceIngest(private val store: EvidenceStore) : ControlHandler {
                 store.writeChunk(artifactId, offset, bytes)
                 null
             }
-            "HEARTBEAT" -> null
+            "HEARTBEAT" -> {
+                // Record only the Edge's unrecoverable-gap declarations;
+                // seqs that were actually received are not gaps (mirror of
+                // the validated harness `_on_heartbeat`).
+                val declared = payload.get("unrecoverable_gaps")
+                if (declared != null && declared.isArray) {
+                    for (item in declared) {
+                        val channel = item.get("channel")?.asText() ?: continue
+                        val seqs = item.get("seqs") ?: continue
+                        if (!seqs.isArray) continue
+                        for (seqNode in seqs) {
+                            val seq = seqNode.asLong()
+                            if (seq in store.receivedSeqs(boot, channel)) continue
+                            val gap = Mop.json.createObjectNode()
+                            gap.put("schema_version", 1)
+                            gap.put("edge_boot_id", boot)
+                            gap.put("channel", channel)
+                            gap.put("seq", seq)
+                            gap.put("reason", "UNRECOVERABLE:$channel")
+                            gap.put("destination", "RC_MANIFEST")
+                            gap.put("flight_id", env.get("flight_id")?.asText() ?: "")
+                            store.recordGap(gap)
+                        }
+                    }
+                }
+                null
+            }
             else -> "unsupported data type $type"
         }
     }

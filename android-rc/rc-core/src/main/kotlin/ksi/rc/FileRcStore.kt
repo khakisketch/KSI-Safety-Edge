@@ -19,7 +19,7 @@ import java.nio.file.Path
  * message store and markProcessed leaves the message reprocessable, which
  * every record handler tolerates. Nothing here deletes evidence.
  */
-class FileRcStore(root: Path) : RcStore, EvidenceStore {
+class FileRcStore(root: Path) : UploadStore {
     private val rootDir = root.toFile()
     private val messagesFile = File(rootDir, "messages.ndjson")
     private val processedFile = File(rootDir, "processed.ndjson")
@@ -30,6 +30,10 @@ class FileRcStore(root: Path) : RcStore, EvidenceStore {
     private val summariesFile = File(rootDir, "summaries.ndjson")
     private val artifactsFile = File(rootDir, "artifacts.ndjson")
     private val chunksFile = File(rootDir, "chunks.ndjson")
+    private val gapsFile = File(rootDir, "gaps.ndjson")
+    private val appUploadsFile = File(rootDir, "app_uploads.ndjson")
+    private val batchReceiptsFile = File(rootDir, "batch_receipts.ndjson")
+    private val syncedFile = File(rootDir, "synced.ndjson")
     private val blobsDir = File(rootDir, "blobs")
 
     private data class BootNode(val bootId: String, val node: ObjectNode)
@@ -39,7 +43,18 @@ class FileRcStore(root: Path) : RcStore, EvidenceStore {
     private val observations = linkedMapOf<String, BootNode>()
     private val events = linkedMapOf<String, BootNode>()
     private val summaries = linkedMapOf<String, BootNode>()
-    private val artifacts = linkedMapOf<String, ObjectNode>()
+    private val artifacts = linkedMapOf<String, BootNode>()
+
+    /** Received data-plane seqs per (edge_boot_id, channel); rebuilt from
+     *  messages.ndjson at construction (restart contract). */
+    private val seqs = linkedMapOf<Pair<String, String>, MutableSet<Long>>()
+
+    /** Declared gaps keyed by (edge_boot_id, channel, seq). */
+    private val gaps = linkedMapOf<Triple<String, String, Long>, ObjectNode>()
+
+    private val uploadedApps = linkedSetOf<String>()
+    private val batchReceipts = linkedMapOf<Pair<String, String>, String>()
+    private val syncedArtifacts = linkedSetOf<String>()
 
     /** Merged received byte ranges per artifact (0-based, inclusive). */
     private val coverage = linkedMapOf<String, MutableList<LongRange>>()
@@ -60,15 +75,45 @@ class FileRcStore(root: Path) : RcStore, EvidenceStore {
         loadBootNodes(obsFile, "observation_id", observations)
         loadBootNodes(eventsFile, "event_id", events)
         loadBootNodes(summariesFile, "summary_id", summaries)
-        for (node in readNodes(artifactsFile)) {
-            artifacts.putIfAbsent(node.get("artifact_id").asText(), node)
-        }
+        loadBootNodes(artifactsFile, "artifact_id", artifacts)
         for (node in readNodes(chunksFile)) {
             val artifactId = node.get("artifact_id")?.asText() ?: continue
             val offset = node.get("offset")?.asLong() ?: continue
             val length = node.get("length")?.asLong() ?: continue
             addRange(artifactId, offset, length)
         }
+        for (node in readNodes(gapsFile)) {
+            val boot = node.get("edge_boot_id")?.asText() ?: continue
+            val channel = node.get("channel")?.asText() ?: continue
+            val seq = node.get("seq")?.asLong() ?: continue
+            gaps.putIfAbsent(Triple(boot, channel, seq), node)
+        }
+        for (line in readLines(appUploadsFile)) {
+            if (line.isNotBlank()) uploadedApps.add(line.trim())
+        }
+        for (node in readNodes(batchReceiptsFile)) {
+            val kind = node.get("kind")?.asText() ?: continue
+            val clientBatchId = node.get("client_batch_id")?.asText() ?: continue
+            val serverBatchId = node.get("server_batch_id")?.asText() ?: continue
+            batchReceipts.putIfAbsent(kind to clientBatchId, serverBatchId)
+        }
+        for (line in readLines(syncedFile)) {
+            if (line.isNotBlank()) syncedArtifacts.add(line.trim())
+        }
+        // Rebuild the seq index from the durable envelopes (a restart must
+        // not lose the received-seq bookkeeping the manifest depends on).
+        for (node in readNodes(messagesFile)) {
+            indexSeq(node)
+        }
+    }
+
+    /** Index an inbound data-plane envelope's seq (no-op for others). */
+    private fun indexSeq(env: ObjectNode) {
+        val channel = env.get("channel")?.asText() ?: return
+        if (channel !in Mop.DATA_CHANNELS) return
+        val seq = env.get("seq")?.takeIf { it.isNumber }?.asLong() ?: return
+        val boot = env.get("edge_boot_id")?.takeIf { !it.isNull }?.asText() ?: return
+        seqs.getOrPut(boot to channel) { linkedSetOf() }.add(seq)
     }
 
     // -- RcStore -------------------------------------------------------------
@@ -95,6 +140,7 @@ class FileRcStore(root: Path) : RcStore, EvidenceStore {
 
     override fun storeMessage(env: ObjectNode) {
         appendNode(messagesFile, env)
+        indexSeq(env)
     }
 
     override fun markProcessed(msgId: String) {
@@ -130,17 +176,14 @@ class FileRcStore(root: Path) : RcStore, EvidenceStore {
     }
 
     override fun announceArtifact(announce: ObjectNode, bootId: String) {
-        val id = announce.get("artifact_id").asText()
-        if (artifacts.putIfAbsent(id, announce) == null) {
-            appendNode(artifactsFile, announce)
-        }
+        storeBootNode(artifactsFile, "artifact_id", announce, bootId, artifacts)
     }
 
     override fun writeChunk(artifactId: String, offset: Long, bytes: ByteArray) {
         if (offset < 0L) {
             throw IllegalArgumentException("chunk offset must be >= 0")
         }
-        val announce = artifacts[artifactId]
+        val announce = artifacts[artifactId]?.node
             ?: throw IllegalArgumentException(
                 "chunk for unannounced artifact $artifactId (announce first)",
             )
@@ -169,7 +212,7 @@ class FileRcStore(root: Path) : RcStore, EvidenceStore {
     }
 
     override fun artifactBytes(artifactId: String): ByteArray? {
-        val announce = artifacts[artifactId] ?: return null
+        val announce = artifacts[artifactId]?.node ?: return null
         val declaredSize = announce.get("size_bytes")?.asLong() ?: return null
         val declaredSha = announce.get("sha256")?.asText() ?: return null
         // 1) received-range coverage must exactly equal [0, size)
@@ -225,7 +268,75 @@ class FileRcStore(root: Path) : RcStore, EvidenceStore {
             .filter { it.get("flight_id")?.asText() == flightId }
 
     override fun artifactsFor(flightId: String): List<ObjectNode> =
-        artifacts.values.filter { it.get("flight_id")?.asText() == flightId }
+        artifacts.values.map { it.node }
+            .filter { it.get("flight_id")?.asText() == flightId }
+
+    // -- UploadStore: boot-scoped reads --------------------------------------
+
+    override fun observationsFor(flightId: String, bootId: String): List<ObjectNode> =
+        observations.values.filter { it.bootId == bootId }
+            .map { it.node }
+            .filter { it.get("flight_id")?.asText() == flightId }
+
+    override fun eventsFor(flightId: String, bootId: String): List<ObjectNode> =
+        events.values.filter { it.bootId == bootId }
+            .map { it.node }
+            .filter { it.get("flight_id")?.asText() == flightId }
+
+    override fun artifactsFor(flightId: String, bootId: String): List<ObjectNode> =
+        artifacts.values.filter { it.bootId == bootId }
+            .map { it.node }
+            .filter { it.get("flight_id")?.asText() == flightId }
+
+    override fun receivedSeqs(bootId: String, channel: String): Set<Long> =
+        seqs[bootId to channel]?.toSet() ?: emptySet()
+
+    override fun recordGap(gap: ObjectNode) {
+        val boot = gap.get("edge_boot_id")?.asText() ?: return
+        val channel = gap.get("channel")?.asText() ?: return
+        val seq = gap.get("seq")?.asLong() ?: return
+        if (gaps.putIfAbsent(Triple(boot, channel, seq), gap) == null) {
+            appendNode(gapsFile, gap)
+        }
+    }
+
+    override fun gapsForBoot(bootId: String): List<ObjectNode> =
+        gaps.entries.filter { it.key.first == bootId }
+            .sortedWith(compareBy({ it.key.second }, { it.key.third }))
+            .map { it.value }
+
+    // -- UploadStore: receipts ----------------------------------------------
+
+    override fun markApplicationUploaded(applicationId: String) {
+        if (uploadedApps.add(applicationId)) {
+            durableAppend(appUploadsFile, applicationId + "\n")
+        }
+    }
+
+    override fun isApplicationUploaded(applicationId: String): Boolean =
+        applicationId in uploadedApps
+
+    override fun recordBatchReceipt(kind: String, clientBatchId: String, serverBatchId: String) {
+        if (batchReceipts.putIfAbsent(kind to clientBatchId, serverBatchId) == null) {
+            val node = Mop.json.createObjectNode()
+            node.put("kind", kind)
+            node.put("client_batch_id", clientBatchId)
+            node.put("server_batch_id", serverBatchId)
+            appendNode(batchReceiptsFile, node)
+        }
+    }
+
+    override fun batchReceipt(kind: String, clientBatchId: String): String? =
+        batchReceipts[kind to clientBatchId]
+
+    override fun markArtifactSynced(artifactId: String) {
+        if (syncedArtifacts.add(artifactId)) {
+            durableAppend(syncedFile, artifactId + "\n")
+        }
+    }
+
+    override fun isArtifactSynced(artifactId: String): Boolean =
+        artifactId in syncedArtifacts
 
     override fun bootsFor(flightId: String): List<String> =
         (
