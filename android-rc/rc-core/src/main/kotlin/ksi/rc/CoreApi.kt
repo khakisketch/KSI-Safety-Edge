@@ -150,7 +150,8 @@ class CoreApi(private val transport: CoreTransport) {
             "flight" to "flight-summaries:batch",
         )
 
-        /** 500 rows per page x 100 pages: far beyond any L1 flight. */
+        /** Server default is 100 rows per page; the page guard (100 pages)
+         *  turns a cursor that never ends into a loud failure. */
         const val MAX_PAGES = 100
     }
 }

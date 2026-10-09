@@ -28,6 +28,12 @@ class EvidenceUploaderTest {
         application.put("edge_boot_id", bootId)
         application.put("effective_edge_seq", 7)
         application.put("applied", true)
+        application.set<com.fasterxml.jackson.databind.JsonNode>(
+            "rejection_reasons", Mop.json.createArrayNode(),
+        )
+        application.set<com.fasterxml.jackson.databind.JsonNode>(
+            "excluded_items", Mop.json.createArrayNode(),
+        )
         application.put("applied_at_edge_monotonic_ns", 500)
         store.recordApplication(application)
     }
@@ -184,10 +190,58 @@ class EvidenceUploaderTest {
         // The server dedupes by item id: only the late observation is new.
         assertEquals(1, observations.accepted)
         assertEquals(2, observations.duplicates)
+        // The session snapshot became stale (ended_at moved) and is
+        // surfaced, not silent: server sessions are immutable records.
+        val sessionId = Uuid5.of(Mop.NAMESPACE, "session|${spec.flightId}|$boot").toString()
+        assertEquals(listOf(sessionId), report.sessionDrift)
+        assertEquals(0, report.sessionsUploaded)
         // The longer time range is a NEW manifest -> a new committed ingest
         // session re-verifying the artifact against the server (per-session
         // object storage is the server contract).
         assertEquals(2, fake.ingests.values.size)
         assertTrue(fake.ingests.values.all { it.status == "COMMITTED" })
+    }
+
+    @Test
+    fun boot_with_only_gap_declarations_still_gets_a_manifest() {
+        val store = FileRcStore(tempRoot())
+        val spec = uploadSpec()
+        val boot = Fixture.uuid(12)
+        val artifactId = Fixture.uuid(13)
+        val bytes = ByteArray(16) { it.toByte() }
+        seedFlightEvidence(store, spec, boot, artifactId, bytes)
+
+        // A second boot whose ONLY evidence is a HEARTBEAT gap declaration.
+        val gapBoot = Fixture.uuid(70)
+        val endpoint = MopEndpoint(spec.flightId, store, { 0L }, EvidenceIngest(store))
+        val heartbeat = Mop.json.createObjectNode()
+        val group = heartbeat.putArray("unrecoverable_gaps").addObject()
+        group.put("channel", "EVENT_RELIABLE")
+        group.putArray("seqs").add(2)
+        feedEnvelope(
+            endpoint,
+            edgeEnvelope(
+                "HEARTBEAT", spec.flightId, gapBoot, "HEARTBEAT", null,
+                heartbeat, "hb-gap-boot",
+            ),
+        )
+
+        val fake = FakeCore()
+        val report = EvidenceUploader(CoreApi(fake), store, ::testToUtc).uploadFlight(spec)
+        assertEquals("COMPLETE", report.uploadState)
+        assertEquals(2, report.boots.size)
+        val gapBootReport = report.boots.first { it.bootId == gapBoot }
+        assertTrue(gapBootReport.committed)
+        // The declared gap reached the server: it must not be dropped just
+        // because that boot produced no observations/events.
+        val gapSession = fake.ingests.values.first {
+            it.manifest.get("edge_boot_id").asText() == gapBoot
+        }
+        assertEquals(1, gapSession.manifest.get("gaps").size())
+        assertEquals(2 * 33, gapSession.manifest.get("gaps")[0].get("start_ms").asInt())
+        assertEquals(
+            "UNRECOVERABLE:EVENT_RELIABLE",
+            gapSession.manifest.get("gaps")[0].get("reason").asText(),
+        )
     }
 }

@@ -49,6 +49,11 @@ class FileRcStore(root: Path) : UploadStore {
      *  messages.ndjson at construction (restart contract). */
     private val seqs = linkedMapOf<Pair<String, String>, MutableSet<Long>>()
 
+    /** Boots seen in ANY inbound message per flight (harness parity:
+     *  `DISTINCT edge_boot_id FROM messages`). Needed so a boot whose only
+     *  evidence is a HEARTBEAT gap declaration still gets a manifest. */
+    private val messageBoots = linkedMapOf<String, MutableSet<String>>()
+
     /** Declared gaps keyed by (edge_boot_id, channel, seq). */
     private val gaps = linkedMapOf<Triple<String, String, Long>, ObjectNode>()
 
@@ -100,10 +105,11 @@ class FileRcStore(root: Path) : UploadStore {
         for (line in readLines(syncedFile)) {
             if (line.isNotBlank()) syncedArtifacts.add(line.trim())
         }
-        // Rebuild the seq index from the durable envelopes (a restart must
-        // not lose the received-seq bookkeeping the manifest depends on).
+        // Rebuild the seq/boot indexes from the durable envelopes (a restart
+        // must not lose the bookkeeping the manifest depends on).
         for (node in readNodes(messagesFile)) {
             indexSeq(node)
+            indexBoot(node)
         }
     }
 
@@ -114,6 +120,13 @@ class FileRcStore(root: Path) : UploadStore {
         val seq = env.get("seq")?.takeIf { it.isNumber }?.asLong() ?: return
         val boot = env.get("edge_boot_id")?.takeIf { !it.isNull }?.asText() ?: return
         seqs.getOrPut(boot to channel) { linkedSetOf() }.add(seq)
+    }
+
+    /** Index the (flight, boot) pair of any inbound envelope. */
+    private fun indexBoot(env: ObjectNode) {
+        val flight = env.get("flight_id")?.asText() ?: return
+        val boot = env.get("edge_boot_id")?.takeIf { !it.isNull }?.asText() ?: return
+        messageBoots.getOrPut(flight) { linkedSetOf() }.add(boot)
     }
 
     // -- RcStore -------------------------------------------------------------
@@ -141,6 +154,7 @@ class FileRcStore(root: Path) : UploadStore {
     override fun storeMessage(env: ObjectNode) {
         appendNode(messagesFile, env)
         indexSeq(env)
+        indexBoot(env)
     }
 
     override fun markProcessed(msgId: String) {
@@ -348,7 +362,13 @@ class FileRcStore(root: Path) : UploadStore {
                 }.map { it.bootId } +
                 summaries.values.filter {
                     it.node.get("flight_id")?.asText() == flightId
-                }.map { it.bootId }
+                }.map { it.bootId } +
+                artifacts.values.filter {
+                    it.node.get("flight_id")?.asText() == flightId
+                }.map { it.bootId } +
+                // Any boot that ever sent a message (incl. a HEARTBEAT-only
+                // boot whose gap declarations must still reach the manifest).
+                messageBoots[flightId].orEmpty()
             ).distinct()
 
     override fun firstLastNs(flightId: String, bootId: String): Pair<Long, Long>? {

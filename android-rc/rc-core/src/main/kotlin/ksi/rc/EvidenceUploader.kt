@@ -30,6 +30,11 @@ data class FlightUploadReport(
     val flightView: ObjectNode?,
     val applicationsUploaded: Int,
     val sessionsUploaded: Int,
+    /** Server-held sessions whose stored snapshot no longer matches the
+     *  locally rebuilt one (sessions are immutable server records: late data
+     *  lands in a new manifest/batches, not in the old session). Surfaced so
+     *  the app/operator can see the drift instead of it staying silent. */
+    val sessionDrift: List<String>,
     val batches: List<BatchUploadReport>,
     val boots: List<BootUploadReport>,
     val uploadState: String,
@@ -52,6 +57,11 @@ data class FlightUploadReport(
  * - **Local bytes only**: an artifact whose local coverage+hash is not
  *   complete is never sent (it is reported in `incompleteLocal`); the boot
  *   upload completes honestly as PARTIAL in that case.
+ *
+ * Receipts are trusted locally: a server that lost its state while the RC
+ * directory is intact is not re-detected automatically (a manual receipt
+ * reset forces re-upload, which is safe — the server re-verifies sha256 at
+ * every ingest commit).
  */
 class EvidenceUploader(
     private val core: CoreApi,
@@ -75,7 +85,7 @@ class EvidenceUploader(
         core.registerFlight(registerBody(spec, firstNs))
 
         val applicationsUploaded = uploadApplications(spec)
-        val sessionsUploaded = uploadSessions(spec, boots)
+        val (sessionsUploaded, sessionDrift) = uploadSessions(spec, boots)
         val batches = uploadBatches(spec)
         val bootReports = boots.map { uploadBoot(spec, it) }
         val view = core.getFlight(spec.flightId)
@@ -83,6 +93,7 @@ class EvidenceUploader(
             flightView = view,
             applicationsUploaded = applicationsUploaded,
             sessionsUploaded = sessionsUploaded,
+            sessionDrift = sessionDrift,
             batches = batches,
             boots = bootReports,
             uploadState = view.get("upload_state")?.asText() ?: "UNKNOWN",
@@ -117,20 +128,36 @@ class EvidenceUploader(
         return uploaded
     }
 
-    private fun uploadSessions(spec: FlightUploadSpec, boots: List<String>): Int {
+    private fun uploadSessions(
+        spec: FlightUploadSpec,
+        boots: List<String>,
+    ): Pair<Int, List<String>> {
         // Sessions are immutable snapshots on the server: post each boot's
-        // session once and skip ids the server already holds.
-        val existing = core.listSessions(spec.flightId)
-            .get("items")?.mapNotNull { it.get("session_id")?.asText() }?.toSet()
-            ?: emptySet()
+        // session once, skip ids the server already holds, and report any
+        // snapshot whose content no longer matches (late data).
+        val serverSessions = core.listSessions(spec.flightId)
+            .get("items")?.mapNotNull { it as? ObjectNode } ?: emptyList()
+        val serverById = serverSessions.associateBy {
+            it.get("session_id")?.asText() ?: ""
+        }
         var uploaded = 0
+        val drift = mutableListOf<String>()
         for (boot in boots) {
             val session = sessionBuilder.build(spec, boot)
-            if (session.get("session_id").asText() in existing) continue
+            val sessionId = session.get("session_id").asText()
+            val serverCopy = serverById[sessionId]
+            if (serverCopy != null) {
+                if (!CanonicalJson.canonicalBytes(serverCopy)
+                        .contentEquals(CanonicalJson.canonicalBytes(session))
+                ) {
+                    drift.add(sessionId)
+                }
+                continue
+            }
             core.postSession(spec.flightId, session)
             uploaded += 1
         }
-        return uploaded
+        return uploaded to drift
     }
 
     private fun uploadBatches(spec: FlightUploadSpec): List<BatchUploadReport> {

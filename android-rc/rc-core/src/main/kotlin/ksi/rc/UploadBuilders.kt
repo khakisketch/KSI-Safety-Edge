@@ -15,6 +15,9 @@ import com.fasterxml.jackson.databind.node.ObjectNode
  * Time mapping: manifest UTC instants are the Edge monotonic ns mapped by
  * [toUtc]. In the harness this mapper is a fixture epoch; on the real RC it
  * is supplied by the app from the Edge's clock anchor (H1/MSDK follow-up).
+ * The first/last sample instants come from stored observation/event sample
+ * times (the harness used message sent times — a self-consistent,
+ * server-agnostic choice; both live in the Edge-monotonic domain).
  */
 class ManifestBuilder(
     private val store: UploadStore,

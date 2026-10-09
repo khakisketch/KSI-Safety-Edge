@@ -216,6 +216,12 @@ class ManifestBuilderTest {
         application.put("edge_boot_id", boot)
         application.put("effective_edge_seq", 7)
         application.put("applied", true)
+        application.set<com.fasterxml.jackson.databind.JsonNode>(
+            "rejection_reasons", Mop.json.createArrayNode(),
+        )
+        application.set<com.fasterxml.jackson.databind.JsonNode>(
+            "excluded_items", Mop.json.createArrayNode(),
+        )
         application.put("applied_at_edge_monotonic_ns", 500)
         store.recordApplication(application)
         store.storeObservation(
