@@ -111,6 +111,36 @@ class ObservationModelTest {
     }
 
     @Test
+    fun last_received_utc_uses_the_newest_timestamp_across_record_kinds() {
+        var now = "2026-10-10T02:00:01Z"
+        val store = FileRcStore(
+            Files.createTempDirectory("obs-model-clock"),
+            wallClock = { now },
+        )
+        store.storeObservation(observation("o-early", withheld = false, degraded = false), "boot")
+        // A gap declaration arrives later (stamped by the same receipt clock).
+        val gap = Mop.json.createObjectNode()
+        gap.put("flight_id", flight)
+        gap.put("edge_boot_id", "boot")
+        gap.put("channel", "EVENT_RELIABLE")
+        gap.put("seq", 9L)
+        gap.put("reason", "UNRECOVERABLE:EVENT_RELIABLE")
+        now = "2026-10-10T02:00:05Z"
+        store.recordGap(gap)
+        // An artifact announcement arrives even later.
+        now = "2026-10-10T02:00:09Z"
+        store.announceArtifact(announce("a-late", ByteArray(4)), "boot")
+
+        assertEquals("2026-10-10T02:00:09Z", store.lastReceivedUtc(flight))
+        assertEquals(
+            1_000L,
+            ObservationModel.lastDataAgeMs(
+                store.lastReceivedUtc(flight), "2026-10-10T02:00:10Z",
+            ),
+        )
+    }
+
+    @Test
     fun pulse_counts_withheld_degraded_and_receipt_freshness() {
         val store = store()
         store.storeObservation(observation("o1", withheld = true, degraded = false), "boot")

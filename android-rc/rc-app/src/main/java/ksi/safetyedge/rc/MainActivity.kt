@@ -86,8 +86,16 @@ class MainActivity : AppCompatActivity() {
 
         // -- A6 video seam
         app.videoSource.setListener(object : VideoSource.Listener {
-            override fun onState(state: VideoSource.State) { refresh() }
-            override fun onFrame(frameCount: Long) { videoFrames = frameCount }
+            override fun onState(state: VideoSource.State) {
+                // A future MSDK source may call back off the main thread.
+                runOnUiThread { if (!isDestroyed) refresh() }
+            }
+
+            override fun onFrame(frameCount: Long) {
+                // Bench source never fires; H1 should throttle UI updates
+                // instead of refreshing per frame.
+                videoFrames = frameCount
+            }
         })
         on(R.id.btnVideoConnect) { app.videoSource.connect(); refresh() }
         on(R.id.btnVideoDisconnect) { app.videoSource.disconnect(); refresh() }
@@ -123,6 +131,13 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refresh()
+    }
+
+    override fun onDestroy() {
+        // The app-scoped video source must not retain an Activity-bound
+        // listener across rotation.
+        app.videoSource.setListener(null)
+        super.onDestroy()
     }
 
     private fun on(id: Int, action: () -> Unit) {
@@ -276,7 +291,6 @@ class MainActivity : AppCompatActivity() {
         }
         tvAi.text = "observations=${pulse.count} withheld=${pulse.withheld} " +
             "degraded=${pulse.degraded}\n" +
-            "events are SHADOW candidates — no warning was issued\n" +
             ageText
 
         val generation = ++eventGeneration
@@ -287,7 +301,8 @@ class MainActivity : AppCompatActivity() {
                     append("no events received (local store)")
                 } else {
                     for (card in cards.take(10)) {
-                        append(if (card.detectionOnly) "[DETECT·관측]" else "[SHADOW·위험후보]")
+                        val kind = if (card.detectionOnly) "관측" else "위험후보(경고 아님)"
+                        append("[${card.mode}·$kind]")
                         append(" ${card.eventType} q=${card.observationQuality}")
                         append(" edge_ns=${card.detectedAtEdgeNs}")
                         if (card.evidence.isNotEmpty()) {
