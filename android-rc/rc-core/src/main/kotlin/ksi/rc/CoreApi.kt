@@ -107,6 +107,18 @@ class CoreApi(private val transport: CoreTransport) {
     fun getMissionSnapshot(missionId: String): ObjectNode =
         jsonRequest("GET", "/missions/$missionId/snapshot")
 
+    // -- A5 mission sync surface ----------------------------------------------
+
+    fun listSites(): ObjectNode = getPaginated("/sites")
+
+    fun listZoneRevisions(siteId: String): ObjectNode =
+        getPaginated("/sites/$siteId/zone-revisions")
+
+    fun listMissionBundles(): ObjectNode = getPaginated("/mission-bundles")
+
+    fun getMissionBundle(bundleId: String): ObjectNode =
+        jsonRequest("GET", "/mission-bundles/$bundleId")
+
     fun getObservations(flightId: String): ObjectNode =
         getPaginated("/flights/$flightId/observations")
 

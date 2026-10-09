@@ -94,6 +94,7 @@ fun detectionEventRecord(
     episodeId: String,
     detectedAtNs: Long,
     artifactIds: List<String>,
+    missionSnapshotHash: String = Fixture.hex('b'),
 ): ObjectNode {
     val event = Mop.json.createObjectNode()
     event.put("schema_version", 1)
@@ -115,7 +116,7 @@ fun detectionEventRecord(
     output.put("geometry", "GEO_ESTIMATE")
     output.put("synthetic_replay_geometry", false)
     event.put("observation_quality", "VALID")
-    event.put("mission_snapshot_hash", Fixture.hex('b'))
+    event.put("mission_snapshot_hash", missionSnapshotHash)
     return event
 }
 

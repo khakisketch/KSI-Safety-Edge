@@ -44,6 +44,10 @@ class FileRcStore(
     private val batchReceiptsFile = File(rootDir, "batch_receipts.ndjson")
     private val syncedFile = File(rootDir, "synced.ndjson")
     private val flightsFile = File(rootDir, "flights.ndjson")
+    private val sitesFile = File(rootDir, "sites.ndjson")
+    private val zoneRevisionsFile = File(rootDir, "zone_revisions.ndjson")
+    private val missionSnapshotsFile = File(rootDir, "mission_snapshots.ndjson")
+    private val bundlesFile = File(rootDir, "bundles.ndjson")
     private val blobsDir = File(rootDir, "blobs")
 
     private data class BootNode(
@@ -62,6 +66,11 @@ class FileRcStore(
 
     /** Flight record snapshots in log order (latest per id wins). */
     private val flightLog = mutableListOf<ObjectNode>()
+
+    private val sitesById = linkedMapOf<String, ObjectNode>()
+    private val zoneRevisionsById = linkedMapOf<String, ObjectNode>()
+    private val snapshotsByRevision = linkedMapOf<String, ObjectNode>()
+    private val bundlesById = linkedMapOf<String, ObjectNode>()
 
     /** Received data-plane seqs per (edge_boot_id, channel); rebuilt from
      *  messages.ndjson at construction (restart contract). */
@@ -126,6 +135,19 @@ class FileRcStore(
         for (node in readNodes(flightsFile)) {
             if (node.get("flight_id")?.asText().isNullOrEmpty()) continue
             flightLog.add(node)
+        }
+        for (node in readNodes(sitesFile)) {
+            node.get("site_id")?.asText()?.let { sitesById.putIfAbsent(it, node) }
+        }
+        for (node in readNodes(zoneRevisionsFile)) {
+            node.get("revision_id")?.asText()?.let { zoneRevisionsById.putIfAbsent(it, node) }
+        }
+        for (node in readNodes(missionSnapshotsFile)) {
+            node.get("mission_revision_id")?.asText()
+                ?.let { snapshotsByRevision.putIfAbsent(it, node) }
+        }
+        for (node in readNodes(bundlesFile)) {
+            node.get("bundle_id")?.asText()?.let { bundlesById.putIfAbsent(it, node) }
         }
         // Rebuild the seq/boot indexes from the durable envelopes (a restart
         // must not lose the bookkeeping the manifest depends on).
@@ -435,6 +457,72 @@ class FileRcStore(
 
     override fun activeFlight(): ObjectNode? =
         flights().lastOrNull { it.get("state")?.asText() != "ENDED" }
+
+    // -- MissionStore: verified cache (immutable per revision) -----------------
+
+    private fun sameContent(a: ObjectNode, b: ObjectNode): Boolean =
+        CanonicalJson.canonicalBytes(a).contentEquals(CanonicalJson.canonicalBytes(b))
+
+    private fun saveImmutable(
+        node: ObjectNode,
+        idField: String,
+        index: LinkedHashMap<String, ObjectNode>,
+        file: File,
+        kind: String,
+    ) {
+        val id = node.get(idField)?.asText() ?: return
+        val existing = index[id]
+        if (existing != null) {
+            check(sameContent(existing, node)) {
+                "integrity: $kind $id re-saved with different content"
+            }
+            return
+        }
+        index[id] = node.deepCopy()
+        appendNode(file, node)
+    }
+
+    override fun saveSite(site: ObjectNode) {
+        saveImmutable(site, "site_id", sitesById, sitesFile, "site")
+    }
+
+    override fun site(siteId: String): ObjectNode? = sitesById[siteId]
+
+    override fun sites(): List<ObjectNode> = sitesById.values.toList()
+
+    override fun saveZoneRevision(revision: ObjectNode) {
+        saveImmutable(
+            revision, "revision_id", zoneRevisionsById, zoneRevisionsFile,
+            "zone revision",
+        )
+    }
+
+    override fun zoneRevision(revisionId: String): ObjectNode? =
+        zoneRevisionsById[revisionId]
+
+    override fun zoneRevisions(siteId: String): List<ObjectNode> =
+        zoneRevisionsById.values.filter { it.get("site_id")?.asText() == siteId }
+
+    override fun saveMissionSnapshot(snapshot: ObjectNode) {
+        saveImmutable(
+            snapshot, "mission_revision_id", snapshotsByRevision,
+            missionSnapshotsFile, "mission snapshot",
+        )
+    }
+
+    override fun missionSnapshot(missionRevisionId: String): ObjectNode? =
+        snapshotsByRevision[missionRevisionId]
+
+    override fun missionSnapshots(): List<ObjectNode> =
+        snapshotsByRevision.values.toList()
+
+    override fun saveMissionBundle(bundle: ObjectNode) {
+        saveImmutable(bundle, "bundle_id", bundlesById, bundlesFile, "bundle")
+    }
+
+    override fun missionBundle(bundleId: String): ObjectNode? = bundlesById[bundleId]
+
+    override fun missionBundles(): List<ObjectNode> = bundlesById.values.toList()
 
     override fun bootsFor(flightId: String): List<String> =
         (

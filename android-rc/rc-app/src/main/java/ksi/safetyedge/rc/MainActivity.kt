@@ -29,6 +29,8 @@ class MainActivity : AppCompatActivity() {
 
     private var shownError: String? = null
     private var hasSyncReport = false
+    private var selectedSiteId: String? = null
+    private var selectedBundleId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -51,6 +53,9 @@ class MainActivity : AppCompatActivity() {
 
         // -- operational mission (A5: bundle attach comes from the synced
         //    mission store; until then the controller shows "not attached").
+        on(R.id.btnSyncSites) { syncSites() }
+        on(R.id.btnSyncBundle) { syncBundleLatest() }
+        on(R.id.btnStartFlight) { startFlight() }
         on(R.id.btnPrepare) { run("prepare") { session.controller?.prepare() } }
         on(R.id.btnApply) { run("apply") { session.controller?.apply() } }
         on(R.id.btnReconcile) { run("reconcile") { session.controller?.reconcile() } }
@@ -138,14 +143,23 @@ class MainActivity : AppCompatActivity() {
 
     private fun refresh() {
         val flight = session.activeFlight
-        tvMission.text = "controller: ${session.missionSummary()}"
+        val store = session.store
+        val selectedBundle = selectedBundleId?.let { store.missionBundle(it) }
+        tvMission.text = "controller: ${session.missionSummary()}\n" +
+            "mission cache: sites=${store.sites().size} " +
+            "zoneRevs=${selectedSiteId?.let { store.zoneRevisions(it).size } ?: 0} " +
+            "bundles=${store.missionBundles().size}\n" +
+            "selected site=${selectedSiteId?.take(8) ?: "-"} " +
+            "bundle=${selectedBundle?.get("bundle_id")?.asText()?.take(8) ?: "-"} " +
+            "sha=${selectedBundle?.get("bundle_sha256")?.asText()?.take(12) ?: "-"} (verified at download)"
         tvFlight.text = if (flight == null) {
-            "flight: none active — A5: sync a mission, then start a flight"
+            "flight: none active — Sync sites → Download bundle → Start flight"
         } else {
             "flight=${flight.get("flight_id").asText().take(8)} " +
                 "state=${flight.get("state").asText()} " +
                 "missionRev=${flight.get("mission_revision_id").asText().take(8)} " +
-                "bundle=${flight.get("bundle_sha256").asText().take(8)}\n" +
+                "bundle=${flight.get("bundle_sha256").asText().take(8)} " +
+                "zones=${flight.get("zone_revision_ids").size()}\n" +
                 "started(receipt)=${flight.get("started_at_utc").asText()}"
         }
 
@@ -202,6 +216,87 @@ class MainActivity : AppCompatActivity() {
         }
         lines.append("artifacts=${artifacts.size} synced=$synced (SYNCED only after COMMITTED)")
         tvEvidence.text = lines.toString()
+    }
+
+    private fun syncSites() {
+        val sync = session.missionSync() ?: run {
+            show("configure Core URL + token first")
+            return
+        }
+        tvSync.text = "syncing sites…"
+        session.bg.execute {
+            try {
+                sync.syncSites()
+                val local = session.store.sites()
+                val previous = selectedSiteId
+                selectedSiteId = previous?.takeIf { id ->
+                    local.any { it.get("site_id").asText() == id }
+                } ?: local.firstOrNull()?.get("site_id")?.asText()
+                runOnUiThread {
+                    hasSyncReport = true
+                    tvSync.text = "sites synced: local=${local.size}"
+                    refresh()
+                }
+            } catch (exc: Exception) {
+                runOnUiThread { show("site sync failed: ${exc.message}") }
+            }
+        }
+    }
+
+    private fun syncBundleLatest() {
+        val sync = session.missionSync() ?: run {
+            show("configure Core URL + token first")
+            return
+        }
+        val siteId = selectedSiteId ?: run {
+            show("sync sites first")
+            return
+        }
+        tvSync.text = "syncing site data…"
+        session.bg.execute {
+            try {
+                val newZoneRevisions = sync.syncZoneRevisions(siteId)
+                val serverBundles = sync.listSiteBundles(siteId)
+                val target = serverBundles.lastOrNull()
+                    ?: throw IllegalStateException("no bundle on the server for this site")
+                val bundle = sync.syncBundle(target.get("bundle_id").asText())
+                selectedBundleId = bundle.get("bundle_id").asText()
+                val localCount = sync.localSiteBundles(siteId).size
+                runOnUiThread {
+                    hasSyncReport = true
+                    tvSync.text = "site data: +${newZoneRevisions.size} zone revision(s), " +
+                        "local bundles=$localCount, selected=" +
+                        "${selectedBundleId!!.take(8)} (digest verified)"
+                    refresh()
+                }
+            } catch (exc: Exception) {
+                runOnUiThread { show("bundle sync failed: ${exc.message}") }
+            }
+        }
+    }
+
+    private fun startFlight() {
+        if (session.activeFlight != null) {
+            show("a flight is already active; end it first")
+            return
+        }
+        val bundleId = selectedBundleId ?: run {
+            show("download a mission bundle first (Sync sites → Download bundle)")
+            return
+        }
+        val bundle = session.store.missionBundle(bundleId) ?: run {
+            show("selected bundle is not in the local store")
+            return
+        }
+        try {
+            val record = session.startFlightFromBundle(bundle)
+            show(
+                "flight started: ${record.get("flight_id").asText().take(8)} " +
+                    "(bundle ${bundleId.take(8)} pinned; prepare/apply run offline)",
+            )
+        } catch (exc: Exception) {
+            show("start failed: ${exc.message}")
+        }
     }
 
     private fun uploadNow() {

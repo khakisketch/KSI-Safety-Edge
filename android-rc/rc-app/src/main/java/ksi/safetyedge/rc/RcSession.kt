@@ -33,14 +33,13 @@ class RcSession(
     val link: DroneLink,
     /** (url, token) when the operator configured a Core; null = no upload. */
     private val coreConfig: () -> Pair<String, String>?,
-    initialBundle: ObjectNode? = null,
 ) {
     val store = FileRcStore(storeDir.toPath(), wallClock)
     private val ingest = EvidenceIngest(store)
 
     var controller: MissionController? = null
         private set
-    var bundle: ObjectNode? = initialBundle
+    var bundle: ObjectNode? = null
         private set
 
     var stored = 0; private set
@@ -54,10 +53,12 @@ class RcSession(
         Executors.newSingleThreadExecutor()
 
     init {
-        if (initialBundle != null && store.activeFlight() != null) {
-            attachController(
-                initialBundle, store.activeFlight()!!.get("flight_id").asText(),
-            )
+        // Restart restore: an unfinished flight whose bundle is in the local
+        // mission store re-attaches its controller automatically.
+        store.activeFlight()?.let { active ->
+            store.missionBundle(active.get("bundle_id").asText())?.let { stored ->
+                attachController(stored, active.get("flight_id").asText())
+            }
         }
         link.setListener(object : DroneLink.Listener {
             override fun onBytes(bytes: ByteArray) = onLinkBytes(bytes)
@@ -183,6 +184,39 @@ class RcSession(
     // -- upload / query -----------------------------------------------------------
 
     fun coreConfigured(): Boolean = coreConfig() != null
+
+    /** A5 mission synchronizer (null when no Core is configured). */
+    fun missionSync(): ksi.rc.MissionSync? {
+        val (url, token) = coreConfig() ?: return null
+        return ksi.rc.MissionSync(
+            ksi.rc.CoreApi(AndroidCoreTransport(url, token)), store,
+        )
+    }
+
+    /**
+     * Starts a flight pinned to a DIGEST-VERIFIED local bundle (the sync
+     * layer stored it) and attaches the mission controller. Everything
+     * after this point (Prepare/Apply) needs no network.
+     */
+    fun startFlightFromBundle(bundle: ObjectNode): ObjectNode {
+        val snapshot = bundle.get("mission_snapshot") as? ObjectNode
+            ?: throw IllegalStateException("bundle is missing its mission snapshot")
+        val zoneIds = mutableListOf<String>()
+        snapshot.get("zones")?.forEach { zone ->
+            zone.get("revision_id")?.asText()?.let { zoneIds.add(it) }
+        }
+        val record = startFlight(
+            siteId = bundle.get("site_id").asText(),
+            missionId = snapshot.get("mission_id").asText(),
+            missionRevisionId = snapshot.get("mission_revision_id").asText(),
+            missionSha256 = snapshot.get("content_sha256").asText(),
+            bundleId = bundle.get("bundle_id").asText(),
+            bundleSha256 = bundle.get("bundle_sha256").asText(),
+            zoneRevisionIds = zoneIds,
+        )
+        attachController(bundle, record.get("flight_id").asText())
+        return record
+    }
 
     fun uploader(): EvidenceUploader? {
         val (url, token) = coreConfig() ?: return null

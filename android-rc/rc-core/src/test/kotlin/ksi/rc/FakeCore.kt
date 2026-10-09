@@ -42,6 +42,16 @@ class FakeCore : CoreTransport {
     private val objects = linkedMapOf<String, ByteArray>()
     private val ranges = linkedMapOf<String, MutableList<IntRange>>()
 
+    // -- A5 mission surface ----------------------------------------------------
+    val sites = linkedMapOf<String, ObjectNode>()
+    private val zonesBySite = linkedMapOf<String, MutableList<ObjectNode>>()
+    val missions = linkedMapOf<String, ObjectNode>()
+    val bundles = linkedMapOf<String, ObjectNode>()
+    private var idCounter = 0
+
+    private fun newId(): String =
+        "00000000-0000-4000-8000-%012d".format(++idCounter + 5000)
+
     var chunkPuts = 0
     /** Injected transport failure: chunk PUT number N throws (1-based). */
     var failAtChunkPut: Int? = null
@@ -96,6 +106,34 @@ class FakeCore : CoreTransport {
             method == "GET" && queryless == "/healthz" ->
                 200 to Mop.json.createObjectNode().put("status", "ok")
 
+            method == "GET" && queryless == "/sites" -> 200 to listSites()
+
+            method == "POST" && queryless == "/sites" ->
+                200 to createSite(Mop.json.readTree(body) as ObjectNode)
+
+            segments.size == 3 && segments[0] == "sites" &&
+                segments[2] == "zone-revisions" && method == "GET" ->
+                200 to listZoneRevisions(segments[1])
+
+            segments.size == 3 && segments[0] == "sites" &&
+                segments[2] == "zone-revisions" && method == "POST" ->
+                200 to createZoneRevision(segments[1], Mop.json.readTree(body) as ObjectNode)
+
+            method == "POST" && queryless == "/missions" ->
+                200 to createMission(Mop.json.readTree(body) as ObjectNode)
+
+            segments.size == 3 && segments[0] == "missions" &&
+                segments[2] == "snapshot" && method == "GET" ->
+                200 to missionSnapshot(segments[1])
+
+            method == "GET" && queryless == "/mission-bundles" -> 200 to listBundles()
+
+            method == "POST" && queryless == "/mission-bundles" ->
+                200 to createBundle(Mop.json.readTree(body) as ObjectNode)
+
+            segments.size == 2 && segments[0] == "mission-bundles" &&
+                method == "GET" -> 200 to getBundle(segments[1])
+
             method == "POST" && queryless == "/flights" ->
                 200 to registerFlight(Mop.json.readTree(body) as ObjectNode)
 
@@ -145,6 +183,132 @@ class FakeCore : CoreTransport {
             else -> throw HttpError(404, "NOT_FOUND")
         }
     }
+
+    // -- A5 mission surface routes ---------------------------------------------
+
+    private fun listSites(): ObjectNode {
+        val items = Mop.json.createArrayNode()
+        sites.values.forEach { items.add(it) }
+        val response = Mop.json.createObjectNode()
+        response.set<JsonNode>("items", items)
+        response.putNull("next_cursor")
+        return response
+    }
+
+    private fun createSite(body: ObjectNode): ObjectNode {
+        val name = body.get("name")?.asText()
+            ?: throw HttpError(422, "CONTRACT_INVALID")
+        val existing = sites.values.firstOrNull { it.get("name")?.asText() == name }
+        if (existing != null) return existing.deepCopy()
+        val site = Mop.json.createObjectNode()
+        site.put("site_id", newId())
+        site.put("org_id", "org-a")
+        site.put("name", name)
+        sites[site.get("site_id").asText()] = site
+        return site.deepCopy()
+    }
+
+    private fun listZoneRevisions(siteId: String): ObjectNode {
+        val items = Mop.json.createArrayNode()
+        zonesBySite[siteId]?.forEach { items.add(it) }
+        val response = Mop.json.createObjectNode()
+        response.set<JsonNode>("items", items)
+        return response
+    }
+
+    private fun createZoneRevision(siteId: String, body: ObjectNode): ObjectNode {
+        val zoneId = body.get("zone_id")?.asText()
+            ?: throw HttpError(422, "CONTRACT_INVALID")
+        val revisions = zonesBySite.getOrPut(siteId) { mutableListOf() }
+        val latest = revisions.lastOrNull { it.get("zone_id")?.asText() == zoneId }
+        val expected = latest?.get("revision_id")?.asText() ?: ""
+        val actualBase = body.get("base_revision_id")?.takeIf { !it.isNull }?.asText() ?: ""
+        if (actualBase != expected) throw HttpError(409, "CONFLICT")
+        // Server-assigned revision id (mirrors sites.py create_zone_revision:
+        // the request supplies zone/geometry/rule_kind only).
+        val revision = Mop.json.createObjectNode()
+        revision.put("zone_id", zoneId)
+        val revisionId = newId()
+        revision.put("revision_id", revisionId)
+        if (body.get("base_revision_id")?.isNull != false) {
+            revision.putNull("base_revision_id")
+        } else {
+            revision.put("base_revision_id", body.get("base_revision_id").asText())
+        }
+        revision.put("site_id", siteId)
+        revision.set<JsonNode>(
+            "geometry_wgs84",
+            (body.get("geometry_wgs84") as? JsonNode)
+                ?: throw HttpError(422, "CONTRACT_INVALID"),
+        )
+        revision.put(
+            "rule_kind",
+            body.get("rule_kind")?.asText()
+                ?: throw HttpError(422, "CONTRACT_INVALID"),
+        )
+        revisions.add(revision)
+        val response = Mop.json.createObjectNode()
+        response.put("zone_id", zoneId)
+        response.put("revision_id", revisionId)
+        response.put("durable", true)
+        return response
+    }
+
+    private fun createMission(body: ObjectNode): ObjectNode {
+        val revisionId = body.get("mission_revision_id")?.asText()
+            ?: throw HttpError(422, "CONTRACT_INVALID")
+        if (!CanonicalJson.verifyDigest(body, "content_sha256")) {
+            throw HttpError(422, "CONTRACT_INVALID")
+        }
+        val missionId = body.get("mission_id")?.asText()
+            ?: throw HttpError(422, "CONTRACT_INVALID")
+        val existing = missions[missionId]
+        if (existing != null &&
+            existing.get("mission_revision_id")?.asText() == revisionId &&
+            !same(existing, body)
+        ) {
+            throw HttpError(409, "CONFLICT")
+        }
+        missions[missionId] = body.deepCopy()
+        val response = Mop.json.createObjectNode()
+        response.put("mission_id", missionId)
+        response.put("mission_revision_id", revisionId)
+        response.put("content_sha256", body.get("content_sha256").asText())
+        response.put("site_id", body.get("site_id").asText())
+        return response
+    }
+
+    private fun missionSnapshot(missionId: String): ObjectNode =
+        missions[missionId]?.deepCopy() ?: throw HttpError(404, "NOT_FOUND")
+
+    private fun listBundles(): ObjectNode {
+        val items = Mop.json.createArrayNode()
+        bundles.values.forEach { items.add(it) }
+        val response = Mop.json.createObjectNode()
+        response.set<JsonNode>("items", items)
+        return response
+    }
+
+    private fun createBundle(body: ObjectNode): ObjectNode {
+        if (!CanonicalJson.verifyDigest(body, "bundle_sha256")) {
+            throw HttpError(422, "CONTRACT_INVALID")
+        }
+        val id = body.get("bundle_id")?.asText()
+            ?: throw HttpError(422, "CONTRACT_INVALID")
+        val existing = bundles[id]
+        if (existing != null) {
+            if (!same(existing, body)) throw HttpError(409, "CONFLICT")
+            return Mop.json.createObjectNode().put("bundle_id", id).put("status", "EXISTS")
+        }
+        bundles[id] = body.deepCopy()
+        return Mop.json.createObjectNode()
+            .put("bundle_id", id)
+            .put("bundle_sha256", body.get("bundle_sha256").asText())
+            .put("status", "CREATED")
+    }
+
+    private fun getBundle(bundleId: String): ObjectNode =
+        bundles[bundleId]?.deepCopy() ?: throw HttpError(404, "NOT_FOUND")
 
     private fun requireFlight(flightId: String): ObjectNode =
         flights[flightId] ?: throw HttpError(404, "NOT_FOUND")

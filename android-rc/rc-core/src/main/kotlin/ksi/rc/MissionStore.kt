@@ -27,4 +27,26 @@ interface MissionStore {
 
     /** Newest flight whose state is not ENDED, or null. */
     fun activeFlight(): ObjectNode?
+
+    // -- A5: verified mission cache -------------------------------------------
+    // Append-only and IMMUTABLE per revision: a flight that pinned a
+    // revision keeps it even after the server publishes newer ones. A
+    // re-save with identical content is a no-op; different content under
+    // the same id is an integrity failure (throws).
+
+    fun saveSite(site: ObjectNode)
+    fun site(siteId: String): ObjectNode?
+    fun sites(): List<ObjectNode>
+
+    fun saveZoneRevision(revision: ObjectNode)
+    fun zoneRevision(revisionId: String): ObjectNode?
+    fun zoneRevisions(siteId: String): List<ObjectNode>
+
+    fun saveMissionSnapshot(snapshot: ObjectNode)
+    fun missionSnapshot(missionRevisionId: String): ObjectNode?
+    fun missionSnapshots(): List<ObjectNode>
+
+    fun saveMissionBundle(bundle: ObjectNode)
+    fun missionBundle(bundleId: String): ObjectNode?
+    fun missionBundles(): List<ObjectNode>
 }

@@ -13,6 +13,9 @@
     <string name="btn_start">Start</string>
     <string name="btn_stop">Stop</string>
     <string name="btn_end_flight">End flight</string>
+    <string name="btn_sync_sites">Sync sites</string>
+    <string name="btn_sync_bundle">Download bundle</string>
+    <string name="btn_start_flight">Start flight</string>
     <string name="btn_connect">Connect</string>
     <string name="btn_disconnect">Disconnect</string>
     <string name="btn_retry">Retry unacked</string>
