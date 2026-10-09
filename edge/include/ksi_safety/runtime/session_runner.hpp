@@ -26,6 +26,14 @@
 //     measurement and NOT motion tracking.
 //   - A clean negative (kOk, zero detections) IS evidence and advances the
 //     tracker's miss counters (kMissed provenance for unmatched tracks).
+//   - v0 has NO motion model and therefore NO prediction: a track between
+//     detection ticks is HELD state (the last matched box), never a
+//     predicted position. If a motion model lands, it must record a
+//     distinct PREDICTED provenance instead of overloading kHeld.
+//   - Tracker age/misses advance per DETECTION tick (evidence tick), not
+//     per frame tick: a cadence skip is not evaluated by the tracker at
+//     all. "Consecutive missed frames" in the tracker rules therefore read
+//     as "consecutive detection ticks without a match".
 //   - spatial_eligible is true only when BOTH the attitude and the position
 //     match are kSourceVerified: spatial work is gated on verified capture
 //     alignment, and receive-time proximity never qualifies. No spatial
@@ -130,6 +138,13 @@ class SessionRunner {
     // One frame tick. The detector is called at most once (cadence gate).
     TickRecord ProcessFrame(const FramePacket& frame, const FrameContext& ctx,
                             DetectorPort* detector);
+
+    // Tracker reset (model/stream switch): tracker_epoch += 1, all tracks
+    // dropped, ids are never reused. Held/observed records after a reset
+    // show the new epoch; lineages never merge across epochs (the old
+    // epoch's open episodes close only via the max-gap OBSERVATION_LOST
+    // path on the next Sweep).
+    void ResetTracker();
 
     std::uint64_t TickCount() const { return tick_index_; }
     std::size_t AttitudeSamples() const { return attitude_.size(); }

@@ -320,7 +320,7 @@ Interpretation caveats (read before quoting numbers):
   when per-revision episodes matter.
 - `Sweep()`/`EndSession()` carry no track snapshot (tracker state untouched).
 
-## Session runner + replay (R1) scope / limits (honest)
+## Session runner + replay (R1/R2) scope / limits (honest)
 
 - ONE product processing path. `SessionRunner` (cadence gate → detector →
   matching → session step) is driven by BOTH the PSDK application and the
@@ -334,6 +334,14 @@ Interpretation caveats (read before quoting numbers):
   (`MISSED`) and matched detections record `OBSERVED` with
   `since_observed_ns`. A control test shows the same sequence without the
   failure drops one tick earlier.
+- R2 semantics (pinned by tests): id continuity across cadence skips with a
+  held box byte-identical to the last measurement (v0 has NO motion model
+  and NO prediction — a future model must record a distinct PREDICTED
+  provenance); loss then re-acquisition keeps the id; `ResetTracker()`
+  bumps the epoch and never reuses ids (lineages never merge); one
+  detection tick can carry mixed provenance (one track `OBSERVED`, another
+  `MISSED`). Tracker age/misses advance per detection tick, not per frame
+  tick.
 - Replay frames carry no exposure time (`has_exposure=false`,
   `sensor_timestamp_ns=0`): grades stay `RECEIVE_*` and `spatial_eligible`
   is false in replay v1 (it requires BOTH attitude and position

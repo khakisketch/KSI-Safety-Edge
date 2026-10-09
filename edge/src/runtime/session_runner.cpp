@@ -55,6 +55,10 @@ PushVerdict SessionRunner::PushPosition(const Sample<Vec3>& sample) {
     return position_.Push(sample);
 }
 
+void SessionRunner::ResetTracker() {
+    session_.ResetTracker();
+}
+
 TickRecord SessionRunner::ProcessFrame(const FramePacket& frame,
                                        const FrameContext& ctx,
                                        DetectorPort* detector) {

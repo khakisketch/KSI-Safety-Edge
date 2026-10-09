@@ -94,7 +94,7 @@
 | 단계 | 구현 | 통과 기준 | 상태 |
 |---|---|---|---|
 | R1 | 공통 Frame/Telemetry 입력 계약(`SessionRunner`) + Replay 프레임/텔레메트리 소스 + `DfineDetectorPort`(실 D-FINE) + PSDK 앱 동일 러너 사용 | 프레임 ID·수신시각·출처 보존; 정상 무검출 vs 추론 실패 vs 주기 생략 구분; 장치 실엔진 Replay 추론 | **완료·검증(C28)** |
-| R2 | Tracking 출처(관측/미관측/유지) 기록·주기 분리 | ID 연속성·소실·재획득·epoch 분리; IoU 마지막 bbox 유지를 새 측정/움직임 추적으로 기록하지 않음 | 대기 |
+| R2 | Tracking 출처(관측/미관측/유지) 기록·주기 분리 | ID 연속성·소실·재획득·epoch 분리; IoU 마지막 bbox 유지를 새 측정/움직임 추적으로 기록하지 않음 | **완료·검증(C29)** |
 | R3 | Telemetry Replay(도착 순서·미래 미참조) | 누락·지연·시계 불일치·동일값 재수신 구분; 검증 등급 상향 금지 | 대기 |
 | R4 | Spatial Observation(발점/footprint 후보 → 기존 투영·거리·구역) | 조건 부족 시 Detection 유지·Spatial만 보류; 합성 GT는 평가에만 | 대기 |
 | R5 | End-to-End(사건·증거·재현성·성능) + Replay/PSDK 동일 코드 입증 | RC Emulator E2E vs 실장비 E2E 구분; 실장비 전용 항목은 미검증으로 명시 | 대기 |

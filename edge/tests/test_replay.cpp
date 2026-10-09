@@ -1,4 +1,5 @@
-// replay: R1 replay inputs + session runner (the shared product path).
+// replay: R1 replay inputs + session runner (the shared product path) and
+// R2 tracking provenance / cadence semantics.
 //
 // Covers: manifest parsing (valid + strict failures), frame source byte
 // fidelity and failure modes, telemetry "no future samples" (a frame can
@@ -10,6 +11,12 @@
 // records), invalid-config fail-closed, DfineDetectorPort status mapping,
 // and the spatial eligibility gate (both attitude AND position must be
 // source-verified; receive proximity never qualifies).
+//
+// R2 sections: id continuity across cadence skips with a held box that is
+// byte-identical to the last measurement (not a prediction), loss then
+// re-acquisition keeping the id, epoch separation on ResetTracker (no id
+// reuse, no merge), held-vs-observed invariants, and mixed provenance in
+// one detection tick.
 
 #include "ksi_safety/perception/dfine_detector_port.hpp"
 #include "ksi_safety/replay/frame_source.hpp"
@@ -57,7 +64,9 @@ using ksi::safety::TickRecord;
 using ksi::safety::TimeSourceKind;
 using ksi::safety::Timestamp;
 using ksi::safety::ToString;
+using ksi::safety::Track;
 using ksi::safety::TrackProvenance;
+using ksi::safety::TrackRecord;
 using ksi::safety::Vec3;
 
 namespace {
@@ -805,6 +814,210 @@ int main() {
               "no exposure keeps receive grade");
         CHECK(!record.spatial_eligible,
               "receive proximity is never spatially eligible");
+    }
+    // ---- 12) R2: id continuity across cadence skips; held box unchanged ----
+    {
+        // Moving box: x_min = 1 + 2 * detection_index (IoU stays >= 0.3).
+        class MovingDetector : public DetectorPort {
+          public:
+            int calls = 0;
+            DetectionBatch Detect(const FramePacket&) override {
+                DetectionBatch batch;
+                batch.status = DetectionStatus::kOk;
+                Detection det;
+                det.x_min = 1.0F + 2.0F * static_cast<float>(calls);
+                det.y_min = 1.0F;
+                det.x_max = det.x_min + 5.0F;
+                det.y_max = 6.0F;
+                det.score = 0.9F;
+                batch.detections.push_back(det);
+                ++calls;
+                return batch;
+            }
+        };
+        SessionRunner runner(RunnerCfg(3), SessionCfg(5), {}, {}, {},
+                             Profile());
+        MovingDetector detector;
+        std::uint64_t first_id = 0;
+        float last_x_min = 0.0F;
+        float last_x_max = 0.0F;
+        float last_y_min = 0.0F;
+        float last_y_max = 0.0F;
+        for (int i = 0; i < 7; ++i) {
+            FramePacket frame = MakeFrame(static_cast<std::uint32_t>(i),
+                                          1000 + 100LL * i);
+            const TickRecord record =
+                runner.ProcessFrame(frame, MakeCtx(frame), &detector);
+            CHECK(record.tracks.size() == 1,
+                  "single track across cadence skips");
+            if (record.tracks.empty()) {
+                break;
+            }
+            const TrackRecord& tr = record.tracks[0];
+            if (i == 0) {
+                first_id = tr.track.track_id;
+                CHECK(tr.provenance == TrackProvenance::kObserved,
+                      "tick 0 observes");
+            } else if (i % 3 == 0) {
+                CHECK(tr.track.track_id == first_id &&
+                          tr.provenance == TrackProvenance::kObserved,
+                      "detection tick keeps the id (observed)");
+                CHECK(tr.track.hits == i / 3 + 1,
+                      "hits count detection ticks");
+            } else {
+                CHECK(tr.track.track_id == first_id &&
+                          tr.provenance == TrackProvenance::kHeld,
+                      "skip tick holds the same id");
+                CHECK(tr.track.box.x_min == last_x_min &&
+                          tr.track.box.x_max == last_x_max &&
+                          tr.track.box.y_min == last_y_min &&
+                          tr.track.box.y_max == last_y_max,
+                      "held box is the last matched box (all coords), "
+                      "not a prediction");
+                CHECK(tr.since_observed_ns == 100LL * (i % 3),
+                      "since_observed grows between detections");
+            }
+            last_x_min = tr.track.box.x_min;
+            last_x_max = tr.track.box.x_max;
+            last_y_min = tr.track.box.y_min;
+            last_y_max = tr.track.box.y_max;
+            CHECK(tr.track.age == i / 3 + 1,
+                  "age advances per detection tick only");
+        }
+    }
+    // ---- 13) R2: loss then re-acquisition keeps the id ----
+    {
+        SessionRunner runner(RunnerCfg(), SessionCfg(2), {}, {}, {},
+                             Profile());
+        ScriptedDetector detector;
+        detector.script = {0, 0, 2, 2, 0};  // det, det, empty, empty, det
+        std::uint64_t id = 0;
+        for (int i = 0; i < 5; ++i) {
+            FramePacket frame = MakeFrame(static_cast<std::uint32_t>(i),
+                                          1000 + 100LL * i);
+            const TickRecord record =
+                runner.ProcessFrame(frame, MakeCtx(frame), &detector);
+            if (i == 0) {
+                CHECK(record.tracks.size() == 1, "track created");
+                id = record.tracks[0].track.track_id;
+            } else if (i == 1) {
+                CHECK(record.tracks.size() == 1 &&
+                          record.tracks[0].track.track_id == id &&
+                          record.tracks[0].track.hits == 2,
+                      "second hit keeps the id");
+            } else if (i == 2 || i == 3) {
+                CHECK(record.tracks.size() == 1 &&
+                          record.tracks[0].provenance ==
+                              TrackProvenance::kMissed,
+                      "coasts through misses");
+            } else {
+                CHECK(record.tracks.size() == 1 &&
+                          record.tracks[0].provenance ==
+                              TrackProvenance::kObserved &&
+                          record.tracks[0].track.track_id == id &&
+                          record.tracks[0].track.hits == 3,
+                      "re-acquisition keeps the same id");
+            }
+        }
+    }
+    // ---- 14) R2: epoch separation on reset (no id reuse, no merge) ----
+    {
+        SessionRunner runner(RunnerCfg(), SessionCfg(5), {}, {}, {},
+                             Profile());
+        CountingOkDetector detector;
+        FramePacket frame0 = MakeFrame(1, 1000);
+        TickRecord record =
+            runner.ProcessFrame(frame0, MakeCtx(frame0), &detector);
+        CHECK(record.tracks.size() == 1 && record.tracks[0].track.epoch == 1,
+              "epoch 1 before reset");
+        const std::uint64_t first_id = record.tracks[0].track.track_id;
+        runner.ResetTracker();
+        FramePacket frame1 = MakeFrame(2, 1100);
+        record = runner.ProcessFrame(frame1, MakeCtx(frame1), &detector);
+        CHECK(record.tracks.size() == 1, "new track after reset");
+        CHECK(record.tracks[0].track.track_id != first_id,
+              "id never reused after reset");
+        CHECK(record.tracks[0].track.epoch == 2, "epoch bumped");
+        CHECK(record.tracks[0].provenance == TrackProvenance::kObserved,
+              "fresh measurement in the new epoch");
+    }
+    // ---- 15) R2: held records are not new measurements (explicit) ----
+    {
+        SessionRunner runner(RunnerCfg(2), SessionCfg(5), {}, {}, {},
+                             Profile());
+        CountingOkDetector detector;
+        FramePacket f0 = MakeFrame(1, 1000);
+        const TickRecord observed =
+            runner.ProcessFrame(f0, MakeCtx(f0), &detector);
+        FramePacket f1 = MakeFrame(2, 1100);
+        const TickRecord held =
+            runner.ProcessFrame(f1, MakeCtx(f1), &detector);
+        CHECK(observed.tracks.size() == 1 && held.tracks.size() == 1,
+              "both ticks have the track");
+        if (!observed.tracks.empty() && !held.tracks.empty()) {
+            const Track& a = observed.tracks[0].track;
+            const Track& b = held.tracks[0].track;
+            CHECK(b.box.x_min == a.box.x_min && b.box.x_max == a.box.x_max &&
+                      b.box.y_min == a.box.y_min && b.box.y_max == a.box.y_max,
+                  "held box byte-identical to the last measurement");
+            CHECK(b.hits == a.hits && b.last_seen_ns == a.last_seen_ns,
+                  "held tick counted no hit and moved no last_seen");
+            CHECK(held.tracks[0].provenance == TrackProvenance::kHeld &&
+                      held.tracks[0].since_observed_ns == 100,
+                  "held provenance with elapsed time");
+        }
+        CHECK(detector.calls == 1, "skip tick did not run the detector");
+    }
+    // ---- 16) R2: mixed provenance in one detection tick ----
+    {
+        // Box A appears every tick; box B only on the first two ticks.
+        class TwoBoxDetector : public DetectorPort {
+          public:
+            int calls = 0;
+            DetectionBatch Detect(const FramePacket&) override {
+                DetectionBatch batch;
+                batch.status = DetectionStatus::kOk;
+                Detection a;
+                a.x_min = 1.0F;
+                a.y_min = 1.0F;
+                a.x_max = 6.0F;
+                a.y_max = 6.0F;
+                a.score = 0.9F;
+                a.class_id = 0;
+                batch.detections.push_back(a);
+                if (calls < 2) {
+                    Detection b;
+                    b.x_min = 20.0F;
+                    b.y_min = 1.0F;
+                    b.x_max = 25.0F;
+                    b.y_max = 6.0F;
+                    b.score = 0.8F;
+                    b.class_id = 0;
+                    batch.detections.push_back(b);
+                }
+                ++calls;
+                return batch;
+            }
+        };
+        SessionRunner runner(RunnerCfg(), SessionCfg(5), {}, {}, {},
+                             Profile());
+        TwoBoxDetector detector;
+        for (int i = 0; i < 3; ++i) {
+            FramePacket frame = MakeFrame(static_cast<std::uint32_t>(i),
+                                          1000 + 100LL * i);
+            const TickRecord record =
+                runner.ProcessFrame(frame, MakeCtx(frame), &detector);
+            if (i == 2) {
+                CHECK(record.tracks.size() == 2, "both tracks alive");
+                if (record.tracks.size() == 2) {
+                    CHECK(record.tracks[0].provenance ==
+                                  TrackProvenance::kObserved &&
+                              record.tracks[1].provenance ==
+                                  TrackProvenance::kMissed,
+                          "one observed, one missed in the same tick");
+                }
+            }
+        }
     }
     if (edge_test::failures == 0) {
         std::printf("replay: all checks passed\n");
