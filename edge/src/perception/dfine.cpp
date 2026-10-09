@@ -19,6 +19,74 @@ float Sigmoid(float value) {
     return e / (1.0F + e);
 }
 
+// PIL-compatible resampling coefficients (Pillow ImagingResample, BILINEAR
+// filter): per output index, source center c=(d+0.5)*scale; triangle filter
+// weights over a support of max(1, scale) (antialias-scaled when
+// downscaling); the window is clipped to the image and the weights are
+// renormalized over the clipped window. This mirrors RTDetrImageProcessor
+// (which calls PIL `resize((640,640), BILINEAR)`).
+struct AxisCoeffs {
+    std::vector<int> first;              // first source index per dst index
+    std::vector<std::vector<double>> w;  // normalized weights per dst index
+};
+
+AxisCoeffs PrecomputeCoeffs(int src, int dst) {
+    AxisCoeffs out;
+    out.first.resize(static_cast<std::size_t>(dst));
+    out.w.resize(static_cast<std::size_t>(dst));
+    const double scale = static_cast<double>(src) / static_cast<double>(dst);
+    const double filterscale = scale < 1.0 ? 1.0 : scale;
+    const double support = filterscale;  // triangle support 1.0 * filterscale
+    for (int d = 0; d < dst; ++d) {
+        const double center = (static_cast<double>(d) + 0.5) * scale;
+        int lo = static_cast<int>(std::floor(center - support + 0.5));
+        int hi = static_cast<int>(std::floor(center + support + 0.5));
+        if (lo < 0) {
+            lo = 0;
+        }
+        if (hi > src) {
+            hi = src;
+        }
+        if (hi <= lo) {  // defensive; cannot happen for src >= 1
+            lo = std::min(std::max(0, static_cast<int>(center)), src - 1);
+            hi = lo + 1;
+        }
+        std::vector<double> w(static_cast<std::size_t>(hi - lo), 0.0);
+        double sum = 0.0;
+        for (int i = 0; i < hi - lo; ++i) {
+            const double t =
+                (static_cast<double>(lo + i) + 0.5 - center) / filterscale;
+            double wt = 1.0 - std::fabs(t);
+            if (wt < 0.0) {
+                wt = 0.0;
+            }
+            w[static_cast<std::size_t>(i)] = wt;
+            sum += wt;
+        }
+        if (sum != 0.0) {
+            for (double& v : w) {
+                v /= sum;
+            }
+        }
+        out.first[static_cast<std::size_t>(d)] = lo;
+        out.w[static_cast<std::size_t>(d)] = std::move(w);
+    }
+    return out;
+}
+
+// PIL's 8bpc pipeline clips intermediates to uint8 with round-half-up.
+// Matching it keeps our tensor aligned with the validated reference
+// preprocessing (golden tests pin actual PIL values; see dfine.hpp R7).
+std::uint8_t Clip8(double v) {
+    if (v <= 0.0) {
+        return 0;
+    }
+    if (v >= 255.0) {
+        return 255;
+    }
+    return static_cast<std::uint8_t>(std::floor(v + 0.5));
+}
+
 }  // namespace
 
 bool IsValidDfineConfig(const DfineConfig& config) {
@@ -39,13 +107,8 @@ bool PreprocessRgb(const std::uint8_t* rgb, int src_width, int src_height,
     const int dst_w = config.input_width;
     const int dst_h = config.input_height;
     constexpr float kRescale = 1.0F / 255.0F;
-    // Speed structure (same float32 sampling math as before): per-column
-    // x0/x1/fx depend only on dx, per-row y0/y1/fy (+ row base offsets) only
-    // on dy, so each is computed once. A single dy/dx pass then reuses the
-    // base source index for all 3 channels (better locality than the old
-    // channel-outer loop, which recomputed geometry 3x). The identity-size
-    // fast path below is exact: with scale 1, (d+0.5)*1-0.5 == d gives
-    // fx=fy=0 and x0=x1=dx, y0=y1=dy, i.e. pure /255 + channel split.
+    // Identity fast path: at scale 1 the PIL path reduces to a single tap
+    // with weight 1 (Clip8(v) == v), i.e. pure /255 + channel split. Exact.
     if (src_width == dst_w && src_height == dst_h) {
         float* plane_r = out_chw;
         float* plane_g = out_chw + static_cast<std::size_t>(dst_w) *
@@ -62,48 +125,39 @@ bool PreprocessRgb(const std::uint8_t* rgb, int src_width, int src_height,
         }
         return true;
     }
-    const float scale_x = static_cast<float>(src_width) / static_cast<float>(dst_w);
-    const float scale_y = static_cast<float>(src_height) / static_cast<float>(dst_h);
-    std::vector<int> x0_of(dst_w), x1_of(dst_w);
-    std::vector<float> fx_of(dst_w);
-    for (int dx = 0; dx < dst_w; ++dx) {
-        const float sx = (static_cast<float>(dx) + 0.5F) * scale_x - 0.5F;
-        int x0 = static_cast<int>(std::floor(sx));
-        float fx = sx - static_cast<float>(x0);
-        if (x0 < 0) {
-            x0 = 0;
-            fx = 0.0F;
-        } else if (x0 >= src_width - 1) {
-            x0 = src_width - 1;
-            fx = 0.0F;
+    // PIL-compatible separable resample with a uint8 intermediate (PIL's
+    // 8bpc pipeline quantizes the horizontal result before the vertical
+    // pass; matching that keeps our tensor equal to the reference on the
+    // pinned golden cases).
+    const AxisCoeffs xc = PrecomputeCoeffs(src_width, dst_w);
+    const AxisCoeffs yc = PrecomputeCoeffs(src_height, dst_h);
+    std::vector<std::uint8_t> hbuf(static_cast<std::size_t>(src_height) *
+                                   static_cast<std::size_t>(dst_w) * 3U);
+    for (int y = 0; y < src_height; ++y) {
+        const std::uint8_t* srow =
+            rgb + static_cast<std::size_t>(y) *
+                      static_cast<std::size_t>(src_width) * 3U;
+        std::uint8_t* drow = hbuf.data() +
+                             static_cast<std::size_t>(y) *
+                                 static_cast<std::size_t>(dst_w) * 3U;
+        for (int dx = 0; dx < dst_w; ++dx) {
+            const std::size_t k = static_cast<std::size_t>(dx);
+            const int x0 = xc.first[k];
+            const std::vector<double>& w = xc.w[k];
+            double r = 0.0;
+            double g = 0.0;
+            double b = 0.0;
+            for (std::size_t i = 0; i < w.size(); ++i) {
+                const std::size_t s = (static_cast<std::size_t>(x0) + i) * 3U;
+                const double ww = w[i];
+                r += ww * static_cast<double>(srow[s + 0]);
+                g += ww * static_cast<double>(srow[s + 1]);
+                b += ww * static_cast<double>(srow[s + 2]);
+            }
+            drow[k * 3U + 0] = Clip8(r);
+            drow[k * 3U + 1] = Clip8(g);
+            drow[k * 3U + 2] = Clip8(b);
         }
-        x0_of[static_cast<std::size_t>(dx)] = x0;
-        x1_of[static_cast<std::size_t>(dx)] =
-            (x0 + 1 <= src_width - 1) ? x0 + 1 : x0;
-        fx_of[static_cast<std::size_t>(dx)] = fx;
-    }
-    std::vector<int> y0_of(dst_h), y1_of(dst_h);
-    std::vector<float> fy_of(dst_h);
-    std::vector<std::size_t> row0_base(dst_h), row1_base(dst_h);
-    for (int dy = 0; dy < dst_h; ++dy) {
-        const float sy = (static_cast<float>(dy) + 0.5F) * scale_y - 0.5F;
-        int y0 = static_cast<int>(std::floor(sy));
-        float fy = sy - static_cast<float>(y0);
-        if (y0 < 0) {
-            y0 = 0;
-            fy = 0.0F;
-        } else if (y0 >= src_height - 1) {
-            y0 = src_height - 1;
-            fy = 0.0F;
-        }
-        const int y1 = (y0 + 1 <= src_height - 1) ? y0 + 1 : y0;
-        y0_of[static_cast<std::size_t>(dy)] = y0;
-        y1_of[static_cast<std::size_t>(dy)] = y1;
-        fy_of[static_cast<std::size_t>(dy)] = fy;
-        row0_base[static_cast<std::size_t>(dy)] =
-            static_cast<std::size_t>(y0) * static_cast<std::size_t>(src_width);
-        row1_base[static_cast<std::size_t>(dy)] =
-            static_cast<std::size_t>(y1) * static_cast<std::size_t>(src_width);
     }
     float* plane_r = out_chw;
     float* plane_g = out_chw + static_cast<std::size_t>(dst_w) *
@@ -111,38 +165,27 @@ bool PreprocessRgb(const std::uint8_t* rgb, int src_width, int src_height,
     float* plane_b = plane_g + static_cast<std::size_t>(dst_w) *
                                    static_cast<std::size_t>(dst_h);
     for (int dy = 0; dy < dst_h; ++dy) {
-        const std::size_t d = static_cast<std::size_t>(dy);
-        const float fy = fy_of[d];
-        const std::size_t r0 = row0_base[d];
-        const std::size_t r1 = row1_base[d];
-        const std::size_t dst_row = d * static_cast<std::size_t>(dst_w);
+        const std::size_t k = static_cast<std::size_t>(dy);
+        const int y0 = yc.first[k];
+        const std::vector<double>& w = yc.w[k];
+        const std::size_t dst_row = k * static_cast<std::size_t>(dst_w);
         for (int dx = 0; dx < dst_w; ++dx) {
-            const std::size_t k = static_cast<std::size_t>(dx);
-            const std::size_t x0 = static_cast<std::size_t>(x0_of[k]);
-            const std::size_t x1 = static_cast<std::size_t>(x1_of[k]);
-            const float fx = fx_of[k];
-            const std::size_t b00 = (r0 + x0) * 3;
-            const std::size_t b10 = (r0 + x1) * 3;
-            const std::size_t b01 = (r1 + x0) * 3;
-            const std::size_t b11 = (r1 + x1) * 3;
-            const std::size_t o = dst_row + k;
-            for (int c = 0; c < 3; ++c) {
-                const std::size_t cc = static_cast<std::size_t>(c);
-                const float v00 = static_cast<float>(rgb[b00 + cc]);
-                const float v10 = static_cast<float>(rgb[b10 + cc]);
-                const float v01 = static_cast<float>(rgb[b01 + cc]);
-                const float v11 = static_cast<float>(rgb[b11 + cc]);
-                const float top = v00 + (v10 - v00) * fx;
-                const float bottom = v01 + (v11 - v01) * fx;
-                const float v = (top + (bottom - top) * fy) * kRescale;
-                if (c == 0) {
-                    plane_r[o] = v;
-                } else if (c == 1) {
-                    plane_g[o] = v;
-                } else {
-                    plane_b[o] = v;
-                }
+            double r = 0.0;
+            double g = 0.0;
+            double b = 0.0;
+            for (std::size_t i = 0; i < w.size(); ++i) {
+                const std::size_t s = ((static_cast<std::size_t>(y0) + i) *
+                                           static_cast<std::size_t>(dst_w) +
+                                       static_cast<std::size_t>(dx)) * 3U;
+                const double ww = w[i];
+                r += ww * static_cast<double>(hbuf[s + 0]);
+                g += ww * static_cast<double>(hbuf[s + 1]);
+                b += ww * static_cast<double>(hbuf[s + 2]);
             }
+            const std::size_t o = dst_row + static_cast<std::size_t>(dx);
+            plane_r[o] = static_cast<float>(Clip8(r)) * kRescale;
+            plane_g[o] = static_cast<float>(Clip8(g)) * kRescale;
+            plane_b[o] = static_cast<float>(Clip8(b)) * kRescale;
         }
     }
     return true;

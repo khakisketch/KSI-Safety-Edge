@@ -84,6 +84,17 @@ if(KSI_SAFETY_EDGE_ENABLE_TENSORRT)
     -Werror)
 endif()
 
+# --- Host tools (no TensorRT dependency) ------------------------------------------
+add_executable(preprocess_dump tools/preprocess_dump.cpp)
+target_link_libraries(preprocess_dump PRIVATE ksi_safety_edge_core)
+target_compile_options(preprocess_dump PRIVATE -Wall -Wextra -Wpedantic -Werror)
+if(KSI_SAFETY_EDGE_ENABLE_SANITIZERS)
+  target_compile_options(preprocess_dump PRIVATE
+    -fsanitize=address,undefined -fno-sanitize-recover=all -g)
+  target_link_options(preprocess_dump PRIVATE
+    -fsanitize=address,undefined -fno-sanitize-recover=all)
+endif()
+
 enable_testing()
 
 function(ksi_safety_edge_test name source)

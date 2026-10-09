@@ -34,7 +34,7 @@
 |---|---|---|---|
 | 판단·검증 | **W5 완료·검증(C15)** — 순수 로직·합성 GT | 실데이터 연결은 기체/GPS GT 확보 후 | 없음(실데이터만 대기) |
 | 사용 흐름(RC) | 미착수 — 환경 조사 완료(2026-10-08): JDK 8(부족)·adb/sdkmanager/gradle 부재, dl.google.com 접근 가능, 디스크 2.9T 여유 | JDK17+cmdline-tools 설치 승인 시 착수 | 설치 승인·RC 접근 경로 |
-| 실제 인식(AI) | W6-A~W8(C16~C19) + ONNX export + TRT engine(fp16) + W9 PASS + **W9-FU2 완료(C25: preprocess 35.3→3.6ms·Detect ~27ms·~36qps)** + **충실도 정량화(C26: 다운스케일에서 검출 이동 확인)** | **W10 PIL 호환 리샘플 정렬 진행** → **Replay 통합**(주기 독립: Detection/Tracking/Spatial, **출처 실측/추적/예측 구분**, 15FPS+tracking 옵션·미관측 구간/지연 기록, 영상 구간→공간 판단 수행/보류 검증) | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
+| 실제 인식(AI) | W6-A~W8(C16~C19) + ONNX export + TRT engine(fp16) + W9 PASS + W9-FU2(C25: preprocess 35.3→3.6ms·Detect ~27ms) + **W10 완료(C27): PIL 호환 리샘플 — 충실도 tensor max|d| 0.170→0.0039·gating 32/32(최악)** | **Replay 통합**(주기 독립: Detection/Tracking/Spatial, **출처 실측/추적/예측 구분**, 15FPS+tracking 옵션·미관측 구간/지연 기록, 영상 구간→공간 판단 수행/보류 검증) | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
 
 ## 4. 첫 현장시험 범위 (추천안 — 사용자 확정 대기)
 
@@ -76,6 +76,7 @@
 - 2026-10-09: **W9-FU 완료·검증(C24)** — 단계별 지연 분해(`RunTimed` + `--breakdown`). 장치 fp16: **preprocess ~35.3ms(지배)** · enqueue+sync ~20.5ms(GPU) · h2d 0.66 · d2h 0.12 · decode 0.39 · total ~57ms(pipelined mean ~61ms). runner `ses_ee376ded1ffe2UUpVDwONjZkVD` 전 항목 PASS(+문서 2건 정정: 'sum exceeds'→방향 중립, enqueueV2→enqueueV3). **다음: W9-FU2 preprocess 최적화**(채널-외부 루프·인덱스 재계산 제거, identity fast path; 목표 대폭 감소) → Replay 통합.
 - 2026-10-09: **W9-FU2 완료·검증(C25)** — `PreprocessRgb` 재구성(열·행 계수 1회·픽셀당 인덱스 1회·3채널 단일 패스·identity fast path) + 등가 시험(3×2→5×4·7×5→4×3·1×1→4×4 @1e-6·identity 5×4). 장치 fp16: **preprocess 35.3→3.6ms(≈10×)**, **Detect mean ~61→~27–28ms(~35–37qps)**; gating·SMOKE PASS 불변; runner `ses_ee36e1452ffelo9SoTnZ8EguL0` 전 항목 PASS. **미검증: 비640 입력 일반 경로 실측 성능**(등가만 검증) — Replay 통합에서 실영상 크기로 확인. **검토 필요(Replay 전)**: 다운스케일 보간 충실도 — PIL(RTDetrImageProcessor) 안티앨리어스 지원 스케일 vs 우리 2-tap bilinear 차이(비640 입력에서만 발생; 정량화·필요 시 C++ 개선).
 - 2026-10-09: **다운스케일 보간 충실도 정량화(Primary, C26)** — PIL(RTDetrImageProcessor) vs 우리 2-tap: tensor max|d| 0.022(381×680 업스케일)·**0.124(800×538 다운스케일)**·0.042(615×800)·**0.170(1080p NEAREST 최악)**. **top-1 안정**(cls 동일, |Δscore|≤0.003, IoU ≥0.96)이지만 **mid/low-confidence 검출 이동**(gating miss 0/9·**1/2**·**7/39**·**11/32**). → **C++ 리샘플을 PIL 호환(다운스케일 안티앨리어스)으로 정렬 필요 — W10**. 분석 스크립트: `scripts/check_resize_fidelity.py`.
+- 2026-10-09: **W10 완료·검증(C27)** — `PreprocessRgb` **PIL 호환 리샘플**(center=(d+0.5)*scale·support=max(1,scale)·triangle 가중·창 클립·정규화·**uint8 중간 양자화**(round-half-up) — 실제 PIL과 golden 4건 일치) + identity fast path; `preprocess_dump` tool; fidelity 스크립트 C++ 출력 기준 전환. 검증: 호스트 14/14×2·장치 gcc9.4 14/14·fidelity **tensor max|d| 0.170→0.0039(1 uint8)**·gating **9/9·2/2·37/39·32/32**·smoke PASS(preprocess 3.5ms·mean ~28ms)·독립 검증 `ses_ee1a30f54ffeIcBzu8MfZ8Olw4`(5과제 PASS + 자체 PIL/C++ sanity) + DecodeDfine 무변경 확인. 잔여: person.jpg 2/39 mid-confidence miss(IoU 0.95·dscore 0.107 — 1-unit 입력차 증폭, 수용 범위).
 - (이전) B0~W4·C13: `2026-10-08-reuse-audit-and-porting.md`, `docs/verification/evidence/`.
 
 ## 7. 대기 중 결정 (비차단)

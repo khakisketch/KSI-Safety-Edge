@@ -33,73 +33,121 @@ DfineConfig SmallConfig(float threshold) {
     return cfg;
 }
 
-// Straightforward channel-outer reference bilinear with the pinned sampling
-// semantics (half-pixel-centered, edge-clamped, float32, /255, RGB->CHW).
-// Independent of PreprocessRgb's loop structure; used for equivalence checks.
-void ReferenceBilinear(const std::uint8_t* rgb, int src_w, int src_h,
+// PIL-faithful reference resample (matches Pillow's 8bpc BILINEAR path):
+// triangle weights over a max(1, scale) support, window clipped to the
+// image and normalized; the horizontal intermediate is quantized to uint8
+// (round-half-up, [0,255]) before the vertical pass. Independent loop
+// structure of the same algorithm; used for equivalence checks.
+struct RefCoeffs {
+    std::vector<int> first;
+    std::vector<std::vector<double>> w;
+};
+
+RefCoeffs RefPrecompute(int src, int dst) {
+    RefCoeffs out;
+    const double scale = static_cast<double>(src) / static_cast<double>(dst);
+    const double fs = scale < 1.0 ? 1.0 : scale;
+    for (int d = 0; d < dst; ++d) {
+        const double center = (static_cast<double>(d) + 0.5) * scale;
+        int lo = static_cast<int>(std::floor(center - fs + 0.5));
+        int hi = static_cast<int>(std::floor(center + fs + 0.5));
+        if (lo < 0) {
+            lo = 0;
+        }
+        if (hi > src) {
+            hi = src;
+        }
+        if (hi <= lo) {
+            lo = std::min(std::max(0, static_cast<int>(center)), src - 1);
+            hi = lo + 1;
+        }
+        std::vector<double> w;
+        double sum = 0.0;
+        for (int i = lo; i < hi; ++i) {
+            double wt = 1.0 -
+                        std::fabs((static_cast<double>(i) + 0.5 - center) / fs);
+            if (wt < 0.0) {
+                wt = 0.0;
+            }
+            w.push_back(wt);
+            sum += wt;
+        }
+        if (sum != 0.0) {
+            for (double& v : w) {
+                v /= sum;
+            }
+        }
+        out.first.push_back(lo);
+        out.w.push_back(std::move(w));
+    }
+    return out;
+}
+
+std::uint8_t RefClip8(double v) {
+    if (v <= 0.0) {
+        return 0;
+    }
+    if (v >= 255.0) {
+        return 255;
+    }
+    return static_cast<std::uint8_t>(std::floor(v + 0.5));
+}
+
+void ReferenceResample(const std::uint8_t* rgb, int src_w, int src_h,
                        float* out_chw, int dst_w, int dst_h) {
-    const float scale_x = static_cast<float>(src_w) / static_cast<float>(dst_w);
-    const float scale_y = static_cast<float>(src_h) / static_cast<float>(dst_h);
     constexpr float kRescale = 1.0F / 255.0F;
-    for (int c = 0; c < 3; ++c) {
-        float* plane = out_chw + static_cast<std::size_t>(c) *
-                                         static_cast<std::size_t>(dst_w) *
-                                         static_cast<std::size_t>(dst_h);
-        for (int dy = 0; dy < dst_h; ++dy) {
-            const float sy =
-                (static_cast<float>(dy) + 0.5F) * scale_y - 0.5F;
-            int y0 = static_cast<int>(std::floor(sy));
-            float fy = sy - static_cast<float>(y0);
-            if (y0 < 0) {
-                y0 = 0;
-                fy = 0.0F;
-            } else if (y0 >= src_h - 1) {
-                y0 = src_h - 1;
-                fy = 0.0F;
+    const RefCoeffs xc = RefPrecompute(src_w, dst_w);
+    const RefCoeffs yc = RefPrecompute(src_h, dst_h);
+    std::vector<std::uint8_t> hbuf(static_cast<std::size_t>(src_h) *
+                                   static_cast<std::size_t>(dst_w) * 3U);
+    for (int y = 0; y < src_h; ++y) {
+        const std::uint8_t* srow =
+            rgb + static_cast<std::size_t>(y) *
+                      static_cast<std::size_t>(src_w) * 3U;
+        std::uint8_t* drow = hbuf.data() +
+                             static_cast<std::size_t>(y) *
+                                 static_cast<std::size_t>(dst_w) * 3U;
+        for (int dx = 0; dx < dst_w; ++dx) {
+            const int x0 = xc.first[static_cast<std::size_t>(dx)];
+            const std::vector<double>& w = xc.w[static_cast<std::size_t>(dx)];
+            double r = 0.0;
+            double g = 0.0;
+            double b = 0.0;
+            for (std::size_t i = 0; i < w.size(); ++i) {
+                const std::size_t s = (static_cast<std::size_t>(x0) + i) * 3U;
+                r += w[i] * static_cast<double>(srow[s + 0]);
+                g += w[i] * static_cast<double>(srow[s + 1]);
+                b += w[i] * static_cast<double>(srow[s + 2]);
             }
-            const int y1 = (y0 + 1 <= src_h - 1) ? y0 + 1 : y0;
-            for (int dx = 0; dx < dst_w; ++dx) {
-                const float sx =
-                    (static_cast<float>(dx) + 0.5F) * scale_x - 0.5F;
-                int x0 = static_cast<int>(std::floor(sx));
-                float fx = sx - static_cast<float>(x0);
-                if (x0 < 0) {
-                    x0 = 0;
-                    fx = 0.0F;
-                } else if (x0 >= src_w - 1) {
-                    x0 = src_w - 1;
-                    fx = 0.0F;
-                }
-                const int x1 = (x0 + 1 <= src_w - 1) ? x0 + 1 : x0;
-                const std::size_t sc = static_cast<std::size_t>(c);
-                const std::size_t sw = static_cast<std::size_t>(src_w);
-                const float v00 = static_cast<float>(
-                    rgb[(static_cast<std::size_t>(y0) * sw +
-                         static_cast<std::size_t>(x0)) *
-                            3 +
-                        sc]);
-                const float v10 = static_cast<float>(
-                    rgb[(static_cast<std::size_t>(y0) * sw +
-                         static_cast<std::size_t>(x1)) *
-                            3 +
-                        sc]);
-                const float v01 = static_cast<float>(
-                    rgb[(static_cast<std::size_t>(y1) * sw +
-                         static_cast<std::size_t>(x0)) *
-                            3 +
-                        sc]);
-                const float v11 = static_cast<float>(
-                    rgb[(static_cast<std::size_t>(y1) * sw +
-                         static_cast<std::size_t>(x1)) *
-                            3 +
-                        sc]);
-                const float top = v00 + (v10 - v00) * fx;
-                const float bottom = v01 + (v11 - v01) * fx;
-                plane[static_cast<std::size_t>(dy) *
-                          static_cast<std::size_t>(dst_w) +
-                      static_cast<std::size_t>(dx)] =
-                    (top + (bottom - top) * fy) * kRescale;
+            drow[static_cast<std::size_t>(dx) * 3U + 0] = RefClip8(r);
+            drow[static_cast<std::size_t>(dx) * 3U + 1] = RefClip8(g);
+            drow[static_cast<std::size_t>(dx) * 3U + 2] = RefClip8(b);
+        }
+    }
+    const std::size_t plane = static_cast<std::size_t>(dst_w) *
+                              static_cast<std::size_t>(dst_h);
+    for (int dy = 0; dy < dst_h; ++dy) {
+        const int y0 = yc.first[static_cast<std::size_t>(dy)];
+        const std::vector<double>& w = yc.w[static_cast<std::size_t>(dy)];
+        for (int dx = 0; dx < dst_w; ++dx) {
+            double r = 0.0;
+            double g = 0.0;
+            double b = 0.0;
+            for (std::size_t i = 0; i < w.size(); ++i) {
+                const std::size_t s = ((static_cast<std::size_t>(y0) + i) *
+                                           static_cast<std::size_t>(dst_w) +
+                                       static_cast<std::size_t>(dx)) * 3U;
+                r += w[i] * static_cast<double>(hbuf[s + 0]);
+                g += w[i] * static_cast<double>(hbuf[s + 1]);
+                b += w[i] * static_cast<double>(hbuf[s + 2]);
             }
+            const std::size_t o = static_cast<std::size_t>(dy) *
+                                      static_cast<std::size_t>(dst_w) +
+                                  static_cast<std::size_t>(dx);
+            out_chw[o] = static_cast<float>(RefClip8(r)) * kRescale;
+            out_chw[plane + o] = static_cast<float>(RefClip8(g)) * kRescale;
+            out_chw[2U * plane + o] =
+                static_cast<float>(RefClip8(b)) * kRescale;
         }
     }
 }
@@ -141,10 +189,62 @@ bool CheckEquivalence(int src_w, int src_h, int dst_w, int dst_h,
         CHECK(false, label);
         return false;
     }
-    ReferenceBilinear(rgb.data(), src_w, src_h, want.data(), dst_w, dst_h);
+    ReferenceResample(rgb.data(), src_w, src_h, want.data(), dst_w, dst_h);
     bool ok = true;
     for (std::size_t i = 0; i < want.size() && ok; ++i) {
         ok = Near(got[i], want[i], 1e-6F);
+    }
+    CHECK(ok, label);
+    return ok;
+}
+
+// Golden-pattern fill for the PIL-generated golden tensors (see section 14).
+void FillGoldenPattern(std::vector<std::uint8_t>& rgb, int w, int h) {
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            const std::size_t b = (static_cast<std::size_t>(y) *
+                                       static_cast<std::size_t>(w) +
+                                   static_cast<std::size_t>(x)) *
+                                  3;
+            rgb[b + 0] = static_cast<std::uint8_t>((x * 31 + y * 17) % 256);
+            rgb[b + 1] = static_cast<std::uint8_t>((x * 13 + y * 29) % 256);
+            rgb[b + 2] = static_cast<std::uint8_t>((x * 7 + y * 41) % 256);
+        }
+    }
+}
+
+struct GoldenCase {
+    int src_w;
+    int src_h;
+    int dst_w;
+    int dst_h;
+    const float* rgb;  // dst_h*dst_w*3, RGB order, /255 floats
+};
+
+bool CheckGolden(const GoldenCase& g, const char* label) {
+    std::vector<std::uint8_t> rgb(static_cast<std::size_t>(g.src_w) *
+                                  static_cast<std::size_t>(g.src_h) * 3U);
+    FillGoldenPattern(rgb, g.src_w, g.src_h);
+    std::vector<float> got(static_cast<std::size_t>(3) * g.dst_w * g.dst_h);
+    const DfineConfig cfg = SizedConfig(g.dst_w, g.dst_h);
+    if (!PreprocessRgb(rgb.data(), g.src_w, g.src_h, got.data(), cfg)) {
+        CHECK(false, label);
+        return false;
+    }
+    const std::size_t plane =
+        static_cast<std::size_t>(g.dst_w) * static_cast<std::size_t>(g.dst_h);
+    bool ok = true;
+    for (int y = 0; y < g.dst_h && ok; ++y) {
+        for (int x = 0; x < g.dst_w && ok; ++x) {
+            const std::size_t px = static_cast<std::size_t>(y) *
+                                       static_cast<std::size_t>(g.dst_w) +
+                                   static_cast<std::size_t>(x);
+            for (std::size_t c = 0; c < 3U && ok; ++c) {
+                const float want = g.rgb[px * 3U + c];
+                const float v = got[c * plane + px];
+                ok = Near(v, want, 2e-6F);
+            }
+        }
     }
     CHECK(ok, label);
     return ok;
@@ -387,6 +487,61 @@ int main() {
     // ---- 13) identity fast path matches the general formula ----
     {
         CheckEquivalence(5, 4, 5, 4, "5x4->5x4 identity matches reference");
+    }
+    // ---- 14) golden tensors generated from actual PIL (BILINEAR) ----
+    {
+        // Generated with the local Pillow from FillGoldenPattern's exact
+        // pattern:
+        //   Image.fromarray(pattern).resize((dw, dh), Image.BILINEAR)
+        //   np.asarray(img, float64) / 255
+        // Tolerance 2e-6 covers the 6-decimal constant rounding only: the
+        // implementation reproduces the same uint8 values as PIL (verified
+        // against these constants, which are the reference preprocessing
+        // RTDetrImageProcessor uses).
+        static const float kGolden8x6[3 * 4 * 3] = {
+            0.133333F, 0.117647F, 0.133333F, 0.352941F, 0.211765F, 0.184314F,
+            0.596078F, 0.313725F, 0.239216F, 0.811765F, 0.403922F, 0.286275F,
+            0.254902F, 0.321569F, 0.423529F, 0.474510F, 0.415686F, 0.474510F,
+            0.717647F, 0.517647F, 0.529412F, 0.717647F, 0.607843F, 0.576471F,
+            0.372549F, 0.521569F, 0.709804F, 0.592157F, 0.615686F, 0.760784F,
+            0.780392F, 0.717647F, 0.815686F, 0.435294F, 0.807843F, 0.862745F,
+        };
+        static const float kGolden3x2[4 * 5 * 3] = {
+            0.000000F, 0.000000F, 0.000000F, 0.047059F, 0.019608F, 0.011765F,
+            0.121569F, 0.050980F, 0.027451F, 0.196078F, 0.082353F, 0.043137F,
+            0.243137F, 0.101961F, 0.054902F, 0.015686F, 0.027451F, 0.039216F,
+            0.062745F, 0.047059F, 0.050980F, 0.137255F, 0.078431F, 0.066667F,
+            0.211765F, 0.109804F, 0.082353F, 0.258824F, 0.129412F, 0.094118F,
+            0.050980F, 0.086275F, 0.121569F, 0.098039F, 0.105882F, 0.133333F,
+            0.172549F, 0.137255F, 0.149020F, 0.247059F, 0.168627F, 0.164706F,
+            0.294118F, 0.188235F, 0.176471F, 0.066667F, 0.113725F, 0.160784F,
+            0.113725F, 0.133333F, 0.172549F, 0.188235F, 0.164706F, 0.188235F,
+            0.262745F, 0.196078F, 0.203922F, 0.309804F, 0.215686F, 0.215686F,
+        };
+        static const float kGolden5x4[4 * 5 * 3] = {
+            0.000000F, 0.000000F, 0.000000F, 0.121569F, 0.050980F, 0.027451F,
+            0.243137F, 0.101961F, 0.054902F, 0.364706F, 0.152941F, 0.082353F,
+            0.486275F, 0.203922F, 0.109804F, 0.066667F, 0.113725F, 0.160784F,
+            0.188235F, 0.164706F, 0.188235F, 0.309804F, 0.215686F, 0.215686F,
+            0.431373F, 0.266667F, 0.243137F, 0.552941F, 0.317647F, 0.270588F,
+            0.133333F, 0.227451F, 0.321569F, 0.254902F, 0.278431F, 0.349020F,
+            0.376471F, 0.329412F, 0.376471F, 0.498039F, 0.380392F, 0.403922F,
+            0.619608F, 0.431373F, 0.431373F, 0.200000F, 0.341176F, 0.482353F,
+            0.321569F, 0.392157F, 0.509804F, 0.443137F, 0.443137F, 0.537255F,
+            0.564706F, 0.494118F, 0.564706F, 0.686275F, 0.545098F, 0.592157F,
+        };
+        static const float kGolden7x5[3 * 4 * 3] = {
+            0.090196F, 0.074510F, 0.086275F, 0.278431F, 0.152941F, 0.129412F,
+            0.505882F, 0.247059F, 0.176471F, 0.694118F, 0.325490F, 0.219608F,
+            0.196078F, 0.254902F, 0.337255F, 0.384314F, 0.333333F, 0.380392F,
+            0.611765F, 0.427451F, 0.427451F, 0.800000F, 0.505882F, 0.470588F,
+            0.301961F, 0.435294F, 0.588235F, 0.490196F, 0.513725F, 0.631373F,
+            0.717647F, 0.607843F, 0.678431F, 0.905882F, 0.686275F, 0.721569F,
+        };
+        CheckGolden({8, 6, 4, 3, kGolden8x6}, "8x6->4x3 matches PIL golden");
+        CheckGolden({3, 2, 5, 4, kGolden3x2}, "3x2->5x4 matches PIL golden");
+        CheckGolden({5, 4, 5, 4, kGolden5x4}, "5x4->5x4 matches PIL golden");
+        CheckGolden({7, 5, 4, 3, kGolden7x5}, "7x5->4x3 matches PIL golden");
     }
     if (edge_test::failures == 0) {
         std::printf("dfine: all checks passed\n");

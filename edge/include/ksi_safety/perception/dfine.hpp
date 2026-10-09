@@ -26,13 +26,19 @@
 //       order). Scores are NOT sorted.
 //   R6. Label id: raw COCO class index (argmax position). Ontology/class-map
 //       mapping is NOT in scope, so Detection.class_name is left empty.
-//   R7. Preprocessing: direct bilinear resize HWC uint8 RGB -> input_w x
+//   R7. Preprocessing: PIL-compatible resampling HWC uint8 RGB -> input_w x
 //       input_h (do_pad=false means NO letterbox padding — aspect ratio is
 //       NOT preserved), rescale /255, planar CHW float32 (R plane, then G,
 //       then B). do_normalize=false means NO mean/std normalization.
-//       Sampling: sx=(dx+0.5)*src_w/dst_w-0.5 (same for y), edge-clamped
-//       (out-of-range coordinates replicate the edge pixel, weight 0 outside),
-//       float32 arithmetic. Deterministic for identical inputs.
+//       Resampling mirrors PIL/RTDetrImageProcessor geometry: per output
+//       pixel, source center c=(d+0.5)*scale; triangle (BILINEAR) weights
+//       over a support of max(1, scale) (antialias-scaled on downscale);
+//       the window is clipped to the image and weights renormalized. Like
+//       PIL's 8bpc pipeline, the horizontal intermediate is quantized to
+//       uint8 (round-half-up, [0,255] clip) before the vertical pass.
+//       Golden values generated from actual PIL pin this in
+//       tests/test_dfine.cpp. Identity-size input keeps a direct /255 fast
+//       path (provably equivalent: single tap, Clip8(v) == v). Deterministic.
 //   R8. Failure posture: null pointers / non-positive dimensions / invalid
 //       config yield an empty vector (Decode) or false (PreprocessRgb) —
 //       never an exception, never partial output.
@@ -65,7 +71,7 @@ struct DfineConfig {
 // probability in [0, 1].
 bool IsValidDfineConfig(const DfineConfig& config);
 
-// Bilinear-resize + /255 rescale + RGB->CHW planarize into
+// PIL-compatible resample + /255 rescale + RGB->CHW planarize into
 // out_chw[3 * config.input_height * config.input_width] (R plane, G, B).
 // rgb is HWC uint8 RGB of src_width x src_height. Direct resize: no padding.
 // Returns false (no bytes written) on null pointers, non-positive dimensions,
