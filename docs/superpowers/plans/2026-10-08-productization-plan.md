@@ -117,8 +117,10 @@
 | A0 | 개발 환경: JDK17 + Android SDK cmdline-tools + platform/build-tools (+호스트 aarch64 도구 지원 확인) | **완료**(JDK17·adb·Gradle 8.10.2·amd64 컨테이너 에뮬레이션; aapt2는 x86_64 컨테이너 경로) |
 | A1 | `android-rc/` 골격(Kotlin·Gradle) + 빌드·테스트 | **진행** — `rc-core`(Kotlin/JVM) MOP 계약 포팅 + Python 골든 6/6 PASS |
 | A2 | 임무 설정·MOP 클라이언트(기존 계약 재사용) | **진행** — `MissionController`/`MopEndpoint`/`RcStore` 구현, 계약 시험 10종(+MOP 골든 6) PASS |
-| A3 | 로컬 증거·업로드·조회 | 대기 |
+| A3 | 로컬 증거·업로드·조회 | **진행** — 영속 저장(`FileRcStore`: 재시작 복원)·증거 인제스트(`EvidenceIngest`) 완료; 업로드(durable ACK 게이트)·로컬 우선 조회 다음 |
 | H1-now | 장치 재부팅·fs·시계·root ro 점검 | **차단** — dji 계정 polkit/sudo 권한 거부(사용자 콘솔 조치; 루트 fsck 강행·강제 rw 전환 금지) |
+
+- 2026-10-09 **A3-a(로컬 증거) 구현**: `FileRcStore`(append-only NDJSON + blob, java.io/nio — JVM/Android 공용) — **재시작 후 비행·boot·이벤트·아티팩트 바이트·dedup·application 관계 복원 시험 통과**; 아티팩트는 전체 바이트 수신 후에만 노출(부분 노출 금지); malformed chunk는 **ACK 보류**(같은 msg_id 재시도)로 commit-before-ACK 유지; 기록은 idempotent(중복 append 없음). `EvidenceIngest`가 데이터 계열(OBSERVATION/DETECTION_EVENT/FLIGHT_SUMMARY/ARTIFACT_ANNOUNCE/ARTIFACT_CHUNK/HEARTBEAT)을 처리. rc-core 시험 **20/20**(MOP 골든 6·미션 10·증거 4). A3-b(업로드: 서버 durable ACK 전 삭제 금지 / 조회: 로컬 우선) 다음.
 
 - 2026-10-09 **A2 계약(사용자 명확화) 구현**: ① **envelope ACK ≠ 실제 적용 ACK** — 상태는 MISSION_PREPARED/MISSION_APPLIED(또는 digest 일치 MISSION_STATUS)로만 전진, 전송만으로 READY 표시 금지. ② 상태기계 PREPARED→APPLIED→RUNNING→STOPPED(+REJECTED/STATUS_UNKNOWN)·세션 ID=`uuid5("session|flight|boot")`(Python 업로더와 동일 파생). ③ **장애 복구**: 중복 명령(msg_id dedup, 재시작 후에도 유지)·늦은 ACK(unacked 큐만 정리)·재연결 재조정(STATUS_QUERY)·**구버전/늦은 APPLIED 거절**(pending ctx 없음 → ACK+`ignoredStale` 기록, **빈 bundle 레코드 생성 금지** — Python 하네스의 잠재 갭을 닫음; 시도 상관은 bundle digest+pending ctx). ④ session RUN/STOP는 명령 ACK 기반(Edge 로컬 상태). **DJI MOP=전송 수단, KSI Envelope=자체 메시지 계약으로 분리 명시** — Kotlin/Python 일치는 자체 계약 일치이며 실기체·조종기 전송 검증이 아님.
 

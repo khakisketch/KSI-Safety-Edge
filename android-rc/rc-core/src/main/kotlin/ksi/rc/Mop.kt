@@ -38,6 +38,18 @@ object Mop {
         "ARTIFACT_ANNOUNCE", "ARTIFACT_CHUNK", "HEARTBEAT", "ACK",
     )
 
+    /** Control-plane messages handled by the mission controller. */
+    val CONTROL_MESSAGE_TYPES = setOf(
+        "MISSION_PREPARED", "MISSION_APPLY_REJECTED", "MISSION_APPLIED",
+        "MISSION_STATUS",
+    )
+
+    /** Evidence-plane messages handled by the evidence ingest. */
+    val DATA_MESSAGE_TYPES = setOf(
+        "OBSERVATION", "DETECTION_EVENT", "FLIGHT_SUMMARY",
+        "ARTIFACT_ANNOUNCE", "ARTIFACT_CHUNK", "HEARTBEAT",
+    )
+
     private val mapper = ObjectMapper()
 
     /** Public mapper for payload construction (shared JSON semantics). */

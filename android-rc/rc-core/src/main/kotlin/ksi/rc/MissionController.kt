@@ -68,6 +68,8 @@ class MissionController(
     private val bundle: ObjectNode,
     private val store: RcStore,
     private val clock: () -> Long,
+    /** Evidence-plane handler (A3); control types never reach it. */
+    private val dataHandler: ControlHandler? = null,
 ) : ControlHandler {
     val endpoint: MopEndpoint
         get() = endpointRef
@@ -166,7 +168,13 @@ class MissionController(
 
     override fun handle(env: ObjectNode, payload: ObjectNode): String? {
         val boot = env.get("edge_boot_id")?.takeIf { !it.isNull }?.asText()
-        return when (val type = env.get("type").asText()) {
+        val type = env.get("type").asText()
+        if (type in Mop.DATA_MESSAGE_TYPES) {
+            val data = dataHandler
+                ?: return "no evidence handler configured for $type"
+            return data.handle(env, payload)
+        }
+        return when (type) {
             "MISSION_PREPARED" -> {
                 if (payload.get("bundle_sha256")?.asText() != bundleSha) {
                     return "MISSION_PREPARED digest mismatch"
