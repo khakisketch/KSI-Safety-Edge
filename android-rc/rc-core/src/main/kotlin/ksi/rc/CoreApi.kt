@@ -102,6 +102,11 @@ class CoreApi(private val transport: CoreTransport) {
     fun getFlight(flightId: String): ObjectNode =
         jsonRequest("GET", "/flights/$flightId")
 
+    /** Mission snapshot (carries `mission_revision_id` + `content_sha256`;
+     *  the uploader resolves the manifest's mission digest from here). */
+    fun getMissionSnapshot(missionId: String): ObjectNode =
+        jsonRequest("GET", "/missions/$missionId/snapshot")
+
     fun getObservations(flightId: String): ObjectNode =
         getPaginated("/flights/$flightId/observations")
 
