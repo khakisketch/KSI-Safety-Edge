@@ -157,6 +157,7 @@ class MissionController(
 
     fun startSession() {
         check(state == MissionState.APPLIED) { "startSession is not valid from $state" }
+        sessionStopMsgId = null // the newest command governs ACK handling
         sessionStartMsgId =
             endpoint.sendControl("SESSION_START", Mop.json.createObjectNode())
                 .get("msg_id").asText()
@@ -166,6 +167,7 @@ class MissionController(
         check(sessionActive || pendingSession == SessionCommand.START) {
             "no active or pending session to stop"
         }
+        sessionStartMsgId = null // a late START-ACK must not override the stop
         sessionStopMsgId =
             endpoint.sendControl("SESSION_STOP", Mop.json.createObjectNode())
                 .get("msg_id").asText()

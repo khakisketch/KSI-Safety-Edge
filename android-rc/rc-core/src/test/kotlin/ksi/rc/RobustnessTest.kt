@@ -99,6 +99,67 @@ class RobustnessTest {
         assertFailsWith<IOException> { store.nextMsgCounter() }
     }
 
+    @Test
+    fun oversized_and_negative_chunks_are_rejected_without_wedging() {
+        val store = FileRcStore(tempRoot())
+        val bytes = ByteArray(16) { it.toByte() }
+        store.announceArtifact(announce("a-4", bytes), "boot-1")
+        assertFailsWith<IllegalArgumentException> {
+            store.writeChunk("a-4", 1L shl 30, ByteArray(1))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            store.writeChunk("a-4", -1L, ByteArray(1))
+        }
+        // The artifact must still complete with correct chunks afterwards.
+        store.writeChunk("a-4", 0, bytes.copyOfRange(0, 8))
+        store.writeChunk("a-4", 8, bytes.copyOfRange(8, 16))
+        assertContentEquals(bytes, store.artifactBytes("a-4"))
+    }
+
+    @Test
+    fun midfile_corrupt_line_is_skipped() {
+        val root = tempRoot()
+        run {
+            val store = FileRcStore(root)
+            store.storeObservation(observation(), "boot-1")
+            File(root.toFile(), "observations.ndjson")
+                .appendText("this is not json\n")
+            val second = observation()
+            second.put("observation_id", "obs-2")
+            store.storeObservation(second, "boot-1")
+        }
+        val restarted = FileRcStore(root)
+        assertEquals(2, restarted.observationsFor("flt-1").size,
+            "records before and after a corrupt line both survive")
+        assertTrue(restarted.recoveredPartialWrites >= 1)
+    }
+
+    @Test
+    fun replayed_ack_does_not_regress_confirmed_state() {
+        val store = InMemoryRcStore()
+        val controller = MissionController("flt-1", makeBundle(), store, { 0L })
+        val edge = FakeEdge("flt-1", { 0L })
+        controller.prepare()
+        pump(controller.endpoint, edge)
+        controller.apply()
+        pump(controller.endpoint, edge)
+        controller.startSession()
+        pump(controller.endpoint, edge)
+        controller.reconcile()
+        pump(controller.endpoint, edge)
+        assertEquals(MissionState.RUNNING, controller.state)
+
+        // Replay ALL Edge ACKs (duplicate delivery of already-honored acks):
+        val ackRaws = edge.sentHistory.filter { it.contains("\"type\":\"ACK\"") }
+        assertTrue(ackRaws.isNotEmpty())
+        for (raw in ackRaws) {
+            controller.endpoint.onRawEnvelope(raw)
+        }
+        assertEquals(MissionState.RUNNING, controller.state,
+            "a replayed ACK must not resurrect a pending session state")
+        assertTrue(controller.sessionActive)
+    }
+
     // 2) artifact completeness -------------------------------------------------
 
     @Test
@@ -194,6 +255,37 @@ class RobustnessTest {
         assertTrue(recovered is Inbound.Stored,
             "the Edge retry of the same msg_id must succeed once persisting works")
         assertEquals(MissionState.PREPARED, controller.state)
+    }
+
+    @Test
+    fun markprocessed_failure_prevents_ack() {
+        val backing = InMemoryRcStore()
+        var failMarks = true
+        val flaky = object : RcStore by backing {
+            override fun markProcessed(msgId: String) {
+                if (failMarks) throw IOException("disk full (mark)")
+                backing.markProcessed(msgId)
+            }
+        }
+        val controller = MissionController("flt-1", makeBundle(), flaky, { 0L })
+        val payload = Mop.json.createObjectNode()
+        payload.put("bundle_sha256", controller.bundleSha)
+        val env = Mop.makeEnvelope(
+            msgId = Mop.newMsgId("edge", "flt-1", "boot-1", "9"),
+            channel = "CONTROL_RELIABLE", type = "MISSION_PREPARED",
+            flightId = "flt-1", edgeBootId = "boot-1", seq = null, ackOf = null,
+            payload = payload, sentMonotonicNs = 1L,
+        )
+        val failed = controller.endpoint.onRawEnvelope(env.toString())
+        assertTrue(failed is Inbound.Failed)
+        assertTrue((failed as Inbound.Failed).reason.contains("markProcessed"))
+        assertEquals(0, controller.endpoint.ackedCount,
+            "no ACK when the processed marker cannot be persisted")
+
+        failMarks = false
+        val recovered = controller.endpoint.onRawEnvelope(env.toString())
+        assertTrue(recovered is Inbound.Stored)
+        assertEquals(1, controller.endpoint.ackedCount)
     }
 
     // duplicate redelivery re-ACK ----------------------------------------------

@@ -151,6 +151,7 @@ class FakeEdge(
             sentMonotonicNs = clock(),
         )
         outbox.addLast(ackEnv)
+        sentHistory.add(ackEnv.toString())
     }
 }
 

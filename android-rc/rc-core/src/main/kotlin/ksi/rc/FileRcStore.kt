@@ -137,6 +137,17 @@ class FileRcStore(root: Path) : RcStore, EvidenceStore {
     }
 
     override fun writeChunk(artifactId: String, offset: Long, bytes: ByteArray) {
+        if (offset < 0L) {
+            throw IllegalArgumentException("chunk offset must be >= 0")
+        }
+        val declaredSize = artifacts[artifactId]?.get("size_bytes")?.asLong()
+        if (declaredSize != null && offset + bytes.size.toLong() > declaredSize) {
+            // Without this guard an oversized offset extends a sparse file
+            // and the artifact could never become complete again.
+            throw IllegalArgumentException(
+                "chunk range exceeds the announced size of $artifactId",
+            )
+        }
         RandomAccessFile(blobFile(artifactId), "rw").use { raf ->
             raf.seek(offset)
             raf.write(bytes)

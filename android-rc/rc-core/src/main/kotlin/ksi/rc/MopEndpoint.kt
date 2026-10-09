@@ -119,8 +119,12 @@ class MopEndpoint(
         }
         if (type == "ACK") {
             val ackOf = payload.get("ack_of")?.asText() ?: ""
-            unacked.remove(ackOf)
-            onAcked?.invoke(ackOf)
+            // Only a live pending entry may drive state callbacks: a replayed
+            // or late ACK for an already-honored message must not regress
+            // confirmed state (e.g. resurrect a START pending after RUNNING).
+            if (unacked.remove(ackOf) != null) {
+                onAcked?.invoke(ackOf)
+            }
             return Inbound.Acked(ackOf)
         }
         // Persist BEFORE the domain handler and the ACK (commit-before-ACK);
