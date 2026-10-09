@@ -34,7 +34,7 @@
 |---|---|---|---|
 | 판단·검증 | **W5 완료·검증(C15)** — 순수 로직·합성 GT | 실데이터 연결은 기체/GPS GT 확보 후 | 없음(실데이터만 대기) |
 | 사용 흐름(RC) | 미착수 — 환경 조사 완료(2026-10-08): JDK 8(부족)·adb/sdkmanager/gradle 부재, dl.google.com 접근 가능, 디스크 2.9T 여유 | JDK17+cmdline-tools 설치 승인 시 착수 | 설치 승인·RC 접근 경로 |
-| 실제 인식(AI) | W6-A~W8(C16~C19) + ONNX export + TRT engine(fp16) + W9 PASS + W9-FU2(C25) + W10(C27) + **R1~R4 완료(C28~C31: 공통 러너·Tracking·Telemetry·Spatial)** | **R5 End-to-End**(사건·증거·재현성·성능 + Replay/PSDK 동일 코드 입증; RC Emulator E2E vs 실장비 E2E 구분) | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
+| 실제 인식(AI) | **R1~R5 완료(C28~C32)** — 공통 러너·Tracking 출처·Telemetry 정합·Spatial 관측·**RC Emulator E2E·동일 코드 3경로 입증·재현성/성능(-O2 tick ~35ms)** | 실장비 E2E·DPK 설치(기체 세션)·대표 영상 평가·정책 임계·calibration | 대표 영상(녹화) 없음(개발은 corpus로 가능); Android는 별도 줄기 |
 
 ## 4. 첫 현장시험 범위 (추천안 — 사용자 확정 대기)
 
@@ -101,6 +101,6 @@
 | R2 | Tracking 출처(관측/미관측/유지) 기록·주기 분리 | ID 연속성·소실·재획득·epoch 분리; IoU 마지막 bbox 유지를 새 측정/움직임 추적으로 기록하지 않음 | **완료·검증(C29)** |
 | R3 | Telemetry Replay(도착 순서·미래 미참조) | 누락·지연·시계 불일치·동일값 재수신 구분; 검증 등급 상향 금지 | **완료·검증(C30)** |
 | R4 | Spatial Observation(발점/footprint 후보 → 기존 투영·거리·구역) | 조건 부족 시 Detection 유지·Spatial만 보류; 합성 GT는 평가에만 | **완료·검증(C31)** |
-| R5 | End-to-End(사건·증거·재현성·성능) + Replay/PSDK 동일 코드 입증 | RC Emulator E2E vs 실장비 E2E 구분; 실장비 전용 항목은 미검증으로 명시 | 대기 |
+| R5 | End-to-End(사건·증거·재현성·성능) + Replay/PSDK 동일 코드 입증 | RC Emulator E2E vs 실장비 E2E 구분; 실장비 전용 항목은 미검증으로 명시 | **완료·검증(C32)** |
 
 - 각 단계: 구현 → 테스트(호스트 14그룹+신규, ASan, 장치) → 독립 검증 → 커밋(C28~) → 원장 증거 기록.
