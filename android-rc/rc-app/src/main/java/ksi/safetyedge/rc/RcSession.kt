@@ -53,6 +53,11 @@ class RcSession(
     val bg: java.util.concurrent.ExecutorService =
         Executors.newSingleThreadExecutor()
 
+    /** Guards MopEndpoint.outbox/unacked: the retransmission TIMER runs on
+     *  a background executor while button actions and inbound bytes run on
+     *  the UI thread — unsynchronized mutation could crash or lose sends. */
+    private val outboundLock = Any()
+
     init {
         // Restart restore: an unfinished flight whose bundle is in the local
         // mission store re-attaches its controller automatically. NOTE: the
@@ -140,7 +145,7 @@ class RcSession(
     }
 
     /** Outbound: drain endpoint outbox into the link (unsent stays queued). */
-    fun pumpOutbound(): Int {
+    fun pumpOutbound(): Int = synchronized(outboundLock) {
         val endpoint = controller?.endpoint ?: return 0
         var sent = 0
         while (true) {
@@ -156,7 +161,7 @@ class RcSession(
     /** Outbound retry: re-send unacked envelopes that were ALREADY sent
      *  (same msg_id, same bytes). Envelopes still waiting in the outbox are
      *  skipped — they go out via [pumpOutbound] exactly once. */
-    fun retryUnacked(): Int {
+    fun retryUnacked(): Int = synchronized(outboundLock) {
         var sent = 0
         val endpoint = controller?.endpoint ?: return 0
         val pendingIds = endpoint.outbox.map { it.get("msg_id").asText() }.toSet()
@@ -172,7 +177,7 @@ class RcSession(
      *  was never sent, then re-sends already-sent-but-unacked envelopes —
      *  the same envelope is never double-sent within one tick. Never drops
      *  bytes on a dead link. */
-    fun retransmitTick(): Int {
+    fun retransmitTick(): Int = synchronized(outboundLock) {
         if (link.state != DroneLink.State.CONNECTED) return 0
         val endpoint = controller?.endpoint ?: return 0
         val freshIds = endpoint.outbox.map { it.get("msg_id").asText() }.toSet()
@@ -185,8 +190,9 @@ class RcSession(
         return sent
     }
 
-    /** Inbound: Edge/link bytes through the real endpoint ingest path. */
-    fun onLinkBytes(bytes: ByteArray) {
+    /** Inbound: Edge/link bytes through the real endpoint ingest path.
+     *  Shares [outboundLock]: ACK handling mutates the unacked queue. */
+    fun onLinkBytes(bytes: ByteArray) = synchronized(outboundLock) {
         val endpoint = controller?.endpoint ?: run {
             lastError = "no mission controller (start a flight first)"
             return

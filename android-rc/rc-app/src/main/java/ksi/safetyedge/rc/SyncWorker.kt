@@ -1,6 +1,7 @@
 package ksi.safetyedge.rc
 
 import android.content.Context
+import android.util.Log
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.ExistingWorkPolicy
@@ -48,6 +49,11 @@ class SyncWorker(
             return Result.success(workDataOf(KEY_STATE to "SKIPPED"))
         }
         val outcome = coordinator.syncOnce(spec)
+        Log.i(
+            "SyncWorker",
+            "flight=${flightId.take(8)} sync -> ${outcome.state}" +
+                (outcome.detail?.let { " ($it)" } ?: ""),
+        )
         return when (SyncPolicy.decisionFor(outcome.state)) {
             SyncPolicy.Decision.DONE ->
                 Result.success(workDataOf(KEY_STATE to outcome.state))
