@@ -28,7 +28,7 @@ class FileRcStore(
      * converted (no verified cross-device clock mapping exists before H1).
      */
     private val wallClock: () -> String = { java.time.Instant.now().toString() },
-) : UploadStore, MissionStore {
+) : RcFullStore {
     private val rootDir = root.toFile()
     private val messagesFile = File(rootDir, "messages.ndjson")
     private val processedFile = File(rootDir, "processed.ndjson")
@@ -48,6 +48,7 @@ class FileRcStore(
     private val zoneRevisionsFile = File(rootDir, "zone_revisions.ndjson")
     private val missionSnapshotsFile = File(rootDir, "mission_snapshots.ndjson")
     private val bundlesFile = File(rootDir, "bundles.ndjson")
+    private val annotationsFile = File(rootDir, "annotations.ndjson")
     private val blobsDir = File(rootDir, "blobs")
 
     private data class BootNode(
@@ -71,6 +72,7 @@ class FileRcStore(
     private val zoneRevisionsById = linkedMapOf<String, ObjectNode>()
     private val snapshotsByRevision = linkedMapOf<String, ObjectNode>()
     private val bundlesById = linkedMapOf<String, ObjectNode>()
+    private val annotationsById = linkedMapOf<String, ObjectNode>()
 
     /** Received data-plane seqs per (edge_boot_id, channel); rebuilt from
      *  messages.ndjson at construction (restart contract). */
@@ -148,6 +150,10 @@ class FileRcStore(
         }
         for (node in readNodes(bundlesFile)) {
             node.get("bundle_id")?.asText()?.let { bundlesById.putIfAbsent(it, node) }
+        }
+        for (node in readNodes(annotationsFile)) {
+            node.get("annotation_id")?.asText()
+                ?.let { annotationsById.putIfAbsent(it, node) }
         }
         // Rebuild the seq/boot indexes from the durable envelopes (a restart
         // must not lose the bookkeeping the manifest depends on).
@@ -279,6 +285,20 @@ class FileRcStore(
         receipt.put("length", bytes.size.toLong())
         durableAppend(chunksFile, Mop.json.writeValueAsString(receipt) + "\n")
         addRange(artifactId, offset, bytes.size.toLong())
+    }
+
+    @Synchronized
+    override fun isArtifactComplete(artifactId: String): Boolean {
+        val announce = artifacts[artifactId]?.node ?: return false
+        val declaredSize = announce.get("size_bytes")?.asLong() ?: return false
+        val ranges = coverage[artifactId] ?: return false
+        if (ranges.size != 1 || ranges[0].first != 0L ||
+            ranges[0].last != declaredSize - 1L
+        ) {
+            return false
+        }
+        val file = blobFile(artifactId)
+        return file.exists() && file.length() == declaredSize
     }
 
     @Synchronized
@@ -596,6 +616,20 @@ class FileRcStore(
 
     @Synchronized
     override fun missionBundles(): List<ObjectNode> = bundlesById.values.toList()
+
+    // -- UploadStore: operator annotations --------------------------------------
+
+    @Synchronized
+    override fun queueAnnotation(annotation: ObjectNode) {
+        val id = annotation.get("annotation_id")?.asText() ?: return
+        if (annotationsById.putIfAbsent(id, annotation.deepCopy()) == null) {
+            appendNode(annotationsFile, annotation)
+        }
+    }
+
+    @Synchronized
+    override fun annotationsFor(eventId: String): List<ObjectNode> =
+        annotationsById.values.filter { it.get("event_id")?.asText() == eventId }
 
     @Synchronized
     override fun bootsFor(flightId: String): List<String> =

@@ -68,7 +68,9 @@ object ObservationModel {
                 evidence = artifactIds.map { id ->
                     EvidenceLink(
                         artifactId = id,
-                        complete = store.artifactBytes(id) != null,
+                        // Cheap "all bytes received" level — the verified
+                        // hash level is artifactBytes (viewer/upload path).
+                        complete = store.isArtifactComplete(id),
                         synced = store.isArtifactSynced(id),
                     )
                 },

@@ -271,6 +271,130 @@
             android:layout_height="wrap_content"
             android:text="@string/btn_refresh_evidence" />
 
+        <!-- A7: flight history -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/section_history"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:paddingTop="16dp" />
+
+        <TextView
+            android:id="@+id/tvFlights"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="13sp"
+            android:typeface="monospace" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/btnFlightPrev"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_flight_prev" />
+            <Button
+                android:id="@+id/btnFlightNext"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_flight_next" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvFlightDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="13sp" />
+
+        <TextView
+            android:id="@+id/tvFlightEvents"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="13sp"
+            android:typeface="monospace"
+            android:paddingTop="4dp" />
+
+        <TextView
+            android:id="@+id/tvFlightArtifacts"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="13sp"
+            android:typeface="monospace"
+            android:paddingTop="4dp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/btnEventPrev"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_event_prev" />
+            <Button
+                android:id="@+id/btnEventNext"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_event_next" />
+            <Button
+                android:id="@+id/btnFlagFalsePositive"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_flag_false_positive" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvEventDetail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="13sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <Button
+                android:id="@+id/btnViewEvidence"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_view_evidence" />
+            <Button
+                android:id="@+id/btnFetchEvidence"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/btn_fetch_evidence" />
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/ivEvidence"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/label_evidence_image"
+            android:scaleType="fitCenter" />
+
+        <TextView
+            android:id="@+id/tvEvidenceMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="13sp" />
+
         <!-- 4. Sync -->
         <TextView
             android:layout_width="match_parent"

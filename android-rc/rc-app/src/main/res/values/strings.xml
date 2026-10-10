@@ -25,6 +25,16 @@
     <string name="btn_demo_tick">Demo tick</string>
     <string name="btn_demo_new_flight">New demo flight</string>
     <string name="btn_refresh_evidence">Refresh (local)</string>
+    <string name="section_history">5. 비행 기록 (offline — 로컬 우선)</string>
+    <string name="btn_flight_prev">이전 비행</string>
+    <string name="btn_flight_next">다음 비행</string>
+    <string name="btn_event_prev">이전 사건</string>
+    <string name="btn_event_next">다음 사건</string>
+    <string name="btn_flag_false_positive">오탐 의심 표시</string>
+    <string name="btn_unflag_false_positive">오탐 의심 해제</string>
+    <string name="btn_view_evidence">증거 보기(로컬)</string>
+    <string name="btn_fetch_evidence">서버에서 가져오기</string>
+    <string name="label_evidence_image">선택된 사건의 증거 미리보기</string>
     <string name="hint_core_url">Core URL, e.g. http://192.168.1.5:8000/api/v1/edge</string>
     <string name="hint_core_token">Core token (rc scope)</string>
     <string name="btn_save_core">Save Core config</string>

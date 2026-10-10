@@ -24,6 +24,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvVideo: TextView
     private lateinit var tvAi: TextView
     private lateinit var tvEvents: TextView
+    private lateinit var tvFlights: TextView
+    private lateinit var tvFlightDetail: TextView
+    private lateinit var tvFlightEvents: TextView
+    private lateinit var tvFlightArtifacts: TextView
+    private lateinit var tvEventDetail: TextView
+    private lateinit var tvEvidenceMeta: TextView
+    private lateinit var ivEvidence: android.widget.ImageView
+    private lateinit var btnFlagFalsePositive: Button
     private lateinit var tvDemo: TextView
     private lateinit var tvEvidence: TextView
     private lateinit var tvSync: TextView
@@ -37,6 +45,10 @@ class MainActivity : AppCompatActivity() {
     private var selectedBundleId: String? = null
     private var videoFrames = 0L
     private var eventGeneration = 0
+    private var selectedFlightId: String? = null
+    private var selectedEventRows: List<FlightHistoryModel.EventRow> = emptyList()
+    private var selectedEventIndex = 0
+    private var historyGeneration = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +64,14 @@ class MainActivity : AppCompatActivity() {
         tvVideo = findViewById(R.id.tvVideo)
         tvAi = findViewById(R.id.tvAi)
         tvEvents = findViewById(R.id.tvEvents)
+        tvFlights = findViewById(R.id.tvFlights)
+        tvFlightDetail = findViewById(R.id.tvFlightDetail)
+        tvFlightEvents = findViewById(R.id.tvFlightEvents)
+        tvFlightArtifacts = findViewById(R.id.tvFlightArtifacts)
+        tvEventDetail = findViewById(R.id.tvEventDetail)
+        tvEvidenceMeta = findViewById(R.id.tvEvidenceMeta)
+        ivEvidence = findViewById(R.id.ivEvidence)
+        btnFlagFalsePositive = findViewById(R.id.btnFlagFalsePositive)
         tvDemo = findViewById(R.id.tvDemo)
         tvEvidence = findViewById(R.id.tvEvidence)
         tvSync = findViewById(R.id.tvSync)
@@ -111,6 +131,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         on(R.id.btnRefreshEvidence) { refreshEvidence() }
+
+        // -- A7 flight history
+        on(R.id.btnFlightPrev) { stepFlight(-1) }
+        on(R.id.btnFlightNext) { stepFlight(+1) }
+        on(R.id.btnEventPrev) { stepEvent(-1) }
+        on(R.id.btnEventNext) { stepEvent(+1) }
+        on(R.id.btnFlagFalsePositive) { toggleFalsePositive() }
+        on(R.id.btnViewEvidence) { viewEvidence(localOnly = true) }
+        on(R.id.btnFetchEvidence) { viewEvidence(localOnly = false) }
 
         on(R.id.btnSaveCore) {
             app.config.coreUrl = etCoreUrl.text.toString()
@@ -224,6 +253,7 @@ class MainActivity : AppCompatActivity() {
         tvVideo.text = "video[$videoSim]=${app.videoSource.state} frames=$videoFrames\n$overlay"
 
         refreshObservation(flight?.get("flight_id")?.asText())
+        refreshHistory()
 
         val demoStore = demo.session.store
         val demoFlight = demo.activeFlight()
@@ -309,7 +339,7 @@ class MainActivity : AppCompatActivity() {
                             append(
                                 " · " + when {
                                     card.evidenceSynced -> "증거: 동기화됨"
-                                    card.evidenceComplete -> "증거: 로컬 저장 완료(미동기화)"
+                                    card.evidenceComplete -> "증거: 수신 완료(미동기화)"
                                     else -> "증거: 미완료"
                                 },
                             )
@@ -323,6 +353,270 @@ class MainActivity : AppCompatActivity() {
                     tvEvents.text = text
                 }
             }
+        }
+    }
+
+    // -- A7 flight history ------------------------------------------------------
+
+    private fun stepFlight(direction: Int) {
+        val rows = FlightHistoryModel.flights(session.store)
+        if (rows.isEmpty()) {
+            show("no flights recorded")
+            return
+        }
+        val current = rows.indexOfFirst { it.flightId == selectedFlightId }
+        val next = ((current.takeIf { it >= 0 } ?: 0) + direction)
+            .coerceIn(0, rows.size - 1)
+        selectedFlightId = rows[next].flightId
+        selectedEventIndex = 0
+        refreshHistory()
+    }
+
+    private fun stepEvent(direction: Int) {
+        if (selectedEventRows.isEmpty()) {
+            show("this flight has no events")
+            return
+        }
+        selectedEventIndex = (selectedEventIndex + direction)
+            .coerceIn(0, selectedEventRows.size - 1)
+        refreshEventSelection()
+    }
+
+    private fun toggleFalsePositive() {
+        val row = selectedEventRows.getOrNull(selectedEventIndex) ?: run {
+            show("select an event first")
+            return
+        }
+        val flightId = selectedFlightId ?: return
+        try {
+            if (row.effectiveAnnotation == FlightHistoryModel.ANNOTATION_FALSE_POSITIVE) {
+                val target = session.store.annotationsFor(row.card.eventId)
+                    .lastOrNull {
+                        it.get("annotation_type")?.asText() ==
+                            FlightHistoryModel.ANNOTATION_FALSE_POSITIVE
+                    }
+                if (target == null) {
+                    show("annotation record missing; nothing to revoke")
+                    return
+                }
+                session.store.queueAnnotation(
+                    FlightHistoryModel.revokePrevious(target, session.rcDeviceId, ReceiptClock.now()),
+                )
+                show("오탐 의심 해제 — REVOKE_PREVIOUS 기록 추가 (원 기록은 보존)")
+            } else {
+                session.store.queueAnnotation(
+                    FlightHistoryModel.falsePositiveAnnotation(
+                        eventId = row.card.eventId,
+                        flightId = flightId,
+                        deviceId = session.rcDeviceId,
+                        artifactIds = row.card.evidence.map { it.artifactId },
+                        createdAtLocal = ReceiptClock.now(),
+                    ),
+                )
+                show("오탐 의심 표시 — 새 주석 기록 추가 (탐지/증거는 수정되지 않음)")
+            }
+        } catch (exc: Exception) {
+            show("annotation failed: ${exc.message}")
+        }
+        refreshHistory()
+    }
+
+    private fun viewEvidence(localOnly: Boolean) {
+        val row = selectedEventRows.getOrNull(selectedEventIndex) ?: run {
+            show("select an event first")
+            return
+        }
+        val artifactId = row.card.evidence.firstOrNull()?.artifactId ?: run {
+            show("this event has no linked evidence")
+            return
+        }
+        val query = session.query()
+        if (!localOnly && query == null) {
+            show("Core not configured (server fetch unavailable)")
+            return
+        }
+        session.bg.execute {
+            try {
+                val slice = if (localOnly) {
+                    val local = session.store.artifactBytes(artifactId)
+                    if (local == null) {
+                        runOnUiThread {
+                            show("$artifactId: 로컬 수신 불완전/미검증 — 서버 가져오기 사용")
+                        }
+                        return@execute
+                    }
+                    EvidenceSource.LOCAL to local
+                } else {
+                    val fetched = query!!.artifactBytes(artifactId)
+                    if (fetched == null) {
+                        runOnUiThread { show("$artifactId: 로컬·서버 모두 없음") }
+                        return@execute
+                    }
+                    fetched.source to fetched.items
+                }
+                val (source, bytes) = slice
+                val bitmap = android.graphics.BitmapFactory.decodeByteArray(
+                    bytes, 0, bytes.size,
+                )
+                runOnUiThread {
+                    if (bitmap != null) {
+                        ivEvidence.setImageBitmap(bitmap)
+                        tvEvidenceMeta.text =
+                            "evidence ${artifactId.take(8)} ${bytes.size}B source=$source (이미지 표시)"
+                    } else {
+                        ivEvidence.setImageDrawable(null)
+                        tvEvidenceMeta.text =
+                            "evidence ${artifactId.take(8)} ${bytes.size}B source=$source (이미지 아님 — 메타만)"
+                    }
+                }
+            } catch (exc: Exception) {
+                runOnUiThread { show("evidence load failed: ${exc.message}") }
+            }
+        }
+    }
+
+    private fun refreshHistory() {
+        val generation = ++historyGeneration
+        session.bg.execute {
+            val rows = FlightHistoryModel.flights(session.store)
+            val selected = selectedFlightId?.takeIf { id ->
+                rows.any { it.flightId == id }
+            } ?: rows.firstOrNull()?.flightId
+            val listText = buildString {
+                if (rows.isEmpty()) {
+                    append("no flights recorded yet")
+                } else {
+                    rows.forEachIndexed { index, row ->
+                        append(if (row.flightId == selected) "▶ " else "   ")
+                        append("[$index] ${row.flightId.take(8)} ${row.state}")
+                        append(" obs=${row.observationCount} ev=${row.eventCount}")
+                        append("(${row.detectionOnlyCount}탐지/${row.candidateCount}후보)")
+                        append(" evid=${row.artifactCompleteCount}/${row.artifactCount}")
+                        append(" synced=${row.artifactSyncedCount}")
+                        if (row.falsePositiveCount > 0) append(" 오탐의심=${row.falsePositiveCount}")
+                        append(" ${row.startedAtUtc?.take(19) ?: "-"}(수신)")
+                        if (index < rows.size - 1) append("\n")
+                    }
+                }
+            }
+            val detail = selected?.let { FlightHistoryModel.detail(session.store, it) }
+            val detailText = detail?.let { renderDetail(it) } ?: "-"
+            val eventsText = detail?.let { renderFlightEvents(it) } ?: "-"
+            val artifactsText = detail?.let { renderArtifacts(it) } ?: "-"
+            runOnUiThread {
+                if (generation != historyGeneration || isDestroyed) return@runOnUiThread
+                selectedFlightId = selected
+                selectedEventRows = detail?.events ?: emptyList()
+                if (selectedEventRows.isEmpty()) {
+                    selectedEventIndex = 0
+                } else {
+                    selectedEventIndex = selectedEventIndex.coerceIn(0, selectedEventRows.size - 1)
+                }
+                tvFlights.text = listText
+                tvFlightDetail.text = detailText
+                tvFlightEvents.text = eventsText
+                tvFlightArtifacts.text = artifactsText
+                refreshEventSelection()
+            }
+        }
+    }
+
+    private fun renderDetail(detail: FlightHistoryModel.FlightDetail): String {
+        val row = detail.row
+        return buildString {
+            append("flight ${row.flightId.take(8)} state=${row.state}\n")
+            append("현장 ${row.siteId.take(8)}")
+            if (row.siteName != null) append(" (${row.siteName})")
+            append(" 미션rev=${row.missionRevisionId.take(8)} ")
+            append("bundle=${row.bundleSha256.take(8)}\n")
+            append("시간(수신 기준): start=${row.startedAtUtc ?: "-"} ")
+            append("end=${row.endedAtUtc ?: "-"} lastData=${row.lastReceivedUtc ?: "-"}\n")
+            append("위험구역 핀: ")
+            if (detail.zonePins.isEmpty()) {
+                append("none")
+            } else {
+                detail.zonePins.forEach { pin ->
+                    append("[${pin.ruleKind ?: "?"} ${pin.revisionId.take(8)}")
+                    append(if (pin.stored) " 저장됨]" else " 캐시없음]")
+                    append(" ")
+                }
+            }
+            append("\n관측/공백: obs=${row.observationCount} ")
+            append("aiUptime=${row.aiUptimeRatio ?: "-"} ")
+            append("covered=${row.coveredFrames ?: "-"} skipped=${row.skippedFrames ?: "-"} ")
+            append("MOP갭=${row.mopGapCount} summary=${if (detail.summaryPresent) "yes" else "none"}")
+        }
+    }
+
+    private fun renderFlightEvents(detail: FlightHistoryModel.FlightDetail): String =
+        buildString {
+            if (detail.events.isEmpty()) {
+                append("사건 0건 — 정상적인 비행 기록 (AI가 분석했지만 사건이 없을 수 있음)")
+            } else {
+                detail.events.forEachIndexed { index, row ->
+                    append(if (index == selectedEventIndex) "▶ " else "   ")
+                    append("[$index] [${row.card.mode}")
+                    append(if (row.card.detectionOnly) "·관측]" else "·위험후보(경고 아님)]")
+                    append(" ${row.card.eventType} q=${row.card.observationQuality}")
+                    if (row.card.evidence.isNotEmpty()) {
+                        append(" 증거:${row.card.evidence.count { it.complete }}/${row.card.evidence.size}수신")
+                        if (row.card.evidenceSynced) append("·동기화")
+                    }
+                    if (row.effectiveAnnotation == FlightHistoryModel.ANNOTATION_FALSE_POSITIVE) {
+                        append(" · 오탐 의심")
+                    } else if (row.effectiveAnnotation == FlightHistoryModel.ANNOTATION_NEEDS_REVIEW) {
+                        append(" · 검토 필요")
+                    }
+                    if (index < detail.events.size - 1) append("\n")
+                }
+            }
+        }
+
+    private fun renderArtifacts(detail: FlightHistoryModel.FlightDetail): String =
+        buildString {
+            if (detail.artifacts.isEmpty()) {
+                append("증거 없음")
+            } else {
+                detail.artifacts.forEachIndexed { index, artifact ->
+                    append("${artifact.artifactId.take(8)} ${artifact.mediaType} ")
+                    append("${artifact.sizeBytes}B ")
+                    append("수신=${artifact.complete} synced=${artifact.synced}")
+                    if (index < detail.artifacts.size - 1) append("\n")
+                }
+            }
+        }
+
+    private fun refreshEventSelection() {
+        val row = selectedEventRows.getOrNull(selectedEventIndex)
+        if (row == null) {
+            tvEventDetail.text = "no event selected"
+            btnFlagFalsePositive.text = getString(R.string.btn_flag_false_positive)
+            btnFlagFalsePositive.isEnabled = false
+            return
+        }
+        btnFlagFalsePositive.isEnabled = true
+        btnFlagFalsePositive.text = if (
+            row.effectiveAnnotation == FlightHistoryModel.ANNOTATION_FALSE_POSITIVE
+        ) {
+            getString(R.string.btn_unflag_false_positive)
+        } else {
+            getString(R.string.btn_flag_false_positive)
+        }
+        tvEventDetail.text = buildString {
+            append("event=${row.card.eventId.take(8)} ${row.card.eventType} ")
+            append("mode=${row.card.mode} q=${row.card.observationQuality}\n")
+            append("edge_monotonic_ns=${row.card.detectedAtEdgeNs} (Edge 도메인 — UTC 변환 안 함)\n")
+            append("증거: ")
+            if (row.card.evidence.isEmpty()) {
+                append("없음")
+            } else {
+                row.card.evidence.forEach { link ->
+                    append("[${link.artifactId.take(8)} ")
+                    append("수신=${link.complete} synced=${link.synced}] ")
+                }
+            }
+            append("\n주석 기록=${row.annotationCount} ")
+            append("유효표시=${row.effectiveAnnotation ?: "없음"} (append-only)")
         }
     }
 

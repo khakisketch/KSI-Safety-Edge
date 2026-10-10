@@ -27,7 +27,26 @@ interface UploadStore : RcStore, EvidenceStore {
     /** Server-confirmed durable storage (COMMITTED ingest only). */
     fun markArtifactSynced(artifactId: String)
     fun isArtifactSynced(artifactId: String): Boolean
+
+    // -- A7: operator annotations (append-only local queue) --------------------
+    // The RC never deletes or rewrites a detection/event: a "false positive
+    // suspected" mark is a NEW operator-annotation record; undo is a
+    // REVOKE_PREVIOUS record that supersedes it (server contract).
+
+    /** Idempotent by annotation_id. */
+    fun queueAnnotation(annotation: ObjectNode)
+
+    /** Local annotations for an event, insertion order (oldest first). */
+    fun annotationsFor(eventId: String): List<ObjectNode>
 }
+
+/**
+ * The full RC store surface: evidence/upload capabilities PLUS mission
+ * cache and flight records. [FileRcStore] is the single implementation;
+ * components that need both sides (e.g. the app's flight-history model)
+ * depend on this instead of two parameters.
+ */
+interface RcFullStore : UploadStore, MissionStore
 
 /**
  * Flight-level inputs the uploader cannot derive from the RC store: the

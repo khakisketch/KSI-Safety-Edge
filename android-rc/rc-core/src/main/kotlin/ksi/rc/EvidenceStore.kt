@@ -25,6 +25,15 @@ interface EvidenceStore {
     /** Assembled bytes when every declared byte has been written. */
     fun artifactBytes(artifactId: String): ByteArray?
 
+    /**
+     * CHEAP completeness (list rendering): every declared byte has been
+     * received (range coverage == [0,size) and the file length matches).
+     * This does NOT hash the content — [artifactBytes] is the verified
+     * level (coverage + size + sha256) used by viewers and uploads. Both
+     * levels are exposed on purpose so lists never pretend one is the other.
+     */
+    fun isArtifactComplete(artifactId: String): Boolean
+
     fun observationsFor(flightId: String): List<ObjectNode>
     fun eventsFor(flightId: String): List<ObjectNode>
     fun summariesFor(flightId: String): List<ObjectNode>

@@ -111,6 +111,26 @@ class ObservationModelTest {
     }
 
     @Test
+    fun received_vs_hash_verified_levels_are_distinct() {
+        val store = store()
+        val bytes = ByteArray(8) { it.toByte() }
+        val lying = Mop.json.createObjectNode()
+        lying.put("artifact_id", "a-lying")
+        lying.put("flight_id", flight)
+        lying.put("sha256", "ab".repeat(32)) // declared hash does NOT match
+        lying.put("size_bytes", 8L)
+        store.announceArtifact(lying, "boot")
+        store.writeChunk("a-lying", 0, bytes)
+        store.storeEvent(event("e2", "DETECTED_ONLY", listOf("a-lying")), "boot")
+
+        // List level: all bytes received -> "complete" (cheap).
+        val link = ObservationModel.eventCards(store, flight).single().evidence.single()
+        assertTrue(link.complete)
+        // Verified level: the hash level refuses the mismatched content.
+        assertNull(store.artifactBytes("a-lying"))
+    }
+
+    @Test
     fun last_received_utc_uses_the_newest_timestamp_across_record_kinds() {
         var now = "2026-10-10T02:00:01Z"
         val store = FileRcStore(
