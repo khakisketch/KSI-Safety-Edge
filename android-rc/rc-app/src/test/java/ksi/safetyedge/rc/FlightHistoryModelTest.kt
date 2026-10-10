@@ -139,15 +139,18 @@ class FlightHistoryModelTest {
 
     @Test
     fun false_positive_annotation_matches_the_contract_fields() {
+        val eventUuid = "00000000-0000-4000-8000-0000000000e1"
+        val artifactA = "00000000-0000-4000-8000-0000000000f1"
+        val artifactB = "00000000-0000-4000-8000-0000000000f2"
         val mark = FlightHistoryModel.falsePositiveAnnotation(
-            eventId = "e-1",
+            eventId = eventUuid,
             flightId = flightA,
             deviceId = deviceId,
-            artifactIds = listOf("a-1", "a-2"),
+            artifactIds = listOf(artifactA, artifactB),
             createdAtLocal = fixedUtc,
         )
         assertEquals(1, mark.get("schema_version").asInt())
-        assertEquals("e-1", mark.get("event_id").asText())
+        assertEquals(eventUuid, mark.get("event_id").asText())
         assertEquals(flightA, mark.get("flight_id").asText())
         assertEquals(deviceId, mark.get("actor_id").asText())
         assertEquals(deviceId, mark.get("client_id").asText())
@@ -159,8 +162,24 @@ class FlightHistoryModelTest {
         assertEquals(2, mark.get("evidence_ids").size())
         assertEquals(fixedUtc, mark.get("created_at_local").asText())
         assertTrue(mark.get("supersedes_annotation_id").isNull)
-        // annotation_id must be a uuid.
+        // Schema FACETS, not just presence: uuid ids + RFC3339 time must
+        // parse — a builder emitting malformed ids would fail here.
         java.util.UUID.fromString(mark.get("annotation_id").asText())
+        java.util.UUID.fromString(mark.get("event_id").asText())
+        java.util.UUID.fromString(mark.get("flight_id").asText())
+        java.util.UUID.fromString(mark.get("actor_id").asText())
+        java.util.UUID.fromString(mark.get("client_id").asText())
+        mark.get("evidence_ids").forEach {
+            java.util.UUID.fromString(it.asText())
+        }
+        java.time.Instant.parse(mark.get("created_at_local").asText())
+
+        val revoke = FlightHistoryModel.revokePrevious(mark, deviceId, fixedUtc)
+        assertEquals(
+            mark.get("annotation_id").asText(),
+            revoke.get("supersedes_annotation_id").asText(),
+        )
+        java.util.UUID.fromString(revoke.get("supersedes_annotation_id").asText())
     }
 
     @Test

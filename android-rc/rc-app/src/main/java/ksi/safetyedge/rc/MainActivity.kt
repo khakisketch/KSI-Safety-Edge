@@ -388,37 +388,41 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val flightId = selectedFlightId ?: return
-        try {
-            if (row.effectiveAnnotation == FlightHistoryModel.ANNOTATION_FALSE_POSITIVE) {
-                val target = session.store.annotationsFor(row.card.eventId)
-                    .lastOrNull {
+        // Disk append + chain fold run off the UI thread; views update on it.
+        session.bg.execute {
+            try {
+                val records = session.store.annotationsFor(row.card.eventId)
+                val effective = FlightHistoryModel.effectiveAnnotation(records)
+                val message = if (effective == FlightHistoryModel.ANNOTATION_FALSE_POSITIVE) {
+                    val target = records.lastOrNull {
                         it.get("annotation_type")?.asText() ==
                             FlightHistoryModel.ANNOTATION_FALSE_POSITIVE
-                    }
-                if (target == null) {
-                    show("annotation record missing; nothing to revoke")
-                    return
+                    } ?: throw IllegalStateException("annotation record missing; nothing to revoke")
+                    session.store.queueAnnotation(
+                        FlightHistoryModel.revokePrevious(target, session.rcDeviceId, ReceiptClock.now()),
+                    )
+                    "오탐 의심 해제 — REVOKE_PREVIOUS 기록 추가 (원 기록은 보존)"
+                } else {
+                    session.store.queueAnnotation(
+                        FlightHistoryModel.falsePositiveAnnotation(
+                            eventId = row.card.eventId,
+                            flightId = flightId,
+                            deviceId = session.rcDeviceId,
+                            artifactIds = row.card.evidence.map { it.artifactId },
+                            createdAtLocal = ReceiptClock.now(),
+                        ),
+                    )
+                    "오탐 의심 표시 — 새 주석 기록 추가 (탐지/증거는 수정되지 않음)"
                 }
-                session.store.queueAnnotation(
-                    FlightHistoryModel.revokePrevious(target, session.rcDeviceId, ReceiptClock.now()),
-                )
-                show("오탐 의심 해제 — REVOKE_PREVIOUS 기록 추가 (원 기록은 보존)")
-            } else {
-                session.store.queueAnnotation(
-                    FlightHistoryModel.falsePositiveAnnotation(
-                        eventId = row.card.eventId,
-                        flightId = flightId,
-                        deviceId = session.rcDeviceId,
-                        artifactIds = row.card.evidence.map { it.artifactId },
-                        createdAtLocal = ReceiptClock.now(),
-                    ),
-                )
-                show("오탐 의심 표시 — 새 주석 기록 추가 (탐지/증거는 수정되지 않음)")
+                runOnUiThread {
+                    if (isDestroyed) return@runOnUiThread
+                    show(message)
+                    refreshHistory()
+                }
+            } catch (exc: Exception) {
+                runOnUiThread { show("annotation failed: ${exc.message}") }
             }
-        } catch (exc: Exception) {
-            show("annotation failed: ${exc.message}")
         }
-        refreshHistory()
     }
 
     private fun viewEvidence(localOnly: Boolean) {
@@ -455,9 +459,7 @@ class MainActivity : AppCompatActivity() {
                     fetched.source to fetched.items
                 }
                 val (source, bytes) = slice
-                val bitmap = android.graphics.BitmapFactory.decodeByteArray(
-                    bytes, 0, bytes.size,
-                )
+                val bitmap = decodeSampled(bytes)
                 runOnUiThread {
                     if (bitmap != null) {
                         ivEvidence.setImageBitmap(bitmap)
@@ -473,6 +475,31 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread { show("evidence load failed: ${exc.message}") }
             }
         }
+    }
+
+    /**
+     * Bounded decode: Edge snapshots can be large; sampling keeps the
+     * preview well under any single-allocation limit (no full-res crash).
+     */
+    private fun decodeSampled(
+        bytes: ByteArray,
+        maxDimension: Int = 2048,
+    ): android.graphics.Bitmap? {
+        val bounds = android.graphics.BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+        var sample = 1
+        while (bounds.outWidth / sample > maxDimension ||
+            bounds.outHeight / sample > maxDimension
+        ) {
+            sample *= 2
+        }
+        val options = android.graphics.BitmapFactory.Options().apply {
+            inSampleSize = sample
+        }
+        return android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
     }
 
     private fun refreshHistory() {
