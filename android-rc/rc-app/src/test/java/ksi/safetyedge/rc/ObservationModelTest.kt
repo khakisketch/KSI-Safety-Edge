@@ -161,6 +161,47 @@ class ObservationModelTest {
     }
 
     @Test
+    fun channel_freshness_is_separated_and_verdict_distinguishes_zero_events() {
+        var now = "2026-10-10T06:00:00Z"
+        val store = FileRcStore(
+            Files.createTempDirectory("obs-channels"),
+            wallClock = { now },
+        )
+        val heartbeat = Mop.json.createObjectNode()
+        heartbeat.put("type", "HEARTBEAT")
+        heartbeat.put("channel", "HEARTBEAT")
+        heartbeat.put("flight_id", flight)
+        heartbeat.put("edge_boot_id", "boot")
+        store.storeMessage(heartbeat)
+
+        now = "2026-10-10T06:00:10Z"
+        store.storeObservation(observation("o1", withheld = false, degraded = false), "boot")
+
+        // Ages are per-channel: the heartbeat age is measured from ITS
+        // receipt, not from the newer observation.
+        val at = "2026-10-10T06:00:12Z"
+        assertEquals(12_000L, ObservationModel.heartbeatAgeMs(store, flight, at))
+        assertEquals(2_000L, ObservationModel.observationAgeMs(store, flight, at))
+        assertNull(ObservationModel.eventAgeMs(store, flight, at))
+
+        assertEquals(
+            "OK",
+            ObservationModel.classifyFreshness(2_000L, ObservationModel.STALE_DATA_MS),
+        )
+        assertEquals(
+            "STALE",
+            ObservationModel.classifyFreshness(
+                40_000L, ObservationModel.HEARTBEAT_STALE_MS,
+            ),
+        )
+        assertEquals("NONE", ObservationModel.classifyFreshness(null, 1L))
+
+        assertEquals("관측 공백 — 수신된 관측 없음", ObservationModel.aiVerdict(0, 0))
+        assertEquals("분석됨(관측 2) · 사건 0건", ObservationModel.aiVerdict(2, 0))
+        assertEquals("사건 1건 수신 (관측 2)", ObservationModel.aiVerdict(2, 1))
+    }
+
+    @Test
     fun pulse_counts_withheld_degraded_and_receipt_freshness() {
         val store = store()
         store.storeObservation(observation("o1", withheld = true, degraded = false), "boot")

@@ -39,5 +39,14 @@ class RcApp : Application() {
         demoSession = DemoSession(filesDir, { ReceiptClock.now() })
         // H1: replace with the DJI MSDK v5 video implementation (same interface).
         videoSource = FakeVideoSource()
+        // A8: MOP retransmission timer — re-sends unacked envelopes (same
+        // msg_id) and drains the outbox while the link is connected.
+        retransmitExecutor.scheduleWithFixedDelay(
+            Runnable { runCatching { session.retransmitTick() } },
+            1, 1, java.util.concurrent.TimeUnit.SECONDS,
+        )
     }
+
+    private val retransmitExecutor =
+        java.util.concurrent.Executors.newSingleThreadScheduledExecutor()
 }

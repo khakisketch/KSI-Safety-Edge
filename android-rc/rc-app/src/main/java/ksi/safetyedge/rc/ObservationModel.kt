@@ -109,4 +109,35 @@ object ObservationModel {
 
     /** "no data for N s" threshold used to WARN, not to judge safety. */
     const val STALE_DATA_MS = 5_000L
+
+    /** Display-only staleness threshold for the Manifold heartbeat; the
+     *  real beat cadence is an Edge/contract item (H1). */
+    const val HEARTBEAT_STALE_MS = 30_000L
+
+    fun heartbeatAgeMs(store: UploadStore, flightId: String, nowUtc: String): Long? =
+        lastDataAgeMs(store.lastHeartbeatUtc(flightId), nowUtc)
+
+    fun observationAgeMs(store: UploadStore, flightId: String, nowUtc: String): Long? =
+        lastDataAgeMs(store.lastObservationUtc(flightId), nowUtc)
+
+    fun eventAgeMs(store: UploadStore, flightId: String, nowUtc: String): Long? =
+        lastDataAgeMs(store.lastEventUtc(flightId), nowUtc)
+
+    /** OK / STALE / NONE — display wording only, never a safety claim. */
+    fun classifyFreshness(ageMs: Long?, staleMs: Long): String = when {
+        ageMs == null -> "NONE"
+        ageMs >= staleMs -> "STALE"
+        else -> "OK"
+    }
+
+    /**
+     * A8 AI verdict, separating "no events" from "no observation":
+     * observations flowing with zero events is a healthy analysis with no
+     * detections — NOT an AI failure and NOT a "safe" claim.
+     */
+    fun aiVerdict(observationCount: Int, eventCount: Int): String = when {
+        observationCount == 0 -> "관측 공백 — 수신된 관측 없음"
+        eventCount == 0 -> "분석됨(관측 ${observationCount}) · 사건 0건"
+        else -> "사건 ${eventCount}건 수신 (관측 ${observationCount})"
+    }
 }

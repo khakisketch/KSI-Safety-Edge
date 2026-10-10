@@ -44,8 +44,10 @@ dependencies {
     // here (rc-core itself is unchanged).
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
     implementation("androidx.appcompat:appcompat:1.7.0")
+    // A8: background sync (survives process death; network constraints).
+    implementation("androidx.work:work-runtime:2.9.1")
 
-    // A6 host-side unit tests for the pure observation model.
+    // A6/A7 host-side unit tests for the pure models/policies.
     testImplementation("junit:junit:4.13.2")
 }
 

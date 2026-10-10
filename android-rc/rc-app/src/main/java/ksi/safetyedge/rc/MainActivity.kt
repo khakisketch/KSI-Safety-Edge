@@ -93,15 +93,23 @@ class MainActivity : AppCompatActivity() {
         on(R.id.btnStop) { run("stop") { session.controller?.stopSession() } }
         on(R.id.btnEndFlight) {
             val ended = session.endFlight()
-            show(if (ended != null) "flight ended: ${ended.get("flight_id").asText().take(8)}" else "no active flight")
+            if (ended != null) {
+                val flightId = ended.get("flight_id").asText()
+                // A8 policy: a finished flight is queued for background sync
+                // (network-constrained; COMMITTED checks stay in the uploader).
+                SyncScheduler.enqueue(applicationContext, flightId)
+                show("flight ended: ${flightId.take(8)} — auto-sync 예약(네트워크 시 업로드)")
+            } else {
+                show("no active flight")
+            }
         }
 
         // -- operational link
         on(R.id.btnConnect) { session.link.connect(); session.pumpOutbound(); refresh() }
         on(R.id.btnDisconnect) { session.link.disconnect(); refresh() }
         on(R.id.btnRetry) {
-            val sent = session.retryUnacked()
-            show("re-sent $sent unacked envelope(s), same msg_id")
+            val sent = session.retryUnacked() + session.pumpOutbound()
+            show("re-sent $sent envelope(s) — same msg_id, one send per envelope")
         }
 
         // -- A6 video seam
@@ -145,10 +153,28 @@ class MainActivity : AppCompatActivity() {
             app.config.coreUrl = etCoreUrl.text.toString()
             app.config.coreToken = etCoreToken.text.toString()
             hasSyncReport = false
-            show(
-                if (app.config.coreConfigured) "Core config saved"
-                else "upload disabled: Core URL + token required",
-            )
+            if (app.config.coreConfigured) {
+                // A8: a Core that just became reachable picks up the latest
+                // finished-but-unsynced flight automatically.
+                val pending = session.store.flights().lastOrNull { record ->
+                    record.get("state")?.asText() == "ENDED" &&
+                        session.store.artifactsFor(record.get("flight_id").asText())
+                            .any {
+                                !session.store.isArtifactSynced(
+                                    it.get("artifact_id").asText(),
+                                )
+                            }
+                }
+                if (pending != null) {
+                    val flightId = pending.get("flight_id").asText()
+                    SyncScheduler.enqueue(applicationContext, flightId)
+                    show("Core config saved — auto-sync 예약: ${flightId.take(8)}")
+                } else {
+                    show("Core config saved")
+                }
+            } else {
+                show("upload disabled: Core URL + token required")
+            }
             refresh()
         }
         on(R.id.btnUpload) { uploadNow() }
@@ -302,26 +328,39 @@ class MainActivity : AppCompatActivity() {
         tvEvidence.text = lines.toString()
     }
 
-    /** A6: AI/observation status + event cards — derived from the store only. */
+    /** A6/A8: AI/observation status + event cards — derived from the store only. */
     private fun refreshObservation(flightId: String?) {
         if (flightId == null) {
             tvAi.text = "AI: no active flight (start a flight first)"
             tvEvents.text = "-"
             return
         }
-        val pulse = ObservationModel.observationPulse(session.store, flightId)
-        val ageMs = ObservationModel.lastDataAgeMs(
-            pulse.lastReceivedUtc, ReceiptClock.now(),
-        )
-        val ageText = when {
-            ageMs == null -> "no data received yet (receipt clock)"
-            ageMs >= ObservationModel.STALE_DATA_MS ->
-                "NO DATA for ${ageMs / 1000.0}s (receipt clock) — check Edge/link"
-            else -> "last data ${ageMs / 1000.0}s ago (receipt clock)"
+        val store = session.store
+        val pulse = ObservationModel.observationPulse(store, flightId)
+        val eventCount = store.eventsFor(flightId).size
+        val now = ReceiptClock.now()
+        val hbAge = ObservationModel.heartbeatAgeMs(store, flightId, now)
+        val obsAge = ObservationModel.observationAgeMs(store, flightId, now)
+        val evAge = ObservationModel.eventAgeMs(store, flightId, now)
+        fun ageText(ageMs: Long?): String =
+            if (ageMs == null) "없음" else "${ageMs / 1000.0}s 전"
+        fun stateText(state: String): String = when (state) {
+            "OK" -> "정상"
+            "STALE" -> "지연"
+            else -> "없음"
         }
-        tvAi.text = "observations=${pulse.count} withheld=${pulse.withheld} " +
-            "degraded=${pulse.degraded}\n" +
-            ageText
+        val hbState = ObservationModel.classifyFreshness(
+            hbAge, ObservationModel.HEARTBEAT_STALE_MS,
+        )
+        val obsState = ObservationModel.classifyFreshness(
+            obsAge, ObservationModel.STALE_DATA_MS,
+        )
+        tvAi.text =
+            "channels — heartbeat=${stateText(hbState)}(${ageText(hbAge)}) · " +
+            "AIobs=${stateText(obsState)}(${ageText(obsAge)}) · " +
+            "lastEvent=${ageText(evAge)}\n" +
+            "withheld=${pulse.withheld} degraded=${pulse.degraded} · " +
+            ObservationModel.aiVerdict(pulse.count, eventCount)
 
         val generation = ++eventGeneration
         session.bg.execute {

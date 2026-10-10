@@ -153,11 +153,32 @@ class RcSession(
         return sent
     }
 
-    /** Outbound retry: re-send unacked envelopes (same msg_id, same bytes). */
+    /** Outbound retry: re-send unacked envelopes that were ALREADY sent
+     *  (same msg_id, same bytes). Envelopes still waiting in the outbox are
+     *  skipped — they go out via [pumpOutbound] exactly once. */
     fun retryUnacked(): Int {
         var sent = 0
         val endpoint = controller?.endpoint ?: return 0
+        val pendingIds = endpoint.outbox.map { it.get("msg_id").asText() }.toSet()
         for (env in endpoint.retransmissions()) {
+            if (env.get("msg_id").asText() in pendingIds) continue
+            if (link.send(ksi.rc.Mop.json.writeValueAsBytes(env))) sent += 1
+            else break
+        }
+        return sent
+    }
+
+    /** A8 outbound retry tick (timer-driven in the app): first sends what
+     *  was never sent, then re-sends already-sent-but-unacked envelopes —
+     *  the same envelope is never double-sent within one tick. Never drops
+     *  bytes on a dead link. */
+    fun retransmitTick(): Int {
+        if (link.state != DroneLink.State.CONNECTED) return 0
+        val endpoint = controller?.endpoint ?: return 0
+        val freshIds = endpoint.outbox.map { it.get("msg_id").asText() }.toSet()
+        var sent = pumpOutbound()
+        for (env in endpoint.retransmissions()) {
+            if (env.get("msg_id").asText() in freshIds) continue
             if (link.send(ksi.rc.Mop.json.writeValueAsBytes(env))) sent += 1
             else break
         }
@@ -242,19 +263,32 @@ class RcSession(
         return LocalFirstEvidence(store, ksi.rc.CoreApi(AndroidCoreTransport(url, token)))
     }
 
-    /** Spec built ONLY from the active flight record — no invented ids and
-     *  no server round-trip; digests came in with the flight's mission. */
+    /** A8: reachability-gated, resumable upload for one flight. */
+    fun syncCoordinator(): ksi.rc.SyncCoordinator? {
+        val (url, token) = coreConfig() ?: return null
+        val core = ksi.rc.CoreApi(AndroidCoreTransport(url, token))
+        return ksi.rc.SyncCoordinator(core, ksi.rc.EvidenceUploader(core, store))
+    }
+
+    /** Spec built ONLY from the flight record — no invented ids and no
+     *  server round-trip; digests came in with the flight's mission. */
     fun uploadSpec(): FlightUploadSpec {
         val active = store.activeFlight()
             ?: throw IllegalStateException("no active flight")
+        return uploadSpec(active.get("flight_id").asText())
+    }
+
+    fun uploadSpec(flightId: String): FlightUploadSpec {
+        val record = store.flight(flightId)
+            ?: throw IllegalStateException("no such flight: $flightId")
         return FlightUploadSpec(
-            flightId = active.get("flight_id").asText(),
-            siteId = active.get("site_id").asText(),
+            flightId = record.get("flight_id").asText(),
+            siteId = record.get("site_id").asText(),
             rcDeviceId = rcDeviceId,
-            missionId = active.get("mission_id").asText(),
-            missionRevisionId = active.get("mission_revision_id").asText(),
-            missionSha256 = active.get("mission_sha256").asText(),
-            bundleSha256 = active.get("bundle_sha256").asText(),
+            missionId = record.get("mission_id").asText(),
+            missionRevisionId = record.get("mission_revision_id").asText(),
+            missionSha256 = record.get("mission_sha256").asText(),
+            bundleSha256 = record.get("bundle_sha256").asText(),
         )
     }
 
