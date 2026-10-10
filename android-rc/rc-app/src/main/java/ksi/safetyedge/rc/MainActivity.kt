@@ -155,20 +155,10 @@ class MainActivity : AppCompatActivity() {
             hasSyncReport = false
             if (app.config.coreConfigured) {
                 // A8: a Core that just became reachable picks up the latest
-                // finished-but-unsynced flight automatically.
-                val pending = session.store.flights().lastOrNull { record ->
-                    record.get("state")?.asText() == "ENDED" &&
-                        session.store.artifactsFor(record.get("flight_id").asText())
-                            .any {
-                                !session.store.isArtifactSynced(
-                                    it.get("artifact_id").asText(),
-                                )
-                            }
-                }
-                if (pending != null) {
-                    val flightId = pending.get("flight_id").asText()
-                    SyncScheduler.enqueue(applicationContext, flightId)
-                    show("Core config saved — auto-sync 예약: ${flightId.take(8)}")
+                // finished flight whose local data is complete but unsynced.
+                val resumed = SyncScheduler.enqueuePending(applicationContext, session)
+                if (resumed != null) {
+                    show("Core config saved — auto-sync 예약: ${resumed.take(8)}")
                 } else {
                     show("Core config saved")
                 }
@@ -181,6 +171,12 @@ class MainActivity : AppCompatActivity() {
         on(R.id.btnServerState) { serverState() }
 
         refresh()
+        // A8 recovery trigger: a process start re-queues a finished flight
+        // whose previously incomplete local evidence is now complete.
+        SyncScheduler.enqueuePending(applicationContext, session)?.let { flightId ->
+            hasSyncReport = true
+            tvSync.text = "auto-sync 재개 예약: ${flightId.take(8)} (완료된 로컬 데이터 재동기화)"
+        }
     }
 
     override fun onResume() {
@@ -803,7 +799,8 @@ class MainActivity : AppCompatActivity() {
                 val report = uploader.uploadFlight(spec)
                 val lines = StringBuilder()
                 lines.append("state=${report.uploadState} timeBasis=${report.timeBasis} " +
-                    "apps=${report.applicationsUploaded} sessions=${report.sessionsUploaded}\n")
+                    "apps=${report.applicationsUploaded} sessions=${report.sessionsUploaded} " +
+                    "annotations=${report.annotationsUploaded}\n")
                 for (boot in report.boots) {
                     lines.append("boot ${boot.bootId.take(8)} ${boot.status} " +
                         "chunks=${boot.chunksSent} missing=${boot.missingArtifacts.size} " +
@@ -812,6 +809,13 @@ class MainActivity : AppCompatActivity() {
                 }
                 if (report.sessionDrift.isNotEmpty()) {
                     lines.append("session drift: ${report.sessionDrift.size} (server holds older snapshot)\n")
+                }
+                if (report.boots.any { it.incompleteLocal.isNotEmpty() }) {
+                    lines.append("미완료 로컬 증거 — 완성되면 다음 동기화에서 자동 재시도됨\n")
+                }
+                if (report.annotationFailures.isNotEmpty()) {
+                    lines.append("annotation 실패(재시도 예정): " +
+                        report.annotationFailures.joinToString().take(120) + "\n")
                 }
                 runOnUiThread {
                     hasSyncReport = true

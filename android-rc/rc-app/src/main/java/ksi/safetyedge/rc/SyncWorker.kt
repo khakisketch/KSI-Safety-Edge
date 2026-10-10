@@ -51,10 +51,16 @@ class SyncWorker(
         val outcome = coordinator.syncOnce(spec)
         Log.i(
             "SyncWorker",
-            "flight=${flightId.take(8)} sync -> ${outcome.state}" +
-                (outcome.detail?.let { " ($it)" } ?: ""),
+            "flight=${flightId.take(8)} attempt=$runAttemptCount sync -> " +
+                "${outcome.state}" +
+                (outcome.partialCause?.let { " ($it)" } ?: "") +
+                (outcome.detail?.let { " [$it]" } ?: ""),
         )
-        return when (SyncPolicy.decisionFor(outcome.state)) {
+        return when (
+            SyncPolicy.decisionFor(
+                outcome.state, runAttemptCount, outcome.partialCause,
+            )
+        ) {
             SyncPolicy.Decision.DONE ->
                 Result.success(workDataOf(KEY_STATE to outcome.state))
             SyncPolicy.Decision.RETRY -> Result.retry()
@@ -84,5 +90,27 @@ object SyncScheduler {
         WorkManager.getInstance(context).enqueueUniqueWork(
             SyncWorker.UNIQUE_PREFIX + flightId, ExistingWorkPolicy.KEEP, request,
         )
+    }
+
+    /**
+     * Recovery trigger (user review): once the missing LOCAL bytes of a
+     * finished flight are complete again (e.g. the Edge stream finished
+     * after the flight record ended, or the app restarted), the flight is
+     * re-queued automatically. Flights that can never heal (server-side
+     * missing) are NOT re-queued — they stay visible for a human.
+     */
+    fun enqueuePending(context: Context, session: RcSession): String? {
+        val pending = session.store.flights().lastOrNull { record ->
+            record.get("state")?.asText() == "ENDED" &&
+                session.store.artifactsFor(record.get("flight_id").asText())
+                    .any {
+                        val artifactId = it.get("artifact_id").asText()
+                        session.store.isArtifactComplete(artifactId) &&
+                            !session.store.isArtifactSynced(artifactId)
+                    }
+        } ?: return null
+        val flightId = pending.get("flight_id").asText()
+        enqueue(context, flightId)
+        return flightId
     }
 }

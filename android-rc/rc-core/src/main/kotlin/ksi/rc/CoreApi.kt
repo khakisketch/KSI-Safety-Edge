@@ -131,6 +131,14 @@ class CoreApi(private val transport: CoreTransport) {
     fun getEvidence(eventId: String): ObjectNode =
         jsonRequest("GET", "/events/$eventId/evidence")
 
+    // -- operator annotations (append-only on the server) ----------------------
+
+    fun postAnnotation(eventId: String, annotation: ObjectNode): ObjectNode =
+        jsonRequest("POST", "/events/$eventId/annotations", annotation)
+
+    fun listAnnotations(eventId: String): ObjectNode =
+        jsonRequest("GET", "/events/$eventId/annotations")
+
     fun downloadObject(artifactId: String): ByteArray =
         raw("GET", "/objects/$artifactId")
 

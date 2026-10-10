@@ -57,6 +57,13 @@ class FakeCore : CoreTransport {
     var failAtChunkPut: Int? = null
     /** Health endpoint switch (A8 reachability tests). */
     var healthy = true
+    /** Simulates a server that accepts chunk PUTs but stores nothing —
+     *  local data complete yet the commit reports it missing. */
+    var ignoreChunkWrites = false
+
+    // -- operator annotations (append-only) ------------------------------------
+    val annotationsByEvent = linkedMapOf<String, MutableList<ObjectNode>>()
+    var failNextAnnotationPost = false
 
     override fun request(
         method: String,
@@ -179,6 +186,16 @@ class FakeCore : CoreTransport {
                 val flightId = params["flight_id"] ?: ""
                 200 to listItems("events", flightId, path)
             }
+
+            segments.size == 3 && segments[0] == "events" &&
+                segments[2] == "annotations" && method == "POST" ->
+                200 to postAnnotation(
+                    segments[1], Mop.json.readTree(body) as ObjectNode,
+                )
+
+            segments.size == 3 && segments[0] == "events" &&
+                segments[2] == "annotations" && method == "GET" ->
+                200 to listAnnotations(segments[1])
 
             segments.size == 3 && segments[0] == "flights" &&
                 segments[2] == "observations" && method == "GET" ->
@@ -313,6 +330,36 @@ class FakeCore : CoreTransport {
 
     private fun getBundle(bundleId: String): ObjectNode =
         bundles[bundleId]?.deepCopy() ?: throw HttpError(404, "NOT_FOUND")
+
+    // -- operator annotations (append-only, idempotent by id) ------------------
+
+    private fun postAnnotation(eventId: String, body: ObjectNode): ObjectNode {
+        if (failNextAnnotationPost) {
+            failNextAnnotationPost = false
+            throw HttpError(500, "ERROR")
+        }
+        if (body.get("event_id")?.asText() != eventId) {
+            throw HttpError(422, "CONTRACT_INVALID")
+        }
+        val id = body.get("annotation_id")?.asText()
+            ?: throw HttpError(422, "CONTRACT_INVALID")
+        val bucket = annotationsByEvent.getOrPut(eventId) { mutableListOf() }
+        val existing = bucket.firstOrNull { it.get("annotation_id")?.asText() == id }
+        if (existing != null) {
+            if (!same(existing, body)) throw HttpError(409, "CONFLICT")
+            return Mop.json.createObjectNode().put("annotation_id", id).put("durable", true)
+        }
+        bucket.add(body.deepCopy())
+        return Mop.json.createObjectNode().put("annotation_id", id).put("durable", true)
+    }
+
+    private fun listAnnotations(eventId: String): ObjectNode {
+        val items = Mop.json.createArrayNode()
+        annotationsByEvent[eventId]?.forEach { items.add(it) }
+        val response = Mop.json.createObjectNode()
+        response.set<JsonNode>("items", items)
+        return response
+    }
 
     private fun requireFlight(flightId: String): ObjectNode =
         flights[flightId] ?: throw HttpError(404, "NOT_FOUND")
@@ -615,6 +662,13 @@ class FakeCore : CoreTransport {
         }
         if (body.size.toLong() != end - start + 1) {
             throw HttpError(422, "RANGE_LENGTH")
+        }
+        if (ignoreChunkWrites) {
+            // Simulates a server that drops stored bytes: local data is
+            // complete but the commit will report it missing.
+            return Mop.json.createObjectNode()
+                .put("received_bytes", coveredBytes(uploadId, artifactId))
+                .put("complete", false)
         }
         val key = "$uploadId/$artifactId"
         val buffer = objects.getOrPut(key) { ByteArray(total.toInt()) }

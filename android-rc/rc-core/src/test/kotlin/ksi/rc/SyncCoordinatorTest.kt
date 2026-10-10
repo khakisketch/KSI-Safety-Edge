@@ -41,6 +41,53 @@ class SyncCoordinatorTest {
     }
 
     @Test
+    fun partial_classifies_recoverable_pending_then_resolves() {
+        val store = FileRcStore(Files.createTempDirectory("rc-sync-partial"))
+        val spec = uploadSpec()
+        val artifactId = Fixture.uuid(13)
+        val bytes = ByteArray(16) { it.toByte() }
+        seedFlightEvidence(
+            store, spec, Fixture.uuid(12), artifactId, bytes,
+            chunkSize = 8, writeChunks = false,
+        )
+        store.writeChunk(artifactId, 0, bytes.copyOfRange(0, 8))
+        val fake = FakeCore()
+        val core = CoreApi(fake)
+        val coordinator = SyncCoordinator(core, EvidenceUploader(core, store))
+
+        val partial = coordinator.syncOnce(spec)
+        assertEquals(SyncOutcome.PARTIAL, partial.state)
+        assertEquals(SyncOutcome.RECOVERABLE_PENDING, partial.partialCause)
+
+        // Local bytes complete (e.g. the Edge resumed): the same call heals.
+        store.writeChunk(artifactId, 8, bytes.copyOfRange(8, 16))
+        val healed = coordinator.syncOnce(spec)
+        assertEquals(SyncOutcome.COMPLETE, healed.state)
+        assertEquals(null, healed.partialCause)
+    }
+
+    @Test
+    fun partial_with_complete_local_but_dropped_server_bytes_is_server_missing() {
+        val store = FileRcStore(Files.createTempDirectory("rc-sync-drift"))
+        val spec = uploadSpec()
+        seedFlightEvidence(
+            store, spec, Fixture.uuid(12), Fixture.uuid(13),
+            ByteArray(16) { it.toByte() },
+        )
+        val fake = FakeCore()
+        fake.ignoreChunkWrites = true
+        val core = CoreApi(fake)
+        val coordinator = SyncCoordinator(core, EvidenceUploader(core, store))
+
+        val partial = coordinator.syncOnce(spec)
+        assertEquals(SyncOutcome.PARTIAL, partial.state)
+        assertEquals(SyncOutcome.SERVER_MISSING, partial.partialCause)
+        // Local data was complete: nothing stays "incomplete" locally.
+        assertTrue(partial.report!!.boots.all { it.incompleteLocal.isEmpty() })
+        assertTrue(partial.report!!.boots.any { it.missingArtifacts.isNotEmpty() })
+    }
+
+    @Test
     fun reachable_sync_is_idempotent_and_resumes_after_failure() {
         val (store, spec) = seededStore(tempRoot())
         val fake = FakeCore()

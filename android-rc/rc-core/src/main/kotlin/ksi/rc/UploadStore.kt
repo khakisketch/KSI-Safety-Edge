@@ -38,6 +38,14 @@ interface UploadStore : RcStore, EvidenceStore {
 
     /** Local annotations for an event, insertion order (oldest first). */
     fun annotationsFor(eventId: String): List<ObjectNode>
+
+    // -- Operator annotation upload (server append, per id) --------------------
+
+    /** Annotations not yet accepted by the server, insertion order. */
+    fun pendingAnnotations(): List<ObjectNode>
+
+    fun markAnnotationUploaded(annotationId: String)
+    fun isAnnotationUploaded(annotationId: String): Boolean
 }
 
 /**

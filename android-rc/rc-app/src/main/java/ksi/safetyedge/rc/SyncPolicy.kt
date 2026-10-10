@@ -3,26 +3,42 @@ package ksi.safetyedge.rc
 import ksi.rc.SyncOutcome
 
 /**
- * A8 retry policy: what a sync outcome means for background work.
+ * A8 retry policy (refined after the user review 2026-10-10): what a sync
+ * outcome means for background work.
  *
- * DONE stops the auto-sync (the operator can always re-run manually):
+ * DONE stops the auto-sync (the operator can always re-run manually, and
+ * the flight keeps its incomplete marks visible):
  * - COMPLETE: everything the server required is committed;
- * - PARTIAL: the missing bytes will not arrive by retrying a finished
- *   flight (they may still be streaming on a live one — manual re-upload
- *   handles it);
- * - NO_DATA: nothing was ever received.
+ * - NO_DATA: nothing was ever received;
+ * - PARTIAL / SERVER_MISSING: every local byte was pushed but the server
+ *   still reports it missing — pushing again cannot heal that, so a human
+ *   decides (the record stays visible as unsynced).
  *
- * RETRY lets WorkManager back off and try again later — the network or
- * Core may return, and uploads resume idempotently.
+ * RETRY lets WorkManager back off and try again:
+ * - UNREACHABLE / FAILED: the network or Core may return; resume is
+ *   idempotent by construction;
+ * - PARTIAL / RECOVERABLE_PENDING: local bytes are incomplete and may
+ *   still arrive (live link/Edge) — BOUNDED retries so a permanently lost
+ *   file does not loop forever; after [MAX_PARTIAL_RETRIES] the flight
+ *   stays visibly unsynced for manual handling.
  */
 object SyncPolicy {
     enum class Decision { DONE, RETRY }
 
-    fun decisionFor(state: String): Decision = when (state) {
-        SyncOutcome.COMPLETE,
-        SyncOutcome.PARTIAL,
-        SyncOutcome.NO_DATA,
-        -> Decision.DONE
+    const val MAX_PARTIAL_RETRIES = 5
+
+    fun decisionFor(
+        state: String,
+        attempt: Int = 0,
+        partialCause: String? = null,
+    ): Decision = when (state) {
+        SyncOutcome.COMPLETE, SyncOutcome.NO_DATA -> Decision.DONE
+
+        SyncOutcome.PARTIAL -> when {
+            partialCause == SyncOutcome.SERVER_MISSING -> Decision.DONE
+            attempt < MAX_PARTIAL_RETRIES -> Decision.RETRY
+            else -> Decision.DONE
+        }
 
         else -> Decision.RETRY // UNREACHABLE, FAILED, unknown
     }

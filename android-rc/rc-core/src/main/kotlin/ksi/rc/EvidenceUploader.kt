@@ -42,6 +42,10 @@ data class FlightUploadReport(
     val batches: List<BatchUploadReport>,
     val boots: List<BootUploadReport>,
     val uploadState: String,
+    /** Operator annotations accepted by the server in THIS run. */
+    val annotationsUploaded: Int = 0,
+    /** Annotations that could not be posted (kept pending for retry). */
+    val annotationFailures: List<String> = emptyList(),
     /** Where the manifest UTC instants come from. A verified Edge clock
      *  anchor does not exist yet (H1): this is RC receipt time, NOT the
      *  confirmed event time. */
@@ -114,6 +118,9 @@ class EvidenceUploader(
         val (sessionsUploaded, sessionDrift) = uploadSessions(spec, boots)
         val batches = uploadBatches(spec)
         val bootReports = boots.map { uploadBoot(spec, it) }
+        // Operator opinions travel AFTER evidence (their events must exist
+        // server-side); failures leave them pending for the next sync.
+        val (annotationsUploaded, annotationFailures) = uploadAnnotations(spec)
         val view = core.getFlight(spec.flightId)
         return FlightUploadReport(
             flightView = view,
@@ -123,7 +130,32 @@ class EvidenceUploader(
             batches = batches,
             boots = bootReports,
             uploadState = view.get("upload_state")?.asText() ?: "UNKNOWN",
+            annotationsUploaded = annotationsUploaded,
+            annotationFailures = annotationFailures,
         )
+    }
+
+    /** Posts pending annotations for this flight (append-only, idempotent by
+     *  annotation_id server-side). A failure never fails the sync: the
+     *  annotation stays pending and is retried on the next run. */
+    private fun uploadAnnotations(spec: FlightUploadSpec): Pair<Int, List<String>> {
+        var uploaded = 0
+        val failures = mutableListOf<String>()
+        for (annotation in store.pendingAnnotations()) {
+            if (annotation.get("flight_id")?.asText() != spec.flightId) continue
+            val id = annotation.get("annotation_id")?.asText() ?: continue
+            val eventId = annotation.get("event_id")?.asText() ?: continue
+            try {
+                core.postAnnotation(eventId, annotation)
+                store.markAnnotationUploaded(id)
+                uploaded += 1
+            } catch (exc: CoreApiError) {
+                failures.add("$id: HTTP ${exc.status}")
+            } catch (exc: Exception) {
+                failures.add("$id: ${exc.message}")
+            }
+        }
+        return uploaded to failures
     }
 
     private fun registerBody(spec: FlightUploadSpec, firstUtc: String): ObjectNode {

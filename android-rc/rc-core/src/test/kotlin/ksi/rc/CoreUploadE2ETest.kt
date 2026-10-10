@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode
 import java.net.ServerSocket
 import java.nio.file.Files
 import java.nio.file.Path
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -222,10 +223,68 @@ class CoreUploadE2ETest {
                 LocalFirstEvidence(store, core).events(spec.flightId).source,
             )
 
+            // -- operator annotation round-trip (append-only records) ----------
+            val annotationId = UUID.randomUUID().toString()
+            val mark = Mop.json.createObjectNode()
+            mark.put("schema_version", 1)
+            mark.put("annotation_id", annotationId)
+            mark.put("event_id", eventId)
+            mark.put("flight_id", spec.flightId)
+            mark.put("actor_id", spec.rcDeviceId)
+            mark.put("client_id", spec.rcDeviceId)
+            mark.put("annotation_type", "FALSE_POSITIVE_SUSPECTED")
+            mark.putNull("reason")
+            mark.putArray("evidence_ids").add(artifactId)
+            mark.put("created_at_local", "2026-10-10T09:00:00Z")
+            mark.putNull("supersedes_annotation_id")
+            store.queueAnnotation(mark)
+
+            val withMark = uploader.uploadFlight(spec)
+            assertEquals(1, withMark.annotationsUploaded)
+            assertTrue(store.pendingAnnotations().isEmpty())
+
+            val revoke = Mop.json.createObjectNode()
+            revoke.put("schema_version", 1)
+            revoke.put("annotation_id", UUID.randomUUID().toString())
+            revoke.put("event_id", eventId)
+            revoke.put("flight_id", spec.flightId)
+            revoke.put("actor_id", spec.rcDeviceId)
+            revoke.put("client_id", spec.rcDeviceId)
+            revoke.put("annotation_type", "REVOKE_PREVIOUS")
+            revoke.putNull("reason")
+            revoke.putArray("evidence_ids")
+            revoke.put("created_at_local", "2026-10-10T09:05:00Z")
+            revoke.put("supersedes_annotation_id", annotationId)
+            store.queueAnnotation(revoke)
+            val withRevoke = uploader.uploadFlight(spec)
+            assertEquals(1, withRevoke.annotationsUploaded)
+
+            // The server holds BOTH records in order; the original mark was
+            // never edited (append-only opinion history).
+            val serverAnnotations = core.listAnnotations(eventId).get("items")
+            assertEquals(2, serverAnnotations.size())
+            assertEquals(
+                "FALSE_POSITIVE_SUSPECTED",
+                serverAnnotations[0].get("annotation_type").asText(),
+            )
+            assertEquals(
+                annotationId,
+                serverAnnotations[0].get("annotation_id").asText(),
+            )
+            assertEquals(
+                "REVOKE_PREVIOUS",
+                serverAnnotations[1].get("annotation_type").asText(),
+            )
+            assertEquals(
+                annotationId,
+                serverAnnotations[1].get("supersedes_annotation_id").asText(),
+            )
+
             // -- Idempotent re-upload stays COMPLETE ---------------------------
             val second = uploader.uploadFlight(spec)
             assertEquals("COMPLETE", second.uploadState)
             assertEquals(0, second.boots[0].chunksSent)
+            assertEquals(0, second.annotationsUploaded)
         } finally {
             process.destroy()
             if (!process.waitFor(10, TimeUnit.SECONDS)) process.destroyForcibly()

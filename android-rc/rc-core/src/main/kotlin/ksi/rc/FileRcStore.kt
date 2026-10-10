@@ -49,6 +49,7 @@ class FileRcStore(
     private val missionSnapshotsFile = File(rootDir, "mission_snapshots.ndjson")
     private val bundlesFile = File(rootDir, "bundles.ndjson")
     private val annotationsFile = File(rootDir, "annotations.ndjson")
+    private val annotationUploadsFile = File(rootDir, "annotation_uploads.ndjson")
     private val heartbeatsFile = File(rootDir, "heartbeats.ndjson")
     private val blobsDir = File(rootDir, "blobs")
 
@@ -77,6 +78,9 @@ class FileRcStore(
 
     /** Latest HEARTBEAT receipt per flight (A8 channel freshness). */
     private val heartbeatUtc = linkedMapOf<String, String>()
+
+    /** Annotation ids the server durably accepted. */
+    private val uploadedAnnotations = linkedSetOf<String>()
 
     /** Received data-plane seqs per (edge_boot_id, channel); rebuilt from
      *  messages.ndjson at construction (restart contract). */
@@ -164,6 +168,9 @@ class FileRcStore(
             val utc = node.get("received_wall_utc")?.asText() ?: continue
             val current = heartbeatUtc[flight]
             if (current == null || isAfter(utc, current)) heartbeatUtc[flight] = utc
+        }
+        for (line in readLines(annotationUploadsFile)) {
+            if (line.isNotBlank()) uploadedAnnotations.add(line.trim())
         }
         // Rebuild the seq/boot indexes from the durable envelopes (a restart
         // must not lose the bookkeeping the manifest depends on).
@@ -690,6 +697,23 @@ class FileRcStore(
     @Synchronized
     override fun annotationsFor(eventId: String): List<ObjectNode> =
         annotationsById.values.filter { it.get("event_id")?.asText() == eventId }
+
+    @Synchronized
+    override fun pendingAnnotations(): List<ObjectNode> =
+        annotationsById.values.filter {
+            it.get("annotation_id")?.asText() !in uploadedAnnotations
+        }
+
+    @Synchronized
+    override fun markAnnotationUploaded(annotationId: String) {
+        if (uploadedAnnotations.add(annotationId)) {
+            durableAppend(annotationUploadsFile, annotationId + "\n")
+        }
+    }
+
+    @Synchronized
+    override fun isAnnotationUploaded(annotationId: String): Boolean =
+        annotationId in uploadedAnnotations
 
     @Synchronized
     override fun bootsFor(flightId: String): List<String> =
