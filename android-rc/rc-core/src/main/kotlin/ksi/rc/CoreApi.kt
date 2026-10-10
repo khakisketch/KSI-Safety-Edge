@@ -134,6 +134,15 @@ class CoreApi(private val transport: CoreTransport) {
     fun downloadObject(artifactId: String): ByteArray =
         raw("GET", "/objects/$artifactId")
 
+    /** Unauthenticated liveness probe; false on ANY failure (offline field
+     *  use must never throw here). */
+    fun health(): Boolean = try {
+        raw("GET", "/healthz")
+        true
+    } catch (_: Exception) {
+        false
+    }
+
     /**
      * Follows `next_cursor` until exhausted and returns every page's items
      * concatenated. Evidence completeness matters more than one round trip:

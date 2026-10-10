@@ -55,6 +55,8 @@ class FakeCore : CoreTransport {
     var chunkPuts = 0
     /** Injected transport failure: chunk PUT number N throws (1-based). */
     var failAtChunkPut: Int? = null
+    /** Health endpoint switch (A8 reachability tests). */
+    var healthy = true
 
     override fun request(
         method: String,
@@ -103,8 +105,10 @@ class FakeCore : CoreTransport {
         val queryless = path.substringBefore('?')
         val segments = queryless.trim('/').split('/')
         return when {
-            method == "GET" && queryless == "/healthz" ->
+            method == "GET" && queryless == "/healthz" -> {
+                if (!healthy) throw HttpError(503, "UNAVAILABLE")
                 200 to Mop.json.createObjectNode().put("status", "ok")
+            }
 
             method == "GET" && queryless == "/sites" -> 200 to listSites()
 

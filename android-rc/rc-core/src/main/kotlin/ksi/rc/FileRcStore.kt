@@ -49,6 +49,7 @@ class FileRcStore(
     private val missionSnapshotsFile = File(rootDir, "mission_snapshots.ndjson")
     private val bundlesFile = File(rootDir, "bundles.ndjson")
     private val annotationsFile = File(rootDir, "annotations.ndjson")
+    private val heartbeatsFile = File(rootDir, "heartbeats.ndjson")
     private val blobsDir = File(rootDir, "blobs")
 
     private data class BootNode(
@@ -73,6 +74,9 @@ class FileRcStore(
     private val snapshotsByRevision = linkedMapOf<String, ObjectNode>()
     private val bundlesById = linkedMapOf<String, ObjectNode>()
     private val annotationsById = linkedMapOf<String, ObjectNode>()
+
+    /** Latest HEARTBEAT receipt per flight (A8 channel freshness). */
+    private val heartbeatUtc = linkedMapOf<String, String>()
 
     /** Received data-plane seqs per (edge_boot_id, channel); rebuilt from
      *  messages.ndjson at construction (restart contract). */
@@ -155,6 +159,12 @@ class FileRcStore(
             node.get("annotation_id")?.asText()
                 ?.let { annotationsById.putIfAbsent(it, node) }
         }
+        for (node in readNodes(heartbeatsFile)) {
+            val flight = node.get("flight_id")?.asText() ?: continue
+            val utc = node.get("received_wall_utc")?.asText() ?: continue
+            val current = heartbeatUtc[flight]
+            if (current == null || isAfter(utc, current)) heartbeatUtc[flight] = utc
+        }
         // Rebuild the seq/boot indexes from the durable envelopes (a restart
         // must not lose the bookkeeping the manifest depends on).
         for (node in readNodes(messagesFile)) {
@@ -208,6 +218,30 @@ class FileRcStore(
         appendNode(messagesFile, env)
         indexSeq(env)
         indexBoot(env)
+        if (env.get("type")?.asText() == "HEARTBEAT") {
+            stampHeartbeat(env)
+        }
+    }
+
+    /** HEARTBEAT receipts are tracked apart from evidence (A8): a live
+     *  Manifold process and a live AI are different facts. */
+    private fun stampHeartbeat(env: ObjectNode) {
+        val flight = env.get("flight_id")?.asText() ?: return
+        val utc = wallClock()
+        val current = heartbeatUtc[flight]
+        if (current == null || isAfter(utc, current)) heartbeatUtc[flight] = utc
+        val line = Mop.json.createObjectNode()
+        line.put("flight_id", flight)
+        line.put("received_wall_utc", utc)
+        appendNode(heartbeatsFile, line)
+    }
+
+    private fun isAfter(candidate: String, current: String): Boolean {
+        val a = runCatching { java.time.Instant.parse(candidate) }.getOrNull()
+            ?: return false
+        val b = runCatching { java.time.Instant.parse(current) }.getOrNull()
+            ?: return true
+        return a.isAfter(b)
     }
 
     @Synchronized
@@ -450,6 +484,32 @@ class FileRcStore(
         for ((_, node) in gaps) {
             if (node.get("flight_id")?.asText() != flightId) continue
             val instant = node.get("received_wall_utc")?.takeIf { it.isTextual }?.asText()
+                ?.let { runCatching { java.time.Instant.parse(it) }.getOrNull() }
+                ?: continue
+            if (latest == null || instant.isAfter(latest)) latest = instant
+        }
+        return latest?.toString()
+    }
+
+    @Synchronized
+    override fun lastHeartbeatUtc(flightId: String): String? = heartbeatUtc[flightId]
+
+    @Synchronized
+    override fun lastObservationUtc(flightId: String): String? =
+        latestSemanticUtc(observations.values, flightId)
+
+    @Synchronized
+    override fun lastEventUtc(flightId: String): String? =
+        latestSemanticUtc(events.values, flightId)
+
+    private fun latestSemanticUtc(
+        entries: Collection<BootNode>,
+        flightId: String,
+    ): String? {
+        var latest: java.time.Instant? = null
+        for (entry in entries) {
+            if (entry.node.get("flight_id")?.asText() != flightId) continue
+            val instant = entry.receivedUtc
                 ?.let { runCatching { java.time.Instant.parse(it) }.getOrNull() }
                 ?: continue
             if (latest == null || instant.isAfter(latest)) latest = instant

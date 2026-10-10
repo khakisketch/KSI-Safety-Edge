@@ -59,6 +59,21 @@ interface EvidenceStore {
      */
     fun lastReceivedUtc(flightId: String): String?
 
+    // -- A8: per-channel freshness ---------------------------------------------
+    // Heartbeat / observation / event receipts are tracked SEPARATELY: an
+    // idle period with no events is not an AI failure, and a live AI does
+    // not prove the Manifold process is alive (heartbeat) or vice versa.
+    // All receipt-clock based.
+
+    /** Latest HEARTBEAT envelope receipt wall-clock, or null. */
+    fun lastHeartbeatUtc(flightId: String): String?
+
+    /** Latest received OBSERVATION receipt wall-clock, or null. */
+    fun lastObservationUtc(flightId: String): String?
+
+    /** Latest received DETECTION_EVENT receipt wall-clock, or null. */
+    fun lastEventUtc(flightId: String): String?
+
     /** Data-plane sequence numbers received for a (boot, channel). */
     fun receivedSeqs(bootId: String, channel: String): Set<Long>
 
