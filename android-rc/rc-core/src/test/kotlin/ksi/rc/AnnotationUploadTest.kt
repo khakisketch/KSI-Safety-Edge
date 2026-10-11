@@ -98,6 +98,33 @@ class AnnotationUploadTest {
     }
 
     @Test
+    fun annotation_queued_after_full_sync_still_reaches_the_server() {
+        val (store, spec, eventId) = seeded()
+        val fake = FakeCore()
+        val uploader = EvidenceUploader(CoreApi(fake), store)
+
+        // Full evidence sync first: every artifact is committed.
+        assertEquals("COMPLETE", uploader.uploadFlight(spec).uploadState)
+        assertTrue(
+            store.artifactsFor(spec.flightId).all {
+                store.isArtifactSynced(it.get("artifact_id").asText())
+            },
+        )
+
+        // The operator marks a false positive LATER (user review
+        // 2026-10-11): the opinion must still reach the server, even though
+        // there is nothing left to upload evidence-wise.
+        store.queueAnnotation(
+            annotation(spec.flightId, eventId, "FALSE_POSITIVE_SUSPECTED"),
+        )
+        val late = uploader.uploadFlight(spec)
+        assertEquals(1, late.annotationsUploaded)
+        assertEquals(0, late.boots.sumOf { it.chunksSent })
+        assertEquals(1, fake.annotationsByEvent[eventId]!!.size)
+        assertTrue(store.pendingAnnotations().isEmpty())
+    }
+
+    @Test
     fun failed_annotation_post_stays_pending_and_evidence_still_syncs() {
         val (store, spec, eventId) = seeded()
         store.queueAnnotation(annotation(spec.flightId, eventId, "NEEDS_REVIEW"))

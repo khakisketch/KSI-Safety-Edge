@@ -20,6 +20,9 @@ import java.util.concurrent.TimeUnit
  * constraint covers "internet available", and [ksi.rc.SyncCoordinator]
  * additionally verifies server reachability before attempting uploads.
  * COMMITTED-before-SYNCED is unchanged.
+ *
+ * All branching lives in [SyncWorkerDecision] (host-tested); this class
+ * only reads store facts and maps decisions to WorkManager results.
  */
 class SyncWorker(
     appContext: Context,
@@ -29,16 +32,34 @@ class SyncWorker(
         val app = applicationContext as? RcApp ?: return Result.success()
         val session = app.session
         val flightId = inputData.getString(KEY_FLIGHT_ID) ?: return Result.success()
-        if (!session.coreConfigured()) return Result.success()
-        session.store.flight(flightId) ?: return Result.success()
 
-        // Already fully synced: nothing to do (receipts are durable).
-        val artifacts = session.store.artifactsFor(flightId)
-        if (artifacts.isNotEmpty() && artifacts.all {
-                session.store.isArtifactSynced(it.get("artifact_id").asText())
-            }
+        val coreConfigured = session.coreConfigured()
+        val flightExists = coreConfigured && session.store.flight(flightId) != null
+        val artifacts = if (flightExists) {
+            session.store.artifactsFor(flightId)
+        } else {
+            emptyList()
+        }
+        val artifactsAllSynced = artifacts.isNotEmpty() && artifacts.all {
+            session.store.isArtifactSynced(it.get("artifact_id").asText())
+        }
+        val pendingAnnotations = if (flightExists) {
+            session.store.pendingAnnotations()
+                .count { it.get("flight_id")?.asText() == flightId }
+        } else {
+            0
+        }
+
+        when (
+            SyncWorkerDecision.preCheck(
+                coreConfigured, flightExists, artifacts.size,
+                artifactsAllSynced, pendingAnnotations,
+            )
         ) {
-            return Result.success(workDataOf(KEY_STATE to "ALREADY_SYNCED"))
+            SyncWorkerDecision.Pre.NOTHING_TO_DO -> return Result.success()
+            SyncWorkerDecision.Pre.ALREADY_SYNCED ->
+                return Result.success(workDataOf(KEY_STATE to "ALREADY_SYNCED"))
+            SyncWorkerDecision.Pre.PROCEED -> Unit
         }
 
         val coordinator = session.syncCoordinator() ?: return Result.success()
@@ -57,13 +78,13 @@ class SyncWorker(
                 (outcome.detail?.let { " [$it]" } ?: ""),
         )
         return when (
-            SyncPolicy.decisionFor(
+            SyncWorkerDecision.postDecision(
                 outcome.state, runAttemptCount, outcome.partialCause,
             )
         ) {
-            SyncPolicy.Decision.DONE ->
+            SyncWorkerDecision.Post.DONE ->
                 Result.success(workDataOf(KEY_STATE to outcome.state))
-            SyncPolicy.Decision.RETRY -> Result.retry()
+            SyncWorkerDecision.Post.RETRY -> Result.retry()
         }
     }
 
@@ -98,16 +119,23 @@ object SyncScheduler {
      * after the flight record ended, or the app restarted), the flight is
      * re-queued automatically. Flights that can never heal (server-side
      * missing) are NOT re-queued — they stay visible for a human.
+     *
+     * Also re-queues a flight with PENDING OPERATOR ANNOTATIONS even when
+     * all artifacts are synced: opinions added after the evidence sync
+     * must still reach the server (user review 2026-10-11).
      */
     fun enqueuePending(context: Context, session: RcSession): String? {
         val pending = session.store.flights().lastOrNull { record ->
-            record.get("state")?.asText() == "ENDED" &&
-                session.store.artifactsFor(record.get("flight_id").asText())
-                    .any {
-                        val artifactId = it.get("artifact_id").asText()
-                        session.store.isArtifactComplete(artifactId) &&
-                            !session.store.isArtifactSynced(artifactId)
-                    }
+            if (record.get("state")?.asText() != "ENDED") return@lastOrNull false
+            val flightId = record.get("flight_id").asText()
+            val hasCompleteUnsynced = session.store.artifactsFor(flightId).any {
+                val artifactId = it.get("artifact_id").asText()
+                session.store.isArtifactComplete(artifactId) &&
+                    !session.store.isArtifactSynced(artifactId)
+            }
+            val hasPendingOpinion = session.store.pendingAnnotations()
+                .any { it.get("flight_id")?.asText() == flightId }
+            hasCompleteUnsynced || hasPendingOpinion
         } ?: return null
         val flightId = pending.get("flight_id").asText()
         enqueue(context, flightId)

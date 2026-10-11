@@ -42,4 +42,16 @@ object SyncPolicy {
 
         else -> Decision.RETRY // UNREACHABLE, FAILED, unknown
     }
+
+    /**
+     * Skip a queued sync only when there is NOTHING left to deliver:
+     * artifacts exist, all are synced, AND no pending operator annotations
+     * (user review 2026-10-11 — a late "false positive" opinion must still
+     * go out; artifact-only completeness is not evidence completeness).
+     */
+    fun shouldSkipSync(
+        artifactCount: Int,
+        artifactsAllSynced: Boolean,
+        pendingAnnotations: Int,
+    ): Boolean = artifactCount > 0 && artifactsAllSynced && pendingAnnotations == 0
 }

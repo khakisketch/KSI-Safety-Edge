@@ -49,10 +49,23 @@ dependencies {
 
     // A6/A7 host-side unit tests for the pure models/policies.
     testImplementation("junit:junit:4.13.2")
+    // A8/L1 closure: real WorkManager execution tests (Robolectric, host).
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("androidx.work:work-testing:2.9.1")
+    testImplementation("androidx.test:core:1.6.1")
 }
 
 android {
     testOptions {
         unitTests.isReturnDefaultValues = true
+    }
+}
+
+tasks.withType<Test>().configureEach {
+    // Host is aarch64; the x86_64 container path runs the JVM under
+    // qemu-user where AVX emulation can crash Robolectric's native
+    // runtime. Disable AVX only in that (amd64) case.
+    if (System.getProperty("os.arch") == "amd64") {
+        jvmArgs("-XX:UseAVX=0")
     }
 }

@@ -1,6 +1,8 @@
 package ksi.safetyedge.rc
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import ksi.rc.SyncOutcome
 
@@ -77,5 +79,19 @@ class SyncPolicyTest {
                 attempt = SyncPolicy.MAX_PARTIAL_RETRIES,
             ),
         )
+    }
+
+    @Test
+    fun skip_requires_synced_artifacts_and_no_pending_opinions() {
+        // Fully delivered: skip is correct.
+        assertTrue(SyncPolicy.shouldSkipSync(3, true, 0))
+        // A late operator opinion keeps the sync alive even when every
+        // artifact is synced (user review 2026-10-11 regression).
+        assertFalse(SyncPolicy.shouldSkipSync(3, true, 1))
+        // Unsynced artifacts: never skip.
+        assertFalse(SyncPolicy.shouldSkipSync(3, false, 0))
+        // Artifact-less flights were never skipped by this path.
+        assertFalse(SyncPolicy.shouldSkipSync(0, false, 0))
+        assertFalse(SyncPolicy.shouldSkipSync(0, true, 0))
     }
 }

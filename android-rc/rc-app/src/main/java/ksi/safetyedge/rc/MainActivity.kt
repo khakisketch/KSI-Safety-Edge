@@ -451,7 +451,15 @@ class MainActivity : AppCompatActivity() {
                 }
                 runOnUiThread {
                     if (isDestroyed) return@runOnUiThread
-                    show(message)
+                    // A late opinion must still reach the server even when
+                    // the evidence was fully synced earlier.
+                    val scheduled = if (session.coreConfigured()) {
+                        SyncScheduler.enqueue(applicationContext, flightId)
+                        " · 서버 동기화 예약"
+                    } else {
+                        " · Core 설정 시 동기화"
+                    }
+                    show(message + scheduled)
                     refreshHistory()
                 }
             } catch (exc: Exception) {
