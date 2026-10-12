@@ -66,6 +66,8 @@
    (`MsdkPlatform.state`·`DjiBridgeState`) — 실패 시 NoClassDefFound/VerifyError
    로그를 그대로 기록(upstream #809·#671 계열). 키 미설정이면 KEY_MISSING 표시가 정상.
 2. **MSDK 초기화**: 등록 성공 로그, RC 화면에 연결 상태 표시(인터넷/MOP/기체 독립)
+   + `--mop-channel 0` 실기동: HEARTBEAT 수신·MISSION_PREPARE/APPLY 왕복·ACK 확인
+   (**flight id 핸드오프 확정 필요** — RC가 만드는 비행 id와 Edge envelope flight_id 일치)
 3. **RC↔Manifold 연결**: 데이터 채널 open, MOP HEARTBEAT 수신(채널 신선도 표시)
 4. **임무 적용**: 실 스냅샷/번들 다운로드 → PREPARE/APPLY → digest 검증 표시
 5. **로컬 저장**: 관측/사건/세그먼트 저장 → **앱 강제 종료 → 재시작 → 복원** 확인
@@ -115,6 +117,44 @@
   - `MsdkDroneLink.connect()` — 앱키 확인 **선행**, 파이프라인은 **REGISTERED 이후에만** 접촉.
 - **검증(호스트)**: rc-core 67/67 · rc-msdk 8/8 · rc-app bench 23(6 스킵) · device 17/17 ·
   device APK 재빌드(166.9MB) — `MsdkPlatform` 정의·Helper 호출 참조 확인. 커밋 `a810572`.
-- **미검증(실기 게이트)**: Helper 로드 → 등록 성공 → 파이프라인 연결(§4-0 시험). 실패 시
-  로그/예외를 그대로 증거로 기록하고, `-provided` 패키징 전환·developer.dji.com SDK zip
-  반영은 실기 결과로만 결정한다. A9-2(PSDK 측 MOP 프레이밍)·A9-3(영상 표시·녹화)는 미구현.
+- **미검증(실기 게이트)**: Helper 로드 → 등록 성공 → 파이프라인 연결(**§4-1** 설치·기동
+  단계의 최소 SDK 초기화 확인). 실패 시 로그/예외를 그대로 증거로 기록하고, `-provided`
+  패키징 전환·developer.dji.com SDK zip 반영은 실기 결과로만 결정한다.
+
+## 8. A9-2 구현 기록 — MOP 전송 계층 (C61, 2026-10-12, 장치 전)
+
+기존 MOP 봉투 계약(Python harness·rc-core와 동일 — 새 의미 계약 없음) 위에 실제
+양방향 전송 경로를 구현했다. 메시지 로직은 호스트 시험 대상, **채널 I/O만 장치 게이트**다.
+
+- **C++ 전송 코어**(`edge/src/transport/`): `digest`(SHA-1/256·uuid5·base64) ·
+  `json`(엄격 파서 + JCS/ES6 직렬화) · `mop_frame`(u32be+flags 프레이밍·재조립,
+  64 KiB 청크 가드, 손상 시 버퍼 폐기+계수) · `mop_envelope`(봉투 생성/검증 —
+  `payload_sha256`은 payload 단독의 JCS digest, Python/Kotlin과 동일) ·
+  `mop_evidence`(OBSERVATION/EVENT/FLIGHT_SUMMARY/HEARTBEAT/ARTIFACT 페이로드
+  빌더 — 기존 생성 경계 재사용, 좌표/촬영시각 날조 없음) · `mop_endpoint`
+  (`edge_replay.py` 의미 이식: 채널별 seq·uuid5 msg id·unacked/재전송/unrecoverable
+  gap·mission PREPARE/APPLY/STATUS/SESSION·reboot) · `mop_link`(`MopByteTransport`
+  포트 위 flush/feed/retry/재조립 리셋, mutex 직렬화).
+- **Kotlin 하드닝**(사용자 지적 2건 + C60 리뷰 D1~D5 반영): `MopFrameWriter`(동시
+  송신 프레임 직렬화 — UI 스레드+재전송 타이머), 부분 write 시 연결 재수립(이미 전달된
+  바이트는 되돌릴 수 없음 — 재연결로 양 끝 재조립 리셋, 봉투는 같은 msg_id 재전송),
+  desync(청크 가드 초과) 시 계수+리셋+연결 종료(리싱크 마커 없음), connect()/disconnect()
+  재조립 버퍼 초기화(세션 간 조각 혼입 금지); D1~D5: disconnect/영상 `LinkageError`
+  캐치, FAILED 재표기(INITIALIZING 위장 제거)+`retryRegistration`, `@Volatile` 상태,
+  문서 정정.
+- **양방향 골든 고정**(`contracts/mop/` + README): rc→edge는 Kotlin `MopEndpoint`가
+  생성하고 테스트가 동일 바이트를 재생산(고정); edge→rc는 **실제 C++ 엔드포인트+링크가
+  생성**하고 **Kotlin 테스트가 실제 `MopEndpoint`+`EvidenceIngest`(+FileRcStore) 경로로
+  소비**(관측/사건/요약 저장·artifact 조립/해시 일치·seq 부기·commit-before-ACK 확인).
+- **PSDK 애플리케이션 연결**(장치 게이트): `src/mop_service.cpp` — 채널
+  Init/Create/Bind/Accept(리더 스레드)·RecvData 폴링·SendData 부분 write 루프 +
+  flush/재전송/heartbeat 타이머; `main.cpp` `--mop-channel N`(`--flight-id`) 옵션
+  (미지정 시 기존 동작 불변).
+- **검증(호스트)**: edge **19/19**(신규 `mop_frame`·`mop_json`·`mop_e2e`) ·
+  rc-msdk **15/15**(프레이밍 골든·동시성·양방향 크로스랭귀지) · rc-core 67/67(불변) ·
+  rc-app bench 23(6 스킵)·device 17/17 · device APK 재빌드. 커밋 `76b8642`(C61).
+  독립 검토 반영: desync 재연결 경로 리더 누수 수정 · `Encode(0)` 거부 ·
+  malformed PREPARE harness parity(error, ACK 없음) · MopService 핸들 순서.
+- **미검증(실기/H1)**: 실제 MOP 채널 연결·처리량/지연, MISSION 왕복, WorkManager 실기동.
+  **다음(A9-3 전)**: tick→evidence payload 매핑(psdk-app) · flight id 핸드오프 확정 ·
+  개발 host에서 psdk-app 컴파일 불가(PSDK 헤더) — 첫 장치 빌드에서 컴파일 검증.
