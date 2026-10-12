@@ -1,6 +1,7 @@
 package ksi.safetyedge.rc
 
 import android.app.Application
+import android.content.Context
 import java.io.File
 
 /**
@@ -26,6 +27,17 @@ class RcApp : Application() {
     /** A9: device recorder (null on the bench — a fake cannot record). */
     var videoRecorder: VideoRecorder? = null
         private set
+
+    /**
+     * A9-1: the device flavor installs the DJI MSDK bootstrap HERE, in the
+     * official sample's order (`attachBaseContext` ->
+     * `com.cySdkyc.clx.Helper.install`) — before any SDK class is touched.
+     * Bench is an explicit no-op.
+     */
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(base)
+        PlatformLinks.installPlatform(this)
+    }
 
     override fun onCreate() {
         super.onCreate()

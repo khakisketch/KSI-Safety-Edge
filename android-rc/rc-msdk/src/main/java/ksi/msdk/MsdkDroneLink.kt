@@ -24,6 +24,9 @@ import ksi.safetyedge.rc.DroneLink
  * DEVICE GATE: registration, pipeline connect and the real read/write loop
  * are verified on the RC ground session; this class compiles and packages
  * now without hardware. Framing/reassembly is [MopFrameCodec], host-tested.
+ * A9-1 order: the app installs the SDK bootstrap in attachBaseContext
+ * (see [MsdkPlatform]) before any of this runs; here the key gate comes
+ * first and the pipeline is touched only after REGISTERED.
  */
 class MsdkDroneLink(
     private val context: Context,
@@ -77,30 +80,48 @@ class MsdkDroneLink(
     override fun connect() {
         if (state != DroneLink.State.DISCONNECTED) return
         setState(DroneLink.State.CONNECTING)
-        val manager = PipelineManager.getInstance()
-        manager.init()
-        manager.addPipelineConnectionListener(pConnectionListener)
+        // A9-1: never touch the SDK (PipelineManager) without the app key —
+        // the key gate comes first, and the pipeline is only connected once
+        // the SDK reports REGISTERED.
+        if (!bridge.appKeyPresent()) {
+            lastError = "${DjiSdkBridge.API_KEY_META} missing/blank — SDK not started"
+            setState(DroneLink.State.DISCONNECTED)
+            return
+        }
         bridge.start { bridgeState ->
             when (bridgeState) {
-                DjiBridgeState.REGISTERED -> {
-                    // TODO(device): confirm the success convention (null vs
-                    // non-null IDJIError) against the SDK sample on the RC.
-                    val error = manager.connectPipeline(
-                        pipelineId,
-                        PipelineDeviceType.PAYLOAD,
-                        TransmissionControlType.STABLE,
-                    )
-                    if (error != null) {
-                        lastError = error.description()
-                        setState(DroneLink.State.DISCONNECTED)
-                    }
-                }
+                DjiBridgeState.REGISTERED -> connectPipeline()
                 DjiBridgeState.FAILED, DjiBridgeState.KEY_MISSING -> {
                     lastError = bridge.lastError
                     setState(DroneLink.State.DISCONNECTED)
                 }
                 else -> Unit // INITIALIZING: wait for the callback
             }
+        }
+    }
+
+    private fun connectPipeline() {
+        try {
+            val manager = PipelineManager.getInstance()
+            manager.init()
+            manager.addPipelineConnectionListener(pConnectionListener)
+            // TODO(device): confirm the success convention (null vs
+            // non-null IDJIError) against the SDK sample on the RC.
+            val error = manager.connectPipeline(
+                pipelineId,
+                PipelineDeviceType.PAYLOAD,
+                TransmissionControlType.STABLE,
+            )
+            if (error != null) {
+                lastError = error.description()
+                setState(DroneLink.State.DISCONNECTED)
+            }
+        } catch (e: LinkageError) {
+            lastError = "pipeline unavailable: ${e.message ?: e.javaClass.name}"
+            setState(DroneLink.State.DISCONNECTED)
+        } catch (e: Exception) {
+            lastError = "pipeline connect failed: ${e.message ?: e.javaClass.name}"
+            setState(DroneLink.State.DISCONNECTED)
         }
     }
 

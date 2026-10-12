@@ -1,5 +1,6 @@
 package ksi.safetyedge.rc
 
+import android.app.Application
 import android.content.Context
 
 /**
@@ -10,6 +11,9 @@ import android.content.Context
  * knows which implementation is attached.
  */
 object PlatformLinks {
+    /** Bench: no SDK, nothing to install. */
+    fun installPlatform(application: Application) = Unit
+
     fun droneLink(context: Context): DroneLink = FakeDroneLink()
 
     fun videoSource(context: Context): VideoSource = FakeVideoSource()

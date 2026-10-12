@@ -15,9 +15,17 @@ enum class DjiBridgeState { IDLE, KEY_MISSING, INITIALIZING, REGISTERED, FAILED 
  * Honest boundary: without a developer app key in the manifest meta-data
  * (`com.dji.sdk.API_KEY`, injected at build time from local.properties —
  * never committed) the SDK is NOT initialised, so bench builds and the
- * frozen pipeline stay deterministic. Registration success, product
- * connection and every SDK call below are DEVICE-GATE facts: they compile
- * and package now, and are verified on the RC (A9 ground session).
+ * frozen pipeline stay deterministic.
+ *
+ * A9-1 order (verified against the official sample, 2026-10-12):
+ * 1. `com.cySdkyc.clx.Helper.install(application)` in
+ *    `Application.attachBaseContext` (see [MsdkPlatform]) — it loads the
+ *    SDK runtime classes, which are NOT part of our app dex;
+ * 2. `SDKManager.getInstance().init(context, callback)`;
+ * 3. `registerApp()` only after `onInitProcess(INITIALIZE_COMPLETE)` —
+ *    never immediately after init().
+ * Registration success, product connection and every SDK call below are
+ * DEVICE-GATE facts: they compile and package now, verified on the RC.
  */
 class DjiSdkBridge(private val context: Context) {
     var state: DjiBridgeState = DjiBridgeState.IDLE
@@ -28,6 +36,8 @@ class DjiSdkBridge(private val context: Context) {
         private set
 
     private var onChange: ((DjiBridgeState) -> Unit)? = null
+    private var initializing = false
+    private var registrationRequested = false
 
     fun appKeyPresent(): Boolean = try {
         val info = context.packageManager.getApplicationInfo(
@@ -47,41 +57,87 @@ class DjiSdkBridge(private val context: Context) {
             )
             return
         }
-        val manager = SDKManager.getInstance()
+        val manager = try {
+            SDKManager.getInstance()
+        } catch (e: LinkageError) {
+            // A9-1: honest failure when the SDK runtime classes are absent
+            // (the Helper bootstrap in [MsdkPlatform] loads them).
+            setState(DjiBridgeState.FAILED, "SDKManager unavailable: ${reason(e)}")
+            return
+        } catch (e: Exception) {
+            setState(DjiBridgeState.FAILED, "SDKManager unavailable: ${reason(e)}")
+            return
+        }
         if (manager.isRegistered) {
             setState(DjiBridgeState.REGISTERED, null)
             return
         }
+        if (initializing) {
+            // init() runs once per process; later start() calls just
+            // re-observe the state. A registration retry hook (the sample
+            // re-registers when the network returns) is a device-gate TODO.
+            setState(DjiBridgeState.INITIALIZING, null)
+            return
+        }
+        initializing = true
         setState(DjiBridgeState.INITIALIZING, null)
-        manager.init(context, object : SDKManagerCallback {
-            override fun onRegisterSuccess() {
-                setState(DjiBridgeState.REGISTERED, null)
-            }
+        try {
+            manager.init(
+                context,
+                object : SDKManagerCallback {
+                    override fun onRegisterSuccess() {
+                        setState(DjiBridgeState.REGISTERED, null)
+                    }
 
-            override fun onRegisterFailure(error: IDJIError?) {
-                setState(DjiBridgeState.FAILED, error?.description())
-            }
+                    override fun onRegisterFailure(error: IDJIError?) {
+                        setState(DjiBridgeState.FAILED, error?.description())
+                    }
 
-            override fun onProductDisconnect(productId: Int) {
-                connectedProductCount = (connectedProductCount - 1).coerceAtLeast(0)
-            }
+                    override fun onProductDisconnect(productId: Int) {
+                        connectedProductCount = (connectedProductCount - 1).coerceAtLeast(0)
+                    }
 
-            override fun onProductConnect(productId: Int) {
-                connectedProductCount += 1
-            }
+                    override fun onProductConnect(productId: Int) {
+                        connectedProductCount += 1
+                    }
 
-            override fun onProductChanged(productId: Int) { /* diagnostics only */ }
+                    override fun onProductChanged(productId: Int) { /* diagnostics only */ }
 
-            override fun onInitProcess(event: DJISDKInitEvent?, totalProcess: Int) {
-                /* progress is surfaced by state INITIALIZING until registered */
-            }
+                    override fun onInitProcess(event: DJISDKInitEvent?, totalProcess: Int) {
+                        // A9-1 (official sample order): registerApp() waits
+                        // for INITIALIZE_COMPLETE — never called directly
+                        // after init(). The flag keeps it to one call.
+                        if (event == DJISDKInitEvent.INITIALIZE_COMPLETE) {
+                            registerOnce()
+                        }
+                    }
 
-            override fun onDatabaseDownloadProgress(currentBytes: Long, totalBytes: Long) {
-                /* fly-safe DB download: progress logged by the SDK */
-            }
-        })
-        manager.registerApp()
+                    override fun onDatabaseDownloadProgress(currentBytes: Long, totalBytes: Long) {
+                        /* fly-safe DB download: progress logged by the SDK */
+                    }
+                },
+            )
+        } catch (e: LinkageError) {
+            setState(DjiBridgeState.FAILED, "SDK init linkage: ${reason(e)}")
+        } catch (e: Exception) {
+            setState(DjiBridgeState.FAILED, "SDK init failed: ${reason(e)}")
+        }
     }
+
+    @Synchronized
+    private fun registerOnce() {
+        if (registrationRequested) return
+        registrationRequested = true
+        try {
+            SDKManager.getInstance().registerApp()
+        } catch (e: LinkageError) {
+            setState(DjiBridgeState.FAILED, "registerApp linkage: ${reason(e)}")
+        } catch (e: Exception) {
+            setState(DjiBridgeState.FAILED, "registerApp failed: ${reason(e)}")
+        }
+    }
+
+    private fun reason(e: Throwable): String = e.message ?: e.javaClass.name
 
     private fun setState(next: DjiBridgeState, error: String?) {
         state = next
