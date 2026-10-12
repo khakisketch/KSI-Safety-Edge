@@ -158,3 +158,45 @@
 - **미검증(실기/H1)**: 실제 MOP 채널 연결·처리량/지연, MISSION 왕복, WorkManager 실기동.
   **다음(A9-3 전)**: tick→evidence payload 매핑(psdk-app) · flight id 핸드오프 확정 ·
   개발 host에서 psdk-app 컴파일 불가(PSDK 헤더) — 첫 장치 빌드에서 컴파일 검증.
+
+## 9. C62 구현 기록 — 실제 처리 결과 전달(tick→증거) + 비행 ID 핸드오프 (2026-10-12, 장치 전)
+
+제품 기준(“Manifold에서 생성한 관측·증거가 RC에 저장되고 서버에서 조회”)에 맞춰, 고정 입력이
+아니라 **실제 처리 결과**가 증거로 흐르는 경로를 연결했다.
+
+- **tick→증거 매핑**(`edge/…/mop_tick_evidence.*`, 호스트 시험): `TickRecord` →
+  OBSERVATION/DETECTION_EVENT/FLIGHT_SUMMARY — 검증된 브리지(`replay_evidence.py`) 의미 이식.
+  결정적 uuid5 id · COCO 원명 라벨(0 person/2 car/7 truck, 그 외 coco-N) · OBSERVED 트랙은
+  정확 박스 일치로만 연결(추측 없음) · CREATED 이벤트만 전송 · **kNotRun/추론실패는 관측을
+  만들지 않음**(빈 관측=부정 증거 금지) · 촬영시각 미검증 사유·sync 등급 정직 표기 ·
+  `position_wgs84` null. 요약은 covered/skipped·uptime·person/equipment 최대·세션 id
+  (RC 유도 `uuid5 session|flight|boot`).
+- **비행 ID 핸드오프**: RC가 비행마다 새 UUID를 만들므로(MissionStore) Edge는 **첫 RC 봉투의
+  flight_id를 채택**(adoption) — 부트 회전(`boot|flight|idx`)·seq/unacked/prepared/seen 초기화
+  (seq·재전송이 비행을 넘지 않음); MISSION_PREPARE(다른 비행)는 재채택; **채택 이전에는 송신하지
+  않음**(하트비트 포함 — 잠정 id로 봉투를 찍지 않는다). 채택 봉투의 ACK부터 새 신원 사용.
+- **미션 컨텍스트**: 적용된 번들(APPLY)에서 mission_revision_id·snapshot hash·policy revision을
+  `EvidenceContextFromBundle`로 추출(호스트 시험) → 관측/사건에 박제. 적용 전 관측은 송신하지
+  않고 skip 계수로 보고(은폐 없음).
+- **PSDK 앱 연결**: `MopService::EmitTick`(워커 루프, 3중 게이트: 연결·채택·적용) ·
+  `EmitFinalSummary`(종료 시) · 타이머 하트비트는 채택 이후에만; `--mop-channel` 미지정 시 기존
+  동작 불변. 소스는 여전히 장치 게이트(호스트 컴파일 불가 — 첫 장치 빌드에서 검증).
+- **검증(호스트)**: edge **20/20**(신규 `mop_tick`) · rc-msdk **15/15**(골든 재고정 + 매핑
+  충실도 단언: class_id/track_id/sync_quality/frame_seq/mission_revision · event_type/mode/
+  distance · summary session/coverage — **C++ 매핑 산출물을 Kotlin 실제 ingest 경로로 소비**).
+  이번 증분은 rc-app/rc-msdk 제품 코드를 변경하지 않는다(테스트·fixture만). 커밋 `dbb1d46`(C62).
+- **브리지와의 의도적 차이(검토 확인, 정직 방향)**: id 파트는 제품 스킴(`obs|flight|boot|tick`,
+  `det|…|index`, `event|…|rule|episode`, `summary|flight|boot` — 하네스 fixture 태그와 다름) ·
+  `class_name`이 채워진 검출은 모델 라벨 우선 · 트랙 연결은 class+정확 박스로 더 엄격 · zone
+  이벤트는 실제 revision id, mode는 `is_shadow` 반영, observation_quality는 틱 등급, artifact
+  목록은 빈 목록(정직) · 요약 created_at=마지막 tick · person/equipment 최대는 kOk 틱만.
+  **adoption·교차 비행 terminal-ACK은 하네스에 없는 제품 필수 전송 동작**이다(메시지 shape는
+  동일 — "새 의미 계약 없음"은 메시지 의미에 한함).
+- **독립 검토(HIGH 2·MEDIUM 2·LOW 2) 반영**: F1 `MopService` — `endpoint_`/`evidence_` 직접
+  접근을 `evidence_mutex_`로 단일화(락 순서 evidence→link→write) · F2 비행 전환 후 적용 번들
+  미도착 창에서 이전 컨텍스트로 관측을 찍던 결함 → 컨텍스트 리셋(해당 틱은 skip) · F3 채택 시
+  미플러시 outbox 폐기(구 신원 봉투 유출 차단) · F4 `--flight-id` 기본값 `""`(learn-from-wire
+  실제화 — 하트비트 잠정 id 송신 제거) · F5 테스트 보강(kInferenceFailure·매칭 id 무재채택·
+  교차 비행 terminal-ACK·dedup 재큐·unacked 초기화) · F6 서식. 재검증: edge 20/20·rc-msdk 15/15.
+- **미검증(실기)**: 실제 MOP 채널 위 tick→RC 저장(장치 세션). 비디오/스냅샷 아티팩트는 A9-3,
+  spatial·이벤트는 시간 정렬(H1) 후 조건 충족 시에만 — 현 상태에서 이벤트는 정직하게 비어 있다.
