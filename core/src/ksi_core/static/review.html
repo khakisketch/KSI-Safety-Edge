@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>KSI Safety Edge — 비행 검토 콘솔</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, -apple-system, "Noto Sans KR", sans-serif;
+         margin: 0; background: #f6f7f9; color: #1b1f24; }
+  header { background: #101418; color: #f2f4f7; padding: 14px 20px; }
+  header h1 { font-size: 17px; margin: 0 0 4px; }
+  header .note { font-size: 12px; color: #b9c0c9; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px 20px 48px; }
+  .panel { background: #fff; border: 1px solid #dcdfe4; border-radius: 8px;
+           padding: 14px 16px; margin: 12px 0; }
+  .panel h2 { font-size: 15px; margin: 0 0 10px; }
+  .panel h3 { font-size: 13px; margin: 14px 0 6px; color: #39424e; }
+  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  input[type=password], input[type=text] { padding: 7px 9px; border: 1px solid #c8cdd4;
+    border-radius: 6px; min-width: 260px; font-size: 13px; }
+  button { padding: 7px 12px; border: 1px solid #c8cdd4; border-radius: 6px;
+    background: #f2f4f7; cursor: pointer; font-size: 13px; }
+  button:hover { background: #e7eaef; }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #eceef1;
+           vertical-align: top; }
+  th { color: #5b6470; font-weight: 600; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover { background: #f4f7fb; }
+  .muted { color: #6b7481; font-size: 12px; }
+  .tag { display: inline-block; padding: 1px 7px; border-radius: 10px;
+         font-size: 11.5px; background: #eef1f5; margin-right: 4px; }
+  .tag.warn { background: #fff1d6; color: #7a4a00; }
+  .tag.bad { background: #ffe1e1; color: #8a1f1f; }
+  .tag.ok { background: #e2f4e5; color: #1d6b2c; }
+  .honest { background: #fff8e8; border: 1px solid #f0dfae; border-radius: 6px;
+            padding: 8px 10px; font-size: 12.5px; margin: 8px 0; }
+  pre { background: #f7f8fa; border: 1px solid #e6e8ec; border-radius: 6px;
+        padding: 8px; overflow: auto; font-size: 11.5px; max-height: 260px; }
+  #status { font-size: 12.5px; margin-left: 6px; }
+  #status.err { color: #a11b1b; }
+  #status.ok { color: #1d6b2c; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 4px 14px; font-size: 12.5px; }
+  .grid div b { color: #5b6470; font-weight: 600; margin-right: 4px; }
+  img.preview { max-width: 320px; max-height: 220px; border: 1px solid #dcdfe4;
+                border-radius: 6px; display: block; margin-top: 6px; }
+  .kv { font-size: 12.5px; }
+</style>
+</head>
+<body id="review-app">
+<header>
+  <h1>KSI Safety Edge — 비행 검토 콘솔 (개발용)</h1>
+  <div class="note">
+    Core에 내장된 정적 페이지입니다 — 데이터가 미리 심겨 있지 않으며, 아래에 붙여넣은
+    읽기(read) 토큰으로 기존 조회 API만 호출합니다.
+    운영 배포 전 사용자 인증·권한·HTTPS는 별도 보안 게이트입니다.
+  </div>
+</header>
+<main>
+  <div class="panel">
+    <div class="row">
+      <input id="token" type="password" placeholder="Core read 토큰 (예: dev token)" autocomplete="off" />
+      <button id="save">저장</button>
+      <button id="load">비행 목록 불러오기</button>
+      <span id="status"></span>
+    </div>
+    <div class="muted" style="margin-top:6px">
+      토큰은 이 브라우저 탭(sessionStorage)에만 저장됩니다. 저장소·서버에 기록되지 않습니다.
+    </div>
+  </div>
+
+  <div id="listPanel" class="panel" style="display:none">
+    <h2>비행 목록</h2>
+    <div class="honest">
+      <b>표기 원칙:</b> 업로드 상태는 서버가 아는 사실만 표시합니다 — 값이
+      LOCAL_ONLY/UPLOADING/PARTIAL이면 “서버 조회로 확인 가능한 범위”가 그만큼이라는 뜻입니다.
+      사건 0건은 안전 확인이 아닙니다.
+    </div>
+    <div id="flights"></div>
+  </div>
+
+  <div id="detailPanel" class="panel" style="display:none">
+    <h2 id="detailTitle">비행 상세</h2>
+    <div id="detail"></div>
+  </div>
+</main>
+
+<script>
+"use strict";
+
+const API = "/api/v1/edge";
+const $ = (id) => document.getElementById(id);
+
+function esc(v) {
+  return String(v ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[c]));
+}
+
+function setStatus(text, kind) {
+  const el = $("status");
+  el.textContent = text || "";
+  el.className = kind || "";
+}
+
+function token() {
+  return $("token").value.trim();
+}
+
+async function api(path) {
+  const r = await fetch(path, { headers: { Authorization: "Bearer " + token() } });
+  if (!r.ok) {
+    let detail = "";
+    try { detail = JSON.stringify(await r.json()).slice(0, 240); }
+    catch (_) { detail = (await r.text()).slice(0, 240); }
+    throw new Error(`${path} → ${r.status} ${detail}`);
+  }
+  return r.json();
+}
+
+/** Follows cursor pages with a hard cap; reports truncation honestly. */
+async function fetchPaged(path, capPages) {
+  let url = path;
+  const items = [];
+  let pages = 0;
+  let truncated = false;
+  while (url) {
+    if (pages >= capPages) { truncated = true; break; }
+    const data = await api(url);
+    items.push(...(data.items || []));
+    pages += 1;
+    url = data.next_cursor ? `${path}?limit=500&cursor=${encodeURIComponent(data.next_cursor)}` : null;
+  }
+  return { items, truncated };
+}
+
+function spanState(state) {
+  const map = {
+    COMPLETE: "ok", PARTIAL: "warn", UPLOADING: "warn", LOCAL_ONLY: "bad",
+    COMMITTED: "ok", OPEN: "warn",
+  };
+  return `<span class="tag ${map[state] || ""}">${esc(state)}</span>`;
+}
+
+async function loadFlights() {
+  setStatus("불러오는 중…", "");
+  try {
+    const { items, truncated } = await fetchPaged(`${API}/flights`, 20);
+    const rows = items.map((f) => {
+      const c = f.completeness || {};
+      return `<tr class="clickable" data-flight="${esc(f.flight_id)}">
+        <td>${esc(f.flight_id.slice(0, 8))}<div class="muted">${esc(f.started_at_utc || "-")}</div></td>
+        <td>${esc((f.site_id || "-").slice(0, 8))}</td>
+        <td>${spanState(f.upload_state)}</td>
+        <td>${esc(c.manifest_committed ?? "-")} / ${esc(c.manifests_total ?? "-")}
+            <div class="muted">누락 artifact ${esc(c.missing_artifact_count ?? "-")}</div></td>
+        <td>${esc(f.ended_at_utc || "(진행/미상)")}</td>
+      </tr>`;
+    }).join("");
+    $("flights").innerHTML = items.length
+      ? `<table><thead><tr><th>비행</th><th>현장</th><th>업로드</th><th>세션(커밋/전체)</th><th>종료</th></tr></thead><tbody>${rows}</tbody></table>
+         ${truncated ? '<div class="honest">목록이 상한(20페이지)에서 잘렸습니다 — 최신 일부만 표시 중입니다.</div>' : ""}`
+      : '<div class="muted">비행 기록이 없습니다 (해당 org 기준).</div>';
+    $("listPanel").style.display = "";
+    for (const tr of $("flights").querySelectorAll("tr.clickable")) {
+      tr.addEventListener("click", () => openFlight(tr.dataset.flight));
+    }
+    setStatus(`비행 ${items.length}건`, "ok");
+  } catch (e) {
+    setStatus(String(e.message), "err");
+  }
+}
+
+function detailGrid(f) {
+  const c = f.completeness || {};
+  return `<div class="grid">
+    <div><b>flight</b>${esc(f.flight_id)}</div>
+    <div><b>site</b>${esc(f.site_id)}</div>
+    <div><b>org</b>${esc(f.org_id)}</div>
+    <div><b>rc device</b>${esc(f.rc_device_id)}</div>
+    <div><b>mission</b>${esc(f.mission_id)}</div>
+    <div><b>mission rev</b>${esc(f.mission_revision_id)}</div>
+    <div><b>bundle sha256</b>${esc((f.bundle_sha256 || "").slice(0, 16))}…</div>
+    <div><b>started(수신)</b>${esc(f.started_at_utc || "-")}</div>
+    <div><b>ended(수신)</b>${esc(f.ended_at_utc || "(진행/미상)")}</div>
+    <div><b>upload_state</b>${spanState(f.upload_state)}</div>
+    <div><b>세션</b>${esc(c.manifest_committed ?? "-")} / ${esc(c.manifests_total ?? "-")} 커밋</div>
+    <div><b>누락 artifact</b>${esc(c.missing_artifact_count ?? "-")}</div>
+  </div>
+  <div class="muted" style="margin-top:6px">시간 기준: RC 수신 UTC 창(운영 기록). Edge monotonic 시각은 도메인이 달라 UTC로 변환하지 않습니다.</div>`;
+}
+
+function renderCoverage(coverage) {
+  const summaries = coverage.summaries || [];
+  if (!summaries.length) {
+    return `<div class="honest">요약(summary)이 서버에 아직 없습니다 — data_completeness=UNKNOWN.
+      “요약 없음”을 “관측 없음”이나 “안전”으로 해석하지 않습니다.</div>`;
+  }
+  return summaries.map((s) => {
+    const gaps = Array.isArray(s.gaps) ? s.gaps.length : 0;
+    const reasons = (s.quality_reasons || []).map((r) => `<span class="tag warn">${esc(r)}</span>`).join("");
+    return `<div class="panel" style="margin:8px 0">
+      <div class="kv"><b>session</b> ${esc((s.session_id || "").slice(0, 8))}
+        <b>AI 가동률</b> ${esc(s.ai_uptime_ratio ?? "-")}
+        <b>커버/스킵 프레임</b> ${esc(s.covered_frames ?? "-")} / ${esc(s.skipped_frames ?? "-")}
+        <b>gaps</b> ${gaps}</div>
+      <div style="margin-top:4px">${reasons || '<span class="tag">quality_reasons 없음</span>'}</div>
+    </div>`;
+  }).join("");
+}
+
+function renderObservationStats(items) {
+  const dist = (key) => {
+    const m = {};
+    for (const o of items) m[o[key]] = (m[o[key]] || 0) + 1;
+    return Object.entries(m).map(([k, v]) => `${esc(k || "?")}:${v}`).join(" · ") || "-";
+  };
+  let detections = 0;
+  const classes = {};
+  for (const o of items) {
+    for (const d of (o.detections || [])) {
+      detections += 1;
+      classes[d.class_id] = (classes[d.class_id] || 0) + 1;
+    }
+  }
+  const classText = Object.entries(classes).sort((a, b) => b[1] - a[1])
+    .slice(0, 12).map(([k, v]) => `${esc(k)}:${v}`).join(" · ") || "-";
+  return `<div class="kv">
+    <div><b>표본 수</b> ${items.length}${window.__obsTruncated ? " (상한에서 잘림 — 하한값)" : ""}</div>
+    <div><b>sync_quality</b> ${dist("sync_quality")}</div>
+    <div><b>geometry_status</b> ${dist("geometry_status")}</div>
+    <div><b>검출 합계</b> ${detections}</div>
+    <div><b>클래스 분포</b> ${classText}</div>
+  </div>`;
+}
+
+function eventRow(ev, idx) {
+  const model = ev.initial_model_output || {};
+  return `<div class="panel" style="margin:8px 0">
+    <div class="kv">
+      <b>#${idx}</b> ${esc((ev.event_id || "").slice(0, 8))}
+      <span class="tag">${esc(ev.event_type || "?")}</span>
+      <span class="tag ${ev.mode === "ACTIVE" ? "bad" : ""}">${esc(ev.mode || "?")}</span>
+      <b>quality</b> ${esc(ev.observation_quality || "-")}
+      <b>edge ns</b> ${esc(ev.detected_at_edge_monotonic_ns ?? "-")}
+    </div>
+    <div class="muted" style="margin-top:3px">rule ${esc(model.rule_id || "-")} · episode ${esc(model.episode ?? "-")} ·
+      distance_m ${esc(model.distance_m ?? "-")} · geometry ${esc(model.geometry || "-")}</div>
+    <div style="margin-top:6px">
+      <button data-event-detail="${esc(ev.event_id)}">근거·증거 보기</button>
+      <span class="muted" data-evidence-note="${esc(ev.event_id)}"></span>
+    </div>
+    <div data-evidence-box="${esc(ev.event_id)}"></div>
+  </div>`;
+}
+
+async function loadEventEvidence(eventId) {
+  const box = document.querySelector(`[data-evidence-box="${CSS.escape(eventId)}"]`);
+  const note = document.querySelector(`[data-evidence-note="${CSS.escape(eventId)}"]`);
+  note.textContent = "불러오는 중…";
+  try {
+    const detail = await api(`${API}/events/${eventId}`);
+    const ev = await api(`${API}/events/${eventId}/evidence`);
+    const items = ev.items || [];
+    note.textContent = `주석 ${detail.annotations_count ?? 0}건 · 증거 ${items.length}건`;
+    const ids = detail.evidence_artifact_ids || [];
+    const missing = ids.length - items.length;
+    box.innerHTML = items.map((it) => `
+      <div class="kv" style="margin-top:6px; border-top:1px dashed #e0e3e8; padding-top:6px">
+        <b>${esc(it.artifact_id.slice(0, 8))}</b> ${esc(it.source_kind)} ${esc(it.media_type)}
+        ${esc(it.size_bytes)}B
+        <div class="muted">sha256 ${esc((it.sha256 || "").slice(0, 16))}…</div>
+        <button data-download="${esc(it.artifact_id)}" data-name="${esc(it.artifact_id)}.bin">다운로드</button>
+        ${String(it.media_type || "").startsWith("image/")
+          ? `<button data-preview="${esc(it.artifact_id)}">미리보기</button>`
+          : ""}
+        <div data-preview-box="${esc(it.artifact_id)}"></div>
+      </div>`).join("") + (missing > 0
+        ? `<div class="honest">연결된 증거 ${ids.length}건 중 ${missing}건이 manifest에 없습니다 — 미업로드/불완전으로 보입니다.</div>`
+        : "");
+  } catch (e) {
+    note.textContent = "";
+    box.innerHTML = `<div class="honest">증거 조회 실패: ${esc(e.message)}</div>`;
+  }
+}
+
+function wireDownloads(root) {
+  for (const b of root.querySelectorAll("[data-download]")) {
+    b.addEventListener("click", async () => {
+      try {
+        const r = await fetch(`${API}/objects/${b.dataset.download}`,
+          { headers: { Authorization: "Bearer " + token() } });
+        if (!r.ok) throw new Error(`다운로드 → ${r.status}`);
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = b.dataset.name || "artifact.bin";
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+      } catch (e) { setStatus(String(e.message), "err"); }
+    });
+  }
+  for (const b of root.querySelectorAll("[data-preview]")) {
+    b.addEventListener("click", async () => {
+      const box = document.querySelector(`[data-preview-box="${CSS.escape(b.dataset.preview)}"]`);
+      try {
+        const r = await fetch(`${API}/objects/${b.dataset.preview}`,
+          { headers: { Authorization: "Bearer " + token() } });
+        if (!r.ok) throw new Error(`미리보기 → ${r.status}`);
+        const blob = await r.blob();
+        const url = URL.createObjectURL(blob);
+        box.innerHTML = `<img class="preview" src="${url}" alt="evidence" />`;
+      } catch (e) { box.innerHTML = `<div class="honest">${esc(e.message)}</div>`; }
+    });
+  }
+}
+
+async function openFlight(flightId) {
+  setStatus("상세 불러오는 중…", "");
+  $("detailPanel").style.display = "";
+  $("detailTitle").textContent = `비행 ${flightId.slice(0, 8)} 상세`;
+  const detail = $("detail");
+  detail.innerHTML = '<div class="muted">불러오는 중…</div>';
+  try {
+    const flight = await api(`${API}/flights/${flightId}`);
+    const coverage = await api(`${API}/flights/${flightId}/coverage`);
+    const sessions = await api(`${API}/flights/${flightId}/flight-sessions`);
+    const applications = await api(`${API}/flights/${flightId}/mission-applications`);
+    const obs = await fetchPaged(`${API}/flights/${flightId}/observations`, 40);
+    window.__obsTruncated = obs.truncated;
+    const events = await fetchPaged(`${API}/events?flight_id=${encodeURIComponent(flightId)}`, 20);
+    const artifacts = await api(`${API}/flights/${flightId}/artifacts`);
+
+    const zeroNote = (events.items.length === 0)
+      ? `<div class="honest"><b>사건 0건.</b> 이것은 안전 확인이 아닙니다 — 아래 관측 요약의
+         커버/스킵 프레임과 gaps, 증거 목록으로 “무엇을 몰랐는지”를 함께 확인하십시오.</div>`
+      : "";
+
+    detail.innerHTML = `
+      <h3>개요</h3>${detailGrid(flight)}
+      <h3>관측 요약 (coverage: ${esc(coverage.data_completeness)})</h3>
+      ${renderCoverage(coverage)}
+      <h3>관측 (observations)</h3>${renderObservationStats(obs.items)}
+      <h3>사건 (events)</h3>${zeroNote}
+      ${events.items.map((ev, i) => eventRow(ev, i)).join("") || ""}
+      ${events.truncated ? '<div class="honest">사건 목록이 상한(20페이지)에서 잘렸습니다.</div>' : ""}
+      <h3>증거 (artifacts — 세션 manifest 기준, 사건 0건 비행 포함)</h3>
+      ${artifacts.items.length ? `<table><thead><tr>
+          <th>artifact</th><th>종류</th><th>media</th><th>크기</th><th>세션</th><th>다운로드 가능</th>
+        </tr></thead><tbody>${artifacts.items.map((a) => `<tr>
+          <td>${esc(a.artifact_id.slice(0, 8))}<div class="muted">${esc(a.media_type)}${a.segment_index != null ? " · seg " + esc(a.segment_index) : ""}</div></td>
+          <td>${esc(a.source_kind)}${a.required ? ' <span class="tag">required</span>' : ""}</td>
+          <td>${esc(a.media_type)}</td>
+          <td>${esc(a.size_bytes)}B</td>
+          <td>${spanState(a.session_status)}</td>
+          <td>${a.committed
+            ? `<button data-download="${esc(a.artifact_id)}" data-name="${esc(a.artifact_id)}.bin">다운로드</button>` +
+              ` ${String(a.media_type || "").startsWith("image/") ? `<button data-preview="${esc(a.artifact_id)}">미리보기</button>` : ""}`
+            : '<span class="muted">아직 아님(PARTIAL/OPEN)</span>'}</td>
+        </tr>`).join("")}</tbody></table>
+        <div data-preview-holder></div>`
+        : '<div class="muted">이 비행의 세션 manifest에 artifact가 없습니다.</div>'}
+      <h3>비행 세션 (edge sessions: ${sessions.items.length})</h3>
+      <pre>${esc(JSON.stringify(sessions.items, null, 1))}</pre>
+      <h3>미션 적용 (applications: ${applications.items.length})</h3>
+      <pre>${esc(JSON.stringify(applications.items, null, 1))}</pre>
+    `;
+    for (const btn of detail.querySelectorAll("[data-event-detail]")) {
+      btn.addEventListener("click", () => loadEventEvidence(btn.dataset.eventDetail));
+    }
+    wireDownloads(detail);
+    setStatus("상세 로드 완료", "ok");
+  } catch (e) {
+    detail.innerHTML = `<div class="honest">불러오기 실패: ${esc(e.message)}</div>`;
+    setStatus(String(e.message), "err");
+  }
+}
+
+$("save").addEventListener("click", () => {
+  sessionStorage.setItem("ksi_review_token", token());
+  setStatus("토큰 저장됨(탭 범위)", "ok");
+});
+$("load").addEventListener("click", loadFlights);
+$("token").value = sessionStorage.getItem("ksi_review_token") || "";
+</script>
+</body>
+</html>

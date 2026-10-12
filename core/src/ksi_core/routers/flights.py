@@ -431,5 +431,54 @@ def get_coverage(flightId: str, request: Request):
         db.close()
 
 
+@router.get("/flights/{flightId}/artifacts")
+def list_flight_artifacts(flightId: str, request: Request):
+    """All artifacts declared by the flight's ingest sessions (org-scoped).
+
+    Additive READ endpoint for the L1 review journey: a zero-event flight's
+    evidence (e.g. RC_PROXY_SEGMENT recordings) must be openable, so this
+    listing does not depend on event links. `committed` says whether the
+    bytes are downloadable now (/objects serves COMMITTED sessions only).
+    """
+    principal, denied = authorize(request, write=False)
+    if denied is not None:
+        return denied
+    db = use_db(request)
+    try:
+        if _flight_or_404(db, principal, flightId) is None:
+            return error("NOT_FOUND", "flight not found", 404)
+        sessions = (
+            db.query(models.IngestSession)
+            .filter_by(org_id=principal.org_id, flight_id=flightId)
+            .order_by(models.IngestSession.id.asc())
+            .all()
+        )
+        items = []
+        for session in sessions:
+            committed = session.status == "COMMITTED"
+            for artifact in (session.manifest or {}).get("artifacts", []):
+                items.append(
+                    {
+                        "artifact_id": artifact["artifact_id"],
+                        "source_kind": artifact.get("source_kind", "UNKNOWN"),
+                        "media_type": artifact.get(
+                            "media_type", "application/octet-stream"
+                        ),
+                        "size_bytes": artifact.get("size_bytes", 0),
+                        "sha256": artifact.get("sha256", ""),
+                        "required": artifact.get("required", True),
+                        "segment_index": artifact.get("segment_index"),
+                        "edge_boot_id": (session.manifest or {}).get("edge_boot_id"),
+                        "upload_id": session.upload_id,
+                        "session_status": session.status,
+                        "committed": committed,
+                        "download_url": f"/api/v1/edge/objects/{artifact['artifact_id']}",
+                    }
+                )
+        return {"items": items}
+    finally:
+        db.close()
+
+
 # Silence unused-import lint for covered_bytes (kept for range accounting API).
 _ = covered_bytes

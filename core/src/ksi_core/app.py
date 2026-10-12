@@ -9,7 +9,7 @@ from fastapi import FastAPI
 from . import db as db_mod
 from .config import load_settings
 from .routers import annotations as annotations_router
-from .routers import bundles, events, flights, health, ingest, missions, review, sites
+from .routers import bundles, events, flights, health, ingest, missions, review, sites, ui
 
 
 def create_app() -> FastAPI:
@@ -41,5 +41,9 @@ def create_app() -> FastAPI:
     app.include_router(events.router, prefix=prefix)
     app.include_router(annotations_router.router, prefix=prefix)
     app.include_router(review.router, prefix=prefix)
+
+    # A-1 review console: static, data-free shell at /review (no prefix, no
+    # auth). It drives the EXISTING read APIs with the operator's token.
+    app.include_router(ui.router)
 
     return app

@@ -16,6 +16,22 @@ KSI_OBJECT_ROOT="$(pwd)/core/var/objects" \
 curl localhost:8000/api/v1/edge/healthz   # {"ok": true}, no auth
 ```
 
+## Review console (A-1)
+
+`GET /review` serves a static, data-free HTML console (no auth, no embedded
+data). The 안전관리자/개발자가 토큰(읽기 scope)을 페이지에 붙여넣으면, 페이지가
+**기존 조회 API만** Bearer 헤더로 호출해 다음을 보여준다:
+
+- 비행 목록/상세: 업로드 상태(`upload_state`)·완결성(`completeness`) 그대로 표시
+- 관측 요약(coverage): `data_completeness`·커버/스킵 프레임·gaps·quality_reasons
+- 관측(observations) 분포, 사건(events) + 사건별 근거/증거, 증거 다운로드·이미지 미리보기
+- **사건 0건 비행의 증거**: `GET /flights/{flightId}/artifacts` (additive read —
+  세션 manifest 기준, `committed` 여부 표시; `RC_PROXY_SEGMENT` 포함)
+
+정직 표기 원칙: “사건 0건 ≠ 안전”, 요약 없음은 “관측 없음”이 아님, 시간은 수신
+UTC 기준(Edge monotonic 변환 없음). 운영 배포 전 사용자 인증·권한·HTTPS는 별도
+보안 게이트(README 하단 Limits)다.
+
 ## Env vars (read once, at `create_app()` time)
 
 | var | default | meaning |
