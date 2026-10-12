@@ -119,7 +119,16 @@ class SyncWorkerTest {
             .setInputData(workDataOf(SyncWorker.KEY_FLIGHT_ID to flightId))
             .build()
         val result = worker.doWork()
-        assertEquals(androidx.work.ListenableWorker.Result.success(), result)
+        // Compare the RESULT CLASS + returned state, not full equality:
+        // Result.success(data) carries outputData that a bare
+        // Result.success() (no data) never equals — a latent test bug that
+        // only surfaced when the suite first ran on the x86_64 CI runner
+        // (C65).
+        assertTrue(
+            "expected success, got ${result.javaClass.simpleName} " +
+                result.outputData.keyValueMap,
+            result is androidx.work.ListenableWorker.Result.Success,
+        )
         assertEquals("ALREADY_SYNCED", result.outputData.getString(SyncWorker.KEY_STATE))
     }
 
