@@ -144,14 +144,47 @@ class DemoFeed(
         }
     }
 
-    /** Digest-valid local bundle so Prepare/Apply run without an Edge. */
+    /** Digest-valid local bundle so Prepare/Apply run without an Edge.
+     *  Shape pinned by rc-app `DemoBundleShapeTest`: `startFlightFromBundle`
+     *  requires an embedded, self-digested `mission_snapshot` (the stale
+     *  shape without one surfaced only when the WM suite first ran on the
+     *  x86_64 CI runner — C65). */
     companion object {
         fun demoBundle(bundleId: String, siteId: String): ObjectNode {
-            val bundle = Mop.json.createObjectNode()
-            bundle.put("schema_version", 1)
-            bundle.put("bundle_id", bundleId)
-            bundle.put("site_id", siteId)
-            bundle.put("bundle_sha256", CanonicalJson.digestExcluding(bundle, "bundle_sha256"))
+            val snapshot = Mop.json.createObjectNode().apply {
+                put("schema_version", 1)
+                put("mission_id", Mop.newMsgId("demo", "mission", bundleId))
+                put("site_id", siteId)
+                put("mission_revision_id", Mop.newMsgId("demo", "mission-rev", bundleId))
+                put("origin", "DEMO")
+                putArray("zones")
+                put(
+                    "content_sha256",
+                    CanonicalJson.digestExcluding(this, "content_sha256"),
+                )
+            }
+            val policy = Mop.json.createObjectNode().apply {
+                put("schema_version", 1)
+                put("policy_id", Mop.newMsgId("demo", "policy", bundleId))
+                put("revision_id", Mop.newMsgId("demo", "policy-rev", bundleId))
+                put("site_id", siteId)
+                putArray("rules")
+                put(
+                    "content_sha256",
+                    CanonicalJson.digestExcluding(this, "content_sha256"),
+                )
+            }
+            val bundle = Mop.json.createObjectNode().apply {
+                put("schema_version", 1)
+                put("bundle_id", bundleId)
+                put("site_id", siteId)
+                set<ObjectNode>("mission_snapshot", snapshot)
+                set<ObjectNode>("risk_policy", policy)
+                put(
+                    "bundle_sha256",
+                    CanonicalJson.digestExcluding(this, "bundle_sha256"),
+                )
+            }
             return bundle
         }
     }
