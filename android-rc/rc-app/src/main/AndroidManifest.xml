@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Field connectivity: office Wi-Fi sync + on-device status checks. -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -11,9 +12,13 @@
         android:theme="@style/Theme.KsiRc"
         android:supportsRtl="true"
         android:allowBackup="false"
-        android:usesCleartextTraffic="true">
-        <!-- cleartext: dev/field-laptop Core over plain HTTP (A4). The
-             production Core endpoint must be https; tighten before release. -->
+        android:usesCleartextTraffic="true"
+        tools:replace="android:usesCleartextTraffic">
+        <!-- cleartext: dev/field-laptop Core over plain HTTP (A4). The DJI
+             AAR declares false, so this explicit override is required for
+             the device flavor too; the production Core endpoint must be
+             https (pre-deployment security gate, recorded in the ledger).
+             tools:replace is scoped to THIS attribute. -->
         <activity
             android:name=".MainActivity"
             android:exported="true">

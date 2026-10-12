@@ -3,14 +3,30 @@
 작성: 2026-10-11 · 상태: **착수 준비 완료(코드 착수는 장치·앱키 입력 대기)**
 
 전제: L1 공통 소프트웨어(Core·Edge·RC·Replay·앱 A2~A8·L1 마감 C55~C58)는
-**동결**. 이 문서의 구현은 `rc-app`을 수정하지 않고 **별도 모듈 `rc-msdk`**에서
-진행한다(어댑터가 `DroneLink`/`VideoSource`/`VideoRecorder` 인터페이스를 구현).
+**동결**. A9 구현은 공용 모듈 구조로 진행한다(승인된 최소 연결부):
+- `rc-ports`(순수 Kotlin): `DroneLink`/`VideoSource`/`VideoRecorder` 인터페이스+벤치 더블
+- `rc-app`: `bench`/`device` 플레이버 + `PlatformLinks` 조립 지점(각 플레이버 소스셋)
+- `rc-msdk`(Android 라이브러리): DJI v5 어댑터 — `device` 플레이버에만 포함
 
-WorkManager 실제 실행과 RC 장치 생명주기는 **미검증**으로 유지한다(호스트
-스킵 6건 = 통과 아님; `docs/verification/evidence/2026-10-10-wm/`). 실기에서
-확인한다.
+## 0. 검증된 사실 (2026-10-11/12, 공식 소스 기준)
 
-## 1. 의존성 (Maven Central 확인 완료)
+- 공식 저장소 `dji-sdk/Mobile-SDK-Android-V5`(dev-sdk-main) README·Sample:
+  - `implementation 'com.dji:dji-sdk-v5-aircraft:5.18.0'`
+  - `compileOnly 'com.dji:dji-sdk-v5-aircraft-provided:5.18.0'`
+  - `runtimeOnly 'com.dji:dji-sdk-v5-networkImp:5.18.0'`
+  - Sample의 `REPO_MAVEN2 = https://repo1.maven.org/maven2` (Central과 동일)
+  - Sample: `abiFilters 'arm64-v8a'`, app key는 `manifestPlaceholders["API_KEY"]`
+- **아티팩트 내용 실측(중요)**: Central의 `aircraft-5.18.0.aar`(138MB)는 네이티브(.so)
+  + 에셋(플라이세이프 DB 등) 중심이고 `classes.jar`가 약 4KB(SDK Java 클래스 없음);
+  `networkImp`도 classes.jar ~13KB. `-provided` jar(10MB)가 dji.v5 API 클래스를
+  담고 있으나 메서드 본문이 **스텁 패턴**(초입 즉시 반환 + 실코드 사문화)이다.
+  → **공식 문서 모델 그대로도 Central만으로는 런타임 SDK 클래스가 앱에 들어가지
+  않는다.** 실제 등록·동작 여부는 실기 게이트: RC에서 시험하고, NoClassDefFound
+  발생 시 (a) developer.dji.com 로그인 SDK 다운로드(zip) 반영 또는 (b) `-provided`
+  런타임 패키징(라이선스/스텁 의미는 실기에서) 중으로 확정한다. **이 상태를
+  "연결 검증됨"으로 표기하지 않는다.**
+
+## 1. 의존성 (Maven Central 확인 완료, 공식 좌표)
 
 | 좌표 | 용도 |
 |---|---|

@@ -47,7 +47,7 @@ docker run --rm --platform linux/amd64 \
   -e ANDROID_HOME=/sdk \
   -w /work/android-rc \
   "$IMAGE" \
-  bash -c 'mkdir -p /tmp/home && ./gradlew :rc-app:testDebugUnitTest --tests "ksi.safetyedge.rc.SyncWorkerTest" --no-daemon'
+  bash -c 'mkdir -p /tmp/home && ./gradlew :rc-app:testBenchDebugUnitTest --tests "ksi.safetyedge.rc.SyncWorkerTest" --no-daemon'
 
 echo
 echo "VM test XMLs:"

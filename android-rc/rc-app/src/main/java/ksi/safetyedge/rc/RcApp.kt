@@ -23,6 +23,10 @@ class RcApp : Application() {
     lateinit var videoSource: VideoSource
         private set
 
+    /** A9: device recorder (null on the bench — a fake cannot record). */
+    var videoRecorder: VideoRecorder? = null
+        private set
+
     override fun onCreate() {
         super.onCreate()
         config = AppConfig(this)
@@ -30,15 +34,15 @@ class RcApp : Application() {
             storeDir = File(filesDir, "rc-store"),
             rcDeviceId = config.rcDeviceId,
             wallClock = { ReceiptClock.now() },
-            // H1: replace with the DJI MSDK v5 implementation (same interface).
-            link = FakeDroneLink(),
+            // A9: the platform flavor decides the implementation here.
+            link = PlatformLinks.droneLink(this),
             coreConfig = {
                 if (config.coreConfigured) config.coreUrl to config.coreToken else null
             },
         )
         demoSession = DemoSession(filesDir, { ReceiptClock.now() })
-        // H1: replace with the DJI MSDK v5 video implementation (same interface).
-        videoSource = FakeVideoSource()
+        videoSource = PlatformLinks.videoSource(this)
+        videoRecorder = PlatformLinks.videoRecorder(this)
         // A8: MOP retransmission timer — re-sends unacked envelopes (same
         // msg_id) and drains the outbox while the link is connected.
         retransmitExecutor.scheduleWithFixedDelay(

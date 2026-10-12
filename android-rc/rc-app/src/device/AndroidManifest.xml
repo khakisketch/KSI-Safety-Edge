@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- A9: DJI developer app key for package ksi.safetyedge.rc.
+         Injected at build time from local.properties (`dji.apiKey=...`,
+         never committed). When blank the SDK stays uninitialised and the
+         app runs bench-safe; registration success is a device-gate fact. -->
+    <application>
+        <meta-data
+            android:name="com.dji.sdk.API_KEY"
+            android:value="${djiApiKey}" />
+    </application>
+</manifest>
