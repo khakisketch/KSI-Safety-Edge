@@ -2,6 +2,7 @@ package ksi.msdk
 
 import android.content.Context
 import android.os.SystemClock
+import android.view.Surface
 import dji.v5.common.callback.CommonCallbacks
 import dji.v5.common.video.channel.VideoChannelState
 import dji.v5.common.video.channel.VideoChannelType
@@ -13,13 +14,18 @@ import ksi.safetyedge.rc.VideoSource
 
 /**
  * [VideoSource] over the DJI v5 video stream API (A9), using the RECOMMENDED
- * channel-based interface (`VideoStreamManager` + `IVideoChannel`) rather
- * than the legacy decoded-callback pattern:
+ * channel-based interface (`VideoStreamManager` + `IVideoChannel`):
  * - stream sources are discovered via `getAvailableStreamSources()`;
  * - the primary channel is started with `startChannel(source, cb)`;
  * - raw stream frames arrive on `StreamDataListener.onReceive(IVideoFrame)`
- *   (getData/getSeqNumber/getPts) — counting them is honest frame evidence;
+ *   (data/SPS/PPS/PTS/seq) — counting them is honest frame evidence;
  * - channel state drives our link state (ON / SOCKET_ON / CLOSE).
+ *
+ * A9-3 fan-out (display + recording are INDEPENDENT consumers):
+ * - [attachSurface] wires a live display decoder ([H264SurfaceDecoder]);
+ *   without a surface the frames are still counted and recorded;
+ * - [setFrameSink] hands encoded frames to the recorder — a display
+ *   failure never stops recording and vice versa.
  *
  * Overlay honesty is unchanged: [frameMappingVerified] stays false until
  * the exposure-based frame<->observation mapping is measured on device.
@@ -42,16 +48,62 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
     var lastFrameUptimeMs: Long = 0L
         private set
 
+    @Volatile
+    private var surface: Surface? = null
+
+    @Volatile
+    private var decoder: H264SurfaceDecoder? = null
+
+    @Volatile
+    private var frameSink: VideoFrameSink? = null
+
+    @Volatile
+    private var lastDecoderAttemptMs = 0L
+
     // Lazy: no SDK listener objects until connect() runs (construction must
     // not require SDK runtime classes — host tests / app start).
     private val streamDataListener by lazy {
         StreamDataListener { frame ->
-            // TODO(device): feed raw frames (frame.data/seq/PTS) to the
-            // recorder once segment encoding is wired; counting alone never
-            // claims video.
             frameCount += 1
             lastFrameUptimeMs = SystemClock.elapsedRealtime()
             listener?.onFrame(frameCount)
+
+            val encoded = EncodedVideoFrame(
+                data = frame.data,
+                pts = frame.pts,
+                seq = frame.seqNumber,
+                isKeyFrame = frame.isIFrame,
+                width = frame.width,
+                height = frame.height,
+                fps = frame.fps,
+                sps = frame.sps,
+                pps = frame.pps,
+            )
+            // Display path (only with an attached surface): the decoder is
+            // created lazily on the first frame, which carries the size.
+            // Creation failures retry at most once per second so a broken
+            // codec can never burn the SDK callback thread per frame
+            // (review C63 #11).
+            val target = surface
+            if (target != null) {
+                var active = decoder
+                if (active == null) {
+                    val now = SystemClock.elapsedRealtime()
+                    if (now - lastDecoderAttemptMs >= DECODER_RETRY_MS) {
+                        lastDecoderAttemptMs = now
+                        active = H264SurfaceDecoder.create(target, frame.width, frame.height)
+                        decoder = active
+                    }
+                }
+                active?.feed(encoded)
+            }
+            // Recording path: independent of the display surface. A recorder
+            // failure must never kill the SDK callback thread (C63 #3).
+            try {
+                frameSink?.onEncodedFrame(encoded)
+            } catch (_: Exception) {
+                // The recorder already records its own error state.
+            }
         }
     }
 
@@ -75,6 +127,21 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
 
     override fun setListener(listener: VideoSource.Listener?) {
         this.listener = listener
+    }
+
+    /** Wires (or detaches with null) the live display surface. */
+    fun attachSurface(target: Surface?) {
+        surface = target
+        if (target == null) {
+            val active = decoder
+            decoder = null
+            active?.release()
+        }
+    }
+
+    /** Wires (or detaches) the encoded-frame consumer (the recorder). */
+    fun setFrameSink(sink: VideoFrameSink?) {
+        frameSink = sink
     }
 
     override fun connect() {
@@ -137,6 +204,9 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
                 // best-effort close
             }
         }
+        val active = decoder
+        decoder = null
+        active?.release()
         setState(VideoSource.State.DISCONNECTED)
     }
 
@@ -148,5 +218,10 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
         if (state == next) return
         state = next
         listener?.onState(next)
+    }
+
+    companion object {
+        /** Decoder create/configure/start retry interval on failure. */
+        private const val DECODER_RETRY_MS = 1000L
     }
 }

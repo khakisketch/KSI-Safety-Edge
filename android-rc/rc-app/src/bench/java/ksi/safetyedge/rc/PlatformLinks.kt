@@ -20,4 +20,12 @@ object PlatformLinks {
 
     /** Bench has no recorder: a fake cannot record real video. */
     fun videoRecorder(context: Context): VideoRecorder? = null
+
+    /** A9-3 bench: no real video pipeline — nothing to wire. */
+    fun wireVideo(source: VideoSource, recorder: VideoRecorder?) = Unit
+
+    fun configureRecorder(recorder: VideoRecorder?, segmentSeconds: Int) = Unit
+
+    fun attachVideoSurface(source: VideoSource, surface: android.view.Surface?) =
+        Unit
 }

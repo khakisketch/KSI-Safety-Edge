@@ -38,6 +38,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvError: TextView
     private lateinit var etCoreUrl: EditText
     private lateinit var etCoreToken: EditText
+    private lateinit var surfaceVideo: android.view.SurfaceView
 
     private var shownError: String? = null
     private var hasSyncReport = false
@@ -78,6 +79,7 @@ class MainActivity : AppCompatActivity() {
         tvError = findViewById(R.id.tvError)
         etCoreUrl = findViewById(R.id.etCoreUrl)
         etCoreToken = findViewById(R.id.etCoreToken)
+        surfaceVideo = findViewById(R.id.surfaceVideo)
         etCoreUrl.setText(app.config.coreUrl)
         etCoreToken.setText(app.config.coreToken)
 
@@ -98,7 +100,26 @@ class MainActivity : AppCompatActivity() {
                 // A8 policy: a finished flight is queued for background sync
                 // (network-constrained; COMMITTED checks stay in the uploader).
                 SyncScheduler.enqueue(applicationContext, flightId)
-                show("flight ended: ${flightId.take(8)} — auto-sync 예약(네트워크 시 업로드)")
+                // A9-3 review: finalize + SHA-256 + chunk ingestion can take
+                // seconds on large segments — keep it OFF the UI thread.
+                show("flight ended: ${flightId.take(8)} — auto-sync 예약 · 세그먼트 인제스트 중…")
+                session.bg.execute {
+                    val (ingested, total) = ingestRecordedSegments(flightId)
+                    val segmentNote = when {
+                        total == 0 -> "세그먼트 0(레코더 없음/영상 미수신)"
+                        ingested == total -> "세그먼트 ${ingested}개 → 증거 인제스트"
+                        ingested == 0 ->
+                            "세그먼트 ${total}개 로컬 보관 — Edge 부트 없음(증거 미생성, 은폐 없음)"
+                        else -> "세그먼트 ${ingested}/${total} 인제스트"
+                    }
+                    runOnUiThread {
+                        if (!isDestroyed) {
+                            show(
+                                "flight ended: ${flightId.take(8)} — auto-sync 예약 · $segmentNote",
+                            )
+                        }
+                    }
+                }
             } else {
                 show("no active flight")
             }
@@ -127,6 +148,25 @@ class MainActivity : AppCompatActivity() {
         })
         on(R.id.btnVideoConnect) { app.videoSource.connect(); refresh() }
         on(R.id.btnVideoDisconnect) { app.videoSource.disconnect(); refresh() }
+
+        // A9-3: live surface lifecycle -> display decoder (device flavor
+        // only; bench is a no-op). Recording is NOT tied to this surface.
+        surfaceVideo.holder.addCallback(object : android.view.SurfaceHolder.Callback {
+            override fun surfaceCreated(holder: android.view.SurfaceHolder) {
+                PlatformLinks.attachVideoSurface(app.videoSource, holder.surface)
+            }
+
+            override fun surfaceChanged(
+                holder: android.view.SurfaceHolder,
+                format: Int,
+                width: Int,
+                height: Int,
+            ) = Unit
+
+            override fun surfaceDestroyed(holder: android.view.SurfaceHolder) {
+                PlatformLinks.attachVideoSurface(app.videoSource, null)
+            }
+        })
 
         // -- demo bench (isolated store; NEVER uploads)
         on(R.id.btnDemoTick) {
@@ -780,13 +820,42 @@ class MainActivity : AppCompatActivity() {
         }
         try {
             val record = session.startFlightFromBundle(bundle)
+            val segmentSeconds = bundle.get("mission_snapshot")
+                ?.get("recording_policy")?.get("segment_seconds")?.asInt() ?: 300
+            app.startFlightRecording(record.get("flight_id").asText(), segmentSeconds)
             show(
                 "flight started: ${record.get("flight_id").asText().take(8)} " +
-                    "(bundle ${bundleId.take(8)} pinned; prepare/apply run offline)",
+                    "(bundle ${bundleId.take(8)} pinned; prepare/apply run offline;" +
+                    " 녹화=${segmentSeconds}s 구간, 벤치=레코더 없음)",
             )
         } catch (exc: Exception) {
             show("start failed: ${exc.message}")
         }
+    }
+
+    /**
+     * A9-3: finalized recording segments become RC_PROXY_SEGMENT evidence on
+     * the flight's LATEST Edge boot (the normal Manifold-connected case). A
+     * flight with no Edge boot keeps its segments local and says so — no
+     * synthetic boot is fabricated. Returns (ingested, total).
+     */
+    private fun ingestRecordedSegments(flightId: String): Pair<Int, Int> {
+        val files = app.stopFlightRecording()
+        if (files.isEmpty()) return 0 to 0
+        val bootId = ksi.rc.SessionBuilder(session.store)
+            .sortedBoots(flightId).lastOrNull() ?: return 0 to files.size
+        val ingestor = ksi.rc.SegmentIngestor(session.store)
+        var ingested = 0
+        for (file in files) {
+            val index = ksi.safetyedge.rc.SegmentNames.parseIndex(file.name) ?: continue
+            try {
+                ingestor.ingestSegment(flightId, bootId, index, file)
+                ingested += 1
+            } catch (exc: Exception) {
+                show("segment ingest failed (${file.name}): ${exc.message}")
+            }
+        }
+        return ingested to files.size
     }
 
     private fun uploadNow() {

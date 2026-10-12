@@ -55,6 +55,9 @@ class RcApp : Application() {
         demoSession = DemoSession(filesDir, { ReceiptClock.now() })
         videoSource = PlatformLinks.videoSource(this)
         videoRecorder = PlatformLinks.videoRecorder(this)
+        // A9-3: encoded frames flow to the recorder independently of the
+        // display surface (bench: both are no-ops).
+        PlatformLinks.wireVideo(videoSource, videoRecorder)
         // A8: MOP retransmission timer — re-sends unacked envelopes (same
         // msg_id) and drains the outbox while the link is connected.
         retransmitExecutor.scheduleWithFixedDelay(
@@ -65,4 +68,17 @@ class RcApp : Application() {
 
     private val retransmitExecutor =
         java.util.concurrent.Executors.newSingleThreadScheduledExecutor()
+
+    /** A9-3: recording lifecycle (bench = no recorder -> no-op). */
+    fun startFlightRecording(flightId: String, segmentSeconds: Int) {
+        val recorder = videoRecorder ?: return
+        // A bundle-supplied value outside 1..3600 falls back to the default:
+        // an invalid policy must not strand an already-started flight (C63).
+        val seconds = if (segmentSeconds in 1..3600) segmentSeconds else 300
+        PlatformLinks.configureRecorder(recorder, seconds)
+        recorder.start(flightId)
+    }
+
+    /** Stops recording and returns only finalized, real segment files. */
+    fun stopFlightRecording(): List<File> = videoRecorder?.stop() ?: emptyList()
 }

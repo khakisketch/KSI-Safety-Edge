@@ -22,4 +22,18 @@ object PlatformLinks {
 
     fun videoRecorder(context: Context): VideoRecorder? =
         ksi.msdk.MsdkVideoRecorder(context)
+
+    /** A9-3: encoded frames flow source -> recorder (display is separate). */
+    fun wireVideo(source: VideoSource, recorder: VideoRecorder?) {
+        val msdkSource = source as? ksi.msdk.MsdkVideoSource ?: return
+        msdkSource.setFrameSink(recorder as? ksi.msdk.MsdkVideoRecorder)
+    }
+
+    fun configureRecorder(recorder: VideoRecorder?, segmentSeconds: Int) {
+        (recorder as? ksi.msdk.MsdkVideoRecorder)?.segmentSeconds = segmentSeconds
+    }
+
+    fun attachVideoSurface(source: VideoSource, surface: android.view.Surface?) {
+        (source as? ksi.msdk.MsdkVideoSource)?.attachSurface(surface)
+    }
 }
