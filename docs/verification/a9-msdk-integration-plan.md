@@ -61,7 +61,10 @@
 순서대로, 각 항목의 증거(스크린 캡처/로그)를 `docs/verification/evidence/`에
 기록한다.
 
-1. **설치·기동**: APK 설치 → 실행 → 크래시 없음 → `rc-store` 생성 확인
+1. **설치·기동**: APK 설치 → 실행 → 크래시 없음 → `rc-store` 생성 확인.
+   **동시에 최소 SDK 초기화 확인(C60 후 첫 실기 항목)**: Helper 로드/등록 결과
+   (`MsdkPlatform.state`·`DjiBridgeState`) — 실패 시 NoClassDefFound/VerifyError
+   로그를 그대로 기록(upstream #809·#671 계열). 키 미설정이면 KEY_MISSING 표시가 정상.
 2. **MSDK 초기화**: 등록 성공 로그, RC 화면에 연결 상태 표시(인터넷/MOP/기체 독립)
 3. **RC↔Manifold 연결**: 데이터 채널 open, MOP HEARTBEAT 수신(채널 신선도 표시)
 4. **임무 적용**: 실 스냅샷/번들 다운로드 → PREPARE/APPLY → digest 검증 표시
@@ -89,3 +92,29 @@
 - `AndroidManifest` 전역 평문 HTTP: 배포 전 네트워크 보안 구성으로 범위 축소
   (개발망은 제한 자격증명 사용).
 - 두 항목 모두 실제 운영 배포 전 필수, 실기 검증 항목과 함께 처리.
+
+## 7. A9-1 구현 기록 — C60 (2026-10-12, 장치 전)
+
+점검 기록·공식 Sample(dev-sdk-main) 대조 후, 장치 없이 가능한 기동 안정화를 구현했다.
+
+- **공식 순서 확인**: `DJIAircraftApplication.attachBaseContext →
+  com.cySdkyc.clx.Helper.install(this)`; `MSDKManagerVM`은 `SDKManager.init(...)` 후
+  **`onInitProcess(INITIALIZE_COMPLETE)`에서만 `registerApp()`** 을 호출한다.
+- **APK dex 실측(C59 빌드, 독립 재확인)**: `dji/v5/manager/SDKManager`(및
+  `mop/PipelineManager`, `datacenter/video/VideoStreamManager`)는 어느 `classes*.dex`에도
+  **정의되어 있지 않다**. `com/cySdkyc/clx/Helper`는 aircraft AAR `classes.jar`(9개 항목)로
+  **APK에 포함**되어 있다. Helper의 `native attach(Application, Context)`·
+  `makeInMemoryDexElements(...)`가 런타임 클래스 로더다 → SDK Java 클래스는 Helper 설치
+  이후 런타임에 로드된다. 따라서 공식 `compileOnly -provided` 스코프는 의도와 일치하며,
+  `-provided`를 `implementation`으로 바꾸는 것(upstream #809의 VerifyError 경로)은 하지 않는다.
+- **구현(C60)**:
+  - `MsdkPlatform.install(application)` — `attachBaseContext`에서 1회 `Helper.install`;
+    실패는 `FAILED`+사유 기록(은폐 없음). bench 플레이버는 no-op.
+  - `DjiSdkBridge` — 키 게이트 → `init(callback)` → **INITIALIZE_COMPLETE에서 `registerApp` 1회**;
+    `LinkageError`/`Exception`은 `FAILED`로 표기(크래시 대신 정직한 상태).
+  - `MsdkDroneLink.connect()` — 앱키 확인 **선행**, 파이프라인은 **REGISTERED 이후에만** 접촉.
+- **검증(호스트)**: rc-core 67/67 · rc-msdk 8/8 · rc-app bench 23(6 스킵) · device 17/17 ·
+  device APK 재빌드(166.9MB) — `MsdkPlatform` 정의·Helper 호출 참조 확인. 커밋 `a810572`.
+- **미검증(실기 게이트)**: Helper 로드 → 등록 성공 → 파이프라인 연결(§4-0 시험). 실패 시
+  로그/예외를 그대로 증거로 기록하고, `-provided` 패키징 전환·developer.dji.com SDK zip
+  반영은 실기 결과로만 결정한다. A9-2(PSDK 측 MOP 프레이밍)·A9-3(영상 표시·녹화)는 미구현.
