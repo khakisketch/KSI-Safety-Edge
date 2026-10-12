@@ -33,6 +33,16 @@ class MopEdgeEndpoint {
     const std::string& flight_id() const { return flight_id_; }
     const std::string& edge_boot_id() const { return edge_boot_id_; }
 
+    // True once the flight identity is settled: an explicit non-empty
+    // constructor id, or the first RC envelope has been adopted (the RC
+    // creates its per-flight UUID; the Edge learns it from the wire).
+    bool flightIdConfirmed() const { return flight_id_confirmed_; }
+    std::uint64_t adoptions() const { return adoptions_; }
+
+    // The applied bundle (MISSION_APPLY result), or nullptr. Used by the
+    // app to extract the evidence context (mission/policy revisions).
+    const JsonValue* appliedBundle() const;
+
     // Sends one message: appended to the outbox; reliable non-ACK messages
     // stay unacked until an ACK envelope arrives. Returns the outbox entry.
     const JsonValue& Send(const std::string& channel, const std::string& type,
@@ -88,6 +98,10 @@ class MopEdgeEndpoint {
     std::string NextMsgId(const std::string& channel, const std::string& type,
                           const std::int64_t* seq);
     void SendAck(const std::string& msg_id, const std::string& channel);
+    // The RC's flight identity becomes authoritative on the wire: adopt it
+    // (rotating the boot + clearing session state — seq/unacked must never
+    // span flights) before dispatching the envelope that carried it.
+    void AdoptFlightId(const std::string& new_id);
     std::string OnPrepare(const JsonValue& envelope, const JsonValue& payload);
     std::string OnApply(const JsonValue& envelope, const JsonValue& payload);
     std::string OnStatusQuery(const JsonValue& envelope);
@@ -116,6 +130,8 @@ class MopEdgeEndpoint {
     std::string last_application_id_;
     bool has_application_ = false;
     bool running_ = false;
+    bool flight_id_confirmed_ = false;
+    std::uint64_t adoptions_ = 0;
 };
 
 }  // namespace ksi::safety

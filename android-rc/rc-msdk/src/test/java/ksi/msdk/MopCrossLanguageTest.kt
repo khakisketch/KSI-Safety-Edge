@@ -59,14 +59,15 @@ class MopCrossLanguageTest {
         val bundle = Mop.json.createObjectNode()
         bundle.put("bundle_id", Mop.newMsgId("bundle", "flt-e2e"))
         bundle.put("site_id", "site-e2e")
-        bundle.set<ObjectNode>(
-            "mission_snapshot",
-            Mop.json.createObjectNode().put("site_id", "site-e2e"),
-        )
-        bundle.set<ObjectNode>(
-            "risk_policy",
-            Mop.json.createObjectNode().put("site_id", "site-e2e"),
-        )
+        val snapshot = Mop.json.createObjectNode()
+            .put("site_id", "site-e2e")
+            .put("mission_revision_id", Mop.newMsgId("mission-rev", "flt-e2e"))
+            .put("content_sha256", "b".repeat(64))
+        val policy = Mop.json.createObjectNode()
+            .put("site_id", "site-e2e")
+            .put("revision_id", Mop.newMsgId("policy-rev", "flt-e2e"))
+        bundle.set<ObjectNode>("mission_snapshot", snapshot)
+        bundle.set<ObjectNode>("risk_policy", policy)
         bundle.put(
             "bundle_sha256",
             CanonicalJson.digestExcluding(bundle, "bundle_sha256"),
@@ -195,6 +196,36 @@ class MopCrossLanguageTest {
             assertEquals(setOf(1L, 2L, 3L), store.receivedSeqs(boot, "EVENT_RELIABLE"))
             assertEquals(setOf(1L, 2L), store.receivedSeqs(boot, "EVIDENCE_TRANSFER"))
             assertNotNull(store.lastHeartbeatUtc("flt-e2e"))
+
+            // Tick-evidence mapping fidelity: these payloads were produced by
+            // the REAL C++ MopTickEvidence from a TickRecord (not
+            // hand-assembled), so the mapping itself is pinned here.
+            val observation = store.observationsFor("flt-e2e").single()
+            val detections = observation.get("detections")
+            assertEquals("person", detections.get(0).get("class_id").asText())
+            assertEquals("trk-3", detections.get(0).get("track_id").asText())
+            assertTrue(detections.get(0).get("position_wgs84").isNull)
+            assertEquals("DEGRADED", observation.get("sync_quality").asText())
+            assertEquals(1L, observation.get("edge_frame_seq").asLong())
+            assertEquals(
+                Mop.newMsgId("mission-rev", "flt-e2e"),
+                observation.get("mission_revision_id").asText(),
+            )
+            val event = store.eventsFor("flt-e2e").single()
+            assertEquals("PROXIMITY_CANDIDATE", event.get("event_type").asText())
+            assertEquals("SHADOW", event.get("mode").asText())
+            assertEquals(
+                2.57,
+                event.get("initial_model_output").get("distance_m").asDouble(),
+                0.0,
+            )
+            val summary = store.summariesFor("flt-e2e").single()
+            assertEquals(
+                Mop.newMsgId("session", "flt-e2e", boot),
+                summary.get("session_id").asText(),
+            )
+            assertEquals(1L, summary.get("covered_frames").asLong())
+            assertEquals(0L, summary.get("skipped_frames").asLong())
 
             // Every stored message was ACKed (commit-before-ACK held).
             assertEquals(stored, endpoint.ackedCount)

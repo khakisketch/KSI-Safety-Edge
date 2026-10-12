@@ -43,6 +43,9 @@ MopEdgeEndpoint::MopEdgeEndpoint(std::string flight_id, Clock clock,
                         : Uuid5(MopProtocol::Namespace(),
                                 "boot|" + flight_id_ + "|" +
                                     std::to_string(boot_index_));
+    // An explicit non-empty id is authoritative; an empty one means "learn
+    // it from the wire" (the RC creates the per-flight UUID).
+    flight_id_confirmed_ = !flight_id_.empty();
 }
 
 std::string MopEdgeEndpoint::NextMsgId(const std::string& channel,
@@ -100,6 +103,18 @@ std::string MopEdgeEndpoint::Receive(const JsonValue& envelope) {
     }
     const std::string msg_id = msg_id_node->strValue();
     const std::string type = type_node->strValue();
+    // Flight identity handoff: adopt the RC's flight id before dispatching
+    // (see AdoptFlightId). A MISSION_PREPARE for a DIFFERENT flight also
+    // re-adopts (a new RC flight cycle against this same Edge process).
+    const JsonValue* flight = envelope.Find("flight_id");
+    if (flight != nullptr && flight->IsString() &&
+        !flight->strValue().empty()) {
+        const std::string& incoming = flight->strValue();
+        if (incoming != flight_id_ &&
+            (!flight_id_confirmed_ || type == "MISSION_PREPARE")) {
+            AdoptFlightId(incoming);
+        }
+    }
     if (seen_msg_ids_.count(msg_id) != 0) {
         // Idempotent control: resend the stored response when the original
         // reply was lost (same application_id preserved).
@@ -108,6 +123,21 @@ std::string MopEdgeEndpoint::Receive(const JsonValue& envelope) {
             if (it != last_responses_.end()) outbox_.push_back(it->second);
         }
         return "dedup";
+    }
+    // A confirmed identity never processes a command addressed to a
+    // DIFFERENT flight (e.g. a stale retry from a previous flight). It is
+    // terminal-ACKed with NO state change: processing it under the current
+    // identity would misattribute evidence, and leaving it un-ACKed would
+    // make the sender retry forever. Not added to `seen` so a redelivery
+    // (lost ACK) is ACKed again.
+    if (flight_id_confirmed_ && flight != nullptr && flight->IsString() &&
+        !flight->strValue().empty() && flight->strValue() != flight_id_ &&
+        type != "MISSION_PREPARE") {
+        const JsonValue* channel_node = envelope.Find("channel");
+        if (channel_node != nullptr && channel_node->IsString()) {
+            SendAck(msg_id, channel_node->strValue());
+        }
+        return "error";
     }
     seen_msg_ids_.insert(msg_id);
     const JsonValue* payload = envelope.Find("payload");
@@ -305,6 +335,44 @@ std::string MopEdgeEndpoint::Reboot(const std::string& next_boot_id) {
     unrecoverable_.clear();
     applications_.clear();
     return edge_boot_id_;
+}
+
+void MopEdgeEndpoint::AdoptFlightId(const std::string& new_id) {
+    flight_id_ = new_id;
+    flight_id_confirmed_ = true;
+    ++adoptions_;
+    // Fresh session scope for the (new) flight: rotate the boot and drop
+    // every per-flight/per-boot state — seqs, retries and retry candidates
+    // must never span flights, and stale ACKs may not resurrect new state.
+    edge_boot_id_ = Uuid5(MopProtocol::Namespace(),
+                          "boot|" + flight_id_ + "|" +
+                              std::to_string(boot_index_));
+    msg_counter_ = 0;
+    seq_.clear();
+    unacked_.clear();
+    unrecoverable_.clear();
+    applications_.clear();
+    prepared_.clear();
+    last_responses_.clear();
+    seen_msg_ids_.clear();
+    // Queued-but-unflushed envelopes carry the OLD identity (flight id in
+    // every envelope, payloads reference that flight's provenance): they
+    // must never reach the wire under the new identity. The response/ACK
+    // for the adopting envelope is generated after this clear.
+    outbox_.clear();
+    applied_bundle_sha256_.clear();
+    applied_bundle_id_.clear();
+    has_applied_bundle_ = false;
+    last_application_id_.clear();
+    has_application_ = false;
+    running_ = false;
+}
+
+const JsonValue* MopEdgeEndpoint::appliedBundle() const {
+    if (!has_applied_bundle_) return nullptr;
+    const auto it = prepared_.find(applied_bundle_id_);
+    if (it == prepared_.end() || !it->second.IsObject()) return nullptr;
+    return &it->second;
 }
 
 std::int64_t MopEdgeEndpoint::seq(const std::string& channel) const {

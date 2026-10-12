@@ -27,12 +27,13 @@
 
 #include "ksi_safety/transport/mop_endpoint.hpp"
 #include "ksi_safety/transport/mop_link.hpp"
+#include "ksi_safety/transport/mop_tick_evidence.hpp"
 
 struct MopServiceConfig {
-    // Flight id carried in every envelope. TODO(device): confirm the real
-    // handoff from the RC flight (the RC creates the per-flight id; the
-    // bundle's mission_snapshot.flight_id is the candidate source).
-    std::string flight_id = "flt-unknown";
+    // Flight id carried in every envelope. EMPTY means "learn it from the
+    // wire": the RC creates the per-flight UUID (MissionStore) and the Edge
+    // adopts it from the first RC envelope before emitting anything.
+    std::string flight_id = "";
     // Must match the MSDK pipeline id on the RC side.
     std::uint16_t channel_id = 0;
     double heartbeat_fps = 15.0;
@@ -62,7 +63,19 @@ class MopService : public ksi::safety::MopByteTransport {
     // Emission surface for the app loop (only emit while connected()).
     ksi::safety::MopLink* link() { return link_.get(); }
 
+    // The app path: one processed tick -> observation/event evidence (gated
+    // on an accepted mission context — the RC must have applied a bundle).
+    void EmitTick(const ksi::safety::TickRecord& record);
+    // Shutdown path: FLIGHT_SUMMARY for the session (no-op without ticks).
+    void EmitFinalSummary();
+
+    ksi::safety::MopTickEvidence* evidence() { return evidence_.get(); }
+
     bool connected() const { return connected_.load(); }
+    bool flightIdConfirmed() const;
+    std::uint64_t skipped_evidence_ticks() const {
+        return skipped_ticks_.load();
+    }
     std::uint64_t bytes_in() const { return bytes_in_.load(); }
     std::uint64_t bytes_out() const { return bytes_out_.load(); }
 
@@ -70,10 +83,24 @@ class MopService : public ksi::safety::MopByteTransport {
     void ReaderLoop();
     void TimerLoop();
     void CloseHandles();
+    // Pulls mission/policy provenance from the applied bundle into the
+    // evidence context, and clears the context when the flight identity
+    // changed without one (no stale-flight evidence). Caller MUST hold
+    // [evidence_mutex_].
+    void RefreshMissionContextLocked();
 
     MopServiceConfig config_;
     ksi::safety::MopEdgeEndpoint endpoint_;
     std::unique_ptr<ksi::safety::MopLink> link_;
+    std::unique_ptr<ksi::safety::MopTickEvidence> evidence_;
+    std::string last_context_key_;
+    // Review fix (F1): the endpoint is ALSO touched directly (gates +
+    // applied-bundle reads) outside MopLink's lock; this mutex is the
+    // single-threaded contract's enforcement point for those paths and for
+    // `evidence_`/`last_context_key_`. Lock order: evidence_mutex_ ->
+    // MopLink's mutex -> write_mutex_ (never the reverse).
+    mutable std::mutex evidence_mutex_;
+    std::atomic<std::uint64_t> skipped_ticks_{0};
     std::thread reader_;
     std::thread timer_;
     std::atomic<bool> running_{false};

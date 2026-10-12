@@ -26,9 +26,15 @@
 #include "ksi_safety/transport/mop_evidence.hpp"
 #include "ksi_safety/transport/mop_frame.hpp"
 #include "ksi_safety/transport/mop_link.hpp"
+#include "ksi_safety/transport/mop_tick_evidence.hpp"
 #include "support/check.hpp"
 
+using ksi::safety::Detection;
+using ksi::safety::DetectionStatus;
 using ksi::safety::DigestExcluding;
+using ksi::safety::EpisodeEvent;
+using ksi::safety::EpisodeEventKind;
+using ksi::safety::EvidenceContextFromBundle;
 using ksi::safety::JsonValue;
 using ksi::safety::MakeDetectionEventPayload;
 using ksi::safety::MakeObservationPayload;
@@ -36,6 +42,8 @@ using ksi::safety::MopByteTransport;
 using ksi::safety::MopDetectionEventInput;
 using ksi::safety::MopDetectionItem;
 using ksi::safety::MopEdgeEndpoint;
+using ksi::safety::MopEvidenceContext;
+using ksi::safety::MopTickEvidence;
 using ksi::safety::MopFrameCodec;
 using ksi::safety::MopLink;
 using ksi::safety::MopObservationInput;
@@ -43,7 +51,14 @@ using ksi::safety::MopProtocol;
 using ksi::safety::MopReassembler;
 using ksi::safety::MopTelemetryRef;
 using ksi::safety::ParseJson;
+using ksi::safety::PoseQuality;
+using ksi::safety::RuleOutput;
 using ksi::safety::Sha256Hex;
+using ksi::safety::SpatialTickReason;
+using ksi::safety::TickRecord;
+using ksi::safety::Track;
+using ksi::safety::TrackProvenance;
+using ksi::safety::TrackRecord;
 using ksi::safety::Uuid5;
 
 namespace {
@@ -144,81 +159,88 @@ const std::string kArtifactBytes = [] {
     return bytes;
 }();
 
-void EmitScenarioEvidence(MopLink* link, const std::string& boot_id) {
-    MopObservationInput observation;
-    observation.observation_id =
-        Uuid5(MopProtocol::Namespace(), "e2e|flt-e2e|r5-obs|1");
-    observation.flight_id = kFlight;
-    observation.mission_revision_id = std::string(64, 'b');
-    observation.edge_boot_id = boot_id;
-    observation.edge_frame_seq = 1;
-    observation.edge_frame_id = "f-1";
-    observation.frame_received_monotonic_ns = 1050000000LL;
-    observation.model_digest = kModelDigest;
-    observation.sync_quality = "VALID";
-    observation.geometry_status = "UNVERIFIED";
-    struct TelemetrySpec {
-        const char* topic;
-        double age_ms;
-    };
-    const TelemetrySpec kTelemetry[] = {{"aircraft_attitude", 4.774438},
-                                        {"aircraft_position", 4.8}};
-    for (const auto& spec : kTelemetry) {
-        MopTelemetryRef ref;
-        ref.topic = spec.topic;
-        ref.edge_receive_monotonic_ns = 1050000000LL;
-        ref.sample_age_ms = spec.age_ms;
-        ref.timestamp_basis = "PSDK_LOCAL_RECEIVE";
-        ref.quality = "VALID";
-        observation.telemetry_refs.push_back(std::move(ref));
-    }
-    MopDetectionItem detection;
-    detection.detection_id =
-        Uuid5(MopProtocol::Namespace(), "e2e|flt-e2e|r5-det|1|0");
-    detection.class_id = "person";
-    detection.score = 0.9;
-    detection.bbox_xyxy_px = {10.0, 20.0, 30.5, 40.0};
-    detection.track_id = "trk-7";
-    detection.has_track_id = true;
-    observation.detections.push_back(std::move(detection));
-    MopDetectionEventInput event;
-    event.event_id = Uuid5(MopProtocol::Namespace(), "e2e|flt-e2e|r5-event|0");
-    event.flight_id = kFlight;
-    event.observation_id = observation.observation_id;
-    event.episode_id =
-        Uuid5(MopProtocol::Namespace(), "e2e|flt-e2e|r5-episode|0");
-    event.event_type = "PROXIMITY_CANDIDATE";
-    event.detected_at_edge_monotonic_ns = 1050000000LL;
-    event.policy_revision_id = std::string(64, 'c');
-    event.evidence_artifact_ids = {kArtifactId};
-    event.initial_model_output.rule_id = "prox-demo";
-    event.initial_model_output.episode = 1;
-    event.initial_model_output.distance_m = 2.57;
-    event.initial_model_output.geometry = "GEO_ESTIMATE";
-    event.initial_model_output.synthetic_replay_geometry = true;
-    event.mission_snapshot_hash = std::string(64, 'b');
-    link->EmitObservation(MakeObservationPayload(observation));
-    link->EmitEvent(MakeDetectionEventPayload(event));
+TickRecord MakeScenarioTick(std::int64_t recv_ns) {
+    TickRecord record;
+    record.tick_index = 1;
+    record.frame_id = 1;
+    record.receive_mono_ns = recv_ns;
+    record.model_id = "dfine-s-coco";
+    record.model_digest = kModelDigest;
+    record.exposure_verified = false;
+    record.detection_status = DetectionStatus::kOk;
+    record.attitude_quality = PoseQuality::kReceiveNearest;
+    record.attitude_gap_ns = 4774438;
+    record.position_quality = PoseQuality::kReceiveNearest;
+    record.position_gap_ns = 4800000;
+    record.spatial_status = SpatialTickReason::kDisabled;
+
+    Detection person;
+    person.x_min = 10.0F;
+    person.y_min = 20.0F;
+    person.x_max = 30.5F;
+    person.y_max = 40.0F;
+    person.score = 0.9F;
+    person.class_id = 0;
+    record.detections.push_back(person);
+
+    Track observed;
+    observed.track_id = 3;
+    observed.class_id = 0;
+    observed.box.x_min = person.x_min;
+    observed.box.y_min = person.y_min;
+    observed.box.x_max = person.x_max;
+    observed.box.y_max = person.y_max;
+    observed.confirmed = true;
+    observed.hits = 3;
+    observed.age = 3;
+    observed.last_seen_ns = static_cast<std::uint64_t>(recv_ns);
+    observed.epoch = 1;
+    TrackRecord observed_record;
+    observed_record.track = observed;
+    observed_record.provenance = TrackProvenance::kObserved;
+    record.tracks.push_back(observed_record);
+
+    RuleOutput proximity;
+    proximity.rule_id = "prox-demo";
+    proximity.is_shadow = true;
+    EpisodeEvent created;
+    created.kind = EpisodeEventKind::kCreated;
+    created.episode_id = 1;
+    created.rule_id = "prox-demo";
+    created.is_shadow = true;
+    created.received_mono_ns = static_cast<std::uint64_t>(recv_ns);
+    created.evidence.is_proximity = true;
+    created.evidence.interval_available = true;
+    created.evidence.lower_m = 2.57;
+    created.evidence.upper_m = 8.05;
+    proximity.events.push_back(created);
+    EpisodeEvent updated = created;
+    updated.kind = EpisodeEventKind::kUpdated;  // must NOT emit
+    proximity.events.push_back(updated);
+    record.proximity.push_back(proximity);
+    return record;
+}
+
+// The scenario's evidence comes from the REAL mapping chain: the mission
+// provenance is read from the applied bundle that arrived over the wire
+// (Kotlin-generated MISSION_PREPARE) and the tick payloads are built by
+// MopTickEvidence — not hand-assembled for the fixture.
+void EmitScenarioEvidence(MopLink* link, MopEdgeEndpoint* endpoint) {
+    const JsonValue* bundle = endpoint->appliedBundle();
+    CHECK(bundle != nullptr, "scenario: bundle applied");
+    MopEvidenceContext context;
+    std::string error;
+    CHECK(EvidenceContextFromBundle(*bundle, &context, &error),
+          "scenario: bundle supplies mission/policy provenance");
+    context.flight_id = endpoint->flight_id();
+    context.edge_boot_id = endpoint->edge_boot_id();
+    MopTickEvidence emitter(std::move(context));
+    emitter.EmitTick(link, MakeScenarioTick(1050000000LL));
     link->EmitArtifact(kArtifactId, "EDGE_SNAPSHOT", "image/jpeg", 0, true,
                        kArtifactBytes);
-    ksi::safety::MopFlightSummaryInput summary;
-    summary.summary_id =
-        Uuid5(MopProtocol::Namespace(), "e2e|flt-e2e|r5-summary|boot0");
-    summary.flight_id = kFlight;
-    summary.edge_boot_id = boot_id;
-    summary.session_id =
-        Uuid5(MopProtocol::Namespace(), "e2e|flt-e2e|session|0");
-    summary.started_at_edge_monotonic_ns = 1000000000LL;
-    summary.ended_at_edge_monotonic_ns = 1050000000LL;
-    summary.ai_uptime_ratio = 0.857;
-    summary.covered_frames = 7;
-    summary.skipped_frames = 1;
-    summary.person_count_max = 1;
-    summary.equipment_count_max = 0;
-    summary.quality_reasons = {"SYNTHETIC_REPLAY_INPUT",
-                               "UNVERIFIED_FRAME_CAPTURE_TIME"};
-    summary.created_at_edge_monotonic_ns = 1050000050LL;
-    link->EmitSummary(ksi::safety::MakeFlightSummaryPayload(summary));
+    emitter.EmitSummary(link, MopTickEvidence::SessionId(
+                                 endpoint->flight_id(),
+                                 endpoint->edge_boot_id()));
     link->EmitHeartbeat(15.0);
 }
 
@@ -346,6 +368,113 @@ int main() {
         CHECK(!endpoint.hasAppliedBundle(), "applied state cleared");
     }
 
+    // --- flight-id adoption (the RC creates the per-flight UUID) -----------
+    {
+        StepClock clock;
+        MopEdgeEndpoint endpoint("", [&clock] { return clock(); });
+        CHECK(!endpoint.flightIdConfirmed(), "empty id starts unconfirmed");
+        FakeTransport transport;
+        MopLink link(&transport, &endpoint);
+
+        JsonValue bundle = MakeBundle();
+        JsonValue prepare_payload = JsonValue::Obj();
+        prepare_payload.Set("bundle", std::move(bundle));
+        const std::string prepare_id = Uuid5(
+            MopProtocol::Namespace(), "rc|rc-flight-9|1|MISSION_PREPARE");
+        JsonValue prepare_env = ksi::safety::MakeMopEnvelope(
+            prepare_id, "CONTROL_RELIABLE", "MISSION_PREPARE", "rc-flight-9",
+            nullptr, nullptr, nullptr, std::move(prepare_payload), 4321LL);
+        const std::string prepare_bytes = BytesEnvelope(prepare_env);
+        link.Feed(reinterpret_cast<const std::uint8_t*>(prepare_bytes.data()),
+                  prepare_bytes.size());
+        CHECK(endpoint.flightIdConfirmed(), "confirmed after adoption");
+        CHECK(endpoint.adoptions() == 1, "adoption counted");
+        CHECK(endpoint.flight_id() == "rc-flight-9", "flight id adopted");
+        CHECK(endpoint.edge_boot_id() ==
+                  Uuid5(MopProtocol::Namespace(), "boot|rc-flight-9|0"),
+              "boot rotated to the adopted flight");
+        CHECK(endpoint.outboxSize() == 2, "prepared + ack queued");
+        CHECK(endpoint.unackedCount() == 1,
+              "only the new PREPARED response is unacked");
+        const JsonValue& ack = endpoint.outbox().back();
+        CHECK(ack.Find("type") != nullptr &&
+                  ack.Find("type")->strValue() == "ACK",
+              "last queued message is the ACK");
+        CHECK(ack.Find("flight_id")->strValue() == "rc-flight-9",
+              "ACK carries the adopted identity");
+
+        // A second flight cycle against the same Edge process re-adopts and
+        // resets the session scope (seqs never span flights).
+        JsonValue bundle2 = MakeBundle();
+        JsonValue second_payload = JsonValue::Obj();
+        second_payload.Set("bundle", std::move(bundle2));
+        const std::string second_id = Uuid5(
+            MopProtocol::Namespace(), "rc|rc-flight-10|1|MISSION_PREPARE");
+        JsonValue second_env = ksi::safety::MakeMopEnvelope(
+            second_id, "CONTROL_RELIABLE", "MISSION_PREPARE", "rc-flight-10",
+            nullptr, nullptr, nullptr, std::move(second_payload), 8765LL);
+        const std::string second_bytes = BytesEnvelope(second_env);
+        link.Feed(reinterpret_cast<const std::uint8_t*>(second_bytes.data()),
+                  second_bytes.size());
+        CHECK(endpoint.adoptions() == 2, "second flight re-adopts");
+        CHECK(endpoint.flight_id() == "rc-flight-10", "new flight adopted");
+        CHECK(endpoint.edge_boot_id() ==
+                  Uuid5(MopProtocol::Namespace(), "boot|rc-flight-10|0"),
+              "boot follows the new flight");
+        CHECK(endpoint.seq("CONTROL_RELIABLE") == 1,
+              "seq reset: only the new PREPARED response is numbered");
+        CHECK(endpoint.outboxSize() == 2,
+              "old-identity queue dropped; new response + ACK remain");
+        CHECK(endpoint.unackedCount() == 1,
+              "unacked reset to the new response only");
+
+        // Re-delivery of the (already processed) prepare: dedup re-queues
+        // the stored response, no new unacked entry.
+        link.Feed(reinterpret_cast<const std::uint8_t*>(second_bytes.data()),
+                  second_bytes.size());
+        CHECK(endpoint.outboxSize() == 3,
+              "re-delivered prepare dedups and re-queues its response");
+        CHECK(endpoint.unackedCount() == 1,
+              "dedup adds no unacked entry");
+    }
+
+    // --- identity guards: matching id never re-adopts; cross-flight
+    // commands are terminal-ACKed without state change ----------------------
+    {
+        StepClock clock;
+        MopEdgeEndpoint endpoint(kFlight, [&clock] { return clock(); });
+        FakeTransport transport;
+        MopLink link(&transport, &endpoint);
+        const std::string start_id = Uuid5(
+            MopProtocol::Namespace(), "rc|flt-e2e|9|SESSION_START");
+        JsonValue start_env = ksi::safety::MakeMopEnvelope(
+            start_id, "CONTROL_RELIABLE", "SESSION_START", kFlight, nullptr,
+            nullptr, nullptr, JsonValue::Obj(), 111LL);
+        const std::string start_bytes = BytesEnvelope(start_env);
+        link.Feed(reinterpret_cast<const std::uint8_t*>(start_bytes.data()),
+                  start_bytes.size());
+        CHECK(endpoint.adoptions() == 0,
+              "a matching flight id never re-adopts");
+        CHECK(endpoint.running(), "session start processed normally");
+
+        const std::string stop_id = Uuid5(
+            MopProtocol::Namespace(), "rc|flt-other|1|SESSION_STOP");
+        JsonValue stop_env = ksi::safety::MakeMopEnvelope(
+            stop_id, "CONTROL_RELIABLE", "SESSION_STOP", "flt-other", nullptr,
+            nullptr, nullptr, JsonValue::Obj(), 222LL);
+        const std::string stop_bytes = BytesEnvelope(stop_env);
+        const std::size_t errors_before = link.receive_errors();
+        const std::size_t outbox_before = endpoint.outboxSize();
+        link.Feed(reinterpret_cast<const std::uint8_t*>(stop_bytes.data()),
+                  stop_bytes.size());
+        CHECK(link.receive_errors() == errors_before + 1,
+              "cross-flight command counted as an error");
+        CHECK(endpoint.outboxSize() == outbox_before + 1,
+              "cross-flight command is terminal-ACKed");
+        CHECK(endpoint.running(),
+              "cross-flight command did not change session state");
+    }
+
     // --- cross-language fixtures -------------------------------------------
     std::string rc_to_edge;
     if (!ReadFixture("rc-to-edge.mopv1.hex", &rc_to_edge)) {
@@ -362,7 +491,7 @@ int main() {
 
         link.Feed(reinterpret_cast<const std::uint8_t*>(rc_to_edge.data()),
                   rc_to_edge.size());
-        EmitScenarioEvidence(&link, endpoint.edge_boot_id());
+        EmitScenarioEvidence(&link, &endpoint);
         const std::size_t sent = link.Flush();
         CHECK(sent > 0, "scenario flush wrote envelopes");
         CHECK(endpoint.outboxSize() == 0, "scenario outbox drained");

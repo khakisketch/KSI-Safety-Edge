@@ -164,6 +164,9 @@ struct AppState {
     std::mutex position_mutex;
     std::FILE* out = nullptr;
 
+    // A9-2: MOP evidence path (null when --mop-channel is not given).
+    MopService* mop = nullptr;
+
     std::atomic<std::uint64_t> frame_seq{0};
     std::atomic<std::uint64_t> att_seq{0};
     std::atomic<std::uint64_t> pos_seq{0};
@@ -368,6 +371,11 @@ void WorkerMain(AppState* state) {
         if ((i & 15U) == 0U) {
             std::fflush(state->out);
         }
+        // A9-2: real evidence for this tick goes to the RC over MOP (no-op
+        // when the service is disabled or no mission has been applied yet).
+        if (state->mop != nullptr) {
+            state->mop->EmitTick(record);
+        }
     }
 }
 
@@ -411,7 +419,9 @@ struct CliArgs {
     // A9-2: opt-in MOP channel service (RC <-> Edge transport). Negative
     // disables it; otherwise it is the MOP channel id (MSDK pipeline id).
     long long mop_channel = -1;
-    const char* flight_id = "flt-unknown";
+    // Empty (review fix F4): the Edge LEARNS the RC's per-flight UUID from
+    // the wire (adoption). Only pass a non-empty id when it is pre-agreed.
+    const char* flight_id = "";
 };
 
 bool ParseArgs(int argc, char** argv, CliArgs* args) {
@@ -749,6 +759,7 @@ int main(int argc, char** argv) {
         auto service = std::make_unique<MopService>(mop_config);
         if (service->Start()) {
             mop = std::move(service);
+            state.mop = mop.get();
             BootStage("mop_started");
         } else {
             std::fprintf(stderr, "MOP service failed to start (channel %lld)\n",
@@ -796,6 +807,15 @@ int main(int argc, char** argv) {
 
 shutdown:
     if (mop) {
+        // Final session evidence before the channel closes (best effort).
+        mop->EmitFinalSummary();
+        const std::uint64_t skipped = mop->skipped_evidence_ticks();
+        if (skipped > 0) {
+            std::fprintf(stderr,
+                         "Mop: %llu ticks had no evidence path "
+                         "(disconnected or no applied mission)\n",
+                         static_cast<unsigned long long>(skipped));
+        }
         mop->Stop();
         mop.reset();
     }

@@ -29,5 +29,10 @@ delivery rules stay defined by the existing contract (Python harness
   goldens on all sides.
 - **Envelope JSON key order is NOT a byte contract**: Kotlin writes Jackson
   insertion order, C++ writes JCS-sorted; both sides parse JSON.
+- The edge→rc fixture's OBSERVATION / DETECTION_EVENT / FLIGHT_SUMMARY
+  payloads are produced by the REAL C++ mapping (`MopTickEvidence`, from a
+  `TickRecord`), and the Kotlin suite asserts their field-level fidelity
+  (class labels, track ids, grades, mission provenance) — so the fixture
+  pins the mapping, not just the framing.
 
 Hex format: lowercase hex of the concatenated framed bytes, single line.
