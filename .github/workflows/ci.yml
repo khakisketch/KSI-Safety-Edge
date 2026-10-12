@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.12"
       - name: Install (editable)
         run: pip install -e libs/ksi_contracts -e core -e harness pytest pyyaml httpx
       - name: Test
@@ -55,11 +55,16 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: android-actions/setup-android@v3
-      - name: Install SDK components
-        # The build sets android.builder.sdkDownload=false: components must be
-        # present up front or the build fails with AGP's own message.
-        run: sdkmanager "platforms;android-34" "build-tools;34.0.0"
+      - name: Install SDK components (preinstalled SDK)
+        # ubuntu-latest ships the Android SDK at $ANDROID_HOME with
+        # cmdline-tools; accept the remaining licenses and install exactly the
+        # components the build requires. The build sets
+        # android.builder.sdkDownload=false, so a missing component must fail
+        # with AGP's own message instead of being auto-fetched mid-build.
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0"
       - uses: gradle/actions/setup-gradle@v4
       - name: Unit tests (rc-ports, rc-core, rc-msdk, rc-app bench)
         # On x86_64 the six WorkManager/Robolectric tests that SKIP on the
