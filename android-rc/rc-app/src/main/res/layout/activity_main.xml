@@ -23,6 +23,16 @@
             android:text="@string/clock_unverified"
             android:textSize="13sp" />
 
+        <!-- B-1: operator status contract rendered from real session facts
+             (OperatorStatus; visual treatment belongs to the design workspace). -->
+        <TextView
+            android:id="@+id/tvOpsStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="-"
+            android:textSize="14sp"
+            android:paddingTop="6dp" />
+
         <!-- 1. Mission / flight -->
         <TextView
             android:layout_width="match_parent"

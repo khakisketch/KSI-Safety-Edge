@@ -19,6 +19,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var tvMission: TextView
     private lateinit var tvFlight: TextView
+    private lateinit var tvOpsStatus: TextView
     private lateinit var tvLink: TextView
     private lateinit var tvStatus: TextView
     private lateinit var tvVideo: TextView
@@ -60,6 +61,7 @@ class MainActivity : AppCompatActivity() {
 
         tvMission = findViewById(R.id.tvMission)
         tvFlight = findViewById(R.id.tvFlight)
+        tvOpsStatus = findViewById(R.id.tvOpsStatus)
         tvLink = findViewById(R.id.tvLink)
         tvStatus = findViewById(R.id.tvStatus)
         tvVideo = findViewById(R.id.tvVideo)
@@ -284,6 +286,7 @@ class MainActivity : AppCompatActivity() {
     private fun refresh() {
         val flight = session.activeFlight
         val store = session.store
+        renderOpsStatus(flight, store)
         val selectedBundle = selectedBundleId?.let { store.missionBundle(it) }
         tvMission.text = "controller: ${session.missionSummary()}\n" +
             "mission cache: sites=${store.sites().size} " +
@@ -352,6 +355,62 @@ class MainActivity : AppCompatActivity() {
         if (!err.isNullOrEmpty() && err != shownError) {
             shownError = err
             tvError.text = "link/ingest note: $err"
+        }
+    }
+
+    /**
+     * B-1: one honest summary of "what is happening / what to do", computed
+     * from real session facts via the host-tested [OperatorStatus] model.
+     * Rendering here is intentionally plain text; the visual treatment is
+     * design-workspace owned (docs/verification/operator-flow-spec.md).
+     */
+    private fun renderOpsStatus(
+        flight: com.fasterxml.jackson.databind.node.ObjectNode?,
+        store: ksi.rc.FileRcStore,
+    ) {
+        val flightId = flight?.get("flight_id")?.asText()
+        val now = ReceiptClock.now()
+        val summary = flightId?.let { store.summariesFor(it).lastOrNull() }
+        val artifacts = flightId?.let { store.artifactsFor(it) } ?: emptyList()
+        val input = OperatorStatus.Input(
+            hasActiveFlight = flightId != null,
+            linkState = session.link.state.name,
+            linkSimulated = session.link.isSimulated,
+            aircraftConnected = session.link.aircraftConnected,
+            internet = internetStatus(),
+            recorderState = app.videoRecorder?.state?.name,
+            mopHeartbeatAgeMs = flightId?.let {
+                ObservationModel.heartbeatAgeMs(store, it, now)
+            },
+            observationAgeMs = flightId?.let {
+                ObservationModel.observationAgeMs(store, it, now)
+            },
+            eventCount = flightId?.let { store.eventsFor(it).size } ?: 0,
+            artifactsTotal = artifacts.size,
+            artifactsComplete = artifacts.count {
+                store.isArtifactComplete(it.get("artifact_id").asText())
+            },
+            artifactsSynced = artifacts.count {
+                store.isArtifactSynced(it.get("artifact_id").asText())
+            },
+            pendingAnnotations = store.pendingAnnotations().count {
+                it.get("flight_id")?.asText() == flightId
+            },
+            coveredFrames = summary?.get("covered_frames")?.asLong(),
+            skippedFrames = summary?.get("skipped_frames")?.asLong(),
+            coreConfigured = session.coreConfigured(),
+        )
+        tvOpsStatus.text = OperatorStatus.evaluate(input).joinToString("\n") { item ->
+            val marker = when (item.severity) {
+                OperatorStatus.Severity.PROBLEM -> "■"
+                OperatorStatus.Severity.ATTENTION -> "▲"
+                OperatorStatus.Severity.INFO -> "·"
+            }
+            buildString {
+                append("$marker ${item.label}")
+                if (item.detail.isNotEmpty()) append(" — ${item.detail}")
+                item.action?.let { append("  → $it") }
+            }
         }
     }
 
