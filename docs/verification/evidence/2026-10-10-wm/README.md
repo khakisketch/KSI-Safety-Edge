@@ -40,6 +40,28 @@
 - WorkManager DECISION LOGIC: host-verified via `SyncWorkerDecisionTest`
   (all pre/post branches, including the late-annotation regression).
 
+## Resolution — CI x86_64 runner (2026-10-12, C65)
+
+The carried item is resolved for the CI path: the GitHub Actions `Android`
+job runs this suite on x86_64, where Robolectric executes for real. The
+first run made the never-executed suite reveal two real defects, both fixed:
+
+1. `DemoFeed.demoBundle` still produced the pre-A5 shape (no
+   `mission_snapshot`) while `RcSession.startFlightFromBundle` requires a
+   self-digested snapshot → 5/6 tests failed. Fixed (`ce7302b`) and pinned
+   by the host regression `DemoBundleShapeTest`.
+2. `already_synced_flight_is_skipped_via_durable_receipts` compared
+   `Result.success(data)` with a bare `Result.success()` — WorkManager's
+   Result equality includes `outputData`, so it could never pass. Fixed
+   (`ecd2f21`): assert the `Success` class plus the returned state.
+
+Final: CI run
+[38258861942](https://github.com/khakisketch/ksi-safety-edge/actions/runs/38258861942)
+green — Python, Edge C++ and Android jobs all pass; the six WorkManager
+tests **execute (0 skipped)** on x86_64, including the real enqueued-worker
+execution through the test driver. Device-mode execution on the real RC
+remains part of A9-4.
+
 ## Regression context (2026-10-11 user review)
 
 `ALREADY_SYNCED` previously considered only artifacts, so an operator's
