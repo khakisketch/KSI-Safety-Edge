@@ -60,6 +60,11 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
     @Volatile
     private var lastDecoderAttemptMs = 0L
 
+    // Display decoder swap/feed guard (review C63 residual): the UI thread
+    // may detach the surface while the SDK callback thread is feeding a
+    // frame — release must never interleave with a feed.
+    private val decoderLock = Any()
+
     // Lazy: no SDK listener objects until connect() runs (construction must
     // not require SDK runtime classes — host tests / app start).
     private val streamDataListener by lazy {
@@ -86,16 +91,18 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
             // (review C63 #11).
             val target = surface
             if (target != null) {
-                var active = decoder
-                if (active == null) {
-                    val now = SystemClock.elapsedRealtime()
-                    if (now - lastDecoderAttemptMs >= DECODER_RETRY_MS) {
-                        lastDecoderAttemptMs = now
-                        active = H264SurfaceDecoder.create(target, frame.width, frame.height)
-                        decoder = active
+                synchronized(decoderLock) {
+                    var active = decoder
+                    if (active == null) {
+                        val now = SystemClock.elapsedRealtime()
+                        if (now - lastDecoderAttemptMs >= DECODER_RETRY_MS) {
+                            lastDecoderAttemptMs = now
+                            active = H264SurfaceDecoder.create(target, frame.width, frame.height)
+                            decoder = active
+                        }
                     }
+                    active?.feed(encoded)
                 }
-                active?.feed(encoded)
             }
             // Recording path: independent of the display surface. A recorder
             // failure must never kill the SDK callback thread (C63 #3).
@@ -133,8 +140,11 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
     fun attachSurface(target: Surface?) {
         surface = target
         if (target == null) {
-            val active = decoder
-            decoder = null
+            val active: H264SurfaceDecoder?
+            synchronized(decoderLock) {
+                active = decoder
+                decoder = null
+            }
             active?.release()
         }
     }
@@ -204,8 +214,11 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
                 // best-effort close
             }
         }
-        val active = decoder
-        decoder = null
+        val active: H264SurfaceDecoder?
+        synchronized(decoderLock) {
+            active = decoder
+            decoder = null
+        }
         active?.release()
         setState(VideoSource.State.DISCONNECTED)
     }

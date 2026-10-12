@@ -104,18 +104,21 @@ class MainActivity : AppCompatActivity() {
                 // seconds on large segments — keep it OFF the UI thread.
                 show("flight ended: ${flightId.take(8)} — auto-sync 예약 · 세그먼트 인제스트 중…")
                 session.bg.execute {
-                    val (ingested, total) = ingestRecordedSegments(flightId)
+                    val ingest = ingestRecordedSegments(flightId)
                     val segmentNote = when {
-                        total == 0 -> "세그먼트 0(레코더 없음/영상 미수신)"
-                        ingested == total -> "세그먼트 ${ingested}개 → 증거 인제스트"
-                        ingested == 0 ->
-                            "세그먼트 ${total}개 로컬 보관 — Edge 부트 없음(증거 미생성, 은폐 없음)"
-                        else -> "세그먼트 ${ingested}/${total} 인제스트"
+                        ingest.total == 0 -> "세그먼트 0(레코더 없음/영상 미수신)"
+                        ingest.problems.isNotEmpty() && ingest.ingested == 0 ->
+                            "세그먼트 ${ingest.total}개 로컬 보관(사유 ${ingest.problems.size}건)"
+                        ingest.ingested == ingest.total ->
+                            "세그먼트 ${ingest.ingested}개 → 증거 인제스트"
+                        else -> "세그먼트 ${ingest.ingested}/${ingest.total} 인제스트"
                     }
+                    val problemNote = ingest.problems.take(3).joinToString("\n")
                     runOnUiThread {
                         if (!isDestroyed) {
                             show(
-                                "flight ended: ${flightId.take(8)} — auto-sync 예약 · $segmentNote",
+                                "flight ended: ${flightId.take(8)} — auto-sync 예약 · $segmentNote" +
+                                    if (problemNote.isEmpty()) "" else "\n$problemNote",
                             )
                         }
                     }
@@ -216,6 +219,19 @@ class MainActivity : AppCompatActivity() {
         SyncScheduler.enqueuePending(applicationContext, session)?.let { flightId ->
             hasSyncReport = true
             tvSync.text = "auto-sync 재개 예약: ${flightId.take(8)} (완료된 로컬 데이터 재동기화)"
+        }
+
+        // A9-3 review residual: a restart during an active flight used to
+        // silently stop recording. Resume it — SegmentRecorderCore continues
+        // the flight directory's numbering — and state the lost tail.
+        val activeFlight = session.activeFlight
+        val recorder = app.videoRecorder
+        if (activeFlight != null && recorder != null &&
+            recorder.state != VideoRecorder.State.RECORDING
+        ) {
+            val flightId = activeFlight.get("flight_id").asText()
+            app.startFlightRecording(flightId, flightSegmentSeconds(flightId))
+            show("녹화 재개: 재시작 이전 구간 일부는 저장되지 않았습니다 (세그먼트 번호는 이어짐)")
         }
     }
 
@@ -833,29 +849,56 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private data class SegmentIngest(
+        val ingested: Int,
+        val total: Int,
+        val problems: List<String>,
+    )
+
     /**
      * A9-3: finalized recording segments become RC_PROXY_SEGMENT evidence on
      * the flight's LATEST Edge boot (the normal Manifold-connected case). A
      * flight with no Edge boot keeps its segments local and says so — no
-     * synthetic boot is fabricated. Returns (ingested, total).
+     * synthetic boot is fabricated. Structurally broken files are never
+     * ingested ([Mp4Probe]). Runs off the UI thread; problems are RETURNED
+     * for the caller to surface on the UI thread.
      */
-    private fun ingestRecordedSegments(flightId: String): Pair<Int, Int> {
+    private fun ingestRecordedSegments(flightId: String): SegmentIngest {
         val files = app.stopFlightRecording()
-        if (files.isEmpty()) return 0 to 0
+        if (files.isEmpty()) return SegmentIngest(0, 0, emptyList())
         val bootId = ksi.rc.SessionBuilder(session.store)
-            .sortedBoots(flightId).lastOrNull() ?: return 0 to files.size
+            .sortedBoots(flightId).lastOrNull()
+            ?: return SegmentIngest(
+                0,
+                files.size,
+                listOf("Edge 부트 없음 — 세그먼트 로컬 보관(증거 미생성)"),
+            )
         val ingestor = ksi.rc.SegmentIngestor(session.store)
         var ingested = 0
+        val problems = mutableListOf<String>()
         for (file in files) {
-            val index = ksi.safetyedge.rc.SegmentNames.parseIndex(file.name) ?: continue
+            val index = SegmentNames.parseIndex(file.name) ?: continue
+            if (!Mp4Probe.looksPlayable(file)) {
+                problems.add("${file.name}: MP4 구조 아님 — 증거 제출 안 함(로컬 보관)")
+                continue
+            }
             try {
                 ingestor.ingestSegment(flightId, bootId, index, file)
                 ingested += 1
             } catch (exc: Exception) {
-                show("segment ingest failed (${file.name}): ${exc.message}")
+                problems.add("${file.name}: ${exc.message}")
             }
         }
-        return ingested to files.size
+        return SegmentIngest(ingested, files.size, problems)
+    }
+
+    /** The flight's pinned bundle carries recording_policy.segment_seconds. */
+    private fun flightSegmentSeconds(flightId: String): Int {
+        val record = session.store.flight(flightId) ?: return 300
+        val bundleId = record.get("bundle_id")?.asText() ?: return 300
+        val bundle = session.store.missionBundle(bundleId) ?: return 300
+        return bundle.get("mission_snapshot")
+            ?.get("recording_policy")?.get("segment_seconds")?.asInt() ?: 300
     }
 
     private fun uploadNow() {

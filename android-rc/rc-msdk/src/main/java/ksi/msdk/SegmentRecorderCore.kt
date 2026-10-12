@@ -52,18 +52,34 @@ class SegmentRecorderCore(
     val isRecording: Boolean
         get() = writer != null
 
-    /** Opens segment 0 under [directory]. False = nothing was opened. */
+    /** Opens the next free segment under [directory]. False = nothing opened.
+     *
+     *  Existing files (finalized `.mp4` or crash-left `.tmp` leftovers) are
+     *  never overwritten: a restarted recording continues the numbering of
+     *  its flight directory (review C63 residual: restart resume, and
+     *  re-recording the same flight). */
     @Synchronized
     fun start(directory: File, elapsedMs: Long): Boolean {
         dir = directory
         finalized.clear()
         failedSegments = 0
         lastError = null
-        segmentIndex = 0L
+        segmentIndex = nextFreeIndex(directory)
         segmentStartMs = elapsedMs
         stopped = false
         currentWriteFailed = false
         return openSegment()
+    }
+
+    private fun nextFreeIndex(directory: File): Long {
+        val names = directory.list() ?: return 0L
+        var maxIndex = -1L
+        for (name in names) {
+            val base = if (name.endsWith(".tmp")) name.dropLast(4) else name
+            val index = SegmentNames.parseIndex(base) ?: continue
+            if (index > maxIndex) maxIndex = index
+        }
+        return maxIndex + 1
     }
 
     /** Appends one frame; rotates first when this frame crossed the boundary. */

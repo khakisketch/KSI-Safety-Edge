@@ -1,5 +1,6 @@
 package ksi.msdk
 
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -126,14 +127,28 @@ class SegmentRecorderCoreTest {
     }
 
     @Test
-    fun stray_crash_leftovers_are_never_returned() {
+    fun stray_crash_leftovers_are_never_returned_and_shift_numbering() {
         val dir = tempDir()
         File(dir, "seg-00009.mp4.tmp").writeBytes(ByteArray(4)) // crash leftover
         val core = SegmentRecorderCore(SegmentRotationPolicy(1)) { FakeWriter(it) }
         core.start(dir, 0)
         core.onFrame(frame(), 0)
         val files = core.stop()
-        assertEquals(listOf("seg-00000.mp4"), files.map { it.name })
+        assertEquals(listOf("seg-00010.mp4"), files.map { it.name })
+        assertTrue(File(dir, "seg-00009.mp4.tmp").exists()) // left untouched
+    }
+
+    @Test
+    fun restart_continues_numbering_without_overwriting() {
+        val dir = tempDir()
+        val existing = File(dir, "seg-00003.mp4")
+        existing.writeBytes(ByteArray(20) { 7 })
+        val core = SegmentRecorderCore(SegmentRotationPolicy(1)) { FakeWriter(it) }
+        assertTrue(core.start(dir, 0))
+        assertTrue(core.onFrame(frame(), 0))
+        val files = core.stop()
+        assertEquals(listOf("seg-00004.mp4"), files.map { it.name })
+        assertArrayEquals(ByteArray(20) { 7 }, existing.readBytes())
     }
 
     @Test

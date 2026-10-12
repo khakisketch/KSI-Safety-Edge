@@ -39,8 +39,17 @@ class MsdkVideoRecorder(private val context: Context) :
     override var state: VideoRecorder.State = VideoRecorder.State.IDLE
         private set
 
-    /** Mission `recording_policy.segment_seconds`, applied before start. */
+    /** Mission `recording_policy.segment_seconds`, applied before start.
+     *  Mutation while RECORDING is ignored with a recorded reason (review
+     *  residual: the policy is snapshotted into the core at start). */
     var segmentSeconds: Int = 300
+        set(value) {
+            if (state == VideoRecorder.State.RECORDING) {
+                lastError = "segmentSeconds ignored while recording"
+                return
+            }
+            field = value
+        }
 
     var lastError: String? = null
         private set
