@@ -41,4 +41,7 @@ dependencies {
     implementation("com.dji:dji-sdk-v5-networkImp:5.18.0")
 
     testImplementation("junit:junit:4.13.2")
+    // A9-2 cross-language E2E: builds/consumes the rc-core MOP envelope
+    // types (Jackson nodes) against the C++-pinned fixtures.
+    testImplementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
 }

@@ -24,6 +24,16 @@ import ksi.safetyedge.rc.DroneLink
  * DEVICE GATE: registration, pipeline connect and the real read/write loop
  * are verified on the RC ground session; this class compiles and packages
  * now without hardware. Framing/reassembly is [MopFrameCodec], host-tested.
+ * A9-2 transport rules (both ends must agree — the C++ link implements the
+ * same policy):
+ * - concurrent senders are serialised ([MopFrameWriter]);
+ * - a partial send tears the link down (already-delivered bytes cannot be
+ *   recalled; reconnect starts a fresh session and the envelope layer
+ *   resends the SAME msg_id);
+ * - a framing desync (chunk length beyond the wire contract) discards the
+ *   reassembler state and drops the link — there is no resync marker;
+ * - connect()/disconnect() always reset the reassembler (no stale partial
+ *   frames leak across sessions).
  * A9-1 order: the app installs the SDK bootstrap in attachBaseContext
  * (see [MsdkPlatform]) before any of this runs; here the key gate comes
  * first and the pipeline is touched only after REGISTERED.
@@ -34,6 +44,8 @@ class MsdkDroneLink(
 ) : DroneLink {
     private val bridge = DjiSdkBridge(context)
     private var listener: DroneLink.Listener? = null
+
+    @Volatile
     override var state: DroneLink.State = DroneLink.State.DISCONNECTED
         private set
     override val isSimulated: Boolean = false
@@ -48,9 +60,15 @@ class MsdkDroneLink(
 
     @Volatile
     private var readerRunning = false
+
+    @Volatile
     private var lastError: String? = null
 
     private val reassembler = MopReassembler()
+
+    // A9-2: serialises frame writes — concurrent senders (UI + the app's
+    // retransmit timer) must not interleave frames of different messages.
+    private val writer = MopFrameWriter { frame -> writeFrame(frame) }
 
     // Lazy: no SDK listener object is created until connect() runs, so
     // constructing the link (app start / host tests) needs no SDK runtime
@@ -80,6 +98,7 @@ class MsdkDroneLink(
     override fun connect() {
         if (state != DroneLink.State.DISCONNECTED) return
         setState(DroneLink.State.CONNECTING)
+        reassembler.reset() // fresh session: no stale partial frames
         // A9-1: never touch the SDK (PipelineManager) without the app key —
         // the key gate comes first, and the pipeline is only connected once
         // the SDK reports REGISTERED.
@@ -127,6 +146,7 @@ class MsdkDroneLink(
 
     override fun disconnect() {
         stopReader()
+        reassembler.reset()
         val current = pipeline
         pipeline = null
         if (current != null) {
@@ -135,12 +155,16 @@ class MsdkDroneLink(
                     pipelineId, PipelineDeviceType.PAYLOAD,
                     TransmissionControlType.STABLE,
                 )
+            } catch (_: LinkageError) {
+                // SDK runtime missing (Helper not installed): best-effort.
             } catch (_: Exception) {
                 // Disconnect best-effort; state is forced below regardless.
             }
         }
         try {
             PipelineManager.getInstance().removePipelineConnectionListener(pConnectionListener)
+        } catch (_: LinkageError) {
+            // ignore (same reason as above)
         } catch (_: Exception) {
             // ignore
         }
@@ -148,16 +172,28 @@ class MsdkDroneLink(
     }
 
     override fun send(bytes: ByteArray): Boolean {
-        val current = pipeline ?: return false
-        for (frame in MopFrameCodec.encode(bytes)) {
-            val result = try {
-                current.writeData(frame)
-            } catch (_: Exception) {
-                return false
-            }
-            if (isFailure(result.error) || result.length != frame.size) return false
+        val ok = writer.send(bytes)
+        if (!ok) {
+            // A9-2: a partial write means the remote reassembler state is no
+            // longer trustworthy (the bytes already delivered cannot be
+            // recalled). Tear the link down; reconnect resets both ends and
+            // the envelope layer resends with the SAME msg_id.
+            lastError = "partial send — transport torn down"
+            disconnect()
         }
-        return true
+        return ok
+    }
+
+    private fun writeFrame(frame: ByteArray): Boolean {
+        val current = pipeline ?: return false
+        return try {
+            val result = current.writeData(frame)
+            !isFailure(result.error) && result.length == frame.size
+        } catch (_: LinkageError) {
+            false
+        } catch (_: Exception) {
+            false
+        }
     }
 
     private fun startReader(current: Pipeline) {
@@ -172,15 +208,34 @@ class MsdkDroneLink(
                     val result = live.readData(buffer)
                     val length = result.length
                     if (length > 0 && !isFailure(result.error)) {
+                        val errorsBefore = reassembler.errors
                         for (message in reassembler.feed(
                             buffer.copyOf(length),
                         )) {
                             listener?.onBytes(message)
                         }
+                        if (reassembler.errors > errorsBefore) {
+                            // Framing desync: the format has no resync
+                            // marker, so the stream cannot be trusted any
+                            // more. Route through disconnect(): it stops the
+                            // reader/pipeline and resets the reassembler, so
+                            // a later connect() starts a fresh session
+                            // (TODO(device): confirm the channel close
+                            // semantics on real hardware).
+                            lastError = "framing desync — reconnecting"
+                            disconnect()
+                            break
+                        }
                     } else {
                         Thread.sleep(POLL_IDLE_MS)
                     }
                 } catch (_: InterruptedException) {
+                    break
+                } catch (_: LinkageError) {
+                    // SDK runtime disappeared mid-read: same recovery as a
+                    // desync (stop + reset; a later connect() reconnects).
+                    lastError = "reader linkage error"
+                    disconnect()
                     break
                 } catch (_: Exception) {
                     // Transport hiccup: keep polling; connection state is

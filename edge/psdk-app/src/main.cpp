@@ -49,6 +49,8 @@ extern "C" {
 #include "ksi_safety/time/provenance.hpp"
 #include "ksi_safety/time/topic_ring.hpp"
 
+#include "mop_service.hpp"
+
 namespace {
 
 using ksi::safety::BoundedFrameQueue;
@@ -406,6 +408,10 @@ struct CliArgs {
     long long duration_sec = KSI_SAFETY_EDGE_DURATION_SEC;
     const char* engine_path = nullptr;  // optional serialized TRT engine
     long long detect_every = 1;
+    // A9-2: opt-in MOP channel service (RC <-> Edge transport). Negative
+    // disables it; otherwise it is the MOP channel id (MSDK pipeline id).
+    long long mop_channel = -1;
+    const char* flight_id = "flt-unknown";
 };
 
 bool ParseArgs(int argc, char** argv, CliArgs* args) {
@@ -418,16 +424,22 @@ bool ParseArgs(int argc, char** argv, CliArgs* args) {
             args->engine_path = argv[++i];
         } else if (std::strcmp(argv[i], "--detect-every") == 0 && i + 1 < argc) {
             args->detect_every = std::atoll(argv[++i]);
+        } else if (std::strcmp(argv[i], "--mop-channel") == 0 && i + 1 < argc) {
+            args->mop_channel = std::atoll(argv[++i]);
+        } else if (std::strcmp(argv[i], "--flight-id") == 0 && i + 1 < argc) {
+            args->flight_id = argv[++i];
         } else if (std::strcmp(argv[i], "--help") == 0) {
             std::fprintf(stderr,
                          "usage: %s [--out PATH] [--duration-sec N] "
-                         "[--engine PATH] [--detect-every N]\n",
+                         "[--engine PATH] [--detect-every N] "
+                         "[--mop-channel N] [--flight-id ID]\n",
                          argv[0]);
             std::exit(0);
         } else {
             std::fprintf(stderr, "unknown argument: %s\nusage: %s [--out PATH] "
                                  "[--duration-sec N] [--engine PATH] "
-                                 "[--detect-every N]\n",
+                                 "[--detect-every N] [--mop-channel N] "
+                                 "[--flight-id ID]\n",
                          argv[i], argv[0]);
             return false;
         }
@@ -438,6 +450,11 @@ bool ParseArgs(int argc, char** argv, CliArgs* args) {
     }
     if (args->detect_every < 1) {
         std::fprintf(stderr, "--detect-every must be >= 1\n");
+        return false;
+    }
+    if (args->mop_channel > 65535) {
+        std::fprintf(stderr, "--mop-channel must be 0..65535 (or negative "
+                             "to disable)\n");
         return false;
     }
     return true;
@@ -453,6 +470,7 @@ int main(int argc, char** argv) {
     bool sub_hard_sync = false, sub_pos = false, sub_vel = false, sub_gps = false,
          sub_gimbal = false;
     bool liveview_init = false, image_started = false;
+    std::unique_ptr<MopService> mop;
     if (!ParseArgs(argc, argv, &args)) {
         return 2;
     }
@@ -722,6 +740,22 @@ int main(int argc, char** argv) {
     liveview_init = true;
     BootStage("liveview_init_ok");
 
+    // A9-2: optional MOP channel service (the real RC <-> Edge byte
+    // transport; message logic is host-tested in edge/tests/test_mop_*).
+    if (args.mop_channel >= 0) {
+        MopServiceConfig mop_config;
+        mop_config.flight_id = args.flight_id;
+        mop_config.channel_id = static_cast<std::uint16_t>(args.mop_channel);
+        auto service = std::make_unique<MopService>(mop_config);
+        if (service->Start()) {
+            mop = std::move(service);
+            BootStage("mop_started");
+        } else {
+            std::fprintf(stderr, "MOP service failed to start (channel %lld)\n",
+                         args.mop_channel);
+        }
+    }
+
     {
         std::thread worker(WorkerMain, &state);
         rc = DjiLiveview_StartImageStream(DJI_LIVEVIEW_CAMERA_POSITION_NO_1,
@@ -761,6 +795,10 @@ int main(int argc, char** argv) {
     }
 
 shutdown:
+    if (mop) {
+        mop->Stop();
+        mop.reset();
+    }
     // FIFO teardown: image stream first, then topics in subscription order.
     if (image_started) {
         (void)DjiLiveview_StopImageStream(DJI_LIVEVIEW_CAMERA_POSITION_NO_1,

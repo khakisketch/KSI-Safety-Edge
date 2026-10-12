@@ -35,7 +35,8 @@ object MsdkPlatform {
     var lastError: String? = null
         private set
 
-    /** Idempotent; must run before any other SDK class is loaded. */
+    /** Idempotent; must run before any other SDK class is loaded. A failed
+     *  install is retried on the next call (only INSTALLED short-circuits). */
     @Synchronized
     fun install(application: Application) {
         if (state == State.INSTALLED) return

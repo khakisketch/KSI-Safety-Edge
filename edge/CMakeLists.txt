@@ -49,6 +49,13 @@ add_library(ksi_safety_edge_core STATIC
   src/risk/episode.cpp
   src/risk/engine.cpp
   src/session/session.cpp
+  src/transport/digest.cpp
+  src/transport/json.cpp
+  src/transport/mop_frame.cpp
+  src/transport/mop_envelope.cpp
+  src/transport/mop_evidence.cpp
+  src/transport/mop_endpoint.cpp
+  src/transport/mop_link.cpp
 )
 target_include_directories(ksi_safety_edge_core PUBLIC include)
 target_link_libraries(ksi_safety_edge_core PUBLIC Threads::Threads)
@@ -153,3 +160,10 @@ ksi_safety_edge_test(session tests/test_session.cpp)
 ksi_safety_edge_test(chain tests/test_chain.cpp)
 ksi_safety_edge_test(replay tests/test_replay.cpp)
 ksi_safety_edge_test(tensorrt tests/test_tensorrt.cpp)
+ksi_safety_edge_test(mop_frame tests/test_mop_frame.cpp)
+ksi_safety_edge_test(mop_json tests/test_mop_json.cpp)
+ksi_safety_edge_test(mop_e2e tests/test_mop_e2e.cpp)
+get_filename_component(KSI_MOP_CONTRACTS_DIR
+  "${CMAKE_CURRENT_SOURCE_DIR}/../contracts/mop" ABSOLUTE)
+target_compile_definitions(mop_e2e PRIVATE
+  KSI_MOP_CONTRACTS_DIR="${KSI_MOP_CONTRACTS_DIR}")

@@ -25,18 +25,26 @@ enum class DjiBridgeState { IDLE, KEY_MISSING, INITIALIZING, REGISTERED, FAILED 
  * 3. `registerApp()` only after `onInitProcess(INITIALIZE_COMPLETE)` —
  *    never immediately after init().
  * Registration success, product connection and every SDK call below are
- * DEVICE-GATE facts: they compile and package now, verified on the RC.
+ * DEVICE-GATE facts: they compile and package now, to be verified on the
+ * RC (device gate) — nothing here claims device verification yet.
  */
 class DjiSdkBridge(private val context: Context) {
+    @Volatile
     var state: DjiBridgeState = DjiBridgeState.IDLE
         private set
+    @Volatile
     var connectedProductCount: Int = 0
         private set
+    @Volatile
     var lastError: String? = null
         private set
 
     private var onChange: ((DjiBridgeState) -> Unit)? = null
+
+    @Volatile
     private var initializing = false
+
+    @Volatile
     private var registrationRequested = false
 
     fun appKeyPresent(): Boolean = try {
@@ -74,9 +82,10 @@ class DjiSdkBridge(private val context: Context) {
         }
         if (initializing) {
             // init() runs once per process; later start() calls just
-            // re-observe the state. A registration retry hook (the sample
-            // re-registers when the network returns) is a device-gate TODO.
-            setState(DjiBridgeState.INITIALIZING, null)
+            // re-observe the current state — including a recorded FAILED,
+            // which must never be masked as INITIALIZING (registration
+            // retry is explicit: retryRegistration()).
+            setState(state, lastError)
             return
         }
         initializing = true
@@ -135,6 +144,18 @@ class DjiSdkBridge(private val context: Context) {
         } catch (e: Exception) {
             setState(DjiBridgeState.FAILED, "registerApp failed: ${reason(e)}")
         }
+    }
+
+    /** Retry a failed registration once (e.g. after the network returned);
+     *  a no-op when already registered or the key is missing. The official
+     *  sample re-registers on network-availability callbacks — the app can
+     *  call this on its own connectivity signal. No re-init is performed. */
+    @Synchronized
+    fun retryRegistration() {
+        if (state == DjiBridgeState.REGISTERED) return
+        if (!appKeyPresent()) return
+        registrationRequested = false
+        registerOnce()
     }
 
     private fun reason(e: Throwable): String = e.message ?: e.javaClass.name

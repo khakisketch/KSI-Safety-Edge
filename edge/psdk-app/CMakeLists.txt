@@ -112,6 +112,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/.. ${CMAKE_CURRENT_BINARY_DIR}/core
 set(KSI_SAFETY_EDGE_BINARY "ksi_safety_edge")
 add_executable(${KSI_SAFETY_EDGE_BINARY}
   src/main.cpp
+  src/mop_service.cpp
   platform/osal_glue.c
   platform/socket_glue.c
   platform/usb_bulk_glue.c

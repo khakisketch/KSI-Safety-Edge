@@ -77,8 +77,30 @@ per-topic counts incl. `att_rejected`/`pos_rejected`, `detector`,
 stream and FC topics in FIFO subscription order, joins the worker
 (draining the queue), and closes the file.
 
-## Known open items
+## MOP channel (A9-2)
 
+Optional byte transport to the RC (DJI MOP channel; the MSDK side connects
+with `PipelineManager.connectPipeline` — the channel id must match; the RC
+app uses `DEFAULT_PIPELINE_ID = 0`):
+
+```sh
+./psdk-app/build/ksi_safety_edge --mop-channel 0 --flight-id <id>
+```
+
+- Message logic (framing, envelope verification, mission handling, evidence
+  emission, retry/gap bookkeeping) is the host-tested transport core in
+  `edge/src/transport/` (tests `mop_frame` / `mop_json` / `mop_e2e` plus the
+  cross-language fixtures in `contracts/mop/`).
+- `src/mop_service.cpp` only moves bytes: `DjiMopChannel_Init/Create/Bind`,
+  `Accept` (reader thread), `RecvData` polling, `SendData` partial-write
+  loop; a timer flushes the outbox, retries unacked messages and emits the
+  periodic HEARTBEAT.
+- DEVICE GATE: this path compiles only here (PSDK headers required) and is
+  verified on the RC ground session. Evidence emission from live ticks
+  (TickRecord → message payloads) and the real flight-id handoff from the
+  RC are the next step.
+
+## Known open items
 - USB bulk channel/interface map (bulk4/5) unresolved — carried over from
   the glue comments; needs hardware verification.
 - `developerAccount` in the credential header is empty (allowed, not fatal).

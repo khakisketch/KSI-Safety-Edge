@@ -11,9 +11,17 @@ import java.io.ByteArrayOutputStream
  *   frame := u32be(chunkLength) | u8(flags) | chunk[chunkLength]
  *             flags bit0 MORE = another chunk of the same message follows
  *
- * - [encode] splits one message into 1..n frames (≤ maxChunk each);
- * - [MopReassembler] rebuilds MESSAGES from arbitrary byte feeds, with a
- *   total-size cap so a hostile/corrupt stream cannot grow unbounded.
+ * This byte contract is cross-pinned with the C++ edge side
+ * (`edge/src/transport/mop_frame.cpp` + golden vectors in both suites).
+ *
+ * - [MopFrameCodec.encode] splits one message into 1..n frames (≤ maxChunk);
+ * - [MopReassembler] rebuilds MESSAGES from arbitrary byte feeds. There is
+ *   no resync marker in the format: a corrupt length cannot be recovered
+ *   mid-stream, so violations DISCARD the buffered state and are counted
+ *   ([MopReassembler.errors]) — a broken transport must reconnect and the
+ *   fresh session starts from a clean reassembler (see MsdkDroneLink).
+ * - [MopFrameWriter] serialises frame writes: one message's frames go out
+ *   as an uninterrupted sequence even when several threads send at once.
  *
  * TODO(device, A9): confirm the pipeline's practical packet size, whether
  * it preserves boundaries, and its flow-control behaviour (writeData
@@ -21,10 +29,10 @@ import java.io.ByteArrayOutputStream
  * Pure JVM — host-tested.
  */
 object MopFrameCodec {
-    /** Conservative default; tune on device after measuring the pipeline. */
+    /** Sender-side chunk size AND the reassembler's chunk-length guard:
+     *  the wire contract both ends enforce (a chunk larger than this is a
+     *  corrupt/desynced stream, not a legal frame). */
     const val DEFAULT_MAX_CHUNK = 64 * 1024
-
-    const val FLAG_MORE = 0x01
 
     private const val MAX_CHUNK_GUARD = 0xFFFFFF // u24 practical guard
 
@@ -56,10 +64,34 @@ object MopFrameCodec {
         chunk.copyInto(out, 5)
         return out
     }
+
+    const val FLAG_MORE = 0x01
+}
+
+/**
+ * Serialised frame writes: concurrent [send] callers are queued so the
+ * frames of one message are never interleaved with another message's.
+ * A partial/failed write returns false — the CALLER must treat the
+ * transport as broken (see MsdkDroneLink.send).
+ */
+class MopFrameWriter(
+    private val maxChunk: Int = MopFrameCodec.DEFAULT_MAX_CHUNK,
+    private val write: (ByteArray) -> Boolean,
+) {
+    @Synchronized
+    fun send(message: ByteArray): Boolean {
+        for (frame in MopFrameCodec.encode(message, maxChunk)) {
+            if (!write(frame)) return false
+        }
+        return true
+    }
 }
 
 /** Incremental frame->message reassembly; total message size is capped. */
-class MopReassembler(private val maxMessageBytes: Int = 4 * 1024 * 1024) {
+class MopReassembler(
+    private val maxMessageBytes: Int = 4 * 1024 * 1024,
+    private val maxChunkBytes: Int = MopFrameCodec.DEFAULT_MAX_CHUNK,
+) {
     private val header = ByteArray(5)
     private var headerRead = 0
     private var chunkLength = -1
@@ -67,7 +99,27 @@ class MopReassembler(private val maxMessageBytes: Int = 4 * 1024 * 1024) {
     private var more = false
     private val message = ByteArrayOutputStream()
 
-    /** Feed raw transport bytes; returns every COMPLETE message. */
+    /** Count of discarded (corrupt/oversize) streams; never reset by feed. */
+    var errors = 0L
+        private set
+
+    /** Discard any partial frame/message state (transport reconnect/reset). */
+    @Synchronized
+    fun reset() {
+        headerRead = 0
+        chunkLength = -1
+        chunkReceived = 0
+        more = false
+        message.reset()
+    }
+
+    /** Feed raw transport bytes; returns every COMPLETE message.
+     *
+     *  A chunk length above [maxChunkBytes] or a message above
+     *  [maxMessageBytes] is a corrupt/desynced stream: the state is
+     *  discarded, [errors] increments, and this feed stops (the caller
+     *  should tear the transport down — there is no resync marker). */
+    @Synchronized
     fun feed(bytes: ByteArray): List<ByteArray> {
         var offset = 0
         val messages = mutableListOf<ByteArray>()
@@ -83,8 +135,12 @@ class MopReassembler(private val maxMessageBytes: Int = 4 * 1024 * 1024) {
                     ((header[2].toInt() and 0xFF) shl 8) or
                     (header[3].toInt() and 0xFF)
                 more = (header[4].toInt() and MopFrameCodec.FLAG_MORE) != 0
-                check(message.size() + chunkLength <= maxMessageBytes) {
-                    "message exceeds cap $maxMessageBytes"
+                if (chunkLength > maxChunkBytes ||
+                    message.size() + chunkLength > maxMessageBytes
+                ) {
+                    errors += 1
+                    reset()
+                    break
                 }
             }
             val need = chunkLength - chunkReceived

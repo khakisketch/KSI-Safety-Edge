@@ -26,6 +26,8 @@ import ksi.safetyedge.rc.VideoSource
  */
 class MsdkVideoSource(private val context: Context) : VideoSource {
     private var listener: VideoSource.Listener? = null
+
+    @Volatile
     override var state: VideoSource.State = VideoSource.State.DISCONNECTED
         private set
     override val isSimulated: Boolean = false
@@ -107,6 +109,11 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
                 }
             })
             channel = target
+        } catch (_: LinkageError) {
+            // SDK runtime missing (Helper bootstrap not installed): honest
+            // NO_SIGNAL instead of a crash. connect() is expected to run
+            // only after the link reports REGISTERED (app connect order).
+            setState(VideoSource.State.NO_SIGNAL)
         } catch (_: Exception) {
             // Device-gate path: the SDK may be unregistered/unavailable.
             setState(VideoSource.State.NO_SIGNAL)
@@ -124,6 +131,8 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
                     override fun onSuccess() {}
                     override fun onFailure(error: dji.v5.common.error.IDJIError) {}
                 })
+            } catch (_: LinkageError) {
+                // best-effort close
             } catch (_: Exception) {
                 // best-effort close
             }
@@ -131,6 +140,7 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
         setState(VideoSource.State.DISCONNECTED)
     }
 
+    @Volatile
     var lastError: String? = null
         private set
 
