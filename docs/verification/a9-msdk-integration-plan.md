@@ -200,3 +200,27 @@
   교차 비행 terminal-ACK·dedup 재큐·unacked 초기화) · F6 서식. 재검증: edge 20/20·rc-msdk 15/15.
 - **미검증(실기)**: 실제 MOP 채널 위 tick→RC 저장(장치 세션). 비디오/스냅샷 아티팩트는 A9-3,
   spatial·이벤트는 시간 정렬(H1) 후 조건 충족 시에만 — 현 상태에서 이벤트는 정직하게 비어 있다.
+
+## 10. A9-3 구현 기록 — 영상 표시·MP4 세그먼트 (C63, 2026-10-12, 장치 전)
+
+RC 조종 화면의 실제 영상과 증거 녹화를 연결했다. 표시와 녹화는 같은 스트림의 **독립 소비자**다.
+
+- **표시**: `MsdkVideoSource`가 `VideoStreamManager` 프레임을 `H264SurfaceDecoder`(MediaCodec→Surface)로
+  그린다. surface 수명주기는 `PlatformLinks.attachVideoSurface`(device)로 연결하고 bench는 no-op.
+  생성 실패는 **1초 백오프**로 재시도(콜백 스레드 보호) — `frameMappingVerified=false` 유지(오버레이 금지).
+- **녹화**: `EncodedVideoFrame`/`VideoFrameSink`(프레임 팬아웃) → `SegmentRecorderCore`(순수·호스트 시험)
+  → `Mp4SegmentWriter`(MediaMuxer, 첫 CSD 보유 키프레임에서 시작). `SegmentNames`(rc-ports)로 파일명
+  계약 단일화(`seg-NNNNN.mp4` ↔ parseIndex). 종료 시 `SegmentIngestor`가 표준 RC_PROXY_SEGMENT
+  증거로 인제스트(Edge 부트 없으면 로컬 보관·정직 보고, 날조 없음). **증거 규율**: `*.mp4.tmp`는
+  finalize 성공+무결 프레임일 때만 rename — 프로세스 사망·먹서 실패·프레임 신뢰 실패는 증거가 되지 않음.
+- **앱 연결**: 비행 시작 시 bundle `recording_policy.segment_seconds`(1..3600 밖이면 기본 300)로 녹화
+  시작; 비행 종료 시 **백그라운드 스레드**에서 마감·인제스트(UI 스레드 차단 방지) 후 동기화 예약.
+- **독립 CE 리뷰(ce-code-review: 5 리뷰어 + 검증자; 교차모델 생략 사유 기록)**: P1 실결함 수정 —
+  ①CSD 없는 시작 프레임이 세그먼트 전체 폐기 → **대기(첫 CSD 키프레임에서 시작)** ②③콜백·UI 스레드
+  동시 접근 → **코어 전 메서드 동기화+@Volatile+싱크 예외 보호** ④회전 open 실패 wedge → **다음 경계
+  재시도(+wedge 고정 호스트 테스트)** ⑤`write()==false` 계약 위반 → 신뢰 실패 세그먼트 발행 금지
+  (+테스트) ⑧먹서 시작 실패 fd 누수 → 즉시 release ⑪디코더 생성 매 프레임 재시도 → 1초 백오프.
+  검증: rc-ports 2/2(파일명 계약)·rc-msdk **24/24**(신규 3종 포함)·bench 23(6 스킵)·device 17/17·APK 재빌드.
+  커밋 `e31fad8`(C63).
+- **미검증(실기)**: PTS 단위·CSD 형식·재생 가능 파일 여부, 실제 표시/녹화 동시 동작, 재시작 시 녹화
+  재개(알려진 잔여), 세그먼트 실측(재생·해시) — RC 지상 세션 항목.
