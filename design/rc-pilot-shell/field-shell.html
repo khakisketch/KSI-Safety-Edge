@@ -200,6 +200,19 @@ tbody tr:last-child td { border-block-end: 0; }
 .device-meta div { display: flex; justify-content: space-between; gap: 0.75rem; border-block-end: 1px solid var(--border); padding-block-end: 0.45rem; }
 .device-meta dt { color: var(--text-quiet); font-size: 0.82rem; }
 .device-meta dd { margin: 0; text-align: end; font-size: 0.82rem; font-weight: 800; overflow-wrap: anywhere; }
+.settings-state-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.settings-state-item { min-height: 6.7rem; padding: 0.55rem; }
+.settings-state-item .status-label { font-size: 0.73rem; }
+.settings-state-item .status-value { margin-block-start: 0.22rem; font-size: 0.88rem; line-height: 1.3; }
+.settings-state-item .status-detail { font-size: 0.75rem; line-height: 1.4; }
+.field-required { color: var(--text-quiet); font-size: 0.75rem; font-weight: 700; }
+.operator-state { margin: 0; padding: 0.65rem 0.75rem; border: 1px solid color-mix(in oklch, var(--attention) 55%, var(--border)); border-radius: 0.4rem; background: var(--attention-bg); font-size: 0.82rem; line-height: 1.45; }
+.operator-state[data-registered="true"] { border-color: color-mix(in oklch, var(--success) 55%, var(--border)); background: color-mix(in oklch, var(--success) 10%, var(--surface)); }
+.settings-attention { display: flex; align-items: flex-start; gap: 0.65rem; margin-block-start: 0.85rem; padding: 0.75rem 0.85rem; border: 1px solid color-mix(in oklch, var(--attention) 55%, var(--border)); border-radius: 0.45rem; background: var(--attention-bg); font-size: 0.84rem; line-height: 1.5; }
+.settings-attention .severity-symbol { color: var(--attention); }
+.settings-attention strong { display: block; margin-block-end: 0.12rem; }
+.annotation-example { margin-block-start: 0.55rem; padding: 0.55rem 0.65rem; border: 1px dashed var(--border); border-radius: 0.35rem; background: var(--surface-subtle); color: var(--text-quiet); font-size: 0.78rem; line-height: 1.45; }
+.annotation-example .state-label { margin-inline-end: 0.3rem; color: var(--fg); }
 .dev-only { padding: 0.2rem 0.4rem; border: 1px solid var(--border); border-radius: 0.25rem; font-family: var(--font-mono); font-size: 0.65rem; font-weight: 800; white-space: nowrap; }
 .page-footer { margin-block-start: 0.9rem; padding-block-start: 0.65rem; border-block-start: 1px solid var(--border); color: var(--text-quiet); font-size: 0.78rem; line-height: 1.45; }
 @media (max-width: 960px) {
@@ -213,6 +226,7 @@ tbody tr:last-child td { border-block-end: 0; }
   .two-column { grid-template-columns: minmax(0, 1fr); }
   .three-column { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mission-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .settings-state-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .topbar { flex-wrap: wrap; }
   .topbar-meta { flex: 1 1 100%; justify-content: space-between; }
 }
@@ -244,6 +258,7 @@ tbody tr:last-child td { border-block-end: 0; }
 @media (max-width: 420px) {
   .status-grid { grid-template-columns: minmax(0, 1fr); }
   .three-column, .mission-overview { grid-template-columns: minmax(0, 1fr); }
+  .settings-state-grid { grid-template-columns: minmax(0, 1fr); }
   .status-item { min-height: 0; }
   .wordmark-copy small { max-width: 12rem; }
   .segmented button { padding-inline: 0.55rem; }
@@ -605,9 +620,9 @@ tbody tr:last-child td { border-block-end: 0; }
             <div class="mop-control-dock" role="group" aria-labelledby="mop-actions-title" data-od-id="mop-actionbar">
               <h4 id="mop-actions-title" data-od-id="heading-mop-actions">MOP</h4>
               <div class="action-row">
-                <button class="button-primary" type="button" data-action="mop-connect" data-od-id="connect-mop">MOP 연결 (Connect)</button>
-                <button type="button" data-action="mop-disconnect" data-od-id="disconnect-mop">연결 해제 (Disconnect)</button>
-                <button type="button" data-action="retry-unacked" data-od-id="retry-unacked">미확인 재전송 (Retry unacked)</button>
+                <button class="button-primary" type="button" data-action="mop-connect" data-od-id="connect-mop">연결</button>
+                <button type="button" data-action="mop-disconnect" data-od-id="disconnect-mop">연결 해제</button>
+                <button type="button" data-action="retry-unacked" data-od-id="retry-unacked">미확인 재전송</button>
               </div>
             </div>
           </section>
@@ -636,7 +651,7 @@ tbody tr:last-child td { border-block-end: 0; }
                   <span class="feed-copy"><strong>위험 후보 · 경고 아님</strong><small>Edge +00:16.804 · [SIMULATED]</small></span>
                 </li>
               </ul>
-              <p class="feed-footnote">Edge-monotonic 시각은 변환하지 않습니다.</p>
+              <p class="feed-footnote">Edge 모노토닉 시각은 변환하지 않습니다.</p>
             </section>
 
             <section class="cockpit-module" aria-labelledby="evidence-summary-title" data-od-id="evidence-sync-summary">
@@ -654,7 +669,7 @@ tbody tr:last-child td { border-block-end: 0; }
 
         <section class="page" id="mission-page" data-page-panel="mission" aria-labelledby="mission-title" data-od-id="page-mission" hidden>
           <div class="page-heading">
-            <div><p class="eyebrow">02 / MISSION</p><h2 id="mission-title" data-od-id="heading-mission" tabindex="-1">임무 준비</h2></div>
+            <div><p class="eyebrow">02 / 임무</p><h2 id="mission-title" data-od-id="heading-mission" tabindex="-1">임무 준비</h2></div>
             <p class="page-summary">오프라인에서도 준비 상태를 확인합니다. 모든 값은 [SIMULATED].</p>
           </div>
           <div class="two-column">
@@ -677,16 +692,16 @@ tbody tr:last-child td { border-block-end: 0; }
               <div class="action-group">
                 <h3 data-od-id="heading-extra-3">임무 동기화</h3>
                 <div class="action-row">
-                  <button class="button-primary" type="button" data-action="sync-sites" data-od-id="sync-sites">사이트 동기화 (Sync sites)</button>
-                  <button type="button" data-action="download-bundle" data-od-id="download-bundle">번들 다운로드 (Download bundle)</button>
+                  <button class="button-primary" type="button" data-action="sync-sites" data-od-id="sync-sites">현장 동기화</button>
+                  <button type="button" data-action="download-bundle" data-od-id="download-bundle">번들 내려받기</button>
                 </div>
               </div>
               <div class="action-group">
-                <h3 data-od-id="heading-extra-4">준비 · 적용 · 정합</h3>
+                <h3 data-od-id="heading-extra-4">준비 · 적용 · 재조정</h3>
                 <div class="action-row">
-                  <button type="button" data-action="prepare" data-od-id="mission-prepare">준비 (Prepare)</button>
-                  <button type="button" data-action="apply" data-od-id="mission-apply">적용 (Apply)</button>
-                  <button type="button" data-action="reconcile" data-od-id="mission-reconcile">정합 (Reconcile)</button>
+                  <button type="button" data-action="prepare" data-od-id="mission-prepare">준비</button>
+                  <button type="button" data-action="apply" data-od-id="mission-apply">적용</button>
+                  <button type="button" data-action="reconcile" data-od-id="mission-reconcile">재조정</button>
                 </div>
               </div>
             </section>
@@ -696,10 +711,10 @@ tbody tr:last-child td { border-block-end: 0; }
                 <div class="panel-heading"><div><h3 id="flight-actions-title" data-od-id="heading-flight-actions-title">비행 제어</h3><span class="subline">예시 동작만 표시 · 실제 비행 제어 없음</span></div></div>
                 <div class="action-group">
                   <div class="action-row">
-                    <button type="button" data-action="start-flight" data-od-id="start-flight">비행 생성 (Start flight)</button>
-                    <button type="button" data-action="mission-start" data-od-id="mission-start">시작 (Start)</button>
-                    <button type="button" data-action="mission-stop" data-od-id="mission-stop">정지 (Stop)</button>
-                    <button type="button" data-action="end-flight" data-od-id="end-flight">비행 종료 (End flight)</button>
+                    <button type="button" data-action="start-flight" data-od-id="start-flight">비행 시작</button>
+                    <button type="button" data-action="mission-start" data-od-id="mission-start">시작</button>
+                    <button type="button" data-action="mission-stop" data-od-id="mission-stop">정지</button>
+                    <button type="button" data-action="end-flight" data-od-id="end-flight">비행 종료</button>
                   </div>
                 </div>
                 <p class="inline-state">현재 예시 상태 <strong id="mission-action-state">비행 없음</strong></p>
@@ -723,8 +738,8 @@ tbody tr:last-child td { border-block-end: 0; }
 
         <section class="page" id="review-page" data-page-panel="review" aria-labelledby="review-title" data-od-id="page-review" hidden>
           <div class="page-heading">
-            <div><p class="eyebrow">03 / FLIGHT REVIEW</p><h2 id="review-title" data-od-id="heading-review" tabindex="-1">비행 기록(검토)</h2></div>
-            <p class="page-summary">로컬 우선 · 항목 이동과 의견 기록은 append-only 예시입니다.</p>
+            <div><p class="eyebrow">03 / 비행 기록</p><h2 id="review-title" data-od-id="heading-review" tabindex="-1">비행 기록(검토)</h2></div>
+            <p class="page-summary">로컬 우선 · 항목 이동과 의견 기록은 추가 기록형 예시입니다.</p>
           </div>
           <div class="two-column">
             <section class="panel" aria-labelledby="flight-detail-title" data-od-id="flight-detail">
@@ -756,6 +771,7 @@ tbody tr:last-child td { border-block-end: 0; }
                   <strong id="review-event-title">[DETECT] 객체 탐지 · 예시 이벤트</strong>
                   <small id="review-event-time">Edge +00:14.228 · RC 수신시각(근사)</small>
                 </div>
+                <p class="annotation-example"><span class="state-label">표시 예시</span> [DETECT] 객체 탐지 · 오탐 의심 (조종사 이름) · [SIMULATED]</p>
                 <button class="button-primary" type="button" id="false-positive-button" data-action="toggle-false-positive" aria-pressed="false" data-od-id="false-positive-toggle">오탐 의심 표시</button>
                 <p class="footnote" style="margin-block-start:0.55rem">표시 / 해제 모두 새 의견으로 추가됩니다. 기존 항목은 삭제되지 않습니다.</p>
                 <div class="append-log" id="append-log" aria-live="polite"><p data-empty>기록된 의견 없음 · [SIMULATED]</p></div>
@@ -773,7 +789,7 @@ tbody tr:last-child td { border-block-end: 0; }
               </div>
               <div class="action-group">
                 <div class="action-row">
-                  <button class="button-primary" type="button" data-action="view-local-evidence" data-od-id="view-local-evidence">증거 보기 (로컬)</button>
+                  <button class="button-primary" type="button" data-action="view-local-evidence" data-od-id="view-local-evidence">증거 보기(로컬)</button>
                   <button type="button" data-action="fetch-server-evidence" data-od-id="fetch-server-evidence">서버에서 가져오기</button>
                 </div>
               </div>
@@ -782,22 +798,22 @@ tbody tr:last-child td { border-block-end: 0; }
               <div class="panel-heading"><h3 id="review-honesty-title" data-od-id="heading-review-honesty-title">검토 시 표시 기준</h3></div>
               <div class="content-pad stack">
                 <p class="notice"><strong>사건 0건 ≠ 안전 확인</strong><br>정상 기록일 수 있음 / 안전 확인 아님</p>
-                <p class="notice">시간은 RC 수신시각(근사). Edge-monotonic 시각은 보존되며 변환되지 않습니다.</p>
+                <p class="notice">시간은 RC 수신시각(근사). Edge 모노토닉 시각은 보존되며 변환되지 않습니다.</p>
                 <p class="notice">서버에서 가져오기는 동작 예시입니다. 서버 데이터는 알 수 없습니다.</p>
               </div>
             </section>
           </div>
-          <p class="page-footer">오탐 의심 표시는 append-only 의견 흐름을 보여주는 로컬 시연입니다. 삭제 동작은 없습니다.</p>
+          <p class="page-footer">오탐 의심 표시는 추가 기록형 의견 흐름을 보여주는 로컬 시연입니다. 삭제 동작은 없습니다.</p>
         </section>
 
         <section class="page" id="evidence-page" data-page-panel="evidence" aria-labelledby="evidence-title" data-od-id="page-evidence" hidden>
           <div class="page-heading">
-            <div><p class="eyebrow">04 / EVIDENCE & SYNC</p><h2 id="evidence-title" data-od-id="heading-evidence" tabindex="-1">증거·동기화</h2></div>
+            <div><p class="eyebrow">04 / 증거·동기화</p><h2 id="evidence-title" data-od-id="heading-evidence" tabindex="-1">증거·동기화</h2></div>
             <p class="page-summary">로컬 우선 · 오프라인 저장 · 서버 상태를 임의로 추정하지 않습니다.</p>
           </div>
           <div class="two-column">
             <section class="panel" aria-labelledby="local-evidence-title" data-od-id="local-evidence-list">
-              <div class="panel-heading"><div><h3 id="local-evidence-title" data-od-id="heading-local-evidence-title">로컬 증거 목록</h3><span class="subline">로컬 스토어 카운트만 표시</span></div><button type="button" data-action="refresh-local" data-od-id="refresh-local">새로 고침 (Refresh local)</button></div>
+              <div class="panel-heading"><div><h3 id="local-evidence-title" data-od-id="heading-local-evidence-title">로컬 증거 목록</h3><span class="subline">로컬 스토어 카운트만 표시</span></div><button type="button" data-action="refresh-local" data-od-id="refresh-local">새로고침(로컬)</button></div>
               <div class="sync-count">
                 <div><strong>3건</strong><span>미동기화 증거 · 계속 표시</span></div>
                 <span class="simulated-tag">[SIMULATED]</span>
@@ -826,20 +842,21 @@ tbody tr:last-child td { border-block-end: 0; }
                 </div>
                 <div class="action-group">
                   <div class="action-row">
-                    <button class="button-primary" type="button" data-action="upload-now" data-od-id="upload-now">지금 업로드 (Upload now)</button>
-                    <button type="button" data-action="server-state" data-od-id="server-state">서버 상태 (Server state)</button>
+                    <button class="button-primary" type="button" data-action="upload-now" data-od-id="upload-now" aria-describedby="upload-gate-note" disabled>지금 업로드</button>
+                    <button type="button" data-action="server-state" data-od-id="server-state">서버 상태</button>
                   </div>
+                  <p class="field-hint" id="upload-gate-note" style="margin-block-start:0.45rem">업로드 비활성 · Core URL과 토큰이 모두 설정되어야 합니다.</p>
                 </div>
                 <p class="inline-state" id="server-state-note">동기화 요청 결과: 알 수 없음 · 이 프로토타입은 서버에 연결되지 않습니다.</p>
               </section>
 
               <section class="panel" aria-labelledby="core-config-title" data-od-id="core-config">
-                <div class="panel-heading"><div><h3 id="core-config-title" data-od-id="heading-core-config-title">Core 설정</h3><span class="subline">저장 동작은 화면 시연만 수행</span></div><span class="dev-only">COMMITTED gate</span></div>
+                <div class="panel-heading"><div><h3 id="core-config-title" data-od-id="heading-core-config-title">Core 설정</h3><span class="subline">저장 동작은 화면 시연만 수행</span></div><span class="dev-only">COMMITTED 게이트</span></div>
                 <form class="content-pad form-grid" id="core-config-form" data-od-id="core-config-form">
                   <div class="field"><label for="core-url">Core URL</label><input id="core-url" name="core-url" type="url" autocomplete="url" placeholder="이 프로토타입에서는 미설정" aria-describedby="core-url-hint" data-od-id="control-core-url"><span class="field-hint" id="core-url-hint">실제 엔드포인트는 입력하지 마세요. 이 폼은 저장하지 않습니다.</span></div>
-                  <div class="field"><label for="core-token">토큰</label><input id="core-token" name="core-token" type="password" autocomplete="off" placeholder="데모에서는 저장되지 않음" aria-describedby="core-token-hint" data-od-id="control-core-token"><span class="field-hint" id="core-token-hint">토큰 값은 저장·전송되지 않습니다.</span></div>
-                  <button type="submit" data-od-id="save-core-config">Core 설정 저장 (Save Core config)</button>
-                  <p class="field-hint" id="core-config-feedback" role="status">Core 미설정 · 서버 상태 알 수 없음</p>
+                  <div class="field"><label for="core-token">Core 토큰</label><input id="core-token" name="core-token" type="password" autocomplete="off" placeholder="목업에서는 저장되지 않음" aria-describedby="core-token-hint" data-od-id="control-core-token"><span class="field-hint" id="core-token-hint">실제 토큰은 입력하지 마세요. 이 폼은 저장·전송하지 않습니다.</span></div>
+                  <button type="submit" data-od-id="save-core-config">Core 설정 저장</button>
+                  <p class="field-hint" id="core-config-feedback" role="status">목업 · Core 미설정 · 서버 상태 알 수 없음 · 업로드 비활성</p>
                 </form>
               </section>
             </div>
@@ -849,15 +866,15 @@ tbody tr:last-child td { border-block-end: 0; }
 
         <section class="page" id="settings-page" data-page-panel="settings" aria-labelledby="settings-title" data-od-id="page-settings" hidden>
           <div class="page-heading">
-            <div><p class="eyebrow">05 / SETTINGS & DEV</p><h2 id="settings-title" data-od-id="heading-settings" tabindex="-1">설정·개발</h2></div>
-            <p class="page-summary">앱 정보 · 시각 기준 · 격리된 데모 벤치</p>
+            <div><p class="eyebrow">05 / 설정·개발</p><h2 id="settings-title" data-od-id="heading-settings" tabindex="-1">설정·개발</h2></div>
+            <p class="page-summary">앱 정보 · 시각 기준 · 조종사 및 Core 설정</p>
           </div>
           <div class="two-column">
             <section class="panel" aria-labelledby="time-contract-title" data-od-id="time-contract">
               <div class="panel-heading"><div><h3 id="time-contract-title" data-od-id="heading-time-contract-title">전역 시간 고지</h3><span class="subline">임무·사건·증거에 공통 적용</span></div><span class="dev-only">H1</span></div>
               <div class="content-pad stack">
                 <p class="notice"><strong>UTC 표시는 RC 수신시각(근사)</strong>입니다. 촬영시각으로 주장하지 않습니다.</p>
-                <p class="notice">Edge monotonic 시각은 보존되며 변환되지 않습니다.</p>
+                <p class="notice">Edge 모노토닉 시각은 보존되며 변환되지 않습니다.</p>
                 <p class="notice">검증된 시간 앵커 없음(H1) · 기준 시각은 알 수 없습니다.</p>
                 <p class="notice">하트비트 10초 · 관측 5초 값은 표시 지표입니다. 안전 판정 임계값이 아닙니다.</p>
               </div>
@@ -877,22 +894,52 @@ tbody tr:last-child td { border-block-end: 0; }
             </section>
           </div>
 
+          <div class="two-column" style="margin-block-start:0.85rem">
+            <section class="panel" aria-labelledby="operator-config-title" data-od-id="operator-config">
+              <div class="panel-heading"><div><h3 id="operator-config-title">조종사(운영자) 식별</h3><span class="subline">오탐 의견의 조종사 식별에 사용</span></div><span class="simulated-tag">[SIMULATED]</span></div>
+              <form class="content-pad form-grid" id="operator-config-form">
+                <p class="field-hint">목업입니다. 예시 이름만 사용하세요. 입력값은 저장하지 않습니다.</p>
+                <div class="field"><label for="operator-name">조종사 이름 <span class="field-required">(필수)</span></label><input id="operator-name" name="operator-name" type="text" autocomplete="off" placeholder="예시 이름" required aria-describedby="operator-name-hint"><span class="field-hint" id="operator-name-hint">조종사 이름 — 의견 기록에 사용</span></div>
+                <div class="field"><label for="operator-org">소속 <span class="field-required">(선택)</span></label><input id="operator-org" name="operator-org" type="text" autocomplete="off" placeholder="예: 테스트 소속" aria-describedby="operator-org-hint"><span class="field-hint" id="operator-org-hint">소속 (선택)</span></div>
+                <button class="button-primary" type="submit">조종사 저장</button>
+                <p class="operator-state" id="operator-registered-state" data-registered="false" role="status" aria-live="polite" aria-atomic="true">미등록 — 비행 후 오탐 표시/해제에 필요합니다</p>
+              </form>
+            </section>
+
+            <section class="panel" aria-labelledby="core-save-state-title" data-od-id="core-save-state">
+              <div class="panel-heading"><div><h3 id="core-save-state-title">Core 저장 상태</h3><span class="subline">실제 앱 동작 예시 · 이 목업은 저장하지 않습니다</span></div><span class="simulated-tag">[SIMULATED]</span></div>
+              <div class="content-pad stack">
+                <div class="settings-state-grid" aria-label="Core 저장 상태 예시">
+                  <article class="status-item settings-state-item" data-severity="info"><span class="status-label">저장 결과 예시</span><strong class="status-value">Core 설정 저장</strong><span class="status-detail">앱의 저장 성공 안내</span></article>
+                  <article class="status-item settings-state-item" data-severity="info"><span class="status-label">토큰 저장 위치</span><strong class="status-value">기기 보안 저장소</strong><span class="status-detail">실제 앱에서 Core 토큰을 보관</span></article>
+                  <article class="status-item settings-state-item" data-severity="attention"><span class="status-label">업로드 조건</span><strong class="status-value">비활성</strong><span class="status-detail">Core URL과 토큰 모두 필요</span></article>
+                </div>
+                <p class="field-hint">보안 저장소 오류 시 저장 실패를 알립니다. 실제 엔드포인트나 토큰을 입력하지 마세요.</p>
+              </div>
+            </section>
+          </div>
+
+          <aside class="settings-attention" aria-label="권한 안내" data-od-id="first-run-permissions">
+            <span class="severity-symbol" aria-hidden="true">▲</span>
+            <div><strong>권한 안내 · 첫 실행</strong>DJI SDK가 선언한 위치·전화 상태·저장소 권한을 첫 실행 때 요청합니다. 권한을 거부하면 일부 SDK 기능이 제한될 수 있습니다.</div>
+          </aside>
+
           <section class="panel" aria-labelledby="demo-bench-title" data-od-id="demo-bench" style="margin-block-start:0.85rem">
             <div class="panel-heading">
-              <div><h3 id="demo-bench-title" data-od-id="heading-demo-bench-title">Demo bench</h3><span class="subline">격리 · SIMULATED · 업로드 불가</span></div>
+              <div><h3 id="demo-bench-title" data-od-id="heading-demo-bench-title">데모 벤치</h3><span class="subline">격리 · SIMULATED · 업로드 불가</span></div>
               <span class="state-label">로컬 예시 전용</span>
             </div>
             <div class="content-pad two-column">
               <div class="stack">
-                <p class="notice"><strong>Demo bench는 격리되어 있습니다.</strong> 생성한 예시 값은 동기화·업로드할 수 없습니다.</p>
+                <p class="notice"><strong>데모 벤치는 격리되어 있습니다.</strong> 생성한 예시 값은 동기화·업로드할 수 없습니다.</p>
                 <p class="footnote">실제 임무, Core, 서버, 기체 연결에 영향을 주지 않습니다. 현재 표시 상태는 시뮬레이션입니다.</p>
               </div>
               <div class="stack">
                 <div class="action-row">
-                  <button class="button-primary" type="button" data-action="demo-tick" data-od-id="demo-tick">Demo tick</button>
-                  <button type="button" data-action="new-demo-flight" data-od-id="new-demo-flight">New demo flight</button>
+                  <button class="button-primary" type="button" data-action="demo-tick" data-od-id="demo-tick">데모 틱</button>
+                  <button type="button" data-action="new-demo-flight" data-od-id="new-demo-flight">새 데모 비행</button>
                 </div>
-                <p class="inline-state" id="demo-state" aria-live="polite">tick 0 · SIM-FLT-024 · 격리 상태</p>
+                <p class="inline-state" id="demo-state" aria-live="polite">틱 0 · SIM-FLT-024 · 격리 상태</p>
               </div>
             </div>
           </section>
@@ -949,6 +996,7 @@ tbody tr:last-child td { border-block-end: 0; }
       let mopTimer = null;
       let reviewFlightIndex = 0;
       let reviewEventIndex = 0;
+      let registeredOperatorName = "";
       const falsePositiveMarks = [false, false];
       let demoTick = 0;
       let demoFlightNumber = 24;
@@ -995,7 +1043,7 @@ tbody tr:last-child td { border-block-end: 0; }
         document.getElementById("mission-flight-id").textContent = noFlight ? "없음" : "SIM-FLT-024";
         document.getElementById("mission-flight-state").textContent = noFlight ? "비행 없음" : "비행 진행 중";
         document.getElementById("mission-status-label").textContent = noFlight ? "비행 없음" : "비행 진행 중";
-        document.getElementById("mission-status-copy").textContent = noFlight ? "임무 동기화 → 번들 다운로드 → 비행 시작 순서로 진행합니다." : "활성 비행 SIM-FLT-024가 있습니다.";
+        document.getElementById("mission-status-copy").textContent = noFlight ? "현장 동기화 → 번들 내려받기 → 비행 시작 순서로 진행합니다." : "활성 비행 SIM-FLT-024가 있습니다.";
         document.getElementById("mission-action-state").textContent = noFlight ? "비행 없음" : "비행 진행 중";
       }
 
@@ -1032,12 +1080,13 @@ tbody tr:last-child td { border-block-end: 0; }
         button.textContent = falsePositiveMarks[reviewEventIndex] ? "오탐 의심 해제" : "오탐 의심 표시";
       }
 
-      function appendOpinion(text) {
+      function appendOpinion(text, isEffectiveFalsePositive) {
         const log = document.getElementById("append-log");
         const empty = log.querySelector("p[data-empty]");
         if (empty) empty.remove();
         const entry = document.createElement("p");
-        entry.textContent = text + " · [SIMULATED] · append-only";
+        const attribution = isEffectiveFalsePositive && registeredOperatorName ? " · 오탐 의심 (" + registeredOperatorName + ")" : "";
+        entry.textContent = text + attribution + " · [SIMULATED] · 추가 기록형";
         log.appendChild(entry);
       }
 
@@ -1064,8 +1113,26 @@ tbody tr:last-child td { border-block-end: 0; }
 
       document.getElementById("core-config-form").addEventListener("submit", function (event) {
         event.preventDefault();
-        document.getElementById("core-config-feedback").textContent = "데모 UI · 입력값은 저장·전송되지 않습니다.";
-        announce("Core 설정 시연 · 입력값을 저장하거나 전송하지 않았습니다.");
+        document.getElementById("core-config-feedback").textContent = "목업 · Core 설정 저장을 시연했지만 입력값은 저장·전송하지 않았습니다. 업로드는 비활성입니다.";
+        announce("Core 설정 저장 시연 · 입력값을 저장하거나 전송하지 않았습니다.");
+      });
+
+      document.getElementById("operator-config-form").addEventListener("submit", function (event) {
+        event.preventDefault();
+        const name = document.getElementById("operator-name").value.trim();
+        const org = document.getElementById("operator-org").value.trim();
+        const state = document.getElementById("operator-registered-state");
+        if (!name) {
+          registeredOperatorName = "";
+          state.dataset.registered = "false";
+          state.textContent = "미등록 — 비행 후 오탐 표시/해제에 필요합니다";
+          announce("조종사 이름이 비었습니다. 입력값은 저장되지 않습니다.");
+          return;
+        }
+        registeredOperatorName = name;
+        state.dataset.registered = "true";
+        state.textContent = "등록: " + name + (org ? " (" + org + ")" : "");
+        announce("조종사 등록 예시 · 입력값은 저장되지 않습니다.");
       });
 
       document.addEventListener("click", function (event) {
@@ -1092,14 +1159,14 @@ tbody tr:last-child td { border-block-end: 0; }
           document.getElementById("video-state").textContent = "연결 대기";
           announce("영상 연결 해제 예시 · 실제 스트림은 연결되어 있지 않습니다.");
         } else if (action === "sync-sites") {
-          announce("사이트 동기화 요청 예시 · 실제 서버 호출 없음.");
+          announce("현장 동기화 요청 예시 · 실제 서버 호출 없음.");
         } else if (action === "download-bundle") {
-          announce("번들 다운로드 예시 · 실제 파일을 받지 않았습니다.");
+          announce("번들 내려받기 예시 · 실제 파일을 받지 않았습니다.");
         } else if (action === "prepare" || action === "apply" || action === "reconcile") {
-          const labels = { prepare: "준비", apply: "적용", reconcile: "정합" };
+          const labels = { prepare: "준비", apply: "적용", reconcile: "재조정" };
           announce(labels[action] + " 단계 예시 · 실제 임무 상태는 변경되지 않았습니다.");
         } else if (action === "start-flight") {
-          announce("비행 생성 동작 예시 · 실제 비행 상태는 변경되지 않았습니다.");
+          announce("비행 시작 동작 예시 · 실제 비행 상태는 변경되지 않았습니다.");
         } else if (action === "mission-start") {
           announce("시작 동작 예시 · 실제 비행 제어 및 상태 변경 없음.");
         } else if (action === "mission-stop") {
@@ -1118,7 +1185,7 @@ tbody tr:last-child td { border-block-end: 0; }
           falsePositiveMarks[reviewEventIndex] = !falsePositiveMarks[reviewEventIndex];
           button.setAttribute("aria-pressed", falsePositiveMarks[reviewEventIndex] ? "true" : "false");
           button.textContent = falsePositiveMarks[reviewEventIndex] ? "오탐 의심 해제" : "오탐 의심 표시";
-          appendOpinion((falsePositiveMarks[reviewEventIndex] ? "오탐 의심 표시 추가" : "오탐 의심 해제 추가") + " · " + events[reviewEventIndex].title);
+          appendOpinion((falsePositiveMarks[reviewEventIndex] ? "오탐 의심 표시 추가" : "오탐 의심 해제 추가") + " · " + events[reviewEventIndex].title, falsePositiveMarks[reviewEventIndex]);
           announce("새 의견을 추가했습니다. 기존 의견은 삭제되지 않습니다.");
         } else if (action === "view-local-evidence") {
           announce("로컬 증거 미리보기 예시 · 실제 증거 파일은 연결되지 않았습니다.");
@@ -1134,11 +1201,11 @@ tbody tr:last-child td { border-block-end: 0; }
           announce("서버 상태는 알 수 없습니다. 서버에 요청하지 않았습니다.");
         } else if (action === "demo-tick") {
           demoTick += 1;
-          document.getElementById("demo-state").textContent = "tick " + demoTick + " · SIM-FLT-" + String(demoFlightNumber).padStart(3, "0") + " · 격리 상태";
-          announce("Demo tick " + demoTick + " · 격리된 시뮬레이션만 갱신했습니다.");
+          document.getElementById("demo-state").textContent = "틱 " + demoTick + " · SIM-FLT-" + String(demoFlightNumber).padStart(3, "0") + " · 격리 상태";
+          announce("데모 틱 " + demoTick + " · 격리된 시뮬레이션만 갱신했습니다.");
         } else if (action === "new-demo-flight") {
           demoFlightNumber += 1;
-          document.getElementById("demo-state").textContent = "tick " + demoTick + " · SIM-FLT-" + String(demoFlightNumber).padStart(3, "0") + " · 격리 상태";
+          document.getElementById("demo-state").textContent = "틱 " + demoTick + " · SIM-FLT-" + String(demoFlightNumber).padStart(3, "0") + " · 격리 상태";
           announce("새 데모 비행 예시 생성 · 업로드 불가.");
         }
       });
