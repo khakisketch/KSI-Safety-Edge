@@ -32,8 +32,8 @@ class AppConfig(context: Context) {
      * The Core token is a secret: it is stored in a Keystore-backed envelope
      * ([CoreTokenStore]), never plaintext. A legacy plaintext value is
      * migrated on first read. If the Keystore fails, reads fall back to the
-     * legacy value for this session and [coreTokenStorageError] carries the
-     * reason — never hidden.
+     * legacy value (or, after a failed write, the value of this session) and
+     * [coreTokenStorageError] carries the reason — never hidden.
      */
     var coreToken: String
         get() = tokenStore.read() ?: ""

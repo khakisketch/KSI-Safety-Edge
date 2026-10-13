@@ -20,8 +20,9 @@ import javax.crypto.spec.GCMParameterSpec
  *
  * Honest failure: if the Keystore is unavailable or the envelope cannot be
  * decrypted, [lastError] carries the reason and nothing is silently
- * downgraded. A failed legacy migration keeps the legacy value usable for
- * this session (still surfaced via [lastError]).
+ * downgraded. A failed legacy migration keeps the legacy value usable, and a
+ * failed write keeps the token for THIS session only (returned by [read]
+ * while [lastError] says it was not stored) — plaintext never touches disk.
  */
 class CoreTokenStore(
     context: Context,
@@ -35,6 +36,13 @@ class CoreTokenStore(
     var lastError: String? = null
         private set
 
+    /**
+     * Keystore-unavailable fallback for the current process only (e.g. test
+     * runtimes without AndroidKeyStore); cleared by any successful write.
+     */
+    @Volatile
+    private var sessionToken: String? = null
+
     @Synchronized
     fun read(): String? {
         migrateLegacyIfNeeded()
@@ -47,24 +55,31 @@ class CoreTokenStore(
                 null
             }
         }
-        // The envelope is absent: either nothing was stored, or the legacy
-        // migration could not finish (lastError set). The legacy value stays
-        // usable for this session — visible in the error text, never hidden.
-        return prefs.getString(PREF_LEGACY, null)
+        // The envelope is absent: nothing stored, the legacy migration could
+        // not finish, or the Keystore refused a write (lastError set). The
+        // session/legacy value stays usable — visible in the error text,
+        // never hidden.
+        return sessionToken ?: prefs.getString(PREF_LEGACY, null)
     }
 
     @Synchronized
     fun write(plain: String) {
         if (plain.isEmpty()) {
             prefs.edit().remove(PREF_ENCRYPTED).remove(PREF_LEGACY).apply()
+            sessionToken = null
             lastError = null
             return
         }
         try {
             prefs.edit().putString(PREF_ENCRYPTED, encrypt(plain)).apply()
+            sessionToken = null
             lastError = null
         } catch (e: Exception) {
-            lastError = "Keystore 암호화 실패: ${e.javaClass.simpleName}"
+            // No Keystore (or a failed one): keep the token usable in THIS
+            // process only. It is NOT written to disk in plaintext, and the
+            // failure is surfaced instead of hidden.
+            sessionToken = plain
+            lastError = "Keystore 사용 불가 — 토큰이 이번 세션에만 유지됩니다(저장 안 됨): ${e.javaClass.simpleName}"
         }
     }
 
