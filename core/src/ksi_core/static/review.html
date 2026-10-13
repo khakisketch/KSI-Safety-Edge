@@ -3,114 +3,488 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>KSI Safety Edge — 비행 검토 콘솔</title>
+<title>KSI Safety Edge — 개발 검증 콘솔</title>
 <style>
-  :root { color-scheme: light; }
+  :root {
+    color-scheme: light;
+    --ink: #17212b;
+    --muted: #5a6877;
+    --subtle: #748292;
+    --line: #d9e0e7;
+    --line-soft: #e9edf1;
+    --surface: #fff;
+    --surface-soft: #f7f9fb;
+    --page: #f1f4f7;
+    --navy: #142536;
+    --accent: #1769a6;
+    --accent-dark: #105785;
+    --accent-wash: #eaf3fa;
+    --good: #236544;
+    --good-bg: #eaf5ee;
+    --warn: #79500b;
+    --warn-bg: #fff4dc;
+    --bad: #8d3434;
+    --bad-bg: #fbecec;
+    --radius: 10px;
+    --shadow: 0 1px 2px rgb(22 36 50 / 5%);
+  }
   * { box-sizing: border-box; }
-  body { font-family: system-ui, -apple-system, "Noto Sans KR", sans-serif;
-         margin: 0; background: #f6f7f9; color: #1b1f24; }
-  header { background: #101418; color: #f2f4f7; padding: 14px 20px; }
-  header h1 { font-size: 17px; margin: 0 0 4px; }
-  header .note { font-size: 12px; color: #b9c0c9; }
-  main { max-width: 1100px; margin: 0 auto; padding: 16px 20px 48px; }
-  .panel { background: #fff; border: 1px solid #dcdfe4; border-radius: 8px;
-           padding: 14px 16px; margin: 12px 0; }
-  .panel h2 { font-size: 15px; margin: 0 0 10px; }
-  .panel h3 { font-size: 13px; margin: 14px 0 6px; color: #39424e; }
-  .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  input[type=password], input[type=text] { padding: 7px 9px; border: 1px solid #c8cdd4;
-    border-radius: 6px; min-width: 260px; font-size: 13px; }
-  button { padding: 7px 12px; border: 1px solid #c8cdd4; border-radius: 6px;
-    background: #f2f4f7; cursor: pointer; font-size: 13px; }
-  button:hover { background: #e7eaef; }
-  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
-  th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #eceef1;
-           vertical-align: top; }
-  th { color: #5b6470; font-weight: 600; }
-  tr.clickable { cursor: pointer; }
-  tr.clickable:hover { background: #f4f7fb; }
-  .muted { color: #6b7481; font-size: 12px; }
-  .tag { display: inline-block; padding: 1px 7px; border-radius: 10px;
-         font-size: 11.5px; background: #eef1f5; margin-right: 4px; }
-  .tag.warn { background: #fff1d6; color: #7a4a00; }
-  .tag.bad { background: #ffe1e1; color: #8a1f1f; }
-  .tag.ok { background: #e2f4e5; color: #1d6b2c; }
-  .honest { background: #fff8e8; border: 1px solid #f0dfae; border-radius: 6px;
-            padding: 8px 10px; font-size: 12.5px; margin: 8px 0; }
-  pre { background: #f7f8fa; border: 1px solid #e6e8ec; border-radius: 6px;
-        padding: 8px; overflow: auto; font-size: 11.5px; max-height: 260px; }
-  #status { font-size: 12.5px; margin-left: 6px; }
-  #status.err { color: #a11b1b; }
-  #status.ok { color: #1d6b2c; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-          gap: 4px 14px; font-size: 12.5px; }
-  .grid div b { color: #5b6470; font-weight: 600; margin-right: 4px; }
-  img.preview { max-width: 320px; max-height: 220px; border: 1px solid #dcdfe4;
-                border-radius: 6px; display: block; margin-top: 6px; }
-  .kv { font-size: 12.5px; }
-  select { padding: 6px 8px; border: 1px solid #c8cdd4; border-radius: 6px;
-           font-size: 13px; background: #fff; }
-  .anno-form { background: #fbfbfd; }
-  .devbox { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-            background: #eef4ff; border: 1px solid #cdd9ee; border-radius: 6px;
-            padding: 6px 8px; font-size: 12px; margin-top: 8px; }
-  .devbox code { background: #fff; border: 1px solid #d5dbe2; border-radius: 4px;
-                 padding: 1px 6px; }
-  .summary { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px;
-             padding: 6px 2px; border-bottom: 1px solid #eceef1; margin-bottom: 6px; }
-  .summary b { font-size: 14.5px; }
-  .summary .att { color: #8a5a00; }
-  .badge { display: inline-block; padding: 1px 7px; border-radius: 10px;
-           font-size: 11.5px; background: #eef1f5; margin-left: 4px; }
+  html { scroll-behavior: smooth; scroll-padding-top: 18px; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font: 14px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans KR", sans-serif;
+  }
+  button, input, select, textarea { font: inherit; }
+  button { color: inherit; }
+  button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible,
+  summary:focus-visible, a:focus-visible {
+    outline: 3px solid #68a9d8;
+    outline-offset: 2px;
+  }
+  .topbar {
+    min-height: 62px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 0 max(28px, calc((100vw - 1460px) / 2));
+    color: #f5f8fb;
+    background: var(--navy);
+    border-bottom: 1px solid #263c50;
+  }
+  .brand-lockup, .brand-name, .environment, .topbar-crumb { display: flex; align-items: center; }
+  .brand-lockup { min-width: 0; gap: 13px; }
+  .brand-name { gap: 9px; white-space: nowrap; }
+  .brand-mark {
+    width: 28px; height: 28px; display: grid; place-items: center;
+    border: 1px solid #607789; border-radius: 7px;
+    color: #fff; font-size: 10px; font-weight: 800; letter-spacing: -.04em;
+  }
+  .brand-word { font-size: 13px; font-weight: 700; letter-spacing: .01em; }
+  .brand-word small { display: block; color: #b6c4d0; font-size: 9px; font-weight: 650; letter-spacing: .13em; }
+  .topbar-crumb { gap: 9px; color: #bdc9d3; font-size: 12px; }
+  .crumb-divider { color: #647a8c; }
+  .environment {
+    flex: none; gap: 8px; padding: 5px 9px; border: 1px solid #6c5940; border-radius: 999px;
+    color: #f1d6a7; background: #332f29; font-size: 10px; font-weight: 750; letter-spacing: .08em;
+  }
+  .environment::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #e5b561; }
+  main { max-width: 1460px; margin: 0 auto; padding: 26px 28px 56px; }
+  .page-intro {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 24px;
+    margin-bottom: 19px;
+  }
+  .eyebrow, .section-kicker {
+    margin: 0 0 7px; color: var(--accent); font-size: 10px; font-weight: 760;
+    letter-spacing: .12em; text-transform: uppercase;
+  }
+  .page-intro h1 { margin: 0; font-size: clamp(26px, 3vw, 32px); line-height: 1.15; letter-spacing: -.035em; }
+  .page-intro .lede { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+  .production-gate {
+    max-width: 335px; padding: 9px 12px; border-left: 3px solid #be7b27;
+    background: #fff9ee; color: #5d4a2d; font-size: 11px; line-height: 1.45;
+  }
+  .production-gate strong { display: block; margin-bottom: 2px; color: #513b1b; font-size: 11px; }
+  .access-panel {
+    overflow: hidden; background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+  .access-panel > summary {
+    min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 14px;
+    padding: 10px 15px; cursor: pointer; list-style: none;
+  }
+  .access-panel > summary::-webkit-details-marker { display: none; }
+  .access-panel > summary::after { content: "＋"; color: var(--subtle); font-size: 15px; }
+  .access-panel[open] > summary::after { content: "−"; }
+  .access-title { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; font-weight: 700; }
+  .access-title .scope-note, .session-note { color: var(--muted); font-size: 11px; font-weight: 450; }
+  .access-title .scope-note { padding-left: 9px; border-left: 1px solid var(--line); }
+  .session-note { white-space: nowrap; }
+  .access-body { padding: 2px 15px 14px; border-top: 1px solid var(--line-soft); }
+  .credential-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 13px; align-items: end; padding-top: 13px; }
+  .field { min-width: 0; }
+  .field label { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; color: #344454; font-size: 12px; font-weight: 700; }
+  .optional { color: var(--subtle); font-size: 10px; font-weight: 550; }
+  .field input, .field select, .field textarea {
+    width: 100%; min-width: 0; border: 1px solid #bdc8d2; border-radius: 7px;
+    background: #fff; color: var(--ink); box-shadow: inset 0 1px 1px rgb(10 30 50 / 3%);
+  }
+  .field input, .field select { min-height: 38px; padding: 8px 10px; }
+  .field textarea { min-height: 86px; padding: 9px 10px; resize: vertical; }
+  .field input::placeholder, .field textarea::placeholder { color: #647383; opacity: 1; }
+  .field-help { margin: 5px 0 0; color: var(--muted); font-size: 11px; }
+  .button {
+    min-height: 36px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    padding: 7px 11px; border: 1px solid #bbc6d0; border-radius: 7px; background: #fff;
+    color: #304355; cursor: pointer; font-size: 12px; font-weight: 650; text-decoration: none;
+    transition: background-color .14s ease, border-color .14s ease, transform .14s ease;
+  }
+  .button:hover { border-color: #8fa2b3; background: #f6f8fa; }
+  .button:active { transform: translateY(1px); }
+  .button:disabled { opacity: .55; cursor: wait; }
+  .button-primary { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .button-primary:hover { border-color: var(--accent-dark); background: var(--accent-dark); color: #fff; }
+  .button-quiet { min-height: 30px; padding: 4px 7px; border-color: transparent; background: transparent; color: var(--accent-dark); }
+  .button-quiet:hover { border-color: #d5e3ed; background: var(--accent-wash); }
+  .credential-actions { display: flex; gap: 7px; }
+  .dev-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 5px 10px; margin-top: 11px; padding-top: 9px; border-top: 1px solid var(--line-soft); }
+  .dev-tools > .button { min-height: 29px; }
+  .dev-details { position: relative; }
+  .dev-details > summary { color: var(--muted); cursor: pointer; font-size: 11px; }
+  .fixture-list { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+  .fixture { display: inline-flex; align-items: center; gap: 5px; padding: 3px 5px 3px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-soft); }
+  .fixture code { font-size: 11px; }
+  .fixture-list .fixture-note { color: var(--muted); font-size: 11px; }
+  #status {
+    display: none; margin-top: 10px; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: 7px; background: var(--surface-soft); color: #3c4c5c; font-size: 12px;
+  }
+  #status:not(:empty) { display: block; }
+  #status.ok { border-color: #bfdeca; background: var(--good-bg); color: var(--good); }
+  #status.err { border-color: #e9c5c5; background: var(--bad-bg); color: var(--bad); }
+  #status.warn { border-color: #ecd9ac; background: var(--warn-bg); color: var(--warn); }
+  #status.loading { border-color: #c7d9e8; background: #f0f7fc; color: #285d82; }
+  .environment-facts { margin: 7px 0 0; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+  .environment-facts code { color: #405364; font-size: 10.5px; }
+  .verify-panel {
+    margin: 16px 0 18px; padding: 15px 16px 14px; border: 1px solid var(--line);
+    border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow);
+  }
+  .verify-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
+  .verify-head h2 { margin: 0; font-size: 16px; line-height: 1.3; letter-spacing: -.015em; }
+  .verify-head .eyebrow { margin-bottom: 4px; }
+  .verify-lede { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+  .verify-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 13px 0 0; padding: 0; list-style: none; }
+  .verify-step { display: flex; flex-direction: column; gap: 6px; padding: 11px 12px 10px; border: 1px solid var(--line-soft); border-radius: 9px; background: var(--surface-soft); }
+  .verify-step.is-todo { border-style: dashed; }
+  .verify-step.is-done { border-color: #c9dfd1; background: var(--good-bg); }
+  .verify-step.is-error { border-color: #e8c5c5; background: var(--bad-bg); }
+  .verify-step-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .verify-step-title { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 750; }
+  .verify-step-no { display: grid; width: 20px; height: 20px; place-items: center; border: 1px solid #b8c8d5; border-radius: 50%; background: #fff; color: var(--accent-dark); font: 700 10px/1 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .verify-status { flex: none; padding: 2px 7px; border: 1px solid var(--line); border-radius: 999px; background: #f4f6f8; color: #445565; font-size: 10px; font-weight: 700; }
+  .verify-status.done { border-color: #c9dfd1; background: #fff; color: var(--good); }
+  .verify-status.error { border-color: #e8c5c5; background: #fff; color: var(--bad); }
+  .verify-step-detail { margin: 0; color: #304355; font-size: 11.5px; overflow-wrap: anywhere; }
+  .verify-step-next { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
+  .verify-step-next strong { color: #304355; }
+  .verify-step-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .verify-step-actions .button { min-height: 28px; padding: 3px 9px; font-size: 11px; }
+  .verify-step-actions .muted { font-size: 10.5px; }
+  .verify-step-evidence { margin: auto 0 0; padding-top: 7px; border-top: 1px dashed var(--line-soft); color: var(--muted); font-size: 10.5px; line-height: 1.45; }
+  .workspace { display: grid; grid-template-columns: minmax(265px, 310px) minmax(0, 1fr); align-items: start; gap: 15px; }
+  .flight-rail, .detail-panel { min-width: 0; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow); }
+  .rail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 15px 15px 10px; }
+  .rail-header h2, .detail-heading h2 { margin: 0; font-size: 16px; line-height: 1.3; letter-spacing: -.015em; }
+  .rail-caption { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+  .rail-caveat { margin: 0 12px 9px; padding: 8px 9px; border-left: 2px solid #d4a44f; background: #fffaf0; color: #5f5138; font-size: 10.5px; line-height: 1.45; }
+  .list-summary { display: flex; justify-content: space-between; gap: 9px; padding: 6px 13px; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); color: var(--muted); font-size: 10.5px; }
+  .flight-list { display: grid; gap: 0; }
+  .flight-item {
+    width: 100%; display: block; padding: 12px 14px; border: 0; border-bottom: 1px solid var(--line-soft);
+    border-left: 3px solid transparent; background: #fff; text-align: left; cursor: pointer;
+  }
+  .flight-item:hover { background: #f7fafc; }
+  .flight-item[aria-current="true"] { border-left-color: var(--accent); background: #f0f7fc; }
+  .flight-item-top, .flight-item-bottom { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
+  .flight-label { font-size: 12px; font-weight: 750; }
+  .flight-time { margin-top: 5px; color: #344b5d; font-size: 11px; font-variant-numeric: tabular-nums; }
+  .flight-time span { color: var(--muted); }
+  .flight-id { overflow: hidden; margin-top: 4px; color: #586978; font: 10.5px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
+  .flight-item-bottom { margin-top: 8px; color: #485968; font-size: 10px; }
+  .flight-item-bottom span:last-child { text-align: right; }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px; width: fit-content; padding: 3px 7px;
+    border: 1px solid #d6dde4; border-radius: 5px; background: #f4f6f8; color: #445565;
+    font: 650 10px/1.25 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: nowrap;
+  }
+  .status-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #8492a0; }
+  .status-pill.ok { border-color: #c9dfd1; background: var(--good-bg); color: var(--good); }
+  .status-pill.ok::before { background: #438462; }
+  .status-pill.warn { border-color: #ead8ac; background: var(--warn-bg); color: var(--warn); }
+  .status-pill.warn::before { background: #b8831f; }
+  .status-pill.bad { border-color: #e8c5c5; background: var(--bad-bg); color: var(--bad); }
+  .status-pill.bad::before { background: #a64b4b; }
+  .empty-list, .loading-list { padding: 22px 16px 24px; color: var(--muted); font-size: 12px; }
+  .empty-list strong { display: block; margin-bottom: 4px; color: #334555; font-size: 12px; }
+  .loading-list { display: grid; gap: 10px; }
+  .skeleton { height: 42px; border-radius: 6px; background: linear-gradient(90deg, #edf1f4 25%, #f6f8fa 40%, #edf1f4 60%); background-size: 300% 100%; animation: shimmer 1.35s ease-in-out infinite; }
+  @keyframes shimmer { from { background-position: 100% 0; } to { background-position: 0 0; } }
+  .detail-heading {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+    padding: 16px 18px 14px; border-bottom: 1px solid var(--line-soft);
+  }
+  .detail-heading .eyebrow { margin-bottom: 4px; font-size: 9px; }
+  .detail-heading h2 { font-size: 17px; }
+  .detail-subtitle { margin-top: 5px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+  .detail-subtitle code { color: #405364; font-size: 10px; }
+  .detail-tools { display: flex; align-items: center; gap: 7px; flex: none; }
+  .detail-tools #backToList { display: none; }
+  .detail-content { min-width: 0; }
+  .detail-empty { padding: 22px 18px 27px; }
+  .empty-title { margin: 0 0 5px; color: #293b4b; font-size: 15px; font-weight: 720; }
+  .empty-copy { max-width: 600px; margin: 0 0 17px; color: var(--muted); font-size: 12px; }
+  .empty-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; max-width: 650px; }
+  .empty-step { display: grid; grid-template-columns: 25px 1fr; gap: 9px; padding: 11px 0; border-top: 1px solid var(--line-soft); }
+  .empty-step > b { color: var(--accent); font: 700 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .empty-step strong { display: block; color: #35495b; font-size: 11px; }
+  .empty-step span { display: block; margin-top: 2px; color: var(--muted); font-size: 10.5px; }
+  .flight-summary-line { display: flex; align-items: center; flex-wrap: wrap; gap: 7px 18px; padding: 10px 18px; border-bottom: 1px solid var(--line-soft); background: #fbfcfd; color: #4b5b69; font-size: 11px; }
+  .flight-summary-line b { color: #263a4b; font-size: 12px; }
+  .flight-summary-line span + span { padding-left: 16px; border-left: 1px solid var(--line); }
+  .section-nav {
+    position: sticky; top: 0; z-index: 2; display: flex; overflow-x: auto; gap: 0;
+    padding: 0 9px; border-bottom: 1px solid var(--line); background: #fff; scrollbar-width: thin;
+  }
+  .section-nav a { flex: none; display: inline-flex; align-items: center; min-height: 42px; padding: 0 10px; border-bottom: 2px solid transparent; color: #536373; font-size: 11px; font-weight: 650; text-decoration: none; }
+  .section-nav a:hover { color: var(--accent-dark); }
+  .section-nav a span { margin-left: 5px; color: #788796; font: 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .detail-section { padding: 20px 18px 21px; border-bottom: 1px solid var(--line-soft); scroll-margin-top: 50px; }
+  .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+  .section-heading-main { display: flex; gap: 11px; min-width: 0; }
+  .section-number { flex: none; color: #596b7a; font: 700 10px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .section-heading h3 { margin: 0; font-size: 14px; letter-spacing: -.01em; }
+  .section-heading p { margin: 3px 0 0; color: var(--muted); font-size: 11px; }
+  .section-subtitle { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 18px 0 8px; color: #35495b; font-size: 12px; }
+  .honest-note { margin: 10px 0; padding: 9px 11px; border-left: 3px solid #c4943d; background: #fff9ed; color: #5d4d32; font-size: 11px; }
+  .honest-note strong { color: #43351e; }
+  .state-block { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px 15px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-soft); }
+  .state-block-copy strong { display: block; color: #304355; font-size: 11px; }
+  .state-block-copy span { display: block; margin-top: 2px; color: var(--muted); font-size: 10.5px; }
+  .data-completeness { display: inline-flex; align-items: center; gap: 6px; color: #425668; font-size: 10.5px; }
+  .data-completeness code { padding: 2px 5px; border-radius: 4px; background: #e9edf1; font-size: 10px; }
+  .coverage-list { margin-top: 10px; border-top: 1px solid var(--line-soft); }
+  .coverage-row { display: grid; grid-template-columns: minmax(115px, .7fr) 2fr; gap: 9px 18px; padding: 9px 1px; border-bottom: 1px solid var(--line-soft); }
+  .coverage-row dt { color: #4d5e6d; font-size: 10.5px; font-weight: 650; }
+  .coverage-row dd { margin: 0; color: #293d4f; font-size: 11px; }
+  .coverage-reasons { display: flex; flex-wrap: wrap; gap: 5px; }
+  .code-chip { display: inline-flex; padding: 2px 6px; border: 1px solid #e3d4b0; border-radius: 4px; background: #fff9eb; color: #664e22; font: 10px/1.3 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .definition-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 20px; margin: 0; }
+  .definition-grid > div { padding: 8px 0; border-bottom: 1px solid var(--line-soft); min-width: 0; }
+  .definition-grid dt { color: var(--muted); font-size: 10px; }
+  .definition-grid dd { margin: 3px 0 0; color: #2d4254; font-size: 11px; font-weight: 620; overflow-wrap: anywhere; }
+  .dist-line { display: flex; flex-wrap: wrap; gap: 5px; }
+  .dist-item { padding: 2px 6px; border-radius: 4px; background: #f0f3f6; color: #455868; font: 10px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .timeline { position: relative; display: grid; gap: 10px; padding-left: 22px; }
+  .timeline::before { position: absolute; top: 10px; bottom: 10px; left: 7px; width: 1px; background: #d6e0e8; content: ""; }
+  .event-card { position: relative; min-width: 0; padding: 12px 13px 13px; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  .event-card::before { position: absolute; top: 16px; left: -20px; width: 8px; height: 8px; border: 2px solid #fff; border-radius: 50%; background: #688aa4; box-shadow: 0 0 0 1px #a9bac8; content: ""; }
+  .event-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .event-type { margin: 0; color: #263c4e; font-size: 12px; font-weight: 720; overflow-wrap: anywhere; }
+  .event-index { display: block; margin-bottom: 2px; color: #596a79; font: 9px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: .08em; }
+  .event-id { flex: none; color: #687888; font: 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .event-facts { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 0; }
+  .event-facts div { display: flex; align-items: baseline; gap: 6px; }
+  .event-facts dt { color: var(--muted); font-size: 10px; }
+  .event-facts dd { margin: 0; color: #2f4354; font: 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .event-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; }
+  .event-inline { margin-top: 9px; }
+  .event-inline:empty { display: none; }
+  .evidence-item, .annotation-item { padding: 9px 0; border-top: 1px solid var(--line-soft); }
+  .evidence-item:first-child, .annotation-item:first-child { margin-top: 8px; }
+  .evidence-head, .annotation-head { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 8px; }
+  .evidence-id, .annotation-id { color: #2e4253; font: 10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .evidence-meta, .annotation-meta { display: flex; flex-wrap: wrap; gap: 5px 12px; margin-top: 5px; color: var(--muted); font-size: 10px; }
+  .evidence-buttons { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+  .evidence-note { color: var(--muted); font-size: 10px; }
+  .artifact-list { border-top: 1px solid var(--line-soft); }
+  .artifact-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 11px 1px; border-bottom: 1px solid var(--line-soft); }
+  .artifact-primary { min-width: 0; }
+  .artifact-primary strong { display: block; color: #304355; font-size: 11px; overflow-wrap: anywhere; }
+  .artifact-primary code { display: block; margin-top: 3px; color: #5b6b79; font-size: 9.5px; overflow-wrap: anywhere; }
+  .artifact-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; color: #4f6171; font-size: 10px; }
+  .artifact-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
+  .raw-disclosure { margin-top: 9px; border: 1px solid var(--line-soft); border-radius: 7px; background: #fafbfd; }
+  .raw-disclosure > summary { padding: 8px 10px; color: #465969; cursor: pointer; font-size: 10.5px; font-weight: 650; }
+  .raw-disclosure pre, pre.json {
+    max-width: 100%; max-height: 340px; overflow: auto; margin: 0; padding: 11px;
+    border-top: 1px solid var(--line-soft); background: #f7f9fb; color: #293b4c;
+    font: 10px/1.55 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre;
+  }
+  .raw-group { display: grid; gap: 8px; }
+  .annotation-box { margin-top: 8px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 7px; background: #fafbfd; }
+  .annotation-box > p { margin: 0; color: var(--muted); font-size: 10.5px; }
+  .annotation-editor { margin-top: 10px; border-top: 1px solid var(--line); }
+  .annotation-editor > summary { padding: 10px 0; color: #30485b; cursor: pointer; font-size: 11px; font-weight: 700; }
+  .annotation-form { display: grid; grid-template-columns: minmax(0, .85fr) minmax(0, 1.5fr) auto; align-items: end; gap: 10px; padding-bottom: 4px; }
+  .annotation-warning { margin: 9px 0 11px; color: #695735; font-size: 10px; }
+  .annotation-history { margin-top: 10px; }
+  .annotation-history h4 { margin: 0 0 4px; color: #475967; font-size: 10.5px; }
+  .revoke-field { display: none; }
+  .revoke-field.visible { display: block; }
+  .preview { display: block; max-width: min(100%, 500px); max-height: 320px; margin-top: 8px; border: 1px solid var(--line); border-radius: 6px; background: #fff; object-fit: contain; }
+  .muted { color: var(--muted); }
+  .truncate-note { margin-top: 10px; }
+  .count-note { color: #536576; font-size: 10.5px; }
+  .empty-section { padding: 14px 12px; border: 1px dashed #cbd4dc; border-radius: 7px; color: var(--muted); background: #fafbfd; font-size: 11px; }
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+  [hidden] { display: none !important; }
+  @media (max-width: 980px) {
+    main { padding-right: 20px; padding-left: 20px; }
+    .workspace { grid-template-columns: minmax(235px, 275px) minmax(0, 1fr); gap: 11px; }
+    .credential-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    .credential-actions { grid-column: 1 / -1; justify-content: flex-end; }
+    .definition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .artifact-row { grid-template-columns: minmax(0, 1fr) auto; }
+    .artifact-meta { grid-column: 1; grid-row: 2; }
+    .artifact-actions { grid-column: 2; grid-row: 1 / span 2; }
+  }
+  @media (max-width: 760px) {
+    .topbar { min-height: 56px; padding: 0 16px; }
+    .topbar-crumb { display: none; }
+    main { padding: 20px 14px 40px; }
+    .page-intro { align-items: flex-start; flex-direction: column; gap: 12px; margin-bottom: 14px; }
+    .production-gate { max-width: none; width: 100%; }
+    .access-panel > summary { align-items: flex-start; }
+    .access-title { gap: 5px 8px; }
+    .access-title .scope-note { flex-basis: 100%; padding-left: 0; border: 0; }
+    .session-note { display: none; }
+    .credential-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+    .credential-actions { grid-column: auto; justify-content: flex-start; }
+    .verify-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .workspace { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+    .flight-list { max-height: 275px; overflow-y: auto; overscroll-behavior: contain; }
+    .detail-heading { padding: 14px 14px 12px; }
+    .detail-tools #backToList { display: inline-flex; }
+    .detail-heading h2 { font-size: 15px; }
+    .detail-tools .button { min-height: 31px; padding: 5px 7px; font-size: 10px; }
+    .flight-summary-line { gap: 6px 12px; padding: 9px 14px; }
+    .flight-summary-line span + span { padding-left: 10px; }
+    .section-nav { padding: 0 5px; }
+    .section-nav a { min-height: 39px; padding: 0 8px; font-size: 10px; }
+    .detail-section { padding: 17px 14px; }
+    .definition-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .annotation-form { grid-template-columns: minmax(0, 1fr); }
+    .annotation-form .button { justify-self: start; }
+  }
+  @media (max-width: 480px) {
+    .environment { padding: 4px 7px; font-size: 8px; }
+    .brand-mark { width: 25px; height: 25px; }
+    .brand-word { font-size: 12px; }
+    .page-intro h1 { font-size: 26px; }
+    .verify-head { flex-direction: column; }
+    .verify-steps { grid-template-columns: minmax(0, 1fr); }
+    .empty-steps { grid-template-columns: minmax(0, 1fr); }
+    .detail-heading { gap: 8px; }
+    .detail-tools .button { padding: 5px 8px; font-size: 10px; }
+    .section-heading { align-items: flex-start; }
+    .coverage-row { grid-template-columns: minmax(0, 1fr); gap: 3px; }
+    .definition-grid { grid-template-columns: minmax(0, 1fr); }
+    .artifact-row { grid-template-columns: minmax(0, 1fr); gap: 7px; }
+    .artifact-meta, .artifact-actions { grid-column: auto; grid-row: auto; justify-content: flex-start; }
+    .event-facts { gap: 6px 12px; }
+    .empty-steps { max-width: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
 </style>
 </head>
 <body id="review-app">
-<header>
-  <h1>KSI Safety Edge — 비행 검토 콘솔 (개발용)</h1>
-  <div class="note">
-    Core에 내장된 정적 페이지입니다 — 데이터가 미리 심겨 있지 않으며, 조회는 아래에 붙여넣은
-    읽기(read) 토큰으로 기존 조회 API만 호출합니다. <b>안전관리자 오탐 의견 작성</b>은 별도
-    <b>작성(rc 스코프)</b> 토큰을 넣은 경우에만 기존 append-only 주석 API로 전송됩니다
-    (삭제 없음 — 취소는 REVOKE_PREVIOUS 새 기록). 운영 배포 전 사용자 인증·권한·HTTPS는
-    별도 보안 게이트입니다.
+<header class="topbar">
+  <div class="brand-lockup">
+    <div class="brand-name"><span class="brand-mark" aria-hidden="true">KSI</span><span class="brand-word">KSI Safety Edge<small>DEVELOPER CONSOLE</small></span></div>
+    <div class="topbar-crumb"><span class="crumb-divider">/</span><span>비행 검토</span></div>
   </div>
+  <div class="environment">LOCAL DEVELOPMENT</div>
 </header>
 <main>
-  <div class="panel">
-    <div class="row">
-      <input id="token" type="password" placeholder="Core read 토큰 (예: dev token)" autocomplete="off" />
-      <input id="writeToken" type="password" placeholder="작성(rc 스코프) 토큰 — 의견 기록 시에만 사용(선택)" autocomplete="off" />
-      <button id="save">저장</button>
-      <button id="load">비행 목록 불러오기</button>
-      <span id="status"></span>
+  <section class="page-intro" aria-labelledby="pageTitle">
+    <div>
+      <p class="eyebrow">DEVELOPER VERIFICATION · LOCAL CORE</p>
+      <h1 id="pageTitle">개발 검증 콘솔</h1>
+      <p class="lede">RC에서 올라온 비행 데이터가 Core에 도착했는지, 사건·증거를 확인할 수 있는지, A-2 의견 기록이 append-only로 남는지 검증합니다.</p>
+      <p class="environment-facts">연결 대상 Core <code id="envOrigin">확인 중…</code> · 표시되는 데이터는 이 Core가 실제 보유한 기록입니다 — 데모 DB 여부는 실행 명령으로 확인합니다(런북).</p>
     </div>
-    <div class="devbox">
-      <b>dev 토큰</b>
-      <span class="muted">(저장소에 공개된 개발용 고정값 — 운영 아님)</span>
-      <code>tok-orgA-agent</code><button data-copy="tok-orgA-agent">복사</button>
-      <code>tok-orgA-rc</code><button data-copy="tok-orgA-rc">복사</button>
-      <button id="fillDev">dev 토큰으로 채우기</button>
-      <span class="muted">조회=agent · 기록=rc (읽기 토큰만 넣으면 의견 쓰기는 403으로 막힘)</span>
-    </div>
-    <div class="muted" style="margin-top:6px">
-      토큰은 이 브라우저 탭(sessionStorage)에만 저장됩니다. 저장소·서버에 기록되지 않습니다.
-    </div>
-  </div>
+    <div class="production-gate"><strong>개발 전용 콘솔</strong>운영 인증·권한 설정과 HTTPS는 배포 전 보안 게이트입니다.</div>
+  </section>
 
-  <div id="listPanel" class="panel" style="display:none">
-    <h2>비행 목록</h2>
-    <div class="honest">
-      <b>표기 원칙:</b> 업로드 상태는 서버가 아는 사실만 표시합니다 — 값이
-      LOCAL_ONLY/UPLOADING/PARTIAL이면 “서버 조회로 확인 가능한 범위”가 그만큼이라는 뜻입니다.
-      사건 0건은 안전 확인이 아닙니다.
+  <details id="accessPanel" class="access-panel" open>
+    <summary>
+      <span class="access-title">API 접근 <span class="scope-note">조회 토큰 필수 · A-2 작성 토큰 선택</span></span>
+      <span class="session-note">저장하면 현재 탭(sessionStorage)에만 보관됩니다.</span>
+    </summary>
+    <div class="access-body">
+      <div class="credential-grid">
+        <div class="field">
+          <label for="token">Core 조회 토큰</label>
+          <input id="token" type="password" autocomplete="off" spellcheck="false" aria-describedby="readHelp" />
+          <p class="field-help" id="readHelp">비행 목록과 서버에 수신된 데이터를 조회합니다.</p>
+        </div>
+        <div class="field">
+          <label for="writeToken">검토 의견 작성 토큰 <span class="optional">선택 · rc scope</span></label>
+          <input id="writeToken" type="password" autocomplete="off" spellcheck="false" aria-describedby="writeHelp" />
+          <p class="field-help" id="writeHelp">A-2 의견을 기록하거나 취소 의견을 추가할 때만 필요합니다.</p>
+        </div>
+        <div class="credential-actions">
+          <button id="save" class="button" type="button">탭에 저장</button>
+          <button id="load" class="button button-primary" type="button">비행 불러오기</button>
+        </div>
+      </div>
+      <div class="dev-tools">
+        <button id="fillDev" class="button button-quiet" type="button">개발용 토큰 사용</button>
+        <details class="dev-details">
+          <summary>문서화된 개발 fixture 보기</summary>
+          <div class="fixture-list">
+            <span class="fixture"><code>tok-orgA-agent</code><button class="button button-quiet" type="button" data-copy="tok-orgA-agent">복사</button></span>
+            <span class="fixture"><code>tok-orgA-rc</code><button class="button button-quiet" type="button" data-copy="tok-orgA-rc">복사</button></span>
+            <span class="fixture-note">agent=조회 · rc=조회 및 의견 기록 · 개발용 고정값이며 운영 인증이 아닙니다.</span>
+          </div>
+        </details>
+      </div>
+      <div id="status" role="status" aria-live="polite"></div>
     </div>
-    <div id="listSummary" class="summary"></div>
-    <div id="flights"></div>
-  </div>
+  </details>
 
-  <div id="detailPanel" class="panel" style="display:none">
-    <h2 id="detailTitle">비행 상세</h2>
-    <div id="detail"></div>
+  <section class="verify-panel" aria-labelledby="verifyTitle">
+    <div class="verify-head">
+      <div>
+        <p class="eyebrow">VERIFICATION JOURNEY</p>
+        <h2 id="verifyTitle">검증 흐름 — 이 화면에서 할 일</h2>
+        <p class="verify-lede">Core 연결부터 A-2 의견 기록까지 순서대로 검증합니다. 진행 상태는 이 탭(sessionStorage)에만 저장되며 ‘검증 초기화’로 지웁니다.</p>
+      </div>
+      <button id="verifyReset" class="button button-quiet" type="button">검증 초기화</button>
+    </div>
+    <ol class="verify-steps" id="verifySteps"></ol>
+  </section>
+
+  <div class="workspace">
+    <aside id="flight-rail" class="flight-rail" aria-label="비행 목록">
+      <div class="rail-header">
+        <div><h2>비행</h2><p class="rail-caption" id="flightCount">조회 토큰으로 목록을 불러오세요.</p></div>
+        <button id="refresh" class="button" type="button" aria-label="비행 목록 새로고침">새로고침</button>
+      </div>
+      <p class="rail-caveat">Core 서버가 알고 있는 수집 범위입니다. 사건이 없다는 사실만으로 안전을 확인할 수 없습니다.</p>
+      <div id="listSummary" class="list-summary" hidden></div>
+      <div id="flights" class="flight-list" aria-live="polite">
+        <div class="empty-list"><strong>아직 목록을 조회하지 않았습니다.</strong>조회 토큰을 입력한 뒤 <b>비행 불러오기</b>를 선택하세요.</div>
+      </div>
+    </aside>
+
+    <section id="detailPanel" class="detail-panel" aria-labelledby="detailTitle">
+      <div class="detail-heading">
+        <div>
+          <p id="detailEyebrow" class="eyebrow">FLIGHT / NO SELECTION</p>
+          <h2 id="detailTitle">비행을 선택하세요</h2>
+          <div id="detailSubtitle" class="detail-subtitle">Core 수신 데이터를 선택한 비행 단위로 확인합니다.</div>
+        </div>
+        <div class="detail-tools"><button id="backToList" class="button" type="button" hidden>목록으로</button></div>
+      </div>
+      <div id="detail" class="detail-content">
+        <div class="detail-empty">
+          <p class="empty-title">비행 단위로 끝까지 추적합니다.</p>
+          <p class="empty-copy">목록에서 한 비행을 열면 서버가 받은 수집 상태부터 커버리지, 관측, 사건, 연결된 증거와 A-2 의견 기록까지 이어서 볼 수 있습니다.</p>
+          <div class="empty-steps">
+            <div class="empty-step"><b>01</b><div><strong>수집 상태</strong><span>manifest 커밋 수와 누락 artifact를 확인합니다.</span></div></div>
+            <div class="empty-step"><b>02</b><div><strong>커버리지와 관측</strong><span>요약·프레임·품질 값을 서버 응답 그대로 살펴봅니다.</span></div></div>
+            <div class="empty-step"><b>03</b><div><strong>사건과 증거</strong><span>이벤트를 최신 Edge monotonic 시각부터 확인합니다.</span></div></div>
+            <div class="empty-step"><b>04</b><div><strong>A-2 검토 의견</strong><span>rc 권한으로 append-only 기록을 추가하거나 취소 기록을 남깁니다.</span></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
   </div>
 </main>
 
@@ -119,6 +493,8 @@
 
 const API = "/api/v1/edge";
 const $ = (id) => document.getElementById(id);
+let selectedFlightId = null;
+let detailRequestSeq = 0;
 
 function esc(v) {
   return String(v ?? "").replace(/[&<>"']/g, (c) => ({
@@ -147,7 +523,139 @@ function relTime(iso) {
 function withRel(iso) {
   if (!iso) return "-";
   const rel = relTime(iso);
-  return `${esc(iso)}${rel ? ` <span class="muted">(${rel})</span>` : ""}`;
+  return `<span title="${esc(iso)}">${esc(iso)}</span>${rel ? ` <span class="muted">(${rel})</span>` : ""}`;
+}
+
+// --- 검증 흐름 (developer verification journey; 상태는 탭 범위) -------------
+// 각 단계의 ‘완료’는 그 흐름이 실제로 실행됐다는 사실에서만 계산한다 —
+// 버튼을 눌렀다는 이유로 완료로 표시하지 않는다.
+const VERIFY_KEY = "ksi_review_verify_v1";
+const VERIFY_STEPS = [
+  {
+    key: "list", no: "01", title: "Core 연결 · 비행 목록",
+    doneText: (v) => `비행 ${v.count}건을 조회했습니다.`,
+    next: "‘API 접근’에 조회 토큰을 넣고 ‘비행 불러오기’를 실행하세요.",
+    evidence: "비행 목록과 건수가 오류 없이 표시됩니다.",
+  },
+  {
+    key: "detail", no: "02", title: "비행 데이터 도착",
+    doneText: (v) => `비행 ${String(v.flightId || "").slice(0, 8)}… 상세를 불러왔습니다.`,
+    next: "왼쪽 ‘비행’ 목록에서 비행을 선택하세요 — 정상(사건·증거·이력) · 사건 0건 · PARTIAL(누락 artifact) 세 가지가 준비되어 있습니다.",
+    evidence: "수집 상태·커버리지·관측·사건·증거 요약이 표시됩니다.",
+  },
+  {
+    key: "evidence", no: "03", title: "사건 · 증거 확인",
+    doneText: (v) => `연결 증거 ${v.count}건을 조회했습니다.`,
+    next: "사건 카드에서 ‘증거 확인’을 누르고, 필요하면 원문 JSON을 펼치세요.",
+    evidence: "연결 증거 목록이 표시되고 미리보기·다운로드가 동작합니다.",
+  },
+  {
+    key: "annotation", no: "04", title: "A-2 의견 기록 흐름",
+    doneText: (v) => (v.kind === "REVOKE_PREVIOUS"
+      ? "취소 기록(REVOKE_PREVIOUS)이 새 기록으로 남는 것을 확인했습니다."
+      : "의견 기록이 이력에 추가되는 것을 확인했습니다."),
+    next: "사건 카드에서 ‘A-2 의견 이력’ → 의견 기록 (rc 스코프 토큰 필요). 시드 이력의 기록+취소(REVOKE) 패턴도 함께 확인하세요.",
+    evidence: "기록이 삭제 없이 이력으로 유지됩니다 — 취소는 REVOKE_PREVIOUS 새 기록입니다.",
+  },
+];
+let verifyState = (() => {
+  try {
+    return JSON.parse(sessionStorage.getItem(VERIFY_KEY) || "{}") || {};
+  } catch (_) {
+    return {};
+  }
+})();
+
+function saveVerify() {
+  try { sessionStorage.setItem(VERIFY_KEY, JSON.stringify(verifyState)); }
+  catch (_) { /* 저장 불가 시에도 현재 탭 표시는 유지 */ }
+}
+
+function setVerify(step, value) {
+  verifyState[step] = value;
+  saveVerify();
+  renderVerify();
+}
+
+function clearVerify() {
+  verifyState = {};
+  try { sessionStorage.removeItem(VERIFY_KEY); } catch (_) { /* noop */ }
+  renderVerify();
+}
+
+function verifyStatus(step) {
+  const v = verifyState[step.key];
+  if (!v) return "todo";
+  if (v.error) return "error";
+  if (v.info) return "todo";
+  return "done";
+}
+
+function verifyAction(step, status) {
+  if (status === "done") return "";
+  if (step.key === "list") {
+    return token()
+      ? '<button class="button" type="button" data-verify="load-flights">비행 불러오기</button>'
+      : '<button class="button" type="button" data-verify="open-access">API 접근 열기</button>';
+  }
+  if (step.key === "detail") {
+    return verifyStatus({ key: "list" }) === "done"
+      ? '<button class="button" type="button" data-verify="goto-rail">비행 목록으로</button>'
+      : "";
+  }
+  if (verifyStatus({ key: "detail" }) !== "done") return "";
+  if (step.key === "evidence") {
+    return '<button class="button" type="button" data-verify="goto-events">사건 카드로 이동</button>';
+  }
+  if (step.key === "annotation") {
+    const hint = writeToken() ? "" : '<span class="muted">기록에는 rc 스코프 토큰이 필요합니다</span>';
+    return `<button class="button" type="button" data-verify="open-annotations">의견 이력 열기</button>${hint}`;
+  }
+  return "";
+}
+
+function renderVerify() {
+  const list = $("verifySteps");
+  if (!list) return;
+  list.innerHTML = VERIFY_STEPS.map((step) => {
+    const v = verifyState[step.key] || null;
+    const status = verifyStatus(step);
+    const statusText = status === "done" ? "완료" : status === "error" ? "문제" : "대기";
+    const detail = v
+      ? (v.error ? esc(v.error) : v.info ? esc(v.info) : esc(step.doneText(v)))
+      : "";
+    const next = status === "done" ? "" : esc(step.next);
+    return `<li class="verify-step is-${status}">
+      <div class="verify-step-top"><span class="verify-step-title"><span class="verify-step-no">${step.no}</span>${esc(step.title)}</span><span class="verify-status ${status}">${statusText}</span></div>
+      ${detail ? `<p class="verify-step-detail">${detail}</p>` : ""}
+      ${next ? `<p class="verify-step-next"><strong>다음</strong> ${next}</p>` : ""}
+      ${verifyAction(step, status) ? `<div class="verify-step-actions">${verifyAction(step, status)}</div>` : ""}
+      <p class="verify-step-evidence">완료 증거 · ${esc(step.evidence)}</p>
+    </li>`;
+  }).join("");
+  for (const button of list.querySelectorAll("[data-verify]")) {
+    button.addEventListener("click", () => {
+      const action = button.dataset.verify;
+      if (action === "open-access") {
+        $("accessPanel").open = true;
+        $("accessPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+        $("token").focus();
+      } else if (action === "load-flights") {
+        loadFlights();
+      } else if (action === "goto-rail") {
+        $("flight-rail").scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (action === "goto-events") {
+        const card = document.querySelector("[data-event-card]");
+        if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else if (action === "open-annotations") {
+        const openButton = document.querySelector("[data-annotation]");
+        if (openButton) {
+          openButton.click();
+          openButton.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }
+    });
+  }
 }
 
 function token() {
@@ -157,10 +665,16 @@ function token() {
 async function api(path) {
   const r = await fetch(path, { headers: { Authorization: "Bearer " + token() } });
   if (!r.ok) {
-    let detail = "";
-    try { detail = JSON.stringify(await r.json()).slice(0, 240); }
-    catch (_) { detail = (await r.text()).slice(0, 240); }
-    throw new Error(`${path} → ${r.status} ${detail}`);
+    let payload = null;
+    try { payload = await r.json(); }
+    catch (_) { payload = { message: (await r.text()).slice(0, 240) }; }
+    const error = new Error(`${path} → ${r.status} ${JSON.stringify(payload).slice(0, 400)}`);
+    error.status = r.status;
+    error.method = "GET";
+    error.code = payload && payload.code;
+    error.apiPath = path;
+    error.payload = payload;
+    throw error;
   }
   return r.json();
 }
@@ -176,7 +690,14 @@ async function fetchPaged(path, capPages) {
     const data = await api(url);
     items.push(...(data.items || []));
     pages += 1;
-    url = data.next_cursor ? `${path}?limit=500&cursor=${encodeURIComponent(data.next_cursor)}` : null;
+    if (data.next_cursor) {
+      const next = new URL(path, window.location.origin);
+      next.searchParams.set("limit", "500");
+      next.searchParams.set("cursor", data.next_cursor);
+      url = `${next.pathname}${next.search}`;
+    } else {
+      url = null;
+    }
   }
   return { items, truncated };
 }
@@ -186,164 +707,258 @@ function spanState(state) {
     COMPLETE: "ok", PARTIAL: "warn", UPLOADING: "warn", LOCAL_ONLY: "bad",
     COMMITTED: "ok", OPEN: "warn",
   };
-  return `<span class="tag ${map[state] || ""}">${esc(state)}</span>`;
+  return `<span class="status-pill ${map[state] || ""}">${esc(state || "UNKNOWN")}</span>`;
+}
+
+function friendlyError(error, operation = "조회") {
+  const isAnnotationWrite = error.method === "POST" && String(error.apiPath || "").includes("/annotations");
+  if (isAnnotationWrite && error.status === 401) return "Core가 검토 의견 작성 토큰을 인증하지 못했습니다. rc scope 토큰을 확인하세요.";
+  if (isAnnotationWrite && error.status === 403) return "이 작성 토큰에는 rc scope가 없습니다. 조회 토큰과 별도로 A-2용 rc 토큰을 입력하세요.";
+  if (error.status === 401) return "Core가 토큰을 인증하지 못했습니다. 토큰을 확인하거나 문서화된 agent fixture를 사용하세요.";
+  if (error.status === 403) return "이 토큰에는 조회 권한이 없습니다. read scope가 있는 조회 토큰을 사용하세요.";
+  if (error.status === 404) return "현재 조직 범위에서 요청한 비행 또는 데이터를 찾을 수 없습니다.";
+  if (error.status) return `Core ${operation}에 실패했습니다 (HTTP ${error.status}). 기술 세부 정보를 확인하세요.`;
+  return "Core에 연결할 수 없습니다. 서버가 실행 중인지 확인한 뒤 다시 시도하세요.";
+}
+
+function errorDetails(error) {
+  return `<details class="raw-disclosure"><summary>기술 세부 정보</summary><pre>${esc(error.message || String(error))}</pre></details>`;
+}
+
+function idShort(value, chars = 8) {
+  const text = String(value || "");
+  return text ? `${text.slice(0, chars)}${text.length > chars ? "…" : ""}` : "-";
+}
+
+function jsonDisclosure(label, value) {
+  return `<details class="raw-disclosure"><summary>${esc(label)}</summary><pre>${esc(JSON.stringify(value, null, 2))}</pre></details>`;
+}
+
+function clearSelection() {
+  selectedFlightId = null;
+  detailRequestSeq += 1;
+  $("detailEyebrow").textContent = "FLIGHT / NO SELECTION";
+  $("detailTitle").textContent = "비행을 선택하세요";
+  $("detailSubtitle").textContent = "Core 수신 데이터를 선택한 비행 단위로 확인합니다.";
+  $("backToList").hidden = true;
+  $("detail").setAttribute("aria-busy", "false");
+  $("detail").innerHTML = `<div class="detail-empty">
+    <p class="empty-title">비행 단위로 끝까지 추적합니다.</p>
+    <p class="empty-copy">목록에서 한 비행을 열면 서버가 받은 수집 상태부터 커버리지, 관측, 사건, 연결된 증거와 A-2 의견 기록까지 이어서 볼 수 있습니다.</p>
+    <div class="empty-steps">
+      <div class="empty-step"><b>01</b><div><strong>수집 상태</strong><span>manifest 커밋 수와 누락 artifact를 확인합니다.</span></div></div>
+      <div class="empty-step"><b>02</b><div><strong>커버리지와 관측</strong><span>요약·프레임·품질 값을 서버 응답 그대로 살펴봅니다.</span></div></div>
+      <div class="empty-step"><b>03</b><div><strong>사건과 증거</strong><span>이벤트를 최신 Edge monotonic 시각부터 확인합니다.</span></div></div>
+      <div class="empty-step"><b>04</b><div><strong>A-2 검토 의견</strong><span>rc 권한으로 append-only 기록을 추가하거나 취소 기록을 남깁니다.</span></div></div>
+    </div>
+  </div>`;
 }
 
 async function loadFlights() {
-  setStatus("불러오는 중…", "");
+  if (!token()) {
+    setStatus("비행 목록을 조회하려면 Core 조회 토큰이 필요합니다.", "warn");
+    $("token").focus();
+    return;
+  }
+  const loadButton = $("load");
+  const refreshButton = $("refresh");
+  const previousSelection = selectedFlightId;
+  loadButton.disabled = true;
+  refreshButton.disabled = true;
+  setStatus("Core에서 비행 목록을 조회하고 있습니다…", "loading");
+  $("flightCount").textContent = "Core 응답 대기 중…";
+  $("listSummary").hidden = true;
+  $("flights").setAttribute("aria-busy", "true");
+  $("flights").innerHTML = '<div class="loading-list" aria-label="비행 목록 불러오는 중"><span class="skeleton"></span><span class="skeleton"></span><span class="skeleton"></span></div>';
   try {
     const { items, truncated } = await fetchPaged(`${API}/flights`, 20);
+    items.sort((a, b) => {
+      const ta = Date.parse(a.started_at_utc || "") || 0;
+      const tb = Date.parse(b.started_at_utc || "") || 0;
+      return tb - ta || String(b.flight_id || "").localeCompare(String(a.flight_id || ""));
+    });
     const rows = items.map((f) => {
       const c = f.completeness || {};
-      return `<tr class="clickable" data-flight="${esc(f.flight_id)}">
-        <td>${esc(f.flight_id.slice(0, 8))}<div class="muted">${withRel(f.started_at_utc)}</div></td>
-        <td>${esc((f.site_id || "-").slice(0, 8))}</td>
-        <td>${spanState(f.upload_state)}</td>
-        <td>${esc(c.manifests_committed ?? "-")} / ${esc(c.manifests_total ?? "-")}
-            <div class="muted">누락 artifact ${esc(c.missing_artifact_count ?? "-")}</div></td>
-        <td>${f.ended_at_utc ? withRel(f.ended_at_utc) : "(진행/미상)"}</td>
-      </tr>`;
+      const fullId = String(f.flight_id || "");
+      return `<button class="flight-item" type="button" data-flight="${esc(fullId)}" title="${esc(fullId)}" aria-current="${fullId === selectedFlightId ? "true" : "false"}">
+        <span class="flight-item-top"><span class="flight-label">비행 ${esc(idShort(fullId))}</span>${spanState(f.upload_state)}</span>
+        <span class="flight-time">${esc(f.started_at_utc || "시작 시각 없음")} <span>${esc(relTime(f.started_at_utc))}</span></span>
+        <span class="flight-id">flight_id · ${esc(fullId || "-")}</span>
+        <span class="flight-item-bottom"><span>Manifest ${esc(c.manifests_committed ?? "-")} / ${esc(c.manifests_total ?? "-")} 커밋</span><span>누락 artifact ${esc(c.missing_artifact_count ?? "-")}</span></span>
+      </button>`;
     }).join("");
-    const attention = items.filter((f) =>
-      String(f.upload_state || "") !== "COMPLETE" ||
-      ((f.completeness || {}).missing_artifact_count || 0) > 0);
-    const missingTotal = items.reduce(
-      (sum, f) => sum + (((f.completeness || {}).missing_artifact_count || 0)), 0);
+    $("flightCount").textContent = items.length ? `${items.length}건 · 시작 시각 최신순` : "0건 · 현재 조직 범위";
+    $("listSummary").hidden = !items.length;
     $("listSummary").innerHTML = items.length
-      ? `<span>비행 <b>${items.length}</b>건</span>
-         <span class="${attention.length ? "att" : ""}">주의 <b>${attention.length}</b>건</span>
-         <span class="${missingTotal ? "att" : ""}">누락 artifact <b>${missingTotal}</b></span>`
+      ? `<span>${items.length}건 조회됨</span><span>시작 시각 · 최신순</span>`
       : "";
     $("flights").innerHTML = items.length
-      ? `<table><thead><tr><th>비행</th><th>현장</th><th>업로드</th><th>세션(커밋/전체)</th><th>종료</th></tr></thead><tbody>${rows}</tbody></table>
-         ${truncated ? '<div class="honest">목록이 상한(20페이지)에서 잘렸습니다 — 최신 일부만 표시 중입니다.</div>' : ""}`
-      : '<div class="muted">비행 기록이 없습니다 (해당 org 기준).</div>';
-    $("listPanel").style.display = "";
-    for (const tr of $("flights").querySelectorAll("tr.clickable")) {
-      tr.addEventListener("click", () => openFlight(tr.dataset.flight));
+      ? `${rows}${truncated ? '<div class="honest-note truncate-note">조회 상한에 도달했습니다. 현재 목록은 최신 일부입니다.</div>' : ""}`
+      : '<div class="empty-list"><strong>Core에 표시할 비행이 없습니다.</strong>조회 권한과 조직 범위를 확인하세요. 로컬에만 존재하는 데이터는 여기에 나타나지 않습니다.</div>';
+    for (const button of $("flights").querySelectorAll("[data-flight]")) {
+      button.addEventListener("click", () => openFlight(button.dataset.flight));
     }
-    setStatus(`비행 ${items.length}건`, "ok");
+    const selectionStillAvailable = items.some((flight) => flight.flight_id === previousSelection);
+    if (!selectionStillAvailable) clearSelection();
+    $("flights").setAttribute("aria-busy", "false");
+    setStatus(`Core에서 비행 ${items.length}건을 불러왔습니다.`, "ok");
+    setVerify("list", { count: items.length });
+    if (items.length) $("accessPanel").open = false;
+    if (selectionStillAvailable) openFlight(previousSelection);
   } catch (e) {
-    setStatus(String(e.message), "err");
+    const message = friendlyError(e);
+    clearSelection();
+    $("flightCount").textContent = "목록 조회 실패";
+    $("flights").innerHTML = `<div class="empty-list"><strong>비행 목록을 불러오지 못했습니다.</strong>${esc(message)}${errorDetails(e)}<button class="button" type="button" data-retry>다시 시도</button></div>`;
+    $("flights").querySelector("[data-retry]").addEventListener("click", loadFlights);
+    $("flights").setAttribute("aria-busy", "false");
+    setStatus(message, "err");
+    setVerify("list", { error: message });
+  } finally {
+    loadButton.disabled = false;
+    refreshButton.disabled = false;
   }
 }
 
 function detailGrid(f) {
   const c = f.completeness || {};
-  return `<div class="grid">
-    <div><b>flight</b>${esc(f.flight_id)}</div>
-    <div><b>site</b>${esc(f.site_id)}</div>
-    <div><b>org</b>${esc(f.org_id)}</div>
-    <div><b>rc device</b>${esc(f.rc_device_id)}</div>
-    <div><b>mission</b>${esc(f.mission_id)}</div>
-    <div><b>mission rev</b>${esc(f.mission_revision_id)}</div>
-    <div><b>bundle sha256</b>${esc((f.bundle_sha256 || "").slice(0, 16))}…</div>
-    <div><b>started(수신)</b>${withRel(f.started_at_utc)}</div>
-    <div><b>ended(수신)</b>${f.ended_at_utc ? withRel(f.ended_at_utc) : "(진행/미상)"}</div>
-    <div><b>upload_state</b>${spanState(f.upload_state)}</div>
-    <div><b>세션</b>${esc(c.manifests_committed ?? "-")} / ${esc(c.manifests_total ?? "-")} 커밋</div>
-    <div><b>누락 artifact</b>${esc(c.missing_artifact_count ?? "-")}</div>
-  </div>
-  <div class="muted" style="margin-top:6px">시간 기준: RC 수신 UTC 창(운영 기록). Edge monotonic 시각은 도메인이 달라 UTC로 변환하지 않습니다.</div>`;
+  const ended = f.ended_at_utc ? f.ended_at_utc : "(not reported)";
+  return `<dl class="definition-grid">
+    <div><dt>Flight ID</dt><dd><code>${esc(f.flight_id)}</code></dd></div>
+    <div><dt>Site ID</dt><dd><code>${esc(f.site_id)}</code></dd></div>
+    <div><dt>Organization</dt><dd><code>${esc(f.org_id)}</code></dd></div>
+    <div><dt>RC device ID</dt><dd><code>${esc(f.rc_device_id)}</code></dd></div>
+    <div><dt>Mission ID</dt><dd><code>${esc(f.mission_id)}</code></dd></div>
+    <div><dt>Mission revision ID</dt><dd><code>${esc(f.mission_revision_id)}</code></dd></div>
+    <div><dt>Bundle SHA-256</dt><dd><code>${esc(f.bundle_sha256 || "-")}</code></dd></div>
+    <div><dt>Started · UTC reported by RC</dt><dd>${esc(f.started_at_utc || "-")}</dd></div>
+    <div><dt>Ended · UTC reported by RC</dt><dd>${esc(ended)}</dd></div>
+    <div><dt>Manifests committed / total</dt><dd>${esc(c.manifests_committed ?? "-")} / ${esc(c.manifests_total ?? "-")}</dd></div>
+    <div><dt>Missing artifacts</dt><dd>${esc(c.missing_artifact_count ?? "-")}</dd></div>
+  </dl>
+  <p class="field-help">Edge monotonic 시각은 UTC로 변환하지 않고 원래 단위로 표시합니다.</p>`;
 }
 
 function renderCoverage(coverage) {
   const summaries = coverage.summaries || [];
   if (!summaries.length) {
-    return `<div class="honest">요약(summary)이 서버에 아직 없습니다 — data_completeness=UNKNOWN.
-      “요약 없음”을 “관측 없음”이나 “안전”으로 해석하지 않습니다.</div>`;
+    return `<div class="honest-note"><strong>서버에 flight summary가 없습니다.</strong> data_completeness=${esc(coverage.data_completeness || "UNKNOWN")} — 요약 없음은 관측 0건이나 안전을 뜻하지 않습니다.</div>`;
   }
-  return summaries.map((s) => {
-    const gaps = Array.isArray(s.gaps) ? s.gaps.length : 0;
-    const reasons = (s.quality_reasons || []).map((r) => `<span class="tag warn">${esc(r)}</span>`).join("");
-    return `<div class="panel" style="margin:8px 0">
-      <div class="kv"><b>session</b> ${esc((s.session_id || "").slice(0, 8))}
-        <b>AI 가동률</b> ${esc(s.ai_uptime_ratio ?? "-")}
-        <b>커버/스킵 프레임</b> ${esc(s.covered_frames ?? "-")} / ${esc(s.skipped_frames ?? "-")}
-        <b>gaps</b> ${gaps}</div>
-      <div style="margin-top:4px">${reasons || '<span class="tag">quality_reasons 없음</span>'}</div>
+  return `<dl class="coverage-list">${summaries.map((s, index) => {
+    const gaps = Array.isArray(s.gaps) ? s.gaps : [];
+    const reasons = Array.isArray(s.quality_reasons) ? s.quality_reasons : [];
+    return `<div class="coverage-row">
+      <dt>Summary ${index + 1} · session ${esc(idShort(s.session_id))}</dt>
+      <dd><div class="dist-line">
+        <span class="dist-item">AI uptime ${esc(s.ai_uptime_ratio ?? "-")}</span>
+        <span class="dist-item">covered ${esc(s.covered_frames ?? "-")}</span>
+        <span class="dist-item">skipped ${esc(s.skipped_frames ?? "-")}</span>
+        <span class="dist-item">gaps ${gaps.length}</span>
+      </div>
+      <div class="coverage-reasons">${reasons.length ? reasons.map((r) => `<span class="code-chip">${esc(r)}</span>`).join("") : '<span class="muted">quality_reasons · none reported</span>'}</div>
+      ${gaps.length ? jsonDisclosure("Gap records", gaps) : ""}</dd>
     </div>`;
-  }).join("");
+  }).join("")}</dl>`;
 }
 
-function renderObservationStats(items) {
+function renderObservationStats(items, truncated) {
   const dist = (key) => {
-    const m = {};
-    for (const o of items) m[o[key]] = (m[o[key]] || 0) + 1;
-    return Object.entries(m).map(([k, v]) => `${esc(k || "?")}:${v}`).join(" · ") || "-";
+    const counts = new Map();
+    for (const observation of items) {
+      const value = observation[key] ?? "(not reported)";
+      counts.set(value, (counts.get(value) || 0) + 1);
+    }
+    return [...counts.entries()].map(([value, count]) =>
+      `<span class="dist-item">${esc(value)} · ${count}</span>`).join("") || '<span class="muted">-</span>';
   };
   let detections = 0;
-  const classes = {};
-  for (const o of items) {
-    for (const d of (o.detections || [])) {
+  const classes = new Map();
+  for (const observation of items) {
+    for (const detection of (observation.detections || [])) {
       detections += 1;
-      classes[d.class_id] = (classes[d.class_id] || 0) + 1;
+      const key = detection.class_id ?? "(not reported)";
+      classes.set(key, (classes.get(key) || 0) + 1);
     }
   }
-  const classText = Object.entries(classes).sort((a, b) => b[1] - a[1])
-    .slice(0, 12).map(([k, v]) => `${esc(k)}:${v}`).join(" · ") || "-";
-  return `<div class="kv">
-    <div><b>표본 수</b> ${items.length}${window.__obsTruncated ? " (상한에서 잘림 — 하한값)" : ""}</div>
-    <div><b>sync_quality</b> ${dist("sync_quality")}</div>
-    <div><b>geometry_status</b> ${dist("geometry_status")}</div>
-    <div><b>검출 합계</b> ${detections}</div>
-    <div><b>클래스 분포</b> ${classText}</div>
-  </div>`;
+  const classChips = [...classes.entries()].sort((a, b) => b[1] - a[1])
+    .slice(0, 12).map(([key, count]) => `<span class="dist-item">${esc(key)} · ${count}</span>`).join("") || '<span class="muted">-</span>';
+  return `<dl class="definition-grid">
+    <div><dt>Observations returned${truncated ? " · lower bound" : ""}</dt><dd>${items.length}${truncated ? "+" : ""}${truncated ? " (page cap reached)" : ""}</dd></div>
+    <div><dt>Detection records in returned sample</dt><dd>${detections}</dd></div>
+    <div><dt>sync_quality · verbatim values</dt><dd class="dist-line">${dist("sync_quality")}</dd></div>
+    <div><dt>geometry_status · verbatim values</dt><dd class="dist-line">${dist("geometry_status")}</dd></div>
+    <div><dt>Detection class_id distribution</dt><dd class="dist-line">${classChips}</dd></div>
+  </dl>
+  ${items.length ? jsonDisclosure("첫 observation 원문 보기", items[0]) : ""}`;
 }
 
 function eventRow(ev, idx, flightId) {
-  const model = ev.initial_model_output || {};
-  return `<div class="panel" style="margin:8px 0">
-    <div class="kv">
-      <b>#${idx}</b> ${esc((ev.event_id || "").slice(0, 8))}
-      <span class="tag">${esc(ev.event_type || "?")}</span>
-      <span class="tag ${ev.mode === "ACTIVE" ? "bad" : ""}">${esc(ev.mode || "?")}</span>
-      <b>quality</b> ${esc(ev.observation_quality || "-")}
-      <b>edge ns</b> ${esc(ev.detected_at_edge_monotonic_ns ?? "-")}
+  const eventId = String(ev.event_id || "");
+  const evidenceCount = Array.isArray(ev.evidence_artifact_ids) ? ev.evidence_artifact_ids.length : 0;
+  return `<article class="event-card" data-event-card="${esc(eventId)}">
+    <div class="event-head">
+      <div><span class="event-index">EVENT ${String(idx + 1).padStart(2, "0")}</span><h4 class="event-type">${esc(ev.event_type || "(not reported)")}</h4></div>
+      <code class="event-id" title="${esc(eventId)}">${esc(idShort(eventId))}</code>
     </div>
-    <div class="muted" style="margin-top:3px">rule ${esc(model.rule_id || "-")} · episode ${esc(model.episode ?? "-")} ·
-      distance_m ${esc(model.distance_m ?? "-")} · geometry ${esc(model.geometry || "-")}</div>
-    <div style="margin-top:6px">
-      <button data-event-detail="${esc(ev.event_id)}">근거·증거 보기</button>
-      <span class="muted" data-evidence-note="${esc(ev.event_id)}"></span>
+    <dl class="event-facts">
+      <div><dt>Mode</dt><dd>${esc(ev.mode || "-")}</dd></div>
+      <div><dt>Observation quality</dt><dd>${esc(ev.observation_quality || "-")}</dd></div>
+      <div><dt>Linked evidence</dt><dd>${evidenceCount}</dd></div>
+      <div><dt>Edge monotonic ns</dt><dd>${esc(ev.detected_at_edge_monotonic_ns ?? "-")}</dd></div>
+    </dl>
+    <div class="event-actions">
+      <button class="button" type="button" data-event-detail="${esc(eventId)}">증거 확인</button>
+      <button class="button" type="button" data-annotation="${esc(eventId)}" data-annotation-flight="${esc(flightId)}">A-2 의견 이력</button>
+      <span class="count-note" data-anno-badge="${esc(eventId)}"></span>
     </div>
-    <div data-evidence-box="${esc(ev.event_id)}"></div>
-    <div style="margin-top:6px">
-      <button data-annotation="${esc(ev.event_id)}" data-annotation-flight="${esc(flightId)}">오탐 의견 (append-only)</button>
-      <span class="badge" data-anno-badge="${esc(ev.event_id)}"></span>
-      <span class="muted" data-annotation-note="${esc(ev.event_id)}"></span>
-    </div>
-    <div data-annotation-box="${esc(ev.event_id)}"></div>
-  </div>`;
+    <div class="event-inline evidence-note" data-evidence-note="${esc(eventId)}" role="status" aria-live="polite"></div>
+    <div class="event-inline" data-evidence-box="${esc(eventId)}"></div>
+    <div class="event-inline evidence-note" data-annotation-note="${esc(eventId)}" role="status" aria-live="polite"></div>
+    <div class="event-inline" data-annotation-box="${esc(eventId)}"></div>
+    ${jsonDisclosure("이벤트 원문 JSON", ev)}
+  </article>`;
 }
 
 async function loadEventEvidence(eventId) {
   const box = document.querySelector(`[data-evidence-box="${CSS.escape(eventId)}"]`);
   const note = document.querySelector(`[data-evidence-note="${CSS.escape(eventId)}"]`);
-  note.textContent = "불러오는 중…";
+  note.textContent = "이벤트 연결 정보와 증거를 조회하고 있습니다…";
   try {
     const detail = await api(`${API}/events/${eventId}`);
     const ev = await api(`${API}/events/${eventId}/evidence`);
     const items = ev.items || [];
-    note.textContent = `주석 ${detail.annotations_count ?? 0}건 · 증거 ${items.length}건`;
+    note.textContent = `현재 주석 ${detail.annotations_count ?? 0}건 · 조회된 연결 증거 ${items.length}건`;
     const ids = detail.evidence_artifact_ids || [];
     const missing = ids.length - items.length;
     box.innerHTML = items.map((it) => `
-      <div class="kv" style="margin-top:6px; border-top:1px dashed #e0e3e8; padding-top:6px">
-        <b>${esc(it.artifact_id.slice(0, 8))}</b> ${esc(it.source_kind)} ${esc(it.media_type)}
-        ${esc(it.size_bytes)}B
-        <div class="muted">sha256 ${esc((it.sha256 || "").slice(0, 16))}…</div>
-        <button data-download="${esc(it.artifact_id)}" data-name="${esc(it.artifact_id)}.bin">다운로드</button>
+      <div class="evidence-item">
+        <div class="evidence-head"><strong class="evidence-id" title="${esc(it.artifact_id)}">${esc(idShort(it.artifact_id))}</strong><span class="status-pill ok">manifest entry</span></div>
+        <div class="evidence-meta"><span>${esc(it.source_kind)}</span><span>${esc(it.media_type)}</span><span>${esc(it.size_bytes)} bytes</span></div>
+        ${jsonDisclosure("SHA-256", it.sha256 || "")}
+        <div class="evidence-buttons">
+        <button class="button" type="button" data-download="${esc(it.artifact_id)}" data-name="${esc(it.artifact_id)}.bin">다운로드</button>
         ${String(it.media_type || "").startsWith("image/")
-          ? `<button data-preview="${esc(it.artifact_id)}">미리보기</button>`
+          ? `<button class="button" type="button" data-preview="${esc(it.artifact_id)}">이미지 미리보기</button>`
           : ""}
+        </div>
         <div data-preview-box="${esc(it.artifact_id)}"></div>
       </div>`).join("") + (missing > 0
-        ? `<div class="honest">연결된 증거 ${ids.length}건 중 ${missing}건이 manifest에 없습니다 — 미업로드/불완전으로 보입니다.</div>`
-        : "");
+        ? `<div class="honest-note">이벤트는 증거 ID ${ids.length}건을 참조하지만 ${missing}건은 현재 manifest 응답에서 찾지 못했습니다.</div>`
+        : (items.length ? "" : '<div class="empty-section">이벤트 payload에 연결된 증거 ID가 없습니다.</div>'));
+    wireDownloads(box);
+    // A successful fetch is not the same as verified evidence: only a real
+    // linked artifact completes the step — 0-evidence events get an honest note.
+    if (items.length > 0) {
+      setVerify("evidence", { eventId, count: items.length });
+    } else if (ids.length > 0) {
+      setVerify("evidence", { info: `이 사건이 참조하는 증거 ${ids.length}건이 서버 응답에 없습니다 — 미업로드/불완전 상태입니다.` });
+    } else {
+      setVerify("evidence", { info: "이 사건에는 연결된 증거가 없습니다 — 증거가 연결된 다른 사건 카드에서 확인하세요." });
+    }
   } catch (e) {
-    note.textContent = "";
-    box.innerHTML = `<div class="honest">증거 조회 실패: ${esc(e.message)}</div>`;
+    note.textContent = friendlyError(e, "증거 조회");
+    box.innerHTML = errorDetails(e);
+    setVerify("evidence", { error: note.textContent });
   }
 }
 
@@ -377,10 +992,16 @@ async function apiWrite(path, payload) {
     body: JSON.stringify(payload),
   });
   if (!r.ok) {
-    let detail = "";
-    try { detail = JSON.stringify(await r.json()).slice(0, 240); }
-    catch (_) { detail = (await r.text()).slice(0, 240); }
-    throw new Error(`${path} → ${r.status} ${detail}`);
+    let body = null;
+    try { body = await r.json(); }
+    catch (_) { body = { message: (await r.text()).slice(0, 240) }; }
+    const error = new Error(`${path} → ${r.status} ${JSON.stringify(body).slice(0, 400)}`);
+    error.status = r.status;
+    error.method = "POST";
+    error.code = body && body.code;
+    error.apiPath = path;
+    error.payload = body;
+    throw error;
   }
   return r.json();
 }
@@ -388,60 +1009,72 @@ async function apiWrite(path, payload) {
 async function loadAnnotations(eventId, flightId) {
   const box = document.querySelector(`[data-annotation-box="${CSS.escape(eventId)}"]`);
   const note = document.querySelector(`[data-annotation-note="${CSS.escape(eventId)}"]`);
-  note.textContent = "불러오는 중…";
+  note.textContent = "A-2 의견 이력을 조회하고 있습니다…";
   try {
     const data = await api(`${API}/events/${eventId}/annotations`);
     const items = data.items || [];
-    note.textContent = `주석 ${items.length}건 (append-only)`;
+    note.textContent = `의견 이력 ${items.length}건 · append-only`;
     const history = items.length ? items.map((a) => `
-      <div class="kv" style="margin-top:6px; border-top:1px dashed #e0e3e8; padding-top:6px">
-        <b>${esc(String(a.annotation_id || "").slice(0, 8))}</b>
-        <span class="tag ${a.annotation_type === "FALSE_POSITIVE_SUSPECTED" ? "warn" : ""}${a.annotation_type === "REVOKE_PREVIOUS" ? "bad" : ""}">${esc(a.annotation_type || "?")}</span>
-        <span class="muted">actor ${esc(String(a.actor_id || "").slice(0, 8))} · ${withRel(a.created_at_local)}</span>
-        ${a.supersedes_annotation_id ? `<div class="muted">supersedes ${esc(String(a.supersedes_annotation_id).slice(0, 8))}</div>` : ""}
-        <div>${esc(a.reason || "")}</div>
-      </div>`).join("") : '<div class="muted">아직 주석 없음</div>';
+      <div class="annotation-item">
+        <div class="annotation-head"><strong class="annotation-id" title="${esc(a.annotation_id || "")}">${esc(idShort(a.annotation_id))}</strong><span class="code-chip">${esc(a.annotation_type || "(not reported)")}</span></div>
+        <div class="annotation-meta"><span>actor ${esc(idShort(a.actor_id))}</span><span>${withRel(a.created_at_local)}</span>
+          ${a.supersedes_annotation_id ? `<span>supersedes ${esc(idShort(a.supersedes_annotation_id))}</span>` : ""}</div>
+        ${a.reason ? `<p>${esc(a.reason)}</p>` : '<p class="muted">사유 없음</p>'}
+      </div>`).join("") : '<div class="muted">아직 기록된 의견이 없습니다.</div>';
     const revokeOptions = items.filter((a) => a.annotation_type !== "REVOKE_PREVIOUS")
-      .map((a) => `<option value="${esc(a.annotation_id)}">${esc(String(a.annotation_id).slice(0, 8))} · ${esc(a.annotation_type)}</option>`)
+      .map((a) => `<option value="${esc(a.annotation_id)}">${esc(idShort(a.annotation_id))} · ${esc(a.annotation_type)}</option>`)
       .join("");
     box.innerHTML = `
-      <div class="panel anno-form" style="margin:8px 0">
-        <div class="kv"><b>오탐 의견 작성 (안전관리자)</b>
-          <span class="muted">append-only — 취소는 REVOKE_PREVIOUS 새 기록으로만 합니다. 삭제는 없습니다.</span></div>
-        <div class="row" style="margin-top:6px">
-          <select data-anno-type>
-            <option value="FALSE_POSITIVE_SUSPECTED">FALSE_POSITIVE_SUSPECTED (오탐 의심)</option>
-            <option value="NEEDS_REVIEW">NEEDS_REVIEW (검토 필요)</option>
-            <option value="REVOKE_PREVIOUS">REVOKE_PREVIOUS (이전 의견 취소)</option>
-          </select>
-          <select data-anno-supersedes style="display:none">
-            <option value="">(취소 대상 선택)</option>${revokeOptions}
-          </select>
-        </div>
-        <div class="row" style="margin-top:6px">
-          <input type="text" data-anno-reason placeholder="사유 (선택, ≤1000자)" maxlength="1000" />
-          <button data-anno-submit>의견 기록</button>
-        </div>
-        <div class="muted" style="margin-top:4px">
-          기록에는 rc 스코프 토큰이 필요합니다(위 “작성 토큰” 필드). 검토자 ID
-          ${esc(actorId().slice(0, 8))}… — 이 브라우저 저장소에만 보관됩니다.
-        </div>
-      </div>
-      ${history}`;
+      <div class="annotation-box">
+        <p><strong>A-2 · 검토 의견</strong> 기록은 append-only입니다. 삭제 기능은 없으며 취소는 <code>REVOKE_PREVIOUS</code> 새 기록으로 남깁니다.</p>
+        <details class="annotation-editor" open>
+          <summary>새 검토 의견 추가</summary>
+          <form class="annotation-form" data-anno-form>
+            <div class="field">
+              <label for="annoType-${esc(eventId)}">의견 유형</label>
+              <select id="annoType-${esc(eventId)}" data-anno-type>
+                <option value="FALSE_POSITIVE_SUSPECTED">FALSE_POSITIVE_SUSPECTED · 오탐 의심</option>
+                <option value="NEEDS_REVIEW">NEEDS_REVIEW · 검토 필요</option>
+                <option value="REVOKE_PREVIOUS">REVOKE_PREVIOUS · 이전 의견 취소</option>
+              </select>
+            </div>
+            <div class="field revoke-field" data-anno-supersedes-wrap>
+              <label for="annoSupersedes-${esc(eventId)}">취소할 이전 의견</label>
+              <select id="annoSupersedes-${esc(eventId)}" data-anno-supersedes>
+                <option value="">취소 대상 선택</option>${revokeOptions}
+              </select>
+            </div>
+            <div class="field">
+              <label for="annoReason-${esc(eventId)}">사유 <span class="optional">선택 · 최대 1,000자</span></label>
+              <textarea id="annoReason-${esc(eventId)}" data-anno-reason maxlength="1000" placeholder="검토 근거를 기록합니다."></textarea>
+            </div>
+            <button class="button button-primary" type="submit" data-anno-submit>의견 기록</button>
+          </form>
+          <p class="annotation-warning">기록에는 rc scope 토큰이 필요합니다. 검토자 ID ${esc(actorId().slice(0, 8))}… 는 이 브라우저에 보관됩니다.</p>
+        </details>
+        <div class="annotation-history"><h4>기록 이력 · 서버 append 순서</h4>${history}</div>
+        ${items.length ? jsonDisclosure("Annotation history JSON", items) : ""}
+      </div>`;
     const typeSel = box.querySelector("[data-anno-type]");
     const superSel = box.querySelector("[data-anno-supersedes]");
+    const superWrap = box.querySelector("[data-anno-supersedes-wrap]");
     typeSel.addEventListener("change", () => {
-      superSel.style.display = typeSel.value === "REVOKE_PREVIOUS" ? "" : "none";
+      const isRevoke = typeSel.value === "REVOKE_PREVIOUS";
+      superWrap.classList.toggle("visible", isRevoke);
+      superSel.required = isRevoke;
     });
-    box.querySelector("[data-anno-submit]").addEventListener("click", async () => {
+    box.querySelector("[data-anno-form]").addEventListener("submit", async (event) => {
+      event.preventDefault();
       const t = typeSel.value;
       if (!writeToken()) {
-        note.textContent = "작성(rc) 토큰을 먼저 입력하세요";
+        note.textContent = "의견 기록에는 rc scope 토큰이 필요합니다. 위 API 접근에서 검토 의견 작성 토큰을 입력하세요.";
+        $("accessPanel").open = true;
+        $("writeToken").focus();
         return;
       }
       const supersedes = t === "REVOKE_PREVIOUS" ? (superSel.value || null) : null;
       if (t === "REVOKE_PREVIOUS" && !supersedes) {
-        note.textContent = "취소 대상 주석을 선택하세요";
+        note.textContent = "취소할 이전 의견을 선택하세요.";
         return;
       }
       const reasonRaw = box.querySelector("[data-anno-reason]").value.trim();
@@ -460,18 +1093,28 @@ async function loadAnnotations(eventId, flightId) {
       };
       try {
         note.textContent = "기록 중…";
+        const submit = box.querySelector("[data-anno-submit]");
+        submit.disabled = true;
         await apiWrite(`${API}/events/${eventId}/annotations`, payload);
-        note.textContent = "기록됨(append-only)";
         await loadAnnotations(eventId, flightId);
+        const updatedBadge = document.querySelector(`[data-anno-badge="${CSS.escape(eventId)}"]`);
+        if (updatedBadge) {
+          const latest = await api(`${API}/events/${eventId}/annotations`);
+          updatedBadge.textContent = `의견 ${latest.items.length}건`;
+        }
+        note.textContent = "의견이 서버에 기록되었습니다. 기존 기록은 유지됩니다.";
+        setVerify("annotation", { kind: t });
       } catch (e) {
-        note.textContent = "";
-        box.insertAdjacentHTML("beforeend",
-          `<div class="honest">기록 실패: ${esc(e.message)}</div>`);
+        note.textContent = friendlyError(e, "의견 기록");
+        box.insertAdjacentHTML("beforeend", errorDetails(e));
+      } finally {
+        const submit = box.querySelector("[data-anno-submit]");
+        if (submit) submit.disabled = false;
       }
     });
   } catch (e) {
-    note.textContent = "";
-    box.innerHTML = `<div class="honest">주석 조회 실패: ${esc(e.message)}</div>`;
+    note.textContent = friendlyError(e, "의견 이력 조회");
+    box.innerHTML = errorDetails(e);
   }
 }
 
@@ -481,88 +1124,162 @@ function wireDownloads(root) {
       try {
         const r = await fetch(`${API}/objects/${b.dataset.download}`,
           { headers: { Authorization: "Bearer " + token() } });
-        if (!r.ok) throw new Error(`다운로드 → ${r.status}`);
+        if (!r.ok) {
+          const error = new Error(`GET ${API}/objects/${b.dataset.download} → ${r.status}`);
+          error.status = r.status;
+          throw error;
+        }
         const blob = await r.blob();
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url; a.download = b.dataset.name || "artifact.bin";
         a.click();
         setTimeout(() => URL.revokeObjectURL(url), 30000);
-      } catch (e) { setStatus(String(e.message), "err"); }
+        setStatus("Artifact 다운로드를 시작했습니다.", "ok");
+      } catch (e) { setStatus(friendlyError(e, "artifact 다운로드"), "err"); }
     });
   }
   for (const b of root.querySelectorAll("[data-preview]")) {
     b.addEventListener("click", async () => {
       const box = document.querySelector(`[data-preview-box="${CSS.escape(b.dataset.preview)}"]`);
+      b.disabled = true;
       try {
         const r = await fetch(`${API}/objects/${b.dataset.preview}`,
           { headers: { Authorization: "Bearer " + token() } });
-        if (!r.ok) throw new Error(`미리보기 → ${r.status}`);
+        if (!r.ok) {
+          const error = new Error(`GET ${API}/objects/${b.dataset.preview} → ${r.status}`);
+          error.status = r.status;
+          throw error;
+        }
         const blob = await r.blob();
         const url = URL.createObjectURL(blob);
-        box.innerHTML = `<img class="preview" src="${url}" alt="evidence" />`;
-      } catch (e) { box.innerHTML = `<div class="honest">${esc(e.message)}</div>`; }
+        box.innerHTML = `<img class="preview" src="${url}" alt="증거 artifact 미리보기" />`;
+      } catch (e) { box.innerHTML = `<div class="honest-note">${esc(friendlyError(e, "artifact 미리보기"))}${errorDetails(e)}</div>`; }
+      finally { b.disabled = false; }
     });
   }
 }
 
 async function openFlight(flightId) {
-  setStatus("상세 불러오는 중…", "");
-  $("detailPanel").style.display = "";
-  $("detailTitle").textContent = `비행 ${flightId.slice(0, 8)} 상세`;
+  if (!token()) {
+    setStatus("비행 상세를 조회하려면 Core 조회 토큰이 필요합니다.", "warn");
+    $("token").focus();
+    return;
+  }
+  selectedFlightId = flightId;
+  const requestSeq = ++detailRequestSeq;
+  for (const item of document.querySelectorAll(".flight-item")) {
+    item.setAttribute("aria-current", item.dataset.flight === flightId ? "true" : "false");
+  }
+  setStatus("선택한 비행의 서버 데이터를 조회하고 있습니다…", "loading");
+  $("detailTitle").textContent = `비행 ${idShort(flightId, 12)}`;
+  $("detailEyebrow").textContent = `FLIGHT / ${idShort(flightId, 8)}`;
+  $("detailSubtitle").innerHTML = `flight_id · <code>${esc(flightId)}</code>`;
+  $("backToList").hidden = false;
   const detail = $("detail");
-  detail.innerHTML = '<div class="muted">불러오는 중…</div>';
+  detail.setAttribute("aria-busy", "true");
+  detail.innerHTML = '<div class="detail-empty"><p class="empty-title">비행 상세를 불러오는 중…</p><p class="empty-copy">Core API에서 flight, coverage, observations, events와 artifacts를 조회합니다.</p><div class="loading-list"><span class="skeleton"></span><span class="skeleton"></span></div></div>';
   try {
-    const flight = await api(`${API}/flights/${flightId}`);
-    const coverage = await api(`${API}/flights/${flightId}/coverage`);
-    const sessions = await api(`${API}/flights/${flightId}/flight-sessions`);
-    const applications = await api(`${API}/flights/${flightId}/mission-applications`);
-    const obs = await fetchPaged(`${API}/flights/${flightId}/observations`, 40);
-    window.__obsTruncated = obs.truncated;
-    const events = await fetchPaged(`${API}/events?flight_id=${encodeURIComponent(flightId)}`, 20);
-    const artifacts = await api(`${API}/flights/${flightId}/artifacts`);
+    const [flight, coverage, sessions, applications, obs, events, artifacts] = await Promise.all([
+      api(`${API}/flights/${flightId}`),
+      api(`${API}/flights/${flightId}/coverage`),
+      api(`${API}/flights/${flightId}/flight-sessions`),
+      api(`${API}/flights/${flightId}/mission-applications`),
+      fetchPaged(`${API}/flights/${flightId}/observations`, 40),
+      fetchPaged(`${API}/events?flight_id=${encodeURIComponent(flightId)}`, 20),
+      api(`${API}/flights/${flightId}/artifacts`),
+    ]);
+    if (requestSeq !== detailRequestSeq) return;
 
-    const zeroNote = (events.items.length === 0)
-      ? `<div class="honest"><b>사건 0건.</b> 이것은 안전 확인이 아닙니다 — 아래 관측 요약의
-         커버/스킵 프레임과 gaps, 증거 목록으로 “무엇을 몰랐는지”를 함께 확인하십시오.</div>`
+    events.items = events.items.map((event, index) => ({ event, index }))
+      .sort((a, b) => {
+        const x = String(a.event.detected_at_edge_monotonic_ns ?? "");
+        const y = String(b.event.detected_at_edge_monotonic_ns ?? "");
+        if (/^\d+$/.test(x) && /^\d+$/.test(y)) {
+          const xn = x.replace(/^0+(?=\d)/, "");
+          const yn = y.replace(/^0+(?=\d)/, "");
+          return yn.length - xn.length || yn.localeCompare(xn) || b.index - a.index;
+        }
+        return b.index - a.index;
+      }).map(({ event }) => event);
+
+    $("detailSubtitle").innerHTML = `<code>${esc(flight.flight_id)}</code><span> · Started ${esc(flight.started_at_utc || "-")} UTC (reported by RC)</span>`;
+    const eventCount = events.items.length;
+    const observationCount = `${obs.items.length}${obs.truncated ? "+" : ""}`;
+    const artifactItems = artifacts.items || [];
+    const sessionItems = sessions.items || [];
+    const applicationItems = applications.items || [];
+    const coverageState = coverage.data_completeness || "UNKNOWN";
+    const zeroNote = eventCount === 0
+      ? '<div class="honest-note"><strong>Core에 반환된 사건은 0건입니다.</strong> 이는 안전 확인이 아닙니다. 아래 관측 커버리지, gaps, 원본 증거를 함께 확인하세요.</div>'
       : "";
+    const artifactRows = artifactItems.map((artifact) => `
+      <div class="artifact-row">
+        <div class="artifact-primary">
+          <strong title="${esc(artifact.artifact_id)}">${esc(idShort(artifact.artifact_id))}${artifact.segment_index != null ? ` · segment ${esc(artifact.segment_index)}` : ""}</strong>
+          <code>${esc(artifact.source_kind || "UNKNOWN")} · ${esc(artifact.artifact_id)}</code>
+        </div>
+        <div class="artifact-meta">
+          <span>${esc(artifact.media_type || "-")}</span><span>${esc(artifact.size_bytes ?? "-")} bytes</span>
+          <span>${artifact.required ? "required" : "optional"}</span>${spanState(artifact.session_status)}
+        </div>
+        <div class="artifact-actions">
+          ${artifact.committed
+            ? `<button class="button" type="button" data-download="${esc(artifact.artifact_id)}" data-name="${esc(artifact.artifact_id)}.bin">다운로드</button>${String(artifact.media_type || "").startsWith("image/") ? `<button class="button" type="button" data-preview="${esc(artifact.artifact_id)}">미리보기</button>` : ""}`
+            : '<span class="muted">COMMITTED 전에는 다운로드할 수 없습니다.</span>'}
+        </div>
+        <div data-preview-box="${esc(artifact.artifact_id)}"></div>
+      </div>`).join("");
 
     detail.innerHTML = `
-      <div class="summary">
-        <span>사건 <b>${events.items.length}</b>건</span>
-        <span>증거 <b>${artifacts.items.length}</b>건</span>
-        <span>관측 <b>${obs.items.length}</b>${obs.truncated ? "+" : ""}</span>
-        <span>주석 <b id="detailAnnoTotal">…</b>건</span>
-        <span>관측 요약 <b>${esc(coverage.data_completeness)}</b></span>
+      <div class="flight-summary-line" role="group" aria-label="선택한 비행의 반환 건수">
+        <span>Events <b>${eventCount}</b></span>
+        <span>Observations <b>${observationCount}</b></span>
+        <span>Artifacts <b>${artifactItems.length}</b></span>
+        <span>Coverage <b>${esc(coverageState)}</b></span>
       </div>
-      <h3>개요</h3>${detailGrid(flight)}
-      <h3>관측 요약 (coverage: ${esc(coverage.data_completeness)})</h3>
-      ${renderCoverage(coverage)}
-      <h3>관측 (observations)</h3>${renderObservationStats(obs.items)}
-      <h3>사건 (events)</h3>${zeroNote}
-      ${events.items.map((ev, i) => eventRow(ev, i, flightId)).join("") || ""}
-      ${events.truncated ? '<div class="honest">사건 목록이 상한(20페이지)에서 잘렸습니다.</div>' : ""}
-      <h3>증거 (artifacts — 세션 manifest 기준, 사건 0건 비행 포함)</h3>
-      ${artifacts.items.length ? `<table><thead><tr>
-          <th>artifact</th><th>종류</th><th>media</th><th>크기</th><th>세션</th><th>다운로드 가능</th>
-        </tr></thead><tbody>${artifacts.items.map((a) => `<tr>
-          <td>${esc(a.artifact_id.slice(0, 8))}<div class="muted">${esc(a.media_type)}${a.segment_index != null ? " · seg " + esc(a.segment_index) : ""}</div></td>
-          <td>${esc(a.source_kind)}${a.required ? ' <span class="tag">required</span>' : ""}</td>
-          <td>${esc(a.media_type)}</td>
-          <td>${esc(a.size_bytes)}B</td>
-          <td>${spanState(a.session_status)}</td>
-          <td>${a.committed
-            ? `<button data-download="${esc(a.artifact_id)}" data-name="${esc(a.artifact_id)}.bin">다운로드</button>` +
-              ` ${String(a.media_type || "").startsWith("image/") ? `<button data-preview="${esc(a.artifact_id)}">미리보기</button>` : ""}`
-            : '<span class="muted">아직 아님(PARTIAL/OPEN)</span>'}</td>
-        </tr>`).join("")}</tbody></table>
-        <div data-preview-holder></div>`
-        : '<div class="muted">이 비행의 세션 manifest에 artifact가 없습니다.</div>'}
-      <h3>비행 세션 (edge sessions: ${sessions.items.length})</h3>
-      <pre>${esc(JSON.stringify(sessions.items, null, 1))}</pre>
-      <h3>미션 적용 (applications: ${applications.items.length})</h3>
-      <pre>${esc(JSON.stringify(applications.items, null, 1))}</pre>
-    `;
+      <nav class="section-nav" aria-label="비행 상세 섹션">
+        <a href="#flight-ingest">수집</a>
+        <a href="#flight-coverage">커버리지·관측 <span>${observationCount}</span></a>
+        <a href="#flight-events">사건 <span>${eventCount}</span></a>
+        <a href="#flight-evidence">증거 <span>${artifactItems.length}</span></a>
+        <a href="#flight-raw">원문 JSON</a>
+      </nav>
+      <section id="flight-ingest" class="detail-section">
+        <div class="section-heading"><div class="section-heading-main"><span class="section-number">01</span><div><h3>Core 수신 상태</h3><p>서버가 응답한 상태와 manifest 집계입니다. enum 값은 원문 그대로 표시합니다.</p></div></div>${spanState(flight.upload_state)}</div>
+        <div class="state-block">
+          <div class="state-block-copy"><strong>upload_state · ${esc(flight.upload_state || "UNKNOWN")}</strong><span>Manifest committed ${esc(flight.completeness?.manifests_committed ?? "-")} / ${esc(flight.completeness?.manifests_total ?? "-")} · missing artifacts ${esc(flight.completeness?.missing_artifact_count ?? "-")}</span></div>
+          <span class="data-completeness">data_completeness <code>${esc(coverageState)}</code></span>
+        </div>
+        <details class="raw-disclosure"><summary>Flight identifiers & server metadata</summary>${detailGrid(flight)}</details>
+      </section>
+      <section id="flight-coverage" class="detail-section">
+        <div class="section-heading"><div class="section-heading-main"><span class="section-number">02</span><div><h3>커버리지와 관측</h3><p>서버에 수신된 summary와 반환된 observation 표본의 값입니다.</p></div></div><span class="data-completeness">data_completeness <code>${esc(coverageState)}</code></span></div>
+        ${renderCoverage(coverage)}
+        <h4 class="section-subtitle">Observations <span class="count-note">${observationCount} returned${obs.truncated ? " · page cap reached" : ""}</span></h4>
+        ${obs.items.length ? renderObservationStats(obs.items, obs.truncated) : '<div class="empty-section">Core에서 반환한 observation이 없습니다. 이는 로컬 Edge에 관측이 없었다는 뜻은 아닙니다.</div>'}
+      </section>
+      <section id="flight-events" class="detail-section">
+        <div class="section-heading"><div class="section-heading-main"><span class="section-number">03</span><div><h3>사건</h3><p>detected_at_edge_monotonic_ns 기준 최신순입니다. 값은 원래 ns 단위이며 UTC로 변환하지 않습니다.</p></div></div><span class="count-note">${eventCount} returned${events.truncated ? " · page cap reached" : ""}</span></div>
+        ${zeroNote}
+        ${eventCount ? `<div class="timeline">${events.items.map((event, index) => eventRow(event, index, flightId)).join("")}</div>` : '<div class="empty-section">이 비행에서 Core가 반환한 event record가 없습니다.</div>'}
+        ${events.truncated ? '<div class="honest-note truncate-note">이벤트 페이지 상한에 도달했습니다. 표시 건수는 반환된 최신 일부입니다.</div>' : ""}
+      </section>
+      <section id="flight-evidence" class="detail-section">
+        <div class="section-heading"><div class="section-heading-main"><span class="section-number">04</span><div><h3>증거 artifact</h3><p>이벤트 연결 여부와 별개로 flight ingest manifest에 선언된 artifact입니다.</p></div></div><span class="count-note">${artifactItems.length} returned</span></div>
+        ${artifactItems.length ? `<div class="artifact-list">${artifactRows}</div>` : '<div class="empty-section">이 비행의 ingest manifest에서 반환된 artifact가 없습니다.</div>'}
+      </section>
+      <section id="flight-raw" class="detail-section">
+        <div class="section-heading"><div class="section-heading-main"><span class="section-number">05</span><div><h3>개발자 원문 JSON</h3><p>필요할 때만 펼쳐서 API 응답을 확인합니다. 기본 화면에서는 기술 세부 정보를 접어 둡니다.</p></div></div></div>
+        <div class="raw-group">
+          ${jsonDisclosure("GET /flights/{flightId} · flight record", flight)}
+          ${jsonDisclosure("GET /flights/{flightId}/coverage", coverage)}
+          ${jsonDisclosure(`GET /flights/{flightId}/flight-sessions · ${sessionItems.length} items`, sessionItems)}
+          ${jsonDisclosure(`GET /flights/{flightId}/mission-applications · ${applicationItems.length} items`, applicationItems)}
+          ${jsonDisclosure(`GET /flights/{flightId}/artifacts · ${artifactItems.length} items`, artifactItems)}
+        </div>
+      </section>`;
+
     for (const btn of detail.querySelectorAll("[data-event-detail]")) {
       btn.addEventListener("click", () => loadEventEvidence(btn.dataset.eventDetail));
     }
@@ -572,26 +1289,26 @@ async function openFlight(flightId) {
     }
     wireDownloads(detail);
 
-    // Annotation counts for the per-event badges and the detail summary
-    // (dev scale — capped at 50 events; a failed lookup leaves the badge
-    // blank rather than inventing a number).
-    let annoTotal = 0;
-    await Promise.allSettled(events.items.slice(0, 50).map(async (ev) => {
+    // Per-event annotation counts (dev console scale; cap retained from the original shell).
+    await Promise.allSettled(events.items.slice(0, 50).map(async (event) => {
       try {
-        const a = await api(`${API}/events/${ev.event_id}/annotations`);
-        const n = (a.items || []).length;
-        annoTotal += n;
-        const badge = detail.querySelector(`[data-anno-badge="${CSS.escape(ev.event_id)}"]`);
-        if (badge) badge.textContent = n ? `주석 ${n}건` : "주석 없음";
+        const annotations = await api(`${API}/events/${event.event_id}/annotations`);
+        const badge = detail.querySelector(`[data-anno-badge="${CSS.escape(event.event_id)}"]`);
+        if (badge) badge.textContent = `의견 ${(annotations.items || []).length}건`;
       } catch (_) { /* leave blank */ }
     }));
-    const annoTotalEl = detail.querySelector("#detailAnnoTotal");
-    if (annoTotalEl) annoTotalEl.textContent = String(annoTotal);
-
-    setStatus("상세 로드 완료", "ok");
+    if (requestSeq !== detailRequestSeq) return;
+    detail.setAttribute("aria-busy", "false");
+    setStatus(`비행 ${idShort(flightId)} 상세를 불러왔습니다.`, "ok");
+    setVerify("detail", { flightId });
   } catch (e) {
-    detail.innerHTML = `<div class="honest">불러오기 실패: ${esc(e.message)}</div>`;
-    setStatus(String(e.message), "err");
+    if (requestSeq !== detailRequestSeq) return;
+    detail.setAttribute("aria-busy", "false");
+    const message = friendlyError(e, "비행 상세 조회");
+    detail.innerHTML = `<div class="detail-empty"><p class="empty-title">비행 상세를 불러오지 못했습니다.</p><p class="empty-copy">${esc(message)}</p>${errorDetails(e)}<button class="button" type="button" data-retry-flight>다시 시도</button></div>`;
+    detail.querySelector("[data-retry-flight]").addEventListener("click", () => openFlight(flightId));
+    setStatus(message, "err");
+    setVerify("detail", { error: message });
   }
 }
 
@@ -612,17 +1329,34 @@ for (const btn of document.querySelectorAll("[data-copy]")) {
 $("fillDev").addEventListener("click", () => {
   $("token").value = "tok-orgA-agent";
   $("writeToken").value = "tok-orgA-rc";
-  setStatus("dev 토큰 채움 — 저장 후 불러오기", "ok");
+  setStatus("문서화된 개발 fixture로 Core 조회를 시작합니다. 이 토큰은 운영 인증이 아닙니다.", "loading");
+  loadFlights();
 });
 
 $("save").addEventListener("click", () => {
   sessionStorage.setItem("ksi_review_token", token());
   sessionStorage.setItem("ksi_review_write_token", writeToken());
-  setStatus("토큰 저장됨(탭 범위)", "ok");
+  setStatus("접근 토큰을 현재 브라우저 탭에 저장했습니다. 브라우저 저장소나 서버에는 기록하지 않습니다.", "ok");
 });
 $("load").addEventListener("click", loadFlights);
+$("refresh").addEventListener("click", loadFlights);
+$("backToList").addEventListener("click", () => {
+  $("flight-rail").scrollIntoView({ behavior: "smooth", block: "start" });
+  const selected = document.querySelector('.flight-item[aria-current="true"]');
+  if (selected) selected.focus({ preventScroll: true });
+});
 $("token").value = sessionStorage.getItem("ksi_review_token") || "";
 $("writeToken").value = sessionStorage.getItem("ksi_review_write_token") || "";
+$("envOrigin").textContent = window.location.origin;
+$("verifyReset").addEventListener("click", () => {
+  clearVerify();
+  setStatus("검증 진행 상태를 초기화했습니다.", "ok");
+});
+renderVerify();
+if (token()) {
+  $("accessPanel").open = false;
+  loadFlights();
+}
 </script>
 </body>
 </html>

@@ -34,10 +34,14 @@
   (`.github/workflows/ci.yml`)가 실실행한다 — CI가 정본 경로.
 - aapt2는 x86_64 바이너리이므로 `QEMU_LD_PREFIX`가 필수다(스크립트가 설정).
 
-## 검토 콘솔(/review) 데모 보기 — A-2 포함
+## 검증 콘솔(/review) 데모 보기 — A-2 포함
+
+서비스 블루프린트(개발 검증 여정): `docs/superpowers/specs/2026-10-13-service-blueprint.md`.
+콘솔은 4단계 검증 흐름(연결·목록 → 비행 데이터 → 사건·증거 → A-2 의견 기록)을 화면에서 안내한다.
 
 - 시드(데모 전용 저장소 — 기본 DB `core/var/ksi_core.db` 미접촉, 재실행 = 초기화):
-  `python scripts/review_demo_seed.py`
+  `python scripts/review_demo_seed.py` — 3개 비행: **정상**(사건·증거·의견 이력) ·
+  **사건 0건** · **PARTIAL**(누락 artifact).
 - 실행:
 
   ```bash
@@ -47,15 +51,27 @@
   ```
 
 - 접속: `http://127.0.0.1:8000/review` — 읽기 `tok-orgA-agent` · 작성(rc) `tok-orgA-rc`
-- 해볼 것: 비행 목록 → 상세 → 사건의 “오탐 의견 (append-only)”에서 NEEDS_REVIEW 기록 →
-  REVOKE_PREVIOUS로 취소(둘 다 이력에 남음 — 삭제 없음) → 증거 PNG 미리보기·다운로드
+- 해볼 것(“검증 흐름” 패널이 순서를 안내): ① 비행 불러오기 → ② 정상 비행 선택 →
+  ③ 사건의 증거 확인·미리보기/다운로드 → ④ A-2 의견 기록(기록 후 REVOKE_PREVIOUS 취소 —
+  둘 다 이력, 삭제 없음). 실패 상태(토큰 오류 등)는 사실과 다음 행동으로 표시된다.
 - 주의: dev 토큰·localhost 전용(운영 인증은 배포 전 게이트). 기본 저장소와 데이터 분리.
+
+## 진입 경로 (목업/데모/실기 구분)
+
+| 산출물 | 정체 | 접근 | 열기 전 확인 |
+|---|---|---|---|
+| `design/rc-pilot-shell/field-shell.html` | 목업([SIMULATED]) | `:8765/field-shell.html` | 브라우저 목업 — 실제 데이터 아님 |
+| `/review` 검증 콘솔 | 실제 동작(데모 DB) | `:8000/review` (tailnet `:8800`) | **보는 기기가 tailnet(Tailscale)에 연결돼 있어야 원격에서 열린다** |
+| `android-rc` 앱 | 실제 구현(실기 미검증) | 실기/기기 | A9-4 게이트 |
+
+- **공개 Funnel(:8443 등)에 검증 콘솔을 매핑하지 않는다** — dev 쓰기 토큰·데모 DB 노출.
+- 원격에서 안 열리면: 보는 기기 Tailscale 연결 → 아래 serve 매핑 상태 순서로 확인.
 
 ## tailnet 접속 (dev viewing — 임시)
 
 - 디자인 셸: `https://dgx-spark-1.tailda9552.ts.net:8765/field-shell.html`
   (기존 serve 매핑 → `127.0.0.1:8765`)
-- 검토 콘솔: `https://dgx-spark-1.tailda9552.ts.net:8800/review`
+- 검증 콘솔: `https://dgx-spark-1.tailda9552.ts.net:8800/review`
   (매핑: `sudo tailscale serve --bg --https=8800 http://127.0.0.1:8000`)
 - **Funnel 아님 — tailnet 전용.** dev 토큰이며, 로컬 서버가 살아 있는 동안만 유효(임시).
 - RC Plus 2(`dji-rc-plus-2`)가 tailnet에 있어 기기 브라우저에서 셸을 바로 열 수 있음

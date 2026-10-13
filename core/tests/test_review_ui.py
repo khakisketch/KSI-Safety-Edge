@@ -39,6 +39,29 @@ def test_review_console_exposes_reviewer_annotation_write_hooks(client):
     assert UUID_RE.search(body) is None
 
 
+def test_review_console_has_a_discoverable_accessible_developer_workflow(client):
+    """The first screen states the verification purpose, the journey and its evidence."""
+    root = Client(client.app, base="http://test")
+    body = root.get("/review").text
+
+    assert 'id="accessPanel"' in body
+    assert '<label for="token">Core 조회 토큰</label>' in body
+    assert '<label for="writeToken">검토 의견 작성 토큰' in body
+    # Developer verification journey: the panel states what to do and what
+    # "done" means for each step, and the state is tab-scoped.
+    assert 'id="verifySteps"' in body and 'id="verifyReset"' in body
+    assert "검증 흐름" in body and "VERIFICATION JOURNEY" in body
+    assert "완료 증거" in body and "다음" in body
+    assert "ksi_review_verify_v1" in body
+    # The environment facts line keeps "which Core / which data" honest.
+    assert 'id="envOrigin"' in body
+    assert "개발 검증 콘솔" in body
+    assert 'id="flight-rail"' in body and 'id="detailPanel"' in body
+    assert 'aria-label="비행 상세 섹션"' in body
+    assert "Core 수신 상태" in body and "커버리지와 관측" in body
+    assert "개발자 원문 JSON" in body
+
+
 def test_annotation_write_requires_rc_scope(client):
     """A-2: console writes go through the frozen contract endpoint — scope rules hold."""
     eid = "00000000-0000-4000-8000-000000000000"
