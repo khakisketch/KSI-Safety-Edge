@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KSI Safety Edge — 오프라인 우선 드론 안전 관측 시스템 | 주식회사 케이에스아이</title>
+<meta name="description" content="인터넷이 없어도 현장에서 사람·중장비를 관측·기록하고, 연결 복구 후 당시 설정과 증거를 재현하는 드론 기반 안전 관측 시스템. 주식회사 케이에스아이.">
+<style>
+  :root { --ink:#1a2b3c; --muted:#5b6b7c; --line:#dfe7ee; --bg:#f6f8fa; --card:#ffffff; --accent:#0e5a8a; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif; color:var(--ink); background:var(--card); line-height:1.7; }
+  .wrap { max-width:1024px; margin:0 auto; padding:0 20px; }
+  header.top { border-bottom:1px solid var(--line); padding:14px 0; font-size:14px; color:var(--muted); }
+  header.top strong { color:var(--ink); }
+  .hero { background:var(--bg); border-bottom:1px solid var(--line); padding:56px 0 48px; }
+  .hero h1 { font-size:32px; margin:0 0 12px; letter-spacing:-.5px; }
+  .hero p.lead { font-size:18px; margin:0 0 20px; }
+  .pills { display:flex; flex-wrap:wrap; gap:8px; margin:18px 0; }
+  .pill { font-size:13px; border:1px solid var(--line); background:#fff; border-radius:999px; padding:4px 12px; }
+  .pill b { color:var(--accent); }
+  .cta { display:inline-block; margin-top:8px; padding:10px 22px; background:var(--accent); color:#fff; text-decoration:none; border-radius:8px; font-weight:700; }
+  .cta.ghost { background:#fff; color:var(--accent); border:1px solid var(--accent); margin-left:8px; }
+  section { padding:40px 0; border-bottom:1px solid var(--line); }
+  h2 { font-size:24px; margin:0 0 16px; letter-spacing:-.5px; }
+  h3 { font-size:18px; margin:28px 0 8px; }
+  table { width:100%; border-collapse:collapse; font-size:15px; }
+  th, td { text-align:left; padding:10px 12px; border:1px solid var(--line); vertical-align:top; }
+  th { background:var(--bg); white-space:nowrap; }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+  .card { border:1px solid var(--line); border-radius:12px; padding:18px; background:var(--card); }
+  .card h3 { margin:0 0 6px; font-size:17px; }
+  .card p { margin:0; font-size:14px; color:var(--muted); }
+  .steps { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; counter-reset:step; }
+  .step { border:1px solid var(--line); border-radius:12px; padding:16px; background:var(--bg); }
+  .step .n { font-weight:800; color:var(--accent); }
+  figure { margin:24px 0; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff; }
+  figure img { display:block; width:100%; height:auto; }
+  figcaption { padding:12px 16px; font-size:14px; color:var(--muted); border-top:1px solid var(--line); }
+  figcaption strong { color:var(--ink); }
+  .note { font-size:13px; color:var(--muted); background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:10px 14px; }
+  code, pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  pre { background:#0f1c28; color:#dce7f0; padding:16px; border-radius:10px; overflow-x:auto; font-size:13px; }
+  footer { padding:36px 0 56px; }
+  footer .company { font-size:18px; font-weight:800; }
+  footer .tel { font-size:28px; font-weight:800; color:var(--accent); text-decoration:none; }
+  @media (max-width:640px){ .hero h1{font-size:24px;} }
+</style>
+</head>
+<body>
+
+<header class="top"><div class="wrap"><strong>주식회사 케이에스아이</strong> · KSI Safety Edge 제품 소개</div></header>
+
+<div class="hero"><div class="wrap">
+  <h1>KSI Safety Edge<br>오프라인 우선 드론 안전 관측 시스템</h1>
+  <p class="lead">인터넷이 없어도 현장에서 사람·중장비를 관측·기록하고, 연결 복구 후 <strong>당시의 설정과 증거를 그대로 재현</strong>합니다.</p>
+  <div class="pills">
+    <span class="pill">재생 시나리오 검증 <b>E01~E12 확인</b></span>
+    <span class="pill">실기 검증 <b>진행 중</b></span>
+    <span class="pill">운영 배포 <b>보안 게이트 준비 전</b></span>
+  </div>
+  <a class="cta" href="tel:043-288-4860">도입 문의 · 043-288-4860</a>
+  <a class="cta ghost" href="https://github.com/khakisketch/ksi-safety-edge">GitHub 저장소</a>
+</div></div>
+
+<div class="wrap">
+
+<section>
+  <h2>제품 상태</h2>
+  <table>
+    <tr><th>구분</th><th>상태</th></tr>
+    <tr><td>재생 시나리오 검증 (E01~E12)</td><td>재생 환경에서 확인 — 사용자 인수 미실시</td></tr>
+    <tr><td>실제 기체·RC 검증</td><td>진행 중 (실기 검증 전)</td></tr>
+    <tr><td>운영 배포 (인증·권한·HTTPS)</td><td>보안 게이트 준비 전</td></tr>
+  </table>
+  <h3>해결하려는 문제</h3>
+  <p>네트워크가 없는 현장에서도 사람·중장비 관측 기록이 끊기지 않고, 연결 복구 후 당시 설정과 증거를 그대로 조회할 수 있어야 합니다.</p>
+  <h3>현재 확인된 근거</h3>
+  <p>재생 하네스에서 <code>임무 적용 → 오프라인 기록 → 재시작 복원 → 업로드 → 조회</code> 전 구간과 장애 시나리오(E01~E12)를 재현합니다. Python·C++·Android 3축 CI가 <code>main</code> 푸시마다 실행됩니다.</p>
+  <h3>현장 적용 전 남은 것</h3>
+  <p>실제 기체·RC 실기 검증, 사용자 인수, 운영 인증·권한·HTTPS 게이트입니다.</p>
+</section>
+
+<section>
+  <h2>시스템 구성</h2>
+  <div class="cards">
+    <div class="card"><h3>Edge · 기체 탑재</h3><p>Matrice 4 + Manifold 3. 사람·중장비 탐지·추적·공간 분석 (C++, PSDK, ONNX/TensorRT)</p></div>
+    <div class="card"><h3>RC · 조종기</h3><p>오프라인 기록·미션 적용·복구 후 업로드. 유일한 업로드 주체 (Android MSDK, Kotlin, SQLite WAL)</p></div>
+    <div class="card"><h3>Core · 서버</h3><p>증거 수집·데이터 점검·의견 기록(개발·검증용) (Python FastAPI)</p></div>
+  </div>
+  <figure>
+    <img src="assets/architecture.png" alt="Edge·RC·Core 3단 시스템 아키텍처 다이어그램">
+    <figcaption><strong>시스템 아키텍처</strong> — Edge는 서버에 직접 업로드하지 않습니다. 공간 판단은 SHADOW(참고 표시)가 기본이며, 자동 경고(ACTIVE)는 검증된 규칙에서만 허용합니다. “사건 0건 ≠ 안전” — 관측 공백을 함께 표시합니다.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>설계된 현장 운용 흐름</h2>
+  <p class="note">아래는 설계된 운용 흐름(목표 동작)입니다. RC→Core 전송의 종단간 검증은 별도 절차이며, 실기 검증·사용자 인수 전입니다.</p>
+  <div class="steps">
+    <div class="step"><span class="n">① 임무 준비</span><br>사이트·미션 번들·구역 정책을 RC에 동기화하고 Edge에 적용합니다.</div>
+    <div class="step"><span class="n">② 비행 관측</span><br>네트워크 없이도 탐지·추적·공간 관측을 수행하고 RC 로컬 DB에 영속 기록합니다.</div>
+    <div class="step"><span class="n">③ 증거 동기화</span><br>연결 복구 후 업로드 큐가 재개·중복방지·무결성 검증과 함께 Core에 전송합니다.</div>
+    <div class="step"><span class="n">④ 데이터 점검</span><br>업로드 상태·관측 커버리지·사건별 근거·증거 원본을 조회합니다 (운영자 검토 서비스는 별개).</div>
+  </div>
+</section>
+
+<section>
+  <h2>화면 소개</h2>
+  <p class="note">아래 화면은 시연 환경 캡처이며, 화면의 <code>[SIMULATED]</code> 표기를 유지합니다. 현장명은 예시(<code>SIM-FLT-024</code> 등)이며 특정 실현장을 지칭하지 않습니다.</p>
+
+  <figure>
+    <img src="assets/rc-observe.png" alt="RC 조종 관측 화면">
+    <figcaption><strong>RC 조종(관측)</strong> — 오프라인 상태에서도 운용 상태·AI 관측 피드를 확인합니다. <code>[DETECT]</code>/<code>[SHADOW]</code>는 신호 표시이며 안전 판정이 아닙니다.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="assets/core-data.png" alt="Core 데이터 점검 화면">
+    <figcaption><strong>Core 데이터 점검 (개발자용)</strong> — Core API가 반환하는 수집 상태·커버리지·사건·증거 수를 그대로 보여줍니다. RC 업로드를 실행하거나 전달을 증명하지 않으며, 운영자용 검토 서비스와는 별개입니다.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="assets/rc-mission.png" alt="RC 임무 준비 화면">
+    <figcaption><strong>RC 임무 준비</strong> — 오프라인에서도 준비 상태를 확인합니다. 버튼은 예시 동작이며 실제 임무·기체·서버에 변경을 보내지 않습니다.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="assets/core-opinion.png" alt="A-2 의견 기록 화면">
+    <figcaption><strong>A-2 의견 기록 (개발·검증용)</strong> — 삭제 없이 이력으로 남기는 append-only 기록입니다. 기록 시 연결된 Core에 실제 레코드가 추가되며, 운영자의 안전 검토 행위를 뜻하지 않습니다.</figcaption>
+  </figure>
+
+  <figure>
+    <img src="assets/core-evidence.png" alt="증거 응답 조회 화면">
+    <figcaption><strong>증거 응답 조회</strong> — 사건 참조 ID와 Core API 응답이 맞는지 조회·대조합니다. 파일 내용·출처의 육안 확인을 대신하지 않습니다.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>기술적 특징</h2>
+  <ul>
+    <li><strong>계약 우선 설계</strong> — JSON Schema 13종 + OpenAPI 40여 개 오퍼레이션으로 Edge/RC/Core 경계를 고정하고, Python·C++·Kotlin이 동일 계약으로 검증됩니다.</li>
+    <li><strong>결정적 재생 하네스</strong> — 장비 없이 전 구간과 장애(E01~E12: ACK 유실·중복·역순·중단재개·손상정정·교차조직 차단 등)를 재현합니다.</li>
+    <li><strong>3축 CI</strong> — 모든 <code>main</code> 푸시마다 Python + Edge C++ 빌드/테스트 + Android 단위테스트·벤치 APK를 검증합니다.</li>
+    <li><strong>무결성 보장</strong> — 멱등 ingest·digest 검증·감사 로그·교차 조직 접근 시 존재 여부 비노출(404) 원칙.</li>
+  </ul>
+  <h3>빠른 시작 (개발용)</h3>
+<pre>bash scripts/setup_env.sh        # .venv 생성 + 패키지 설치
+source .venv/bin/activate
+bash scripts/run_all_tests.sh    # Python 테스트 전체 (contracts·libs·core·harness)</pre>
+  <p class="note">검토 콘솔 <code>GET /review</code>는 정적 화면이며 조회는 기존 읽기 API만 호출합니다. 운영 배포 전 인증·권한·HTTPS는 별도 보안 게이트가 필요합니다.</p>
+</section>
+
+<footer>
+  <div class="company">주식회사 케이에스아이 (KSI Corporation)</div>
+  <p>제품 도입·시연·기술 문의</p>
+  <a class="tel" href="tel:043-288-4860">043-288-4860</a>
+  <p class="note" style="margin-top:20px">© 2026 KSI Corporation. All rights reserved. 이 페이지의 화면은 시연 환경 캡처이며 예시 현장명을 사용합니다.</p>
+</footer>
+
+</div>
+</body>
+</html>
