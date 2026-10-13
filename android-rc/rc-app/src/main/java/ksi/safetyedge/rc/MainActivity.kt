@@ -56,6 +56,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvPageTitle: TextView
     private lateinit var tvTopSim: TextView
     private lateinit var tvTopUtc: TextView
+
+    // MSDK declares dangerous permissions (location/phone/storage); targetSdk
+    // 34 requires a runtime grant — request the declared set once per launch
+    // and report the outcome honestly (no hidden failure).
+    private val permissionLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+    ) { result ->
+        val denied = result.filterValues { granted -> !granted }.keys
+        show(
+            if (denied.isEmpty()) {
+                "권한 승인 완료"
+            } else {
+                "권한 미승인: ${denied.joinToString { it.substringAfterLast('.') }} — 일부 SDK 기능이 제한될 수 있음"
+            },
+        )
+    }
     private val navTargets = listOf(
         R.id.btnNavObserve to R.id.pageObserve,
         R.id.btnNavMission to R.id.pageMission,
@@ -117,6 +133,7 @@ class MainActivity : AppCompatActivity() {
         etOperatorName.setText(app.config.operatorName)
         etOperatorOrg.setText(app.config.operatorOrganization)
         refreshOperatorState()
+        requestMissingDangerousPermissions()
 
         tvPageTitle = findViewById(R.id.tvPageTitle)
         tvTopSim = findViewById(R.id.tvTopSim)
@@ -129,11 +146,11 @@ class MainActivity : AppCompatActivity() {
         on(R.id.btnSyncSites) { syncSites() }
         on(R.id.btnSyncBundle) { syncBundleLatest() }
         on(R.id.btnStartFlight) { startFlight() }
-        on(R.id.btnPrepare) { run("prepare") { session.controller?.prepare() } }
-        on(R.id.btnApply) { run("apply") { session.controller?.apply() } }
-        on(R.id.btnReconcile) { run("reconcile") { session.controller?.reconcile() } }
-        on(R.id.btnStart) { run("start") { session.controller?.startSession() } }
-        on(R.id.btnStop) { run("stop") { session.controller?.stopSession() } }
+        on(R.id.btnPrepare) { run("준비") { session.controller?.prepare() } }
+        on(R.id.btnApply) { run("적용") { session.controller?.apply() } }
+        on(R.id.btnReconcile) { run("재조정") { session.controller?.reconcile() } }
+        on(R.id.btnStart) { run("시작") { session.controller?.startSession() } }
+        on(R.id.btnStop) { run("정지") { session.controller?.stopSession() } }
         on(R.id.btnEndFlight) {
             val ended = session.endFlight()
             if (ended != null) {
@@ -143,7 +160,7 @@ class MainActivity : AppCompatActivity() {
                 SyncScheduler.enqueue(applicationContext, flightId)
                 // A9-3 review: finalize + SHA-256 + chunk ingestion can take
                 // seconds on large segments — keep it OFF the UI thread.
-                show("flight ended: ${flightId.take(8)} — auto-sync 예약 · 세그먼트 인제스트 중…")
+                show("비행 종료: ${flightId.take(8)} — 자동 동기화 예약 · 세그먼트 인제스트 중…")
                 session.bg.execute {
                     val ingest = ingestRecordedSegments(flightId)
                     val segmentNote = when {
@@ -158,14 +175,14 @@ class MainActivity : AppCompatActivity() {
                     runOnUiThread {
                         if (!isDestroyed) {
                             show(
-                                "flight ended: ${flightId.take(8)} — auto-sync 예약 · $segmentNote" +
+                                "비행 종료: ${flightId.take(8)} — 자동 동기화 예약 · $segmentNote" +
                                     if (problemNote.isEmpty()) "" else "\n$problemNote",
                             )
                         }
                     }
                 }
             } else {
-                show("no active flight")
+                show("진행 중인 비행 없음")
             }
         }
 
@@ -174,7 +191,7 @@ class MainActivity : AppCompatActivity() {
         on(R.id.btnDisconnect) { session.link.disconnect(); refresh() }
         on(R.id.btnRetry) {
             val sent = session.retryUnacked() + session.pumpOutbound()
-            show("re-sent $sent envelope(s) — same msg_id, one send per envelope")
+            show("재전송 ${sent}건 — 동일 msg_id, 봉투당 1회 전송")
         }
 
         // -- A6 video seam
@@ -215,11 +232,11 @@ class MainActivity : AppCompatActivity() {
         // -- demo bench (isolated store; NEVER uploads)
         on(R.id.btnDemoTick) {
             val count = demo.tick()
-            show("SIMULATED demo tick: $count envelopes into the demo store")
+            show("SIMULATED 데모 틱: 데모 저장소로 봉투 ${count}건")
         }
         on(R.id.btnDemoNewFlight) {
             val record = demo.startNewFlight()
-            show("demo flight: ${record.get("flight_id").asText().take(8)}")
+            show("데모 비행: ${record.get("flight_id").asText().take(8)}")
         }
 
         on(R.id.btnRefreshEvidence) { refreshEvidence() }
@@ -246,12 +263,12 @@ class MainActivity : AppCompatActivity() {
                 // finished flight whose local data is complete but unsynced.
                 val resumed = SyncScheduler.enqueuePending(applicationContext, session)
                 if (resumed != null) {
-                    show("Core config saved — auto-sync 예약: ${resumed.take(8)}")
+                    show("Core 설정 저장 — 자동 동기화 예약: ${resumed.take(8)}")
                 } else {
-                    show("Core config saved")
+                    show("Core 설정 저장")
                 }
             } else {
-                show("upload disabled: Core URL + token required")
+                show("업로드 비활성: Core URL과 토큰이 필요합니다")
             }
             refresh()
         }
@@ -276,7 +293,7 @@ class MainActivity : AppCompatActivity() {
         // whose previously incomplete local evidence is now complete.
         SyncScheduler.enqueuePending(applicationContext, session)?.let { flightId ->
             hasSyncReport = true
-            tvSync.text = "auto-sync 재개 예약: ${flightId.take(8)} (완료된 로컬 데이터 재동기화)"
+            tvSync.text = "자동 동기화 재개 예약: ${flightId.take(8)} (완료된 로컬 데이터 재동기화)"
         }
 
         // A9-3 review residual: a restart during an active flight used to
@@ -311,7 +328,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 action()
             } catch (exc: Exception) {
-                show("error: ${exc.message}")
+                show("오류: ${exc.message}")
             }
             session.syncFlightState()
             refresh()
@@ -321,7 +338,7 @@ class MainActivity : AppCompatActivity() {
     private fun run(label: String, action: () -> Unit) {
         val active = session.controller
         if (active == null) {
-            show("$label unavailable: no bundle attached (A5 mission sync, or demo section)")
+            show("$label 불가: 연결된 번들 없음 (임무 동기화 또는 데모 섹션)")
             return
         }
         try {
@@ -329,13 +346,13 @@ class MainActivity : AppCompatActivity() {
             val sent = session.pumpOutbound()
             show(
                 if (session.link.state == DroneLink.State.CONNECTED) {
-                    "$label sent ($sent envelope(s))"
+                    "$label 전송됨 (봉투 ${sent}건)"
                 } else {
-                    "$label queued (link down, $sent sent)"
+                    "$label 대기열 (링크 끊김, ${sent}건 전송)"
                 },
             )
         } catch (exc: Exception) {
-            show("$label rejected: ${exc.message}")
+            show("$label 거부: ${exc.message}")
         }
     }
 
@@ -346,73 +363,73 @@ class MainActivity : AppCompatActivity() {
         refreshTopBar()
         refreshConnectEmphasis()
         val selectedBundle = selectedBundleId?.let { store.missionBundle(it) }
-        tvMission.text = "controller: ${session.missionSummary()}\n" +
-            "mission cache: sites=${store.sites().size} " +
-            "zoneRevs=${selectedSiteId?.let { store.zoneRevisions(it).size } ?: 0} " +
-            "bundles=${store.missionBundles().size}\n" +
-            "selected site=${selectedSiteId?.take(8) ?: "-"} " +
-            "bundle=${selectedBundle?.get("bundle_id")?.asText()?.take(8) ?: "-"} " +
-            "sha=${selectedBundle?.get("bundle_sha256")?.asText()?.take(12) ?: "-"} (verified at download)"
+        tvMission.text = "컨트롤러: ${session.missionSummary()}\n" +
+            "미션 캐시: 현장=${store.sites().size} " +
+            "구역rev=${selectedSiteId?.let { store.zoneRevisions(it).size } ?: 0} " +
+            "번들=${store.missionBundles().size}\n" +
+            "선택 현장=${selectedSiteId?.take(8) ?: "-"} " +
+            "번들=${selectedBundle?.get("bundle_id")?.asText()?.take(8) ?: "-"} " +
+            "sha=${selectedBundle?.get("bundle_sha256")?.asText()?.take(12) ?: "-"} (다운로드 시 검증)"
         tvFlight.text = if (flight == null) {
-            "flight: none active — Sync sites → Download bundle → Start flight"
+            "비행: 진행 중 없음 — 현장 동기화 → 번들 내려받기 → 비행 시작"
         } else {
-            "flight=${flight.get("flight_id").asText().take(8)} " +
-                "state=${flight.get("state").asText()} " +
-                "missionRev=${flight.get("mission_revision_id").asText().take(8)} " +
-                "bundle=${flight.get("bundle_sha256").asText().take(8)} " +
-                "zones=${flight.get("zone_revision_ids").size()}\n" +
-                "started(receipt)=${flight.get("started_at_utc").asText()}"
+            "비행=${flight.get("flight_id").asText().take(8)} " +
+                "상태=${flight.get("state").asText()} " +
+                "미션rev=${flight.get("mission_revision_id").asText().take(8)} " +
+                "번들=${flight.get("bundle_sha256").asText().take(8)} " +
+                "구역=${flight.get("zone_revision_ids").size()}\n" +
+                "시작(수신)=${flight.get("started_at_utc").asText()}"
         }
 
         val endpoint = session.controller?.endpoint
         val simulatedTag = if (session.link.isSimulated) " SIMULATED" else ""
-        tvLink.text = "link=${session.link.state}$simulatedTag\n" +
-            "in (this session): stored=${session.stored} dup=${session.duplicates} " +
-            "failed=${session.failed} last=${session.lastInbound}\n" +
-            "out: pending=${endpoint?.pendingCount() ?: 0} " +
-            "acked=${endpoint?.ackedCount ?: 0}"
+        tvLink.text = "링크=${session.link.state}$simulatedTag\n" +
+            "수신(세션): 저장=${session.stored} 중복=${session.duplicates} " +
+            "실패=${session.failed} 마지막=${session.lastInbound}\n" +
+            "송신: 대기=${endpoint?.pendingCount() ?: 0} " +
+            "확인=${endpoint?.ackedCount ?: 0}"
 
         // A6: three INDEPENDENT connection facts — never merged.
         val aircraft = when (session.link.aircraftConnected) {
-            true -> "connected"
-            false -> "not connected"
-            null -> "unknown (link cannot report)"
+            true -> "연결됨"
+            false -> "미연결"
+            null -> "알 수 없음(링크 보고 불가)"
         }
-        tvStatus.text = "aircraft=$aircraft" +
+        tvStatus.text = "기체=$aircraft" +
             (if (session.link.isSimulated) " [SIMULATED link]" else "") + "\n" +
             "manifold/link=${session.link.state}$simulatedTag\n" +
-            "internet=${internetStatus()}"
+            "인터넷=${internetLabel()}"
 
         val videoSim = if (app.videoSource.isSimulated) "SIMULATED" else "MSDK"
         val overlay = if (app.videoSource.frameMappingVerified) {
-            "overlay=allowed (mapping verified)"
+            "오버레이=허용(매핑 검증됨)"
         } else {
-            "overlay=DISABLED (frame<->observation mapping unverified; detections are listed, not drawn)"
+            "오버레이=비활성(프레임↔관측 매핑 미검증; 탐지는 목록 표시, 그리지 않음)"
         }
-        tvVideo.text = "video[$videoSim]=${app.videoSource.state} frames=$videoFrames\n$overlay"
+        tvVideo.text = "영상[$videoSim]=${app.videoSource.state} frames=$videoFrames\n$overlay"
 
         refreshObservation(flight?.get("flight_id")?.asText())
         refreshHistory()
 
         val demoStore = demo.session.store
         val demoFlight = demo.activeFlight()
-        tvDemo.text = "DEMO (isolated store, no upload)\n" +
-            "flight=${demoFlight?.get("flight_id")?.asText()?.take(8) ?: "-"} " +
-            "state=${demoFlight?.get("state")?.asText() ?: "-"} " +
-            "controller: ${demo.missionSummary()}\n" +
-            "demo store: obs=${demoStore.observationsFor(demoFlight?.get("flight_id")?.asText() ?: "-").size}"
+        tvDemo.text = "DEMO (격리 저장소, 업로드 없음)\n" +
+            "비행=${demoFlight?.get("flight_id")?.asText()?.take(8) ?: "-"} " +
+            "상태=${demoFlight?.get("state")?.asText() ?: "-"} " +
+            "컨트롤러: ${demo.missionSummary()}\n" +
+            "데모 저장소: 관측=${demoStore.observationsFor(demoFlight?.get("flight_id")?.asText() ?: "-").size}"
 
         refreshEvidence()
         val coreLine =
             if (app.config.coreConfigured) "core=${app.config.coreUrl}"
-            else "core=NOT CONFIGURED (upload disabled)"
+            else "core=미설정(업로드 비활성)"
         if (!hasSyncReport) {
             tvSync.text = coreLine
         }
         val err = session.lastError
         if (!err.isNullOrEmpty() && err != shownError) {
             shownError = err
-            tvError.text = "link/ingest note: $err"
+            tvError.text = "링크/인제스트 참고: $err"
         }
     }
 
@@ -540,7 +557,7 @@ class MainActivity : AppCompatActivity() {
         val flight = session.activeFlight
         val flightId = flight?.get("flight_id")?.asText()
         if (flightId == null) {
-            tvEvidence.text = "no active flight (evidence is per-flight)"
+            tvEvidence.text = "진행 중인 비행 없음 (증거는 비행 단위)"
             return
         }
         val store = session.store
@@ -549,22 +566,22 @@ class MainActivity : AppCompatActivity() {
         val artifacts = store.artifactsFor(flightId)
         val synced = artifacts.count { store.isArtifactSynced(it.get("artifact_id").asText()) }
         val lines = StringBuilder()
-        lines.append("LOCAL observations=${observations.size} events=${events.size} ")
-        lines.append("summaries=${store.summariesFor(flightId).size}\n")
+        lines.append("로컬 관측=${observations.size} 사건=${events.size} ")
+        lines.append("요약=${store.summariesFor(flightId).size}\n")
         for (artifact in artifacts) {
             val id = artifact.get("artifact_id").asText()
             val complete = store.artifactBytes(id) != null
-            lines.append("artifact ${id.take(8)} size=${artifact.get("size_bytes").asLong()} " +
+            lines.append("아티팩트 ${id.take(8)} 크기=${artifact.get("size_bytes").asLong()} " +
                 "complete=$complete synced=${store.isArtifactSynced(id)}\n")
         }
-        lines.append("artifacts=${artifacts.size} synced=$synced (SYNCED only after COMMITTED)")
+        lines.append("아티팩트=${artifacts.size} synced=$synced (SYNCED는 COMMITTED 후에만)")
         tvEvidence.text = lines.toString()
     }
 
     /** A6/A8: AI/observation status + event cards — derived from the store only. */
     private fun refreshObservation(flightId: String?) {
         if (flightId == null) {
-            tvAi.text = "AI: no active flight (start a flight first)"
+            tvAi.text = "AI: 진행 중인 비행 없음 (먼저 비행을 시작하세요)"
             tvEvents.text = "-"
             return
         }
@@ -600,7 +617,7 @@ class MainActivity : AppCompatActivity() {
             val cards = ObservationModel.eventCards(session.store, flightId)
             val text = buildString {
                 if (cards.isEmpty()) {
-                    append("no events received (local store)")
+                    append("수신된 사건 없음(로컬 저장소)")
                 } else {
                     for (card in cards.take(10)) {
                         val kind = if (card.detectionOnly) "관측" else "위험후보(경고 아님)"
@@ -633,7 +650,7 @@ class MainActivity : AppCompatActivity() {
     private fun stepFlight(direction: Int) {
         val rows = FlightHistoryModel.flights(session.store)
         if (rows.isEmpty()) {
-            show("no flights recorded")
+            show("기록된 비행 없음")
             return
         }
         val current = rows.indexOfFirst { it.flightId == selectedFlightId }
@@ -646,7 +663,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun stepEvent(direction: Int) {
         if (selectedEventRows.isEmpty()) {
-            show("this flight has no events")
+            show("이 비행에 사건 없음")
             return
         }
         selectedEventIndex = (selectedEventIndex + direction)
@@ -660,7 +677,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
         val row = selectedEventRows.getOrNull(selectedEventIndex) ?: run {
-            show("select an event first")
+            show("먼저 사건을 선택하세요")
             return
         }
         val flightId = selectedFlightId ?: return
@@ -707,23 +724,23 @@ class MainActivity : AppCompatActivity() {
                     refreshHistory()
                 }
             } catch (exc: Exception) {
-                runOnUiThread { show("annotation failed: ${exc.message}") }
+                runOnUiThread { show("의견 기록 실패: ${exc.message}") }
             }
         }
     }
 
     private fun viewEvidence(localOnly: Boolean) {
         val row = selectedEventRows.getOrNull(selectedEventIndex) ?: run {
-            show("select an event first")
+            show("먼저 사건을 선택하세요")
             return
         }
         val artifactId = row.card.evidence.firstOrNull()?.artifactId ?: run {
-            show("this event has no linked evidence")
+            show("이 사건에 연결된 증거 없음")
             return
         }
         val query = session.query()
         if (!localOnly && query == null) {
-            show("Core not configured (server fetch unavailable)")
+            show("Core 미설정(서버 가져오기 불가)")
             return
         }
         session.bg.execute {
@@ -759,7 +776,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             } catch (exc: Exception) {
-                runOnUiThread { show("evidence load failed: ${exc.message}") }
+                runOnUiThread { show("증거 불러오기 실패: ${exc.message}") }
             }
         }
     }
@@ -798,7 +815,7 @@ class MainActivity : AppCompatActivity() {
             } ?: rows.firstOrNull()?.flightId
             val listText = buildString {
                 if (rows.isEmpty()) {
-                    append("no flights recorded yet")
+                    append("아직 기록된 비행이 없습니다")
                 } else {
                     rows.forEachIndexed { index, row ->
                         append(if (row.flightId == selected) "▶ " else "   ")
@@ -838,7 +855,7 @@ class MainActivity : AppCompatActivity() {
     private fun renderDetail(detail: FlightHistoryModel.FlightDetail): String {
         val row = detail.row
         return buildString {
-            append("flight ${row.flightId.take(8)} state=${row.state}\n")
+            append("비행 ${row.flightId.take(8)} state=${row.state}\n")
             append("현장 ${row.siteId.take(8)}")
             if (row.siteName != null) append(" (${row.siteName})")
             append(" 미션rev=${row.missionRevisionId.take(8)} ")
@@ -847,7 +864,7 @@ class MainActivity : AppCompatActivity() {
             append("end=${row.endedAtUtc ?: "-"} lastData=${row.lastReceivedUtc ?: "-"}\n")
             append("위험구역 핀: ")
             if (detail.zonePins.isEmpty()) {
-                append("none")
+                append("없음")
             } else {
                 detail.zonePins.forEach { pin ->
                     append("[${pin.ruleKind ?: "?"} ${pin.revisionId.take(8)}")
@@ -858,7 +875,7 @@ class MainActivity : AppCompatActivity() {
             append("\n관측/공백: obs=${row.observationCount} ")
             append("aiUptime=${row.aiUptimeRatio ?: "-"} ")
             append("covered=${row.coveredFrames ?: "-"} skipped=${row.skippedFrames ?: "-"} ")
-            append("MOP갭=${row.mopGapCount} summary=${if (detail.summaryPresent) "yes" else "none"}")
+            append("MOP갭=${row.mopGapCount} 요약=${if (detail.summaryPresent) "있음" else "없음"}")
         }
     }
 
@@ -905,7 +922,7 @@ class MainActivity : AppCompatActivity() {
     private fun refreshEventSelection() {
         val row = selectedEventRows.getOrNull(selectedEventIndex)
         if (row == null) {
-            tvEventDetail.text = "no event selected"
+            tvEventDetail.text = "선택된 사건 없음"
             btnFlagFalsePositive.text = getString(R.string.btn_flag_false_positive)
             btnFlagFalsePositive.isEnabled = false
             return
@@ -919,7 +936,7 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.btn_flag_false_positive)
         }
         tvEventDetail.text = buildString {
-            append("event=${row.card.eventId.take(8)} ${row.card.eventType} ")
+            append("사건=${row.card.eventId.take(8)} ${row.card.eventType} ")
             append("mode=${row.card.mode} q=${row.card.observationQuality}\n")
             append("edge_monotonic_ns=${row.card.detectedAtEdgeNs} (Edge 도메인 — UTC 변환 안 함)\n")
             append("증거: ")
@@ -934,6 +951,15 @@ class MainActivity : AppCompatActivity() {
             append("\n주석 기록=${row.annotationCount} ")
             append("유효표시=${row.effectiveAnnotation ?: "없음"} (append-only)")
         }
+    }
+
+    /** Display-only Korean label for the internal internet vocabulary. */
+    private fun internetLabel(): String = when (val status = internetStatus()) {
+        "validated" -> "검증됨"
+        "connected (unvalidated)" -> "연결됨(미검증)"
+        "no internet" -> "인터넷 없음"
+        "none" -> "없음"
+        else -> "알 수 없음($status)"
     }
 
     private fun internetStatus(): String {
@@ -956,10 +982,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun syncSites() {
         val sync = session.missionSync() ?: run {
-            show("configure Core URL + token first")
+            show("먼저 Core URL과 토큰을 설정하세요")
             return
         }
-        tvSync.text = "syncing sites…"
+        tvSync.text = "현장 동기화 중…"
         session.bg.execute {
             try {
                 sync.syncSites()
@@ -970,58 +996,58 @@ class MainActivity : AppCompatActivity() {
                 } ?: local.firstOrNull()?.get("site_id")?.asText()
                 runOnUiThread {
                     hasSyncReport = true
-                    tvSync.text = "sites synced: local=${local.size}"
+                    tvSync.text = "현장 동기화됨: 로컬=${local.size}"
                     refresh()
                 }
             } catch (exc: Exception) {
-                runOnUiThread { show("site sync failed: ${exc.message}") }
+                runOnUiThread { show("현장 동기화 실패: ${exc.message}") }
             }
         }
     }
 
     private fun syncBundleLatest() {
         val sync = session.missionSync() ?: run {
-            show("configure Core URL + token first")
+            show("먼저 Core URL과 토큰을 설정하세요")
             return
         }
         val siteId = selectedSiteId ?: run {
-            show("sync sites first")
+            show("먼저 현장을 동기화하세요")
             return
         }
-        tvSync.text = "syncing site data…"
+        tvSync.text = "현장 데이터 동기화 중…"
         session.bg.execute {
             try {
                 val newZoneRevisions = sync.syncZoneRevisions(siteId)
                 val serverBundles = sync.listSiteBundles(siteId)
                 val target = serverBundles.lastOrNull()
-                    ?: throw IllegalStateException("no bundle on the server for this site")
+                    ?: throw IllegalStateException("이 현장의 번들이 서버에 없습니다")
                 val bundle = sync.syncBundle(target.get("bundle_id").asText())
                 selectedBundleId = bundle.get("bundle_id").asText()
                 val localCount = sync.localSiteBundles(siteId).size
                 runOnUiThread {
                     hasSyncReport = true
-                    tvSync.text = "site data: +${newZoneRevisions.size} zone revision(s), " +
-                        "local bundles=$localCount, selected=" +
-                        "${selectedBundleId!!.take(8)} (digest verified)"
+                    tvSync.text = "현장 데이터: 구역 리비전 +${newZoneRevisions.size}, " +
+                        "로컬 번들=$localCount, 선택=" +
+                        "${selectedBundleId!!.take(8)} (digest 검증됨)"
                     refresh()
                 }
             } catch (exc: Exception) {
-                runOnUiThread { show("bundle sync failed: ${exc.message}") }
+                runOnUiThread { show("번들 동기화 실패: ${exc.message}") }
             }
         }
     }
 
     private fun startFlight() {
         if (session.activeFlight != null) {
-            show("a flight is already active; end it first")
+            show("이미 진행 중인 비행이 있습니다 — 먼저 종료하세요")
             return
         }
         val bundleId = selectedBundleId ?: run {
-            show("download a mission bundle first (Sync sites → Download bundle)")
+            show("먼저 미션 번들을 내려받으세요 (현장 동기화 → 번들 내려받기)")
             return
         }
         val bundle = session.store.missionBundle(bundleId) ?: run {
-            show("selected bundle is not in the local store")
+            show("선택한 번들이 로컬 저장소에 없습니다")
             return
         }
         try {
@@ -1030,12 +1056,12 @@ class MainActivity : AppCompatActivity() {
                 ?.get("recording_policy")?.get("segment_seconds")?.asInt() ?: 300
             app.startFlightRecording(record.get("flight_id").asText(), segmentSeconds)
             show(
-                "flight started: ${record.get("flight_id").asText().take(8)} " +
-                    "(bundle ${bundleId.take(8)} pinned; prepare/apply run offline;" +
+                "비행 시작: ${record.get("flight_id").asText().take(8)} " +
+                    "(bundle ${bundleId.take(8)} 고정; prepare/apply 오프라인 실행;" +
                     " 녹화=${segmentSeconds}s 구간, 벤치=레코더 없음)",
             )
         } catch (exc: Exception) {
-            show("start failed: ${exc.message}")
+            show("시작 실패: ${exc.message}")
         }
     }
 
@@ -1094,37 +1120,37 @@ class MainActivity : AppCompatActivity() {
     private fun uploadNow() {
         val uploader = session.uploader()
         if (uploader == null) {
-            show("upload disabled: configure Core URL + token first")
+            show("업로드 비활성: 먼저 Core URL과 토큰을 설정하세요")
             return
         }
         val spec = try {
             session.uploadSpec()
         } catch (exc: Exception) {
-            show("upload refused: ${exc.message}")
+            show("업로드 거부: ${exc.message}")
             return
         }
-        tvSync.text = "uploading…"
+        tvSync.text = "업로드 중…"
         session.bg.execute {
             try {
                 val report = uploader.uploadFlight(spec)
                 val lines = StringBuilder()
                 lines.append("state=${report.uploadState} timeBasis=${report.timeBasis} " +
-                    "apps=${report.applicationsUploaded} sessions=${report.sessionsUploaded} " +
-                    "annotations=${report.annotationsUploaded}\n")
+                    "앱=${report.applicationsUploaded} 세션=${report.sessionsUploaded} " +
+                    "의견=${report.annotationsUploaded}\n")
                 for (boot in report.boots) {
-                    lines.append("boot ${boot.bootId.take(8)} ${boot.status} " +
+                    lines.append("부트 ${boot.bootId.take(8)} ${boot.status} " +
                         "chunks=${boot.chunksSent} missing=${boot.missingArtifacts.size} " +
                         "synced=${boot.synced.size} " +
                         "receipt=${boot.receivedStartedUtc ?: "-"}\n")
                 }
                 if (report.sessionDrift.isNotEmpty()) {
-                    lines.append("session drift: ${report.sessionDrift.size} (server holds older snapshot)\n")
+                    lines.append("세션 드리프트: ${report.sessionDrift.size}건(서버가 이전 스냅샷 보유)\n")
                 }
                 if (report.boots.any { it.incompleteLocal.isNotEmpty() }) {
                     lines.append("미완료 로컬 증거 — 완성되면 다음 동기화에서 자동 재시도됨\n")
                 }
                 if (report.annotationFailures.isNotEmpty()) {
-                    lines.append("annotation 실패(재시도 예정): " +
+                    lines.append("의견 기록 실패(재시도 예정): " +
                         report.annotationFailures.joinToString().take(120) + "\n")
                 }
                 runOnUiThread {
@@ -1133,7 +1159,7 @@ class MainActivity : AppCompatActivity() {
                     refreshEvidence()
                 }
             } catch (exc: Exception) {
-                runOnUiThread { show("upload failed: ${exc.message}") }
+                runOnUiThread { show("업로드 실패: ${exc.message}") }
             }
         }
     }
@@ -1141,12 +1167,12 @@ class MainActivity : AppCompatActivity() {
     private fun serverState() {
         val query = session.query()
         if (query == null) {
-            show("upload disabled: configure Core URL + token first")
+            show("업로드 비활성: 먼저 Core URL과 토큰을 설정하세요")
             return
         }
         val flight = session.activeFlight
         if (flight == null) {
-            show("no active flight to query")
+            show("조회할 진행 중 비행 없음")
             return
         }
         val flightId = flight.get("flight_id").asText()
@@ -1161,13 +1187,41 @@ class MainActivity : AppCompatActivity() {
                 runOnUiThread {
                     hasSyncReport = true
                     tvSync.text = "core=server upload_state=$uploadState " +
-                        "server events=${serverEvents.items.size} (${serverEvents.source}, " +
-                        "${if (serverEvents.source == EvidenceSource.LOCAL) "offline copy" else "fetched"})"
+                        "서버 사건=${serverEvents.items.size} (${serverEvents.source}, " +
+                        "${if (serverEvents.source == EvidenceSource.LOCAL) "오프라인 사본" else "가져옴"})"
                 }
             } catch (exc: Exception) {
-                runOnUiThread { show("server query failed: ${exc.message}") }
+                runOnUiThread { show("서버 조회 실패: ${exc.message}") }
             }
         }
+    }
+
+    /**
+     * Requests only the dangerous permissions THIS package declares (the DJI
+     * MSDK manifests add location/phone/storage in the device flavor; bench
+     * declares none of them, so nothing is asked there). A refusal is shown,
+     * never hidden — the rest of the app keeps working.
+     */
+    private fun requestMissingDangerousPermissions() {
+        val declared = try {
+            packageManager.getPackageInfo(
+                packageName,
+                android.content.pm.PackageManager.GET_PERMISSIONS,
+            ).requestedPermissions ?: emptyArray()
+        } catch (_: Exception) {
+            emptyArray()
+        }
+        val missing = declared.filter { permission ->
+            try {
+                val info = packageManager.getPermissionInfo(permission, 0)
+                info.protection == android.content.pm.PermissionInfo.PROTECTION_DANGEROUS &&
+                    packageManager.checkPermission(permission, packageName) !=
+                    android.content.pm.PackageManager.PERMISSION_GRANTED
+            } catch (_: Exception) {
+                false
+            }
+        }
+        if (missing.isNotEmpty()) permissionLauncher.launch(missing.toTypedArray())
     }
 
     /** Registered operator state line (settings). */
