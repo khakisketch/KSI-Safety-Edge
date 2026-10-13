@@ -105,6 +105,30 @@
 </section>
 
 <section>
+  <h2>현장 적용 시나리오 (예시)</h2>
+  <p class="note">아래는 이해를 돕기 위한 <strong>가상 시나리오와 개념도</strong>입니다. 특정 실현장을 지칭하지 않으며, 실기 검증·사용자 인수 전입니다.</p>
+  <figure>
+    <img src="assets/field-concept.svg" alt="드론이 건설 현장을 관측하고 RC가 오프라인 기록 후 업로드하는 개념도">
+    <figcaption><strong>현장 개념도</strong> — 관측 드론 → 위험구역 SHADOW 기록 → RC 로컬 저장 → 연결 복구 후 Core 업로드.</figcaption>
+  </figure>
+  <table>
+    <tr><th>시간</th><th>장면</th><th>시스템 동작</th></tr>
+    <tr><td>08:00</td><td>조회에서 당일 임무 확인</td><td>사이트·미션 번들·구역 정책을 RC에 동기화</td></tr>
+    <tr><td>09:00</td><td>드론 이륙, 음영 구간 진입</td><td>인터넷 없이 Edge 관측 + RC 로컬 영속 기록</td></tr>
+    <tr><td>09:20</td><td>중장비 인근 작업자 접근 (가상)</td><td>SHADOW 참고 표시로 기록, 자동 경고 없음</td></tr>
+    <tr><td>10:00</td><td>귀환 후 네트워크 복구</td><td>RC 업로드 큐가 재개·검증과 함께 Core 전송</td></tr>
+    <tr><td>11:00</td><td>사무실에서 당일 비행 확인</td><td>수집 상태·커버리지·사건·증거 조회, 의견 기록</td></tr>
+  </table>
+  <h3>투입 장비 구성</h3>
+  <table>
+    <tr><th>장비</th><th>역할</th></tr>
+    <tr><td>Matrice 4 (기체)</td><td>비행 플랫폼</td></tr>
+    <tr><td>Manifold 3 (기체 탑재)</td><td>Edge 관측 연산 (탐지·추적·공간 분석)</td></tr>
+    <tr><td>RC Plus 2 (조종기)</td><td>RC 앱 — 오프라인 기록·미션 적용·업로드</td></tr>
+  </table>
+</section>
+
+<section>
   <h2>화면 소개</h2>
   <p class="note">아래 화면은 시연 환경 캡처이며, 화면의 <code>[SIMULATED]</code> 표기를 유지합니다. 현장명은 예시(<code>SIM-FLT-024</code> 등)이며 특정 실현장을 지칭하지 않습니다.</p>
 
