@@ -39,9 +39,22 @@
     <string name="hint_core_token">Core 토큰 (rc scope)</string>
     <string name="btn_save_core">Core 설정 저장</string>
     <string name="section_operator">조종사(운영자) 식별</string>
-    <string name="hint_operator_name">조종사 이름 — 의견 기록에 사용</string>
+    <string name="hint_operator_name">조종사 이름 (필수) — 의견 기록에 사용</string>
     <string name="hint_operator_org">소속 (선택)</string>
     <string name="btn_save_operator">조종사 저장</string>
+    <string name="section_app_info">앱 정보</string>
+    <string name="section_core_state">Core 저장 상태</string>
+    <string name="section_sync_state">동기화 상태</string>
+    <string name="section_permissions">권한 안내 · 첫 실행 — DJI SDK가 선언한 위치·전화 상태·저장소 권한을 첫 실행 때 요청합니다. 권한을 거부하면 일부 SDK 기능이 제한될 수 있습니다.</string>
+    <string name="app_info_product_label">제품</string>
+    <string name="app_info_product_value">KSI Safety Edge</string>
+    <string name="app_info_device_label">기기</string>
+    <string name="app_info_orientation_label">표시 방향</string>
+    <string name="app_info_orientation_value">가로 우선</string>
+    <string name="app_info_version_label">앱 버전</string>
+    <string name="app_info_network_label">네트워크</string>
+    <string name="app_info_network_value">오프라인 기록 허용</string>
+    <string name="token_location_note">토큰 저장 위치: 기기 보안 저장소(Keystore)</string>
     <string name="btn_upload">지금 업로드</string>
     <string name="btn_server_state">서버 상태</string>
 

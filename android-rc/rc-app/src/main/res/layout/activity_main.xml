@@ -739,72 +739,15 @@
                         android:layout_marginTop="4dp"
                         android:text="@string/btn_refresh_evidence" />
 
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingTop="16dp"
-                        android:text="@string/section_operator"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="16sp"
-                        android:textStyle="bold" />
-
-                    <EditText
-                        android:id="@+id/etOperatorName"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/hint_operator_name"
-                        android:inputType="textPersonName" />
-
-                    <EditText
-                        android:id="@+id/etOperatorOrg"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/hint_operator_org"
-                        android:inputType="text" />
-
-                    <Button
-                        android:id="@+id/btnSaveOperator"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:text="@string/btn_save_operator" />
-
-                    <TextView
-                        android:id="@+id/tvOperator"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingTop="4dp"
-                        android:text="-"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="14sp" />
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:paddingTop="16dp"
-                        android:text="@string/section_sync"
+                        android:text="@string/section_sync_state"
                         android:textColor="@color/ksi_fg"
                         android:textSize="16sp"
                         android:textStyle="bold" />
-
-                    <EditText
-                        android:id="@+id/etCoreUrl"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/hint_core_url"
-                        android:inputType="textUri" />
-
-                    <EditText
-                        android:id="@+id/etCoreToken"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="@string/hint_core_token"
-                        android:inputType="textPassword" />
-
-                    <Button
-                        android:id="@+id/btnSaveCore"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:text="@string/btn_save_core" />
 
                     <TextView
                         android:id="@+id/tvSync"
@@ -867,6 +810,221 @@
                         android:paddingTop="4dp"
                         android:text="@string/clock_unverified"
                         android:textColor="@color/ksi_fg"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="16dp"
+                        android:text="@string/section_app_info"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="6dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/app_info_product_label"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/app_info_product_value"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/app_info_device_label"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvDeviceInfo"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/app_info_orientation_label"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/app_info_orientation_value"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/app_info_version_label"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:id="@+id/tvAppVersion"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/app_info_network_label"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="14sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/app_info_network_value"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="16dp"
+                        android:text="@string/section_operator"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/etOperatorName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/hint_operator_name"
+                        android:inputType="textPersonName" />
+
+                    <EditText
+                        android:id="@+id/etOperatorOrg"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/hint_operator_org"
+                        android:inputType="text" />
+
+                    <Button
+                        android:id="@+id/btnSaveOperator"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="@string/btn_save_operator" />
+
+                    <TextView
+                        android:id="@+id/tvOperator"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="16dp"
+                        android:text="@string/section_core_state"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/etCoreUrl"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/hint_core_url"
+                        android:inputType="textUri" />
+
+                    <EditText
+                        android:id="@+id/etCoreToken"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/hint_core_token"
+                        android:inputType="textPassword" />
+
+                    <Button
+                        android:id="@+id/btnSaveCore"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="@string/btn_save_core" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="6dp"
+                        android:text="@string/token_location_note"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/tvUploadGate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="2dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:background="@color/ksi_attention_bg"
+                        android:padding="10dp"
+                        android:text="@string/section_permissions"
+                        android:textColor="@color/ksi_attention"
                         android:textSize="13sp" />
 
                     <TextView
