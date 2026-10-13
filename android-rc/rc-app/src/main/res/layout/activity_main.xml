@@ -1,478 +1,889 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- RC cockpit shell — restructured 2026-10-13 to the approved design
+     (design/rc-pilot-shell/field-shell.html, round-3 revision):
+     left nav rail + 5 areas; the 조종(관측) area is a no-scroll cockpit:
+     left operator-status rail, centre live view with overlays, right
+     telemetry rail. All ids are preserved from the previous layout so the
+     activity wiring keeps working. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/ksi_bg"
+    android:orientation="horizontal">
 
+    <!-- Navigation rail -->
     <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_width="92dp"
+        android:layout_height="match_parent"
+        android:background="@color/ksi_surface"
+        android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="8dp">
 
         <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/app_name"
-            android:textSize="22sp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:background="@color/ksi_surface_subtle"
+            android:gravity="center"
+            android:text="@string/app_mark"
+            android:textColor="@color/ksi_fg"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/tvClockNote"
+        <Button
+            android:id="@+id/btnNavObserve"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/clock_unverified"
-            android:textSize="13sp" />
-
-        <!-- B-1: operator status contract rendered from real session facts
-             (OperatorStatus; visual treatment belongs to the design workspace). -->
-        <TextView
-            android:id="@+id/tvOpsStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="14sp"
-            android:paddingTop="6dp" />
-
-        <!-- 1. Mission / flight -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/section_mission"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:paddingTop="16dp" />
-
-        <TextView
-            android:id="@+id/tvMission"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="14sp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btnSyncSites"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_sync_sites" />
-            <Button
-                android:id="@+id/btnSyncBundle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_sync_bundle" />
-            <Button
-                android:id="@+id/btnStartFlight"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_start_flight" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvFlight"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="14sp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btnPrepare"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_prepare" />
-            <Button
-                android:id="@+id/btnApply"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_apply" />
-            <Button
-                android:id="@+id/btnReconcile"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_reconcile" />
-        </LinearLayout>
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btnStart"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_start" />
-            <Button
-                android:id="@+id/btnStop"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_stop" />
-            <Button
-                android:id="@+id/btnEndFlight"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_end_flight" />
-        </LinearLayout>
-
-        <!-- 2. Link -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/section_observe"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:paddingTop="16dp" />
-
-        <TextView
-            android:id="@+id/tvLink"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="14sp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btnConnect"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_connect" />
-            <Button
-                android:id="@+id/btnDisconnect"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_disconnect" />
-            <Button
-                android:id="@+id/btnRetry"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_retry" />
-        </LinearLayout>
-
-        <!-- A6: independent status + video + AI/events -->
-        <TextView
-            android:id="@+id/tvStatus"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="14sp"
-            android:paddingTop="4dp" />
-
-        <TextView
-            android:id="@+id/tvVideo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="14sp"
-            android:paddingTop="4dp" />
-
-        <!-- A9-3: live view surface. Display and recording are independent;
-             an empty surface never stops the recorder (see MsdkVideoSource). -->
-        <SurfaceView
-            android:id="@+id/surfaceVideo"
-            android:layout_width="match_parent"
-            android:layout_height="220dp"
-            android:layout_marginTop="4dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btnVideoConnect"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_video_connect" />
-            <Button
-                android:id="@+id/btnVideoDisconnect"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_video_disconnect" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvAi"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="14sp"
-            android:paddingTop="4dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/label_events"
-            android:textSize="13sp"
-            android:paddingTop="4dp" />
-
-        <TextView
-            android:id="@+id/tvEvents"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="13sp"
-            android:typeface="monospace" />
-
-        <!-- Demo bench (isolated) -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/section_demo"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:paddingTop="16dp" />
-
-        <TextView
-            android:id="@+id/tvDemo"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="14sp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btnDemoTick"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_demo_tick" />
-            <Button
-                android:id="@+id/btnDemoNewFlight"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_demo_new_flight" />
-        </LinearLayout>
-
-        <!-- 3. Evidence -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/section_evidence"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:paddingTop="16dp" />
-
-        <TextView
-            android:id="@+id/tvEvidence"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="14sp" />
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/nav_observe"
+            android:textSize="12sp" />
 
         <Button
-            android:id="@+id/btnRefreshEvidence"
+            android:id="@+id/btnNavMission"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/btn_refresh_evidence" />
-
-        <!-- A7: flight history -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/section_history"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:paddingTop="16dp" />
-
-        <TextView
-            android:id="@+id/tvFlights"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="13sp"
-            android:typeface="monospace" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btnFlightPrev"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_flight_prev" />
-            <Button
-                android:id="@+id/btnFlightNext"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_flight_next" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvFlightDetail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="13sp" />
-
-        <TextView
-            android:id="@+id/tvFlightEvents"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="13sp"
-            android:typeface="monospace"
-            android:paddingTop="4dp" />
-
-        <TextView
-            android:id="@+id/tvFlightArtifacts"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="13sp"
-            android:typeface="monospace"
-            android:paddingTop="4dp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btnEventPrev"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_event_prev" />
-            <Button
-                android:id="@+id/btnEventNext"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_event_next" />
-            <Button
-                android:id="@+id/btnFlagFalsePositive"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_flag_false_positive" />
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tvEventDetail"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="13sp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btnViewEvidence"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_view_evidence" />
-            <Button
-                android:id="@+id/btnFetchEvidence"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_fetch_evidence" />
-        </LinearLayout>
-
-        <ImageView
-            android:id="@+id/ivEvidence"
-            android:layout_width="match_parent"
-            android:layout_height="220dp"
-            android:adjustViewBounds="true"
-            android:contentDescription="@string/label_evidence_image"
-            android:scaleType="fitCenter" />
-
-        <TextView
-            android:id="@+id/tvEvidenceMeta"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="13sp" />
-
-        <!-- 4. Sync -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/section_sync"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:paddingTop="16dp" />
-
-        <EditText
-            android:id="@+id/etCoreUrl"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/hint_core_url"
-            android:inputType="textUri" />
-
-        <EditText
-            android:id="@+id/etCoreToken"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="@string/hint_core_token"
-            android:inputType="textPassword" />
+            android:layout_height="56dp"
+            android:layout_marginTop="4dp"
+            android:text="@string/nav_mission"
+            android:textSize="12sp" />
 
         <Button
-            android:id="@+id/btnSaveCore"
+            android:id="@+id/btnNavReview"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/btn_save_core" />
+            android:layout_height="56dp"
+            android:layout_marginTop="4dp"
+            android:text="@string/nav_review"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnNavEvidence"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="4dp"
+            android:text="@string/nav_evidence"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btnNavSettings"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="4dp"
+            android:text="@string/nav_settings"
+            android:textSize="12sp" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
         <TextView
-            android:id="@+id/tvSync"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="-"
-            android:textSize="14sp" />
+            android:gravity="center"
+            android:text="@string/rail_note"
+            android:textColor="@color/ksi_muted"
+            android:textSize="10sp" />
+    </LinearLayout>
 
+    <!-- Workspace -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- Top bar -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-            <Button
-                android:id="@+id/btnUpload"
-                android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:background="@color/ksi_surface"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp">
+
+            <TextView
+                android:id="@+id/tvPageTitle"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_upload" />
-            <Button
-                android:id="@+id/btnServerState"
+                android:text="@string/page_title_observe"
+                android:textColor="@color/ksi_fg"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <Space
                 android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/tvTopSim"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/btn_server_state" />
+                android:background="@color/ksi_surface_subtle"
+                android:paddingStart="6dp"
+                android:paddingTop="2dp"
+                android:paddingEnd="6dp"
+                android:paddingBottom="2dp"
+                android:text="[SIMULATED]"
+                android:textColor="@color/ksi_fg"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvTopUtc"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="@string/top_receipt_note"
+                android:textColor="@color/ksi_muted"
+                android:textSize="11sp"
+                android:typeface="monospace" />
         </LinearLayout>
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/ksi_border" />
+
+        <!-- Pages -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
+
+            <!-- ================= 조종(관측) cockpit ================= -->
+            <LinearLayout
+                android:id="@+id/pageObserve"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:padding="8dp">
+
+                <!-- Left: operator status rail (B-1 contract, fixed order) -->
+                <ScrollView
+                    android:layout_width="204dp"
+                    android:layout_height="match_parent"
+                    android:background="@color/ksi_surface"
+                    android:padding="10dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/cockpit_status_header"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/cockpit_status_key"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/tvOpsStatus"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:lineSpacingExtra="5dp"
+                            android:paddingTop="6dp"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </ScrollView>
+
+                <!-- Centre: live view with overlays -->
+                <FrameLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_weight="1"
+                    android:background="@color/ksi_video_bg">
+
+                    <SurfaceView
+                        android:id="@+id/surfaceVideo"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="top"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="8dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@color/ksi_surface"
+                            android:paddingStart="6dp"
+                            android:paddingTop="2dp"
+                            android:paddingEnd="6dp"
+                            android:paddingBottom="2dp"
+                            android:text="@string/cockpit_live_view"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvVideo"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:background="@color/ksi_surface"
+                            android:ellipsize="end"
+                            android:maxLines="2"
+                            android:paddingStart="6dp"
+                            android:paddingTop="2dp"
+                            android:paddingEnd="6dp"
+                            android:paddingBottom="2dp"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="11sp" />
+
+                        <Button
+                            android:id="@+id/btnVideoConnect"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:minWidth="0dp"
+                            android:text="@string/btn_video_connect"
+                            android:textSize="12sp" />
+
+                        <Button
+                            android:id="@+id/btnVideoDisconnect"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:minWidth="0dp"
+                            android:text="@string/btn_video_disconnect"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="bottom"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="8dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@color/ksi_surface"
+                            android:paddingStart="6dp"
+                            android:paddingTop="2dp"
+                            android:paddingEnd="6dp"
+                            android:paddingBottom="2dp"
+                            android:text="@string/cockpit_mop_actions"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="11sp"
+                            android:textStyle="bold" />
+
+                        <Button
+                            android:id="@+id/btnConnect"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:minWidth="0dp"
+                            android:text="@string/btn_connect"
+                            android:textSize="12sp" />
+
+                        <Button
+                            android:id="@+id/btnDisconnect"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:minWidth="0dp"
+                            android:text="@string/btn_disconnect"
+                            android:textSize="12sp" />
+
+                        <Button
+                            android:id="@+id/btnRetry"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:minWidth="0dp"
+                            android:text="@string/btn_retry"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+                </FrameLayout>
+
+                <!-- Right: telemetry rails -->
+                <ScrollView
+                    android:layout_width="216dp"
+                    android:layout_height="match_parent"
+                    android:background="@color/ksi_surface"
+                    android:padding="10dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/cockpit_mop"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvLink"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:lineSpacingExtra="3dp"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="12sp" />
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginBottom="8dp"
+                            android:background="@color/ksi_border" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/cockpit_ai"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvAi"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:lineSpacingExtra="3dp"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="12sp" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="3"
+                            android:paddingTop="4dp"
+                            android:text="@string/label_events"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="10sp" />
+
+                        <TextView
+                            android:id="@+id/tvEvents"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="12"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="11sp"
+                            android:typeface="monospace" />
+                    </LinearLayout>
+                </ScrollView>
+            </LinearLayout>
+
+            <!-- ================= 임무 준비 ================= -->
+            <ScrollView
+                android:id="@+id/pageMission"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/section_mission"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvMission"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <Button
+                            android:id="@+id/btnSyncSites"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_sync_sites" />
+
+                        <Button
+                            android:id="@+id/btnSyncBundle"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_sync_bundle" />
+
+                        <Button
+                            android:id="@+id/btnStartFlight"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_start_flight" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvFlight"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="8dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <Button
+                            android:id="@+id/btnPrepare"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_prepare" />
+
+                        <Button
+                            android:id="@+id/btnApply"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_apply" />
+
+                        <Button
+                            android:id="@+id/btnReconcile"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_reconcile" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <Button
+                            android:id="@+id/btnStart"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_start" />
+
+                        <Button
+                            android:id="@+id/btnStop"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_stop" />
+
+                        <Button
+                            android:id="@+id/btnEndFlight"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_end_flight" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="12dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="14sp" />
+                </LinearLayout>
+            </ScrollView>
+
+            <!-- ================= 비행 기록(검토) ================= -->
+            <ScrollView
+                android:id="@+id/pageReview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/section_history"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvFlights"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="13sp"
+                        android:typeface="monospace" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <Button
+                            android:id="@+id/btnFlightPrev"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_flight_prev" />
+
+                        <Button
+                            android:id="@+id/btnFlightNext"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_flight_next" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvFlightDetail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:id="@+id/tvFlightEvents"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="13sp"
+                        android:typeface="monospace" />
+
+                    <TextView
+                        android:id="@+id/tvFlightArtifacts"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="13sp"
+                        android:typeface="monospace" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <Button
+                            android:id="@+id/btnEventPrev"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_event_prev" />
+
+                        <Button
+                            android:id="@+id/btnEventNext"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_event_next" />
+
+                        <Button
+                            android:id="@+id/btnFlagFalsePositive"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_flag_false_positive" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/tvEventDetail"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="13sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <Button
+                            android:id="@+id/btnViewEvidence"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_view_evidence" />
+
+                        <Button
+                            android:id="@+id/btnFetchEvidence"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_fetch_evidence" />
+                    </LinearLayout>
+
+                    <ImageView
+                        android:id="@+id/ivEvidence"
+                        android:layout_width="match_parent"
+                        android:layout_height="220dp"
+                        android:adjustViewBounds="true"
+                        android:contentDescription="@string/label_evidence_image"
+                        android:scaleType="fitCenter" />
+
+                    <TextView
+                        android:id="@+id/tvEvidenceMeta"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </ScrollView>
+
+            <!-- ================= 증거·동기화 ================= -->
+            <ScrollView
+                android:id="@+id/pageEvidence"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/section_evidence"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvEvidence"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="14sp" />
+
+                    <Button
+                        android:id="@+id/btnRefreshEvidence"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/btn_refresh_evidence" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="16dp"
+                        android:text="@string/section_sync"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/etCoreUrl"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/hint_core_url"
+                        android:inputType="textUri" />
+
+                    <EditText
+                        android:id="@+id/etCoreToken"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/hint_core_token"
+                        android:inputType="textPassword" />
+
+                    <Button
+                        android:id="@+id/btnSaveCore"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="@string/btn_save_core" />
+
+                    <TextView
+                        android:id="@+id/tvSync"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <Button
+                            android:id="@+id/btnUpload"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_upload" />
+
+                        <Button
+                            android:id="@+id/btnServerState"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_server_state" />
+                    </LinearLayout>
+                </LinearLayout>
+            </ScrollView>
+
+            <!-- ================= 설정·개발 ================= -->
+            <ScrollView
+                android:id="@+id/pageSettings"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:padding="16dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_time_header"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvClockNote"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4dp"
+                        android:text="@string/clock_unverified"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="16dp"
+                        android:text="@string/section_demo"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvDemo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="14sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <Button
+                            android:id="@+id/btnDemoTick"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_demo_tick" />
+
+                        <Button
+                            android:id="@+id/btnDemoNewFlight"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_demo_new_flight" />
+                    </LinearLayout>
+                </LinearLayout>
+            </ScrollView>
+        </FrameLayout>
 
         <TextView
             android:id="@+id/tvError"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:paddingStart="12dp"
+            android:paddingTop="4dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="4dp"
             android:text=""
-            android:textSize="13sp"
-            android:paddingTop="12dp" />
+            android:textColor="@color/ksi_problem"
+            android:textSize="12sp" />
     </LinearLayout>
-</ScrollView>
+</LinearLayout>

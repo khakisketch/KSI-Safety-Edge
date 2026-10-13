@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- RC cockpit palette — converted from the approved design prototype
+     (design/rc-pilot-shell/field-shell.html, OKLCH light scheme -> sRGB). -->
+<resources>
+    <color name="ksi_bg">#F6F9FC</color>
+    <color name="ksi_surface">#FFFFFF</color>
+    <color name="ksi_fg">#121C23</color>
+    <color name="ksi_muted">#5A656D</color>
+    <color name="ksi_border">#D9DFE3</color>
+    <color name="ksi_accent">#299236</color>
+    <color name="ksi_text_quiet">#424C53</color>
+    <color name="ksi_surface_subtle">#EFF2F6</color>
+    <color name="ksi_primary">#16232C</color>
+    <color name="ksi_on_primary">#FFFFFF</color>
+    <color name="ksi_problem">#AC1B18</color>
+    <color name="ksi_problem_bg">#FFEBE8</color>
+    <color name="ksi_attention">#864F00</color>
+    <color name="ksi_attention_bg">#FEF0D8</color>
+    <color name="ksi_info">#185383</color>
+    <color name="ksi_success">#1A5220</color>
+    <color name="ksi_video_bg">#0C151B</color>
+    <color name="ksi_video_fg">#EEF2F5</color>
+    <color name="ksi_video_grid">#39444C</color>
+</resources>

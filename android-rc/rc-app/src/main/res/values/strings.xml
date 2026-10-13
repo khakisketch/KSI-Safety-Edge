@@ -40,4 +40,26 @@
     <string name="btn_save_core">Save Core config</string>
     <string name="btn_upload">Upload now</string>
     <string name="btn_server_state">Server state</string>
+
+    <!-- C67 cockpit shell (approved design: design/rc-pilot-shell) -->
+    <string name="nav_observe">조종</string>
+    <string name="nav_mission">임무</string>
+    <string name="nav_review">기록</string>
+    <string name="nav_evidence">증거</string>
+    <string name="nav_settings">설정</string>
+    <string name="page_title_observe">조종(관측)</string>
+    <string name="page_title_mission">임무 준비</string>
+    <string name="page_title_review">비행 기록(검토)</string>
+    <string name="page_title_evidence">증거·동기화</string>
+    <string name="page_title_settings">설정·개발</string>
+    <string name="cockpit_status_header">운용 상태</string>
+    <string name="cockpit_status_key">■ 문제  ▲ 주의  · 정보</string>
+    <string name="cockpit_mop">MOP 전송</string>
+    <string name="cockpit_ai">AI 관측 피드</string>
+    <string name="cockpit_live_view">라이브 뷰</string>
+    <string name="cockpit_mop_actions">MOP 링크 조치</string>
+    <string name="top_receipt_note">RC 수신시각(근사)</string>
+    <string name="settings_time_header">시간 · 수신시각(근사) 고지</string>
+    <string name="app_mark">SE</string>
+    <string name="rail_note">RC / 7″</string>
 </resources>

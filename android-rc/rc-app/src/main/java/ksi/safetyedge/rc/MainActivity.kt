@@ -1,10 +1,17 @@
 package ksi.safetyedge.rc
 
+import android.graphics.Typeface
 import android.os.Bundle
+import android.text.SpannableStringBuilder
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import ksi.rc.EvidenceSource
 
 /**
@@ -40,6 +47,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etCoreUrl: EditText
     private lateinit var etCoreToken: EditText
     private lateinit var surfaceVideo: android.view.SurfaceView
+
+    // C67 cockpit shell: nav rail + five areas (approved design).
+    private lateinit var tvPageTitle: TextView
+    private lateinit var tvTopSim: TextView
+    private lateinit var tvTopUtc: TextView
+    private val navTargets = listOf(
+        R.id.btnNavObserve to R.id.pageObserve,
+        R.id.btnNavMission to R.id.pageMission,
+        R.id.btnNavReview to R.id.pageReview,
+        R.id.btnNavEvidence to R.id.pageEvidence,
+        R.id.btnNavSettings to R.id.pageSettings,
+    )
 
     private var shownError: String? = null
     private var hasSyncReport = false
@@ -84,6 +103,12 @@ class MainActivity : AppCompatActivity() {
         surfaceVideo = findViewById(R.id.surfaceVideo)
         etCoreUrl.setText(app.config.coreUrl)
         etCoreToken.setText(app.config.coreToken)
+
+        tvPageTitle = findViewById(R.id.tvPageTitle)
+        tvTopSim = findViewById(R.id.tvTopSim)
+        tvTopUtc = findViewById(R.id.tvTopUtc)
+        navTargets.forEach { (navId, _) -> on(navId) { showPage(navId) } }
+        showPage(R.id.btnNavObserve)
 
         // -- operational mission (A5: bundle attach comes from the synced
         //    mission store; until then the controller shows "not attached").
@@ -287,6 +312,8 @@ class MainActivity : AppCompatActivity() {
         val flight = session.activeFlight
         val store = session.store
         renderOpsStatus(flight, store)
+        refreshTopBar()
+        refreshConnectEmphasis()
         val selectedBundle = selectedBundleId?.let { store.missionBundle(it) }
         tvMission.text = "controller: ${session.missionSummary()}\n" +
             "mission cache: sites=${store.sites().size} " +
@@ -400,18 +427,82 @@ class MainActivity : AppCompatActivity() {
             skippedFrames = summary?.get("skipped_frames")?.asLong(),
             coreConfigured = session.coreConfigured(),
         )
-        tvOpsStatus.text = OperatorStatus.evaluate(input).joinToString("\n") { item ->
+        // C67: render the contract items with the approved severity colours —
+        // ▮ problem (red) / ▲ attention (amber) / · info (blue); label bold.
+        val items = OperatorStatus.evaluate(input)
+        val styled = SpannableStringBuilder()
+        items.forEachIndexed { index, item ->
+            if (index > 0) styled.append("\n")
+            val start = styled.length
             val marker = when (item.severity) {
                 OperatorStatus.Severity.PROBLEM -> "■"
                 OperatorStatus.Severity.ATTENTION -> "▲"
                 OperatorStatus.Severity.INFO -> "·"
             }
-            buildString {
-                append("$marker ${item.label}")
-                if (item.detail.isNotEmpty()) append(" — ${item.detail}")
-                item.action?.let { append("  → $it") }
+            styled.append("$marker ${item.label}")
+            val color = when (item.severity) {
+                OperatorStatus.Severity.PROBLEM -> R.color.ksi_problem
+                OperatorStatus.Severity.ATTENTION -> R.color.ksi_attention
+                OperatorStatus.Severity.INFO -> R.color.ksi_info
             }
+            styled.setSpan(
+                ForegroundColorSpan(ContextCompat.getColor(this, color)),
+                start, styled.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+            styled.setSpan(
+                StyleSpan(Typeface.BOLD),
+                start, styled.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+            )
+            if (item.detail.isNotEmpty()) styled.append(" — ${item.detail}")
+            item.action?.let { styled.append("  → $it") }
         }
+        tvOpsStatus.text = styled
+    }
+
+    /** C67 top bar: page title + SIMULATED tag (never hidden) + receipt note. */
+    private fun refreshTopBar() {
+        val simulated = session.link.isSimulated || app.videoSource.isSimulated
+        tvTopSim.visibility = if (simulated) View.VISIBLE else View.GONE
+        tvTopUtc.text = getString(R.string.top_receipt_note)
+    }
+
+    /**
+     * C67 (design round 3): the MOP Connect CTA is neutral by default and
+     * takes the problem treatment only while the link state is DISCONNECTED.
+     */
+    private fun refreshConnectEmphasis() {
+        val problem = session.link.state == DroneLink.State.DISCONNECTED
+        val connect = findViewById<Button>(R.id.btnConnect)
+        connect.backgroundTintList = ContextCompat.getColorStateList(
+            this,
+            if (problem) R.color.ksi_problem_bg else R.color.ksi_surface,
+        )
+        connect.setTextColor(
+            ContextCompat.getColor(this, if (problem) R.color.ksi_problem else R.color.ksi_fg),
+        )
+    }
+
+    /** C67: five-area navigation (approved design — nav rail + page switching). */
+    private fun showPage(navId: Int) {
+        navTargets.forEach { (nav, page) ->
+            findViewById<View>(page).visibility = if (nav == navId) View.VISIBLE else View.GONE
+            val button = findViewById<Button>(nav)
+            val selected = nav == navId
+            button.backgroundTintList = ContextCompat.getColorStateList(
+                this,
+                if (selected) R.color.ksi_surface_subtle else R.color.ksi_surface,
+            )
+            button.setTextColor(ContextCompat.getColor(this, R.color.ksi_fg))
+        }
+        tvPageTitle.setText(
+            when (navId) {
+                R.id.btnNavMission -> R.string.page_title_mission
+                R.id.btnNavReview -> R.string.page_title_review
+                R.id.btnNavEvidence -> R.string.page_title_evidence
+                R.id.btnNavSettings -> R.string.page_title_settings
+                else -> R.string.page_title_observe
+            },
+        )
     }
 
     private fun refreshEvidence() {
