@@ -18,5 +18,8 @@ build/
 edge/build*/
 *.egg-info/
 
+# design render scratch (Playwright MCP artifacts; curated captures live in design/)
+design-previews/
+
 # DJI PSDK credentials — never commit (real file only; .example is tracked)
 **/dji_sdk_app_info.h
