@@ -46,6 +46,9 @@ bash scripts/rc_device_day.sh build       # device APK + "DJI 키 주입: 있음
 | 9 | 실패 주입(선택) | `stop` 후 재기동(프로세스 사망 재현) | 복원 또는 정직한 실패 표시 | logcat |
 | 10 | 마감 | `log-stop` → `pull-store` → notes.md 마감 | — | 전체 |
 
+**토큰 저장(Keystore) 확인** — 설정·개발에서 Core 토큰 저장 → `stop` → `launch` → 필드에 그대로 복원되는지 확인.
+실패 시 화면에 "보안 저장소 오류"가 표시된다(정상 = 표시 없음). 조종사 이름/소속도 같은 방식으로 재시작 후 복원을 확인한다.
+
 ### UI 실기 확인 (C67 후속 — 같은 세션에서)
 
 - `facts`의 `wm size`/`wm density`로 **밀도 가정(1920×1200 · density 2.0) 검증**.
