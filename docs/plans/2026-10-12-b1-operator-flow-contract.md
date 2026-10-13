@@ -67,6 +67,10 @@
 
 ## 디자인 위임 (OpenDesign) — 범위·목적·보존 제약
 
+> ※ 2026-10-13 이후: 시각 반복은 저장소 정본(`design/rc-pilot-shell/field-shell.html`)에서
+> Design Specialist가 수행한다. 렌더·영수증·독립 리뷰 규칙은
+> `docs/verification/dev-harness-runbook.md` 참조. (초기 라운드는 OpenDesign으로 진행됨.)
+
 - 범위: 조종 화면(A5)의 시각 체계 — 상단 상태 요약의 계층/색/아이콘, 섹션
   재배치, 버튼 크기·간격, RC Plus 2 고휘도 환경 가독성.
 - 목적: 위 상태 계약을 그대로 유지한 채 "한눈에 보는 조종 화면"을 만든다.

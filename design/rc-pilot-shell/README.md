@@ -2,7 +2,7 @@
 
 앱(`android-rc`)의 시각 기준이 되는 단일 HTML 프로토타입. 브라우저로 열어 확인한다.
 
-- **현재 리비전**: `field-shell.html` — sha256 `3d9663353db4374a6a0e41344bb89f2a5d30e6b89eed1c1b9b9cdf3b2da417a7` (87,380 B, 2026-10-13)
+- **현재 리비전**: `field-shell.html` — sha256 `cdb72c9ba39e3d60892872850ec88d99e30783312ad217b8d5899fc13941afb4` (87,829 B, 2026-10-13)
 - **렌더(필수 경로)**:
 
   ```bash
@@ -10,7 +10,7 @@
   ```
 
   기준 뷰포트 1920×1200(가로, RC Plus 2). `file://`은 렌더러에서 차단되므로 로컬 서버로 연다.
-- **캡처**: `captures/round1-before/`, `captures/round1-refined/`, `captures/round2-cockpit/` (각 8장, 1920×1200)
+- **캡처**: `captures/round1-before/`, `captures/round1-refined/`, `captures/round2-cockpit/`, `captures/round3-review/` (round3 9장, 1920×1200)
 
 ## 라운드 이력
 
@@ -19,9 +19,11 @@
 | round 1 생성 | 5영역 제품 셸(계약 준수) | `7c5d311e…` |
 | round 1 리뷰/정제 | F-01 문제·주의 위계, F-02 MOP 조치 배치, F-03 텍스트 크기 | `ba6441f5…` |
 | round 2 재설계(사용자 방향) | 라이브 뷰 중심 구성, 무스크롤(1200=1200), 중복 문구 정리 | `3d966335…` |
+| round 3 독립 렌더 리뷰/정제 | 끊김 상태 Connect CTA 대비, 관측 상태·텔레메트리 글자 크기, 정상 중립 버튼 | `cdb72c9b…` |
 
 상세 기록: `history/2026-10-13-round1-review-findings.md`,
-`history/2026-10-13-round2-redesign-change-note.md`
+`history/2026-10-13-round2-redesign-change-note.md`,
+`history/2026-10-13-round3-review-findings.md`
 
 ## 보존 제약 (디자인 변경 시 불변)
 
