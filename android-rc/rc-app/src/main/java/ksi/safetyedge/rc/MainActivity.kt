@@ -50,6 +50,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var etOperatorOrg: EditText
     private lateinit var btnSaveOperator: Button
     private lateinit var tvOperator: TextView
+    private lateinit var tvDeviceInfo: TextView
+    private lateinit var tvAppVersion: TextView
+    private lateinit var tvUploadGate: TextView
     private lateinit var surfaceVideo: android.view.SurfaceView
 
     // C67 cockpit shell: nav rail + five areas (approved design).
@@ -124,6 +127,9 @@ class MainActivity : AppCompatActivity() {
         etOperatorOrg = findViewById(R.id.etOperatorOrg)
         btnSaveOperator = findViewById(R.id.btnSaveOperator)
         tvOperator = findViewById(R.id.tvOperator)
+        tvDeviceInfo = findViewById(R.id.tvDeviceInfo)
+        tvAppVersion = findViewById(R.id.tvAppVersion)
+        tvUploadGate = findViewById(R.id.tvUploadGate)
         surfaceVideo = findViewById(R.id.surfaceVideo)
         etCoreUrl.setText(app.config.coreUrl)
         etCoreToken.setText(app.config.coreToken)
@@ -134,6 +140,8 @@ class MainActivity : AppCompatActivity() {
         etOperatorOrg.setText(app.config.operatorOrganization)
         refreshOperatorState()
         requestMissingDangerousPermissions()
+        tvDeviceInfo.text = android.os.Build.MODEL
+        tvAppVersion.text = appVersionName()
 
         tvPageTitle = findViewById(R.id.tvPageTitle)
         tvTopSim = findViewById(R.id.tvTopSim)
@@ -423,6 +431,12 @@ class MainActivity : AppCompatActivity() {
         val coreLine =
             if (app.config.coreConfigured) "core=${app.config.coreUrl}"
             else "core=미설정(업로드 비활성)"
+        val tokenStorageError = app.config.coreTokenStorageError
+        tvUploadGate.text = when {
+            tokenStorageError != null -> "업로드: 비활성 — 보안 저장소 오류($tokenStorageError)"
+            app.config.coreConfigured -> "업로드: 활성"
+            else -> "업로드: 비활성 — Core URL과 토큰 필요"
+        }
         if (!hasSyncReport) {
             tvSync.text = coreLine
         }
@@ -1222,6 +1236,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
         if (missing.isNotEmpty()) permissionLauncher.launch(missing.toTypedArray())
+    }
+
+    /** Installed app version (BuildConfig generation is off in this module). */
+    @Suppress("DEPRECATION")
+    private fun appVersionName(): String = try {
+        packageManager.getPackageInfo(packageName, 0).versionName ?: "알 수 없음"
+    } catch (_: Exception) {
+        "알 수 없음"
     }
 
     /** Registered operator state line (settings). */
