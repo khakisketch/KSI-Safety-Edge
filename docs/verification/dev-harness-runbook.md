@@ -51,6 +51,16 @@
   REVOKE_PREVIOUS로 취소(둘 다 이력에 남음 — 삭제 없음) → 증거 PNG 미리보기·다운로드
 - 주의: dev 토큰·localhost 전용(운영 인증은 배포 전 게이트). 기본 저장소와 데이터 분리.
 
+## tailnet 접속 (dev viewing — 임시)
+
+- 디자인 셸: `https://dgx-spark-1.tailda9552.ts.net:8765/field-shell.html`
+  (기존 serve 매핑 → `127.0.0.1:8765`)
+- 검토 콘솔: `https://dgx-spark-1.tailda9552.ts.net:8800/review`
+  (매핑: `sudo tailscale serve --bg --https=8800 http://127.0.0.1:8000`)
+- **Funnel 아님 — tailnet 전용.** dev 토큰이며, 로컬 서버가 살아 있는 동안만 유효(임시).
+- RC Plus 2(`dji-rc-plus-2`)가 tailnet에 있어 기기 브라우저에서 셸을 바로 열 수 있음
+  (네이티브 앱 렌더가 아니라 브라우저 목업 — 실기 검증은 A9-4).
+
 ## 정본·동기화 규칙
 
 - 산출물 정본은 저장소. 외부 도구 사본은 이력일 뿐이며, 반영 시 해시 대조를 기록한다.
