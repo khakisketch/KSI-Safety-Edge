@@ -1,6 +1,6 @@
 # KSI Safety Edge — 오프라인 우선 드론 안전 관측 시스템
 
-[![CI](https://github.com/khakisketch/ksi-safety-edge/actions/workflows/ci.yml/badge.svg)](https://github.com/khakisketch/ksi-safety-edge/actions/workflows/ci.yml)
+[![CI](https://github.com/khakisketch/KSI-Safety-edge/actions/workflows/ci.yml/badge.svg)](https://github.com/khakisketch/KSI-Safety-edge/actions/workflows/ci.yml)
 ![Python 3.12](https://img.shields.io/badge/Python-3.12-blue)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Core%20API-009688)
 ![C++ Edge](https://img.shields.io/badge/C%2B%2B-Edge%20PSDK-00599C)
@@ -9,7 +9,7 @@
 > 인터넷이 없어도 현장에서 사람·중장비를 관측·기록하고,
 > 연결 복구 후 **당시의 설정과 증거를 그대로 재현**하는 드론 기반 안전 관측 시스템입니다.
 
-📄 **제품 소개 페이지: https://khakisketch.github.io/ksi-safety-edge/**
+📄 **제품 소개 페이지: https://khakisketch.github.io/KSI-Safety-edge/**
 
 **개발: 주식회사 케이에스아이 ｜ 문의: 043-288-4860**
 
