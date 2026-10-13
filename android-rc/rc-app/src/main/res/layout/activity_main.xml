@@ -743,6 +743,44 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:paddingTop="16dp"
+                        android:text="@string/section_operator"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <EditText
+                        android:id="@+id/etOperatorName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/hint_operator_name"
+                        android:inputType="textPersonName" />
+
+                    <EditText
+                        android:id="@+id/etOperatorOrg"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/hint_operator_org"
+                        android:inputType="text" />
+
+                    <Button
+                        android:id="@+id/btnSaveOperator"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="@string/btn_save_operator" />
+
+                    <TextView
+                        android:id="@+id/tvOperator"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="16dp"
                         android:text="@string/section_sync"
                         android:textColor="@color/ksi_fg"
                         android:textSize="16sp"

@@ -10,7 +10,8 @@ import java.util.UUID
  * a Core URL + token.
  */
 class AppConfig(context: Context) {
-    private val prefs = context.getSharedPreferences("ksi_rc", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences(CoreTokenStore.PREFS_NAME, Context.MODE_PRIVATE)
+    private val tokenStore = CoreTokenStore(context)
 
     private fun stableId(key: String): String {
         var id = prefs.getString(key, null)
@@ -27,10 +28,40 @@ class AppConfig(context: Context) {
         get() = prefs.getString("core_url", "") ?: ""
         set(value) { prefs.edit().putString("core_url", value.trim()).apply() }
 
+    /**
+     * The Core token is a secret: it is stored in a Keystore-backed envelope
+     * ([CoreTokenStore]), never plaintext. A legacy plaintext value is
+     * migrated on first read. If the Keystore fails, reads fall back to the
+     * legacy value for this session and [coreTokenStorageError] carries the
+     * reason — never hidden.
+     */
     var coreToken: String
-        get() = prefs.getString("core_token", "") ?: ""
-        set(value) { prefs.edit().putString("core_token", value.trim()).apply() }
+        get() = tokenStore.read() ?: ""
+        set(value) { tokenStore.write(value.trim()) }
 
-    // Pre-release: move the token to EncryptedSharedPreferences (A8).
+    /** Non-null while the Keystore-backed token storage is unhealthy. */
+    val coreTokenStorageError: String? get() = tokenStore.lastError
+
     val coreConfigured: Boolean get() = coreUrl.isNotEmpty() && coreToken.isNotEmpty()
+
+    // -- operator (pilot) identity -------------------------------------------
+
+    /**
+     * Person-scoped identity for annotations. The frozen annotation contract
+     * requires a uuid `actor_id`, so registration mints a stable uuid once;
+     * the name stays on this device (server-side name resolution is a later
+     * login/identity item — a name is never fabricated into the record).
+     */
+    var operatorName: String
+        get() = prefs.getString("operator_name", "") ?: ""
+        set(value) { prefs.edit().putString("operator_name", value.trim()).apply() }
+
+    var operatorOrganization: String
+        get() = prefs.getString("operator_org", "") ?: ""
+        set(value) { prefs.edit().putString("operator_org", value.trim()).apply() }
+
+    /** Stable operator uuid (minted on first access). */
+    val operatorId: String get() = stableId("operator_id")
+
+    val operatorRegistered: Boolean get() = operatorName.isNotEmpty()
 }

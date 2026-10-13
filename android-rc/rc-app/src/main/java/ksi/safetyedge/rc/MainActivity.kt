@@ -46,6 +46,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvError: TextView
     private lateinit var etCoreUrl: EditText
     private lateinit var etCoreToken: EditText
+    private lateinit var etOperatorName: EditText
+    private lateinit var etOperatorOrg: EditText
+    private lateinit var btnSaveOperator: Button
+    private lateinit var tvOperator: TextView
     private lateinit var surfaceVideo: android.view.SurfaceView
 
     // C67 cockpit shell: nav rail + five areas (approved design).
@@ -100,9 +104,19 @@ class MainActivity : AppCompatActivity() {
         tvError = findViewById(R.id.tvError)
         etCoreUrl = findViewById(R.id.etCoreUrl)
         etCoreToken = findViewById(R.id.etCoreToken)
+        etOperatorName = findViewById(R.id.etOperatorName)
+        etOperatorOrg = findViewById(R.id.etOperatorOrg)
+        btnSaveOperator = findViewById(R.id.btnSaveOperator)
+        tvOperator = findViewById(R.id.tvOperator)
         surfaceVideo = findViewById(R.id.surfaceVideo)
         etCoreUrl.setText(app.config.coreUrl)
         etCoreToken.setText(app.config.coreToken)
+        app.config.coreTokenStorageError?.let {
+            show("보안 저장소 오류: $it — 토큰을 다시 입력하세요")
+        }
+        etOperatorName.setText(app.config.operatorName)
+        etOperatorOrg.setText(app.config.operatorOrganization)
+        refreshOperatorState()
 
         tvPageTitle = findViewById(R.id.tvPageTitle)
         tvTopSim = findViewById(R.id.tvTopSim)
@@ -223,7 +237,11 @@ class MainActivity : AppCompatActivity() {
             app.config.coreUrl = etCoreUrl.text.toString()
             app.config.coreToken = etCoreToken.text.toString()
             hasSyncReport = false
-            if (app.config.coreConfigured) {
+            val tokenError = app.config.coreTokenStorageError
+            if (tokenError != null) {
+                // Honest: do not pretend the token was stored.
+                show("보안 저장소 오류 — 토큰이 저장되지 않았습니다: $tokenError")
+            } else if (app.config.coreConfigured) {
                 // A8: a Core that just became reachable picks up the latest
                 // finished flight whose local data is complete but unsynced.
                 val resumed = SyncScheduler.enqueuePending(applicationContext, session)
@@ -236,6 +254,19 @@ class MainActivity : AppCompatActivity() {
                 show("upload disabled: Core URL + token required")
             }
             refresh()
+        }
+        on(R.id.btnSaveOperator) {
+            app.config.operatorName = etOperatorName.text.toString()
+            app.config.operatorOrganization = etOperatorOrg.text.toString()
+            refreshOperatorState()
+            val org = app.config.operatorOrganization
+            show(
+                if (app.config.operatorRegistered) {
+                    "조종사 등록: ${app.config.operatorName}" + if (org.isNotEmpty()) " ($org)" else ""
+                } else {
+                    "조종사 이름이 비었습니다 — 오탐 표시/해제가 잠깁니다"
+                },
+            )
         }
         on(R.id.btnUpload) { uploadNow() }
         on(R.id.btnServerState) { serverState() }
@@ -624,6 +655,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun toggleFalsePositive() {
+        if (!app.config.operatorRegistered) {
+            show("조종사 미등록 — 설정·개발에서 조종사 이름을 등록해야 의견을 기록할 수 있습니다 (사람 단위 기록)")
+            return
+        }
         val row = selectedEventRows.getOrNull(selectedEventIndex) ?: run {
             show("select an event first")
             return
@@ -640,7 +675,9 @@ class MainActivity : AppCompatActivity() {
                             FlightHistoryModel.ANNOTATION_FALSE_POSITIVE
                     } ?: throw IllegalStateException("annotation record missing; nothing to revoke")
                     session.store.queueAnnotation(
-                        FlightHistoryModel.revokePrevious(target, session.rcDeviceId, ReceiptClock.now()),
+                        FlightHistoryModel.revokePrevious(
+                            target, app.config.operatorId, session.rcDeviceId, ReceiptClock.now(),
+                        ),
                     )
                     "오탐 의심 해제 — REVOKE_PREVIOUS 기록 추가 (원 기록은 보존)"
                 } else {
@@ -648,7 +685,8 @@ class MainActivity : AppCompatActivity() {
                         FlightHistoryModel.falsePositiveAnnotation(
                             eventId = row.card.eventId,
                             flightId = flightId,
-                            deviceId = session.rcDeviceId,
+                            actorId = app.config.operatorId,
+                            clientId = session.rcDeviceId,
                             artifactIds = row.card.evidence.map { it.artifactId },
                             createdAtLocal = ReceiptClock.now(),
                         ),
@@ -840,8 +878,10 @@ class MainActivity : AppCompatActivity() {
                     }
                     if (row.effectiveAnnotation == FlightHistoryModel.ANNOTATION_FALSE_POSITIVE) {
                         append(" · 오탐 의심")
+                        append(localOperatorSuffix(row.effectiveActorId))
                     } else if (row.effectiveAnnotation == FlightHistoryModel.ANNOTATION_NEEDS_REVIEW) {
                         append(" · 검토 필요")
+                        append(localOperatorSuffix(row.effectiveActorId))
                     }
                     if (index < detail.events.size - 1) append("\n")
                 }
@@ -1129,6 +1169,24 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    /** Registered operator state line (settings). */
+    private fun refreshOperatorState() {
+        val org = app.config.operatorOrganization
+        tvOperator.text = if (app.config.operatorRegistered) {
+            "등록: ${app.config.operatorName}" + if (org.isNotEmpty()) " ($org)" else ""
+        } else {
+            "미등록 — 비행 후 오탐 표시/해제에 필요합니다"
+        }
+    }
+
+    /** " (이름)" when the annotation's actor is the locally registered operator. */
+    private fun localOperatorSuffix(actorId: String?): String =
+        if (actorId != null && app.config.operatorRegistered && actorId == app.config.operatorId) {
+            " (${app.config.operatorName})"
+        } else {
+            ""
+        }
 
     private fun show(message: String) {
         tvError.text = message
