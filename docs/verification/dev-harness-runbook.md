@@ -30,6 +30,7 @@
 - 전체: `bash scripts/run_local_verification.sh` (python → edge → android)
 - 개별: `scripts/run_all_tests.sh`(python 86) · `cmake -S edge -B edge/build && ctest`(edge) ·
   `scripts/android_host_tests.sh`(android — rc-ports/rc-core/rc-msdk/rc-app bench+device)
+- 실기 하루(RC 지상 세션): `scripts/rc_device_day.sh` + `docs/verification/a9-4-device-day-runbook.md`
 - 알려진 한계: Robolectric/WorkManager 6건은 aarch64에서 SKIP(사유 표기). x86_64 CI
   (`.github/workflows/ci.yml`)가 실실행한다 — CI가 정본 경로.
 - aapt2는 x86_64 바이너리이므로 `QEMU_LD_PREFIX`가 필수다(스크립트가 설정).
