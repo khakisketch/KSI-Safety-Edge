@@ -23,6 +23,27 @@ def test_review_console_shell_is_static_and_data_free(client):
     assert UUID_RE.search(body) is None
 
 
+def test_review_console_exposes_reviewer_annotation_write_hooks(client):
+    """A-2: reviewer annotation panel is part of the static shell (append-only)."""
+    root = Client(client.app, base="http://test")
+    body = root.get("/review").text
+    assert "data-annotation-box" in body and "data-anno-submit" in body
+    assert "FALSE_POSITIVE_SUSPECTED" in body and "REVOKE_PREVIOUS" in body
+    # The write path is the existing contract endpoint; the shell still embeds
+    # no tokens and no ids (reviewer/console ids are generated client-side).
+    assert "tok-orgA-rc" not in body
+    assert UUID_RE.search(body) is None
+
+
+def test_annotation_write_requires_rc_scope(client):
+    """A-2: console writes go through the frozen contract endpoint — scope rules hold."""
+    eid = "00000000-0000-4000-8000-000000000000"
+    r = client.post(f"/events/{eid}/annotations", token=AGENT, json={})
+    assert r.status_code == 403  # read scope cannot write (authorized before body)
+    r = client.post(f"/events/{eid}/annotations", token=RC, json={})
+    assert r.status_code == 422  # invalid body — validation precedes lookup/write
+
+
 def test_flight_artifacts_listing_covers_zero_event_flights(client):
     flight = register_flight(client)
     fid = flight["flight_id"]
