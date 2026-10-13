@@ -1,6 +1,6 @@
 # KSI Safety Edge — 서비스 블루프린트 (개발·검증 중심)
 
-- 작성: 2026-10-13 · 갱신: 2026-10-14 · 상태: **초안 — Core 데이터 점검 여정(S0)만 확정. RC→Core 전송 검증 및 운영 여정은 별도 범위.**
+- 작성: 2026-10-13 · 갱신: 2026-10-13 · 상태: **초안 — Core 데이터 점검 여정(S0)만 확정. RC→Core 전송 검증 및 운영 여정은 별도 범위.**
 - 근거: `docs/superpowers/specs/2026-10-08-integrated-design.md`(제품 목표·전체 흐름),
   `docs/plans/2026-10-12-b1-operator-flow-contract.md`(조종 상태 계약),
   `docs/plans/2026-10-13-a2-reviewer-annotation.md`(A-2 의견 계약).
