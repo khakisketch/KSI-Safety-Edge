@@ -103,6 +103,9 @@ class MainActivity : AppCompatActivity() {
         surfaceVideo = findViewById(R.id.surfaceVideo)
         etCoreUrl.setText(app.config.coreUrl)
         etCoreToken.setText(app.config.coreToken)
+        app.config.coreTokenStorageError?.let {
+            show("보안 저장소 오류: $it — 토큰을 다시 입력하세요")
+        }
 
         tvPageTitle = findViewById(R.id.tvPageTitle)
         tvTopSim = findViewById(R.id.tvTopSim)
@@ -223,7 +226,11 @@ class MainActivity : AppCompatActivity() {
             app.config.coreUrl = etCoreUrl.text.toString()
             app.config.coreToken = etCoreToken.text.toString()
             hasSyncReport = false
-            if (app.config.coreConfigured) {
+            val tokenError = app.config.coreTokenStorageError
+            if (tokenError != null) {
+                // Honest: do not pretend the token was stored.
+                show("보안 저장소 오류 — 토큰이 저장되지 않았습니다: $tokenError")
+            } else if (app.config.coreConfigured) {
                 // A8: a Core that just became reachable picks up the latest
                 // finished flight whose local data is complete but unsynced.
                 val resumed = SyncScheduler.enqueuePending(applicationContext, session)
