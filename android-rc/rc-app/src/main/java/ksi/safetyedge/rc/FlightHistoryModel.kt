@@ -68,6 +68,8 @@ object FlightHistoryModel {
         val card: ObservationModel.EventCard,
         val effectiveAnnotation: String?,
         val annotationCount: Int,
+        /** actor_id of the record that set the state (null = none/revoked). */
+        val effectiveActorId: String? = null,
     )
 
     data class FlightDetail(
@@ -96,7 +98,7 @@ object FlightHistoryModel {
         }
         val events = ObservationModel.eventCards(store, flightId).map { card ->
             val records = store.annotationsFor(card.eventId)
-            EventRow(card, effectiveAnnotation(records), records.size)
+            EventRow(card, effectiveAnnotation(records), records.size, effectiveActorId(records))
         }
         val artifacts = store.artifactsFor(flightId).map { artifact ->
             val id = artifact.get("artifact_id").asText()
@@ -184,27 +186,47 @@ object FlightHistoryModel {
         return effective
     }
 
+    /**
+     * actor_id of the record that set the current state: a mark sets the
+     * actor, a later REVOKE clears it. Used to show the operator name for
+     * annotations made on this device (the record itself carries only ids).
+     */
+    fun effectiveActorId(records: List<ObjectNode>): String? {
+        var actor: String? = null
+        for (record in records) {
+            when (record.get("annotation_type")?.asText()) {
+                ANNOTATION_FALSE_POSITIVE, ANNOTATION_NEEDS_REVIEW ->
+                    actor = record.get("actor_id")?.asText()
+                ANNOTATION_REVOKE -> actor = null
+            }
+        }
+        return actor
+    }
+
     /** New `FALSE_POSITIVE_SUSPECTED` record for an event (never edits it). */
     fun falsePositiveAnnotation(
         eventId: String,
         flightId: String,
-        deviceId: String,
+        actorId: String,
+        clientId: String,
         artifactIds: List<String>,
         createdAtLocal: String,
     ): ObjectNode = build(
-        eventId, flightId, deviceId, ANNOTATION_FALSE_POSITIVE,
+        eventId, flightId, actorId, clientId, ANNOTATION_FALSE_POSITIVE,
         artifactIds, createdAtLocal, null,
     )
 
     /** Undo: a NEW REVOKE_PREVIOUS record superseding the given annotation. */
     fun revokePrevious(
         target: ObjectNode,
-        deviceId: String,
+        actorId: String,
+        clientId: String,
         createdAtLocal: String,
     ): ObjectNode = build(
         eventId = target.get("event_id").asText(),
         flightId = target.get("flight_id").asText(),
-        deviceId = deviceId,
+        actorId = actorId,
+        clientId = clientId,
         annotationType = ANNOTATION_REVOKE,
         artifactIds = emptyList(),
         createdAtLocal = createdAtLocal,
@@ -214,7 +236,8 @@ object FlightHistoryModel {
     private fun build(
         eventId: String,
         flightId: String,
-        deviceId: String,
+        actorId: String,
+        clientId: String,
         annotationType: String,
         artifactIds: List<String>,
         createdAtLocal: String,
@@ -225,10 +248,11 @@ object FlightHistoryModel {
         node.put("annotation_id", UUID.randomUUID().toString())
         node.put("event_id", eventId)
         node.put("flight_id", flightId)
-        // Operator identity is DEVICE-scoped until an operator login exists
-        // (A9/H1): both ids are real device ids, never fabricated names.
-        node.put("actor_id", deviceId)
-        node.put("client_id", deviceId)
+        // actor = the registered operator (person, uuid); client = this
+        // device. The record stays uuid-only (frozen contract) — the name is
+        // shown locally, and server-side resolution is a later identity item.
+        node.put("actor_id", actorId)
+        node.put("client_id", clientId)
         node.put("annotation_type", annotationType)
         node.putNull("reason")
         val evidence = node.putArray("evidence_ids")

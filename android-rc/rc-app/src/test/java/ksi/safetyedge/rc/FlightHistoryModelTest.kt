@@ -19,6 +19,7 @@ class FlightHistoryModelTest {
     private val flightA = "00000000-0000-4000-8000-000000000101"
     private val flightB = "00000000-0000-4000-8000-000000000102"
     private val deviceId = "00000000-0000-4000-8000-0000000000aa"
+    private val operatorId = "00000000-0000-4000-8000-0000000000ab"
     private val fixedUtc = "2026-10-10T03:00:00Z"
 
     private fun store(root: java.nio.file.Path = Files.createTempDirectory("hist")) =
@@ -106,7 +107,8 @@ class FlightHistoryModelTest {
         val mark = FlightHistoryModel.falsePositiveAnnotation(
             eventId = "e-a1",
             flightId = flightA,
-            deviceId = deviceId,
+            actorId = operatorId,
+            clientId = deviceId,
             artifactIds = listOf("a-1"),
             createdAtLocal = fixedUtc,
         )
@@ -120,9 +122,10 @@ class FlightHistoryModelTest {
             detail.events.single().effectiveAnnotation,
         )
         assertEquals(1, detail.row.falsePositiveCount)
+        assertEquals(operatorId, detail.events.single().effectiveActorId)
 
         // Undo = a NEW REVOKE_PREVIOUS record (original preserved).
-        val revoke = FlightHistoryModel.revokePrevious(mark, deviceId, fixedUtc)
+        val revoke = FlightHistoryModel.revokePrevious(mark, operatorId, deviceId, fixedUtc)
         assertEquals(
             mark.get("annotation_id").asText(),
             revoke.get("supersedes_annotation_id").asText(),
@@ -131,6 +134,7 @@ class FlightHistoryModelTest {
         detail = FlightHistoryModel.detail(store, flightA)!!
         assertEquals(2, detail.events.single().annotationCount)
         assertNull(detail.events.single().effectiveAnnotation)
+        assertNull(detail.events.single().effectiveActorId)
 
         // Restart: both records survive (append-only log).
         val restarted = FileRcStore(root, wallClock = { fixedUtc })
@@ -145,14 +149,15 @@ class FlightHistoryModelTest {
         val mark = FlightHistoryModel.falsePositiveAnnotation(
             eventId = eventUuid,
             flightId = flightA,
-            deviceId = deviceId,
+            actorId = operatorId,
+            clientId = deviceId,
             artifactIds = listOf(artifactA, artifactB),
             createdAtLocal = fixedUtc,
         )
         assertEquals(1, mark.get("schema_version").asInt())
         assertEquals(eventUuid, mark.get("event_id").asText())
         assertEquals(flightA, mark.get("flight_id").asText())
-        assertEquals(deviceId, mark.get("actor_id").asText())
+        assertEquals(operatorId, mark.get("actor_id").asText())
         assertEquals(deviceId, mark.get("client_id").asText())
         assertEquals(
             FlightHistoryModel.ANNOTATION_FALSE_POSITIVE,
@@ -174,7 +179,7 @@ class FlightHistoryModelTest {
         }
         java.time.Instant.parse(mark.get("created_at_local").asText())
 
-        val revoke = FlightHistoryModel.revokePrevious(mark, deviceId, fixedUtc)
+        val revoke = FlightHistoryModel.revokePrevious(mark, operatorId, deviceId, fixedUtc)
         assertEquals(
             mark.get("annotation_id").asText(),
             revoke.get("supersedes_annotation_id").asText(),

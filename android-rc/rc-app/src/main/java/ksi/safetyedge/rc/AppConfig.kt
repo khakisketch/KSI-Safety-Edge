@@ -43,4 +43,25 @@ class AppConfig(context: Context) {
     val coreTokenStorageError: String? get() = tokenStore.lastError
 
     val coreConfigured: Boolean get() = coreUrl.isNotEmpty() && coreToken.isNotEmpty()
+
+    // -- operator (pilot) identity -------------------------------------------
+
+    /**
+     * Person-scoped identity for annotations. The frozen annotation contract
+     * requires a uuid `actor_id`, so registration mints a stable uuid once;
+     * the name stays on this device (server-side name resolution is a later
+     * login/identity item — a name is never fabricated into the record).
+     */
+    var operatorName: String
+        get() = prefs.getString("operator_name", "") ?: ""
+        set(value) { prefs.edit().putString("operator_name", value.trim()).apply() }
+
+    var operatorOrganization: String
+        get() = prefs.getString("operator_org", "") ?: ""
+        set(value) { prefs.edit().putString("operator_org", value.trim()).apply() }
+
+    /** Stable operator uuid (minted on first access). */
+    val operatorId: String get() = stableId("operator_id")
+
+    val operatorRegistered: Boolean get() = operatorName.isNotEmpty()
 }
