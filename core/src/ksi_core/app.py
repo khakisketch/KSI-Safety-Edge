@@ -42,8 +42,8 @@ def create_app() -> FastAPI:
     app.include_router(annotations_router.router, prefix=prefix)
     app.include_router(review.router, prefix=prefix)
 
-    # A-1 review console: static, data-free shell at /review (no prefix, no
-    # auth). It drives the EXISTING read APIs with the operator's token.
+    # Developer Core-inspection shell at /review (no prefix, no auth). It
+    # drives existing read APIs with the developer's token; no records embed.
     app.include_router(ui.router)
 
     return app

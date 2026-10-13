@@ -34,10 +34,14 @@
   (`.github/workflows/ci.yml`)가 실실행한다 — CI가 정본 경로.
 - aapt2는 x86_64 바이너리이므로 `QEMU_LD_PREFIX`가 필수다(스크립트가 설정).
 
-## 검증 콘솔(/review) 데모 보기 — A-2 포함
+## Core 데이터 점검(/review) — 개발자용
 
-서비스 블루프린트(개발 검증 여정): `docs/superpowers/specs/2026-10-13-service-blueprint.md`.
-콘솔은 4단계 검증 흐름(연결·목록 → 비행 데이터 → 사건·증거 → A-2 의견 기록)을 화면에서 안내한다.
+서비스 블루프린트: `docs/superpowers/specs/2026-10-13-service-blueprint.md`.
+화면은 Core의 목록·상세·증거 조회를 돕는 개발자 진단 도구다. **RC 업로드나 RC→Core 전달을 실행·증명하지 않는다.**
+각 조회 상태는 API 응답을 받은 사실만 뜻한다. 서버 설정 경로가 `core/var/review-demo.db`와
+`core/var/review-demo-objects`의 canonical 쌍과 일치할 때만 `DEMO FIXTURE`로 표시한다.
+그 외는 이름이 같더라도 `출처 미확인`이며, 이 표식도 개별 레코드의 원본을 인증하지 않는다.
+Core origin만으로 실제 데이터라고 판단하지 않는다.
 
 - 시드(데모 전용 저장소 — 기본 DB `core/var/ksi_core.db` 미접촉, 재실행 = 초기화):
   `python scripts/review_demo_seed.py` — 3개 비행: **정상**(사건·증거·의견 이력) ·
@@ -50,21 +54,22 @@
   .venv/bin/uvicorn ksi_core.app:create_app --factory --port 8000
   ```
 
-- 접속: `http://127.0.0.1:8000/review` — 읽기 `tok-orgA-agent` · 작성(rc) `tok-orgA-rc`
-- 해볼 것(“검증 흐름” 패널이 순서를 안내): ① 비행 불러오기 → ② 정상 비행 선택 →
-  ③ 사건의 증거 확인·미리보기/다운로드 → ④ A-2 의견 기록(기록 후 REVOKE_PREVIOUS 취소 —
-  둘 다 이력, 삭제 없음). 실패 상태(토큰 오류 등)는 사실과 다음 행동으로 표시된다.
-- 주의: dev 토큰·localhost 전용(운영 인증은 배포 전 게이트). 기본 저장소와 데이터 분리.
+- 접속: `http://127.0.0.1:8000/review` — 조회 `tok-orgA-agent` · 고급 개발 write test `tok-orgA-rc`
+- 권장 점검: 목록 조회 → 정상 비행 상세에서 사건·증거 응답 확인 → PARTIAL/사건 0건 비행에서 실제 상태와
+  다음 진단 확인. 증거 API 0건은 증거 확인 완료가 아니며 사건 0건은 안전 판정이 아니다.
+- A-2 기록/취소는 화면 아래의 고급 개발용 write-path에 분리되어 있다. **실행하면 현재 연결된 Core에 실제
+  append-only 기록을 추가한다.** 데모 DB에서만 시험하고 운영 검토 행위로 사용하지 않는다.
+- 주의: dev 토큰(운영 인증 아님), tailnet 접근은 보는 기기의 Tailscale 연결 필요. 기본 저장소는 건드리지 않는다.
 
 ## 진입 경로 (목업/데모/실기 구분)
 
 | 산출물 | 정체 | 접근 | 열기 전 확인 |
 |---|---|---|---|
 | `design/rc-pilot-shell/field-shell.html` | 목업([SIMULATED]) | `:8765/field-shell.html` | 브라우저 목업 — 실제 데이터 아님 |
-| `/review` 검증 콘솔 | 실제 동작(데모 DB) | `:8000/review` (tailnet `:8800`) | **보는 기기가 tailnet(Tailscale)에 연결돼 있어야 원격에서 열린다** |
+| `/review` Core 데이터 점검 | Core 조회 API 동작(출처 식별은 제한적) | `:8000/review` (tailnet `:8800`) | canonical demo 경로 쌍만 DEMO FIXTURE, 나머지는 출처 미확인. 원격은 Tailscale 필요 |
 | `android-rc` 앱 | 실제 구현(실기 미검증) | 실기/기기 | A9-4 게이트 |
 
-- **공개 Funnel(:8443 등)에 검증 콘솔을 매핑하지 않는다** — dev 쓰기 토큰·데모 DB 노출.
+- **공개 Funnel(:8443 등)에 이 화면을 매핑하지 않는다** — dev 쓰기 토큰과 Core 진단 데이터 노출 위험.
 - 원격에서 안 열리면: 보는 기기 Tailscale 연결 → 아래 serve 매핑 상태 순서로 확인.
 
 ## tailnet 접속 (dev viewing — 임시)
