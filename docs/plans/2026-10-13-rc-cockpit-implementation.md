@@ -45,3 +45,14 @@
 1. 실기 확인에서 밀도/글자 크기 재보정(한 곳: dimens/strings).
 2. 다크 모드(디자인 토큰 이미 변환 가능).
 3. 디자인 쪽에서 이 매핑(특히 글자 px→sp 유지) 검토 필요 시 Design Specialist 라운드.
+
+## 후속 구현 — 다크 모드 (2026-10-13)
+
+디자인 `prefers-color-scheme: dark` 토큰을 그대로 옮겼다(OKLCH→sRGB; 라이트 19/19 재현으로 변환기 검증).
+
+- `res/values-night/colors.xml`(18색) + `Theme.KsiRc` → `Theme.AppCompat.DayNight.NoActionBar`(라이트 외형 불변).
+- `ksi_accent`는 설계가 다크에서 재정의하지 않아 라이트 값 유지(설계 그대로).
+- 검증(호스트): 명암비 — 모든 텍스트 쌍 ≥ 4.5:1(최소 5.64), 보더는 장식선(설계값 그대로).
+  bench/device 빌드 green, 야간 리소스 APK 패키징 확인(aapt2 dump).
+- 미검증: 실기 시각 확인 — 이 호스트에는 Android 렌더 경로가 없고, Google은 linux-aarch64
+  에뮬레이터를 제공하지 않는다. 확인 방법: RC 실기 또는 폰에 bench APK 설치.
