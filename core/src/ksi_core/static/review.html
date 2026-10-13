@@ -51,6 +51,17 @@
   select { padding: 6px 8px; border: 1px solid #c8cdd4; border-radius: 6px;
            font-size: 13px; background: #fff; }
   .anno-form { background: #fbfbfd; }
+  .devbox { display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+            background: #eef4ff; border: 1px solid #cdd9ee; border-radius: 6px;
+            padding: 6px 8px; font-size: 12px; margin-top: 8px; }
+  .devbox code { background: #fff; border: 1px solid #d5dbe2; border-radius: 4px;
+                 padding: 1px 6px; }
+  .summary { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px;
+             padding: 6px 2px; border-bottom: 1px solid #eceef1; margin-bottom: 6px; }
+  .summary b { font-size: 14.5px; }
+  .summary .att { color: #8a5a00; }
+  .badge { display: inline-block; padding: 1px 7px; border-radius: 10px;
+           font-size: 11.5px; background: #eef1f5; margin-left: 4px; }
 </style>
 </head>
 <body id="review-app">
@@ -73,6 +84,14 @@
       <button id="load">비행 목록 불러오기</button>
       <span id="status"></span>
     </div>
+    <div class="devbox">
+      <b>dev 토큰</b>
+      <span class="muted">(저장소에 공개된 개발용 고정값 — 운영 아님)</span>
+      <code>tok-orgA-agent</code><button data-copy="tok-orgA-agent">복사</button>
+      <code>tok-orgA-rc</code><button data-copy="tok-orgA-rc">복사</button>
+      <button id="fillDev">dev 토큰으로 채우기</button>
+      <span class="muted">조회=agent · 기록=rc (읽기 토큰만 넣으면 의견 쓰기는 403으로 막힘)</span>
+    </div>
     <div class="muted" style="margin-top:6px">
       토큰은 이 브라우저 탭(sessionStorage)에만 저장됩니다. 저장소·서버에 기록되지 않습니다.
     </div>
@@ -85,6 +104,7 @@
       LOCAL_ONLY/UPLOADING/PARTIAL이면 “서버 조회로 확인 가능한 범위”가 그만큼이라는 뜻입니다.
       사건 0건은 안전 확인이 아닙니다.
     </div>
+    <div id="listSummary" class="summary"></div>
     <div id="flights"></div>
   </div>
 
@@ -110,6 +130,24 @@ function setStatus(text, kind) {
   const el = $("status");
   el.textContent = text || "";
   el.className = kind || "";
+}
+
+/** Relative time for quick scanning; absolute values are kept everywhere. */
+function relTime(iso) {
+  if (!iso) return "";
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return "";
+  const secs = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (secs < 60) return "방금";
+  if (secs < 3600) return `${Math.floor(secs / 60)}분 전`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)}시간 전`;
+  return `${Math.floor(secs / 86400)}일 전`;
+}
+
+function withRel(iso) {
+  if (!iso) return "-";
+  const rel = relTime(iso);
+  return `${esc(iso)}${rel ? ` <span class="muted">(${rel})</span>` : ""}`;
 }
 
 function token() {
@@ -158,14 +196,24 @@ async function loadFlights() {
     const rows = items.map((f) => {
       const c = f.completeness || {};
       return `<tr class="clickable" data-flight="${esc(f.flight_id)}">
-        <td>${esc(f.flight_id.slice(0, 8))}<div class="muted">${esc(f.started_at_utc || "-")}</div></td>
+        <td>${esc(f.flight_id.slice(0, 8))}<div class="muted">${withRel(f.started_at_utc)}</div></td>
         <td>${esc((f.site_id || "-").slice(0, 8))}</td>
         <td>${spanState(f.upload_state)}</td>
-        <td>${esc(c.manifest_committed ?? "-")} / ${esc(c.manifests_total ?? "-")}
+        <td>${esc(c.manifests_committed ?? "-")} / ${esc(c.manifests_total ?? "-")}
             <div class="muted">누락 artifact ${esc(c.missing_artifact_count ?? "-")}</div></td>
-        <td>${esc(f.ended_at_utc || "(진행/미상)")}</td>
+        <td>${f.ended_at_utc ? withRel(f.ended_at_utc) : "(진행/미상)"}</td>
       </tr>`;
     }).join("");
+    const attention = items.filter((f) =>
+      String(f.upload_state || "") !== "COMPLETE" ||
+      ((f.completeness || {}).missing_artifact_count || 0) > 0);
+    const missingTotal = items.reduce(
+      (sum, f) => sum + (((f.completeness || {}).missing_artifact_count || 0)), 0);
+    $("listSummary").innerHTML = items.length
+      ? `<span>비행 <b>${items.length}</b>건</span>
+         <span class="${attention.length ? "att" : ""}">주의 <b>${attention.length}</b>건</span>
+         <span class="${missingTotal ? "att" : ""}">누락 artifact <b>${missingTotal}</b></span>`
+      : "";
     $("flights").innerHTML = items.length
       ? `<table><thead><tr><th>비행</th><th>현장</th><th>업로드</th><th>세션(커밋/전체)</th><th>종료</th></tr></thead><tbody>${rows}</tbody></table>
          ${truncated ? '<div class="honest">목록이 상한(20페이지)에서 잘렸습니다 — 최신 일부만 표시 중입니다.</div>' : ""}`
@@ -190,10 +238,10 @@ function detailGrid(f) {
     <div><b>mission</b>${esc(f.mission_id)}</div>
     <div><b>mission rev</b>${esc(f.mission_revision_id)}</div>
     <div><b>bundle sha256</b>${esc((f.bundle_sha256 || "").slice(0, 16))}…</div>
-    <div><b>started(수신)</b>${esc(f.started_at_utc || "-")}</div>
-    <div><b>ended(수신)</b>${esc(f.ended_at_utc || "(진행/미상)")}</div>
+    <div><b>started(수신)</b>${withRel(f.started_at_utc)}</div>
+    <div><b>ended(수신)</b>${f.ended_at_utc ? withRel(f.ended_at_utc) : "(진행/미상)"}</div>
     <div><b>upload_state</b>${spanState(f.upload_state)}</div>
-    <div><b>세션</b>${esc(c.manifest_committed ?? "-")} / ${esc(c.manifests_total ?? "-")} 커밋</div>
+    <div><b>세션</b>${esc(c.manifests_committed ?? "-")} / ${esc(c.manifests_total ?? "-")} 커밋</div>
     <div><b>누락 artifact</b>${esc(c.missing_artifact_count ?? "-")}</div>
   </div>
   <div class="muted" style="margin-top:6px">시간 기준: RC 수신 UTC 창(운영 기록). Edge monotonic 시각은 도메인이 달라 UTC로 변환하지 않습니다.</div>`;
@@ -262,6 +310,7 @@ function eventRow(ev, idx, flightId) {
     <div data-evidence-box="${esc(ev.event_id)}"></div>
     <div style="margin-top:6px">
       <button data-annotation="${esc(ev.event_id)}" data-annotation-flight="${esc(flightId)}">오탐 의견 (append-only)</button>
+      <span class="badge" data-anno-badge="${esc(ev.event_id)}"></span>
       <span class="muted" data-annotation-note="${esc(ev.event_id)}"></span>
     </div>
     <div data-annotation-box="${esc(ev.event_id)}"></div>
@@ -348,7 +397,7 @@ async function loadAnnotations(eventId, flightId) {
       <div class="kv" style="margin-top:6px; border-top:1px dashed #e0e3e8; padding-top:6px">
         <b>${esc(String(a.annotation_id || "").slice(0, 8))}</b>
         <span class="tag ${a.annotation_type === "FALSE_POSITIVE_SUSPECTED" ? "warn" : ""}${a.annotation_type === "REVOKE_PREVIOUS" ? "bad" : ""}">${esc(a.annotation_type || "?")}</span>
-        <span class="muted">actor ${esc(String(a.actor_id || "").slice(0, 8))} · ${esc(a.created_at_local || "-")}</span>
+        <span class="muted">actor ${esc(String(a.actor_id || "").slice(0, 8))} · ${withRel(a.created_at_local)}</span>
         ${a.supersedes_annotation_id ? `<div class="muted">supersedes ${esc(String(a.supersedes_annotation_id).slice(0, 8))}</div>` : ""}
         <div>${esc(a.reason || "")}</div>
       </div>`).join("") : '<div class="muted">아직 주석 없음</div>';
@@ -479,6 +528,13 @@ async function openFlight(flightId) {
       : "";
 
     detail.innerHTML = `
+      <div class="summary">
+        <span>사건 <b>${events.items.length}</b>건</span>
+        <span>증거 <b>${artifacts.items.length}</b>건</span>
+        <span>관측 <b>${obs.items.length}</b>${obs.truncated ? "+" : ""}</span>
+        <span>주석 <b id="detailAnnoTotal">…</b>건</span>
+        <span>관측 요약 <b>${esc(coverage.data_completeness)}</b></span>
+      </div>
       <h3>개요</h3>${detailGrid(flight)}
       <h3>관측 요약 (coverage: ${esc(coverage.data_completeness)})</h3>
       ${renderCoverage(coverage)}
@@ -515,12 +571,49 @@ async function openFlight(flightId) {
         loadAnnotations(btn.dataset.annotation, btn.dataset.annotationFlight));
     }
     wireDownloads(detail);
+
+    // Annotation counts for the per-event badges and the detail summary
+    // (dev scale — capped at 50 events; a failed lookup leaves the badge
+    // blank rather than inventing a number).
+    let annoTotal = 0;
+    await Promise.allSettled(events.items.slice(0, 50).map(async (ev) => {
+      try {
+        const a = await api(`${API}/events/${ev.event_id}/annotations`);
+        const n = (a.items || []).length;
+        annoTotal += n;
+        const badge = detail.querySelector(`[data-anno-badge="${CSS.escape(ev.event_id)}"]`);
+        if (badge) badge.textContent = n ? `주석 ${n}건` : "주석 없음";
+      } catch (_) { /* leave blank */ }
+    }));
+    const annoTotalEl = detail.querySelector("#detailAnnoTotal");
+    if (annoTotalEl) annoTotalEl.textContent = String(annoTotal);
+
     setStatus("상세 로드 완료", "ok");
   } catch (e) {
     detail.innerHTML = `<div class="honest">불러오기 실패: ${esc(e.message)}</div>`;
     setStatus(String(e.message), "err");
   }
 }
+
+// dev 토큰 상자: 복사/자동 채우기 — 값은 저장소에 공개된 개발용 고정값이다.
+async function copyText(text, btn) {
+  try {
+    await navigator.clipboard.writeText(text);
+    const prev = btn.textContent;
+    btn.textContent = "복사됨";
+    setTimeout(() => { btn.textContent = prev; }, 1200);
+  } catch (_) {
+    setStatus("클립보드 복사 실패 — 값을 직접 선택해 복사하세요", "err");
+  }
+}
+for (const btn of document.querySelectorAll("[data-copy]")) {
+  btn.addEventListener("click", () => copyText(btn.dataset.copy, btn));
+}
+$("fillDev").addEventListener("click", () => {
+  $("token").value = "tok-orgA-agent";
+  $("writeToken").value = "tok-orgA-rc";
+  setStatus("dev 토큰 채움 — 저장 후 불러오기", "ok");
+});
 
 $("save").addEventListener("click", () => {
   sessionStorage.setItem("ksi_review_token", token());

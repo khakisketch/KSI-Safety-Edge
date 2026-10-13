@@ -18,8 +18,10 @@ def test_review_console_shell_is_static_and_data_free(client):
     assert 'id="review-app"' in body
     # It drives the existing read APIs...
     assert "/api/v1/edge" in body
-    # ...and embeds no data, no credentials, no ids.
-    assert "tok-orgA-rc" not in body and "tok-orgA-agent" not in body
+    # ...embeds no ids/data, and the ONLY credentials it may show are the two
+    # documented dev-fixture tokens (they live in core/src/ksi_core/config.py
+    # and are not secrets; production auth is the pre-deployment gate).
+    assert set(re.findall(r"tok-[A-Za-z0-9-]+", body)) <= {"tok-orgA-rc", "tok-orgA-agent"}
     assert UUID_RE.search(body) is None
 
 
@@ -29,9 +31,11 @@ def test_review_console_exposes_reviewer_annotation_write_hooks(client):
     body = root.get("/review").text
     assert "data-annotation-box" in body and "data-anno-submit" in body
     assert "FALSE_POSITIVE_SUSPECTED" in body and "REVOKE_PREVIOUS" in body
-    # The write path is the existing contract endpoint; the shell still embeds
-    # no tokens and no ids (reviewer/console ids are generated client-side).
-    assert "tok-orgA-rc" not in body
+    # Dev-console helpers: one-click dev tokens + list/detail summary + relative
+    # time rendering (absolute values stay; nothing is hidden).
+    assert 'id="fillDev"' in body
+    assert "listSummary" in body and "relTime(" in body
+    # The shell still embeds no ids (reviewer/console ids are client-side).
     assert UUID_RE.search(body) is None
 
 
