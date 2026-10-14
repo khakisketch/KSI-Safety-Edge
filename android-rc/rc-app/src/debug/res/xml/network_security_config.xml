@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 디버그(개발·실기 시험) 빌드 전용: 개발망 Core 평문 HTTP 허용 + 개발 프록시용
+     사용자 인증서 신뢰. 릴리스 빌드는 src/main의 같은 이름 리소스(평문 금지)를 쓴다.
+     이 파일이 사라지면 디버그 빌드가 곧바로 릴리스 기본값(평문 금지)으로 바뀐다(현장 필수 파일). -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

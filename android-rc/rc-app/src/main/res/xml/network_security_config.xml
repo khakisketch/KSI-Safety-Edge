@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 배포(릴리스) 기본값: 평문 HTTP 금지 — 운영 Core는 HTTPS만 사용한다.
+     개발·실기 시험용 디버그 빌드는 같은 이름의 src/debug 리소스가 이 파일을 대체한다
+     (빌드 타입 소스셋이 main보다 우선). A9 배포 전 보안 게이트(§6 네트워크) 이행. -->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

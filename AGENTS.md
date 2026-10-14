@@ -19,6 +19,7 @@
 | 실행 원장(작업 기록) | `docs/superpowers/plans/2026-10-08-productization-plan.md` | 날짜별 이력 — 현재 판단은 product-state |
 | 검증 런북 | `docs/verification/dev-harness-runbook.md` (전체 루프) | 목업/데모/실기 진입 구분 포함 |
 | 실기(A9-4) 런북 | `docs/verification/a9-4-device-day-runbook.md` · `a9-msdk-integration-plan.md` | 장치 세션 입력 3개 필요 |
+| 배포 전 보안 게이트 | `docs/plans/2026-10-14-production-security-gate.md` | G1~G7 목록·결정 필요 항목 |
 
 ## 상태 구분 (지켜야 함)
 
