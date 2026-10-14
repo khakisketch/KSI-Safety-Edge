@@ -1,0 +1,67 @@
+{
+  "url": "/field-shell.html",
+  "scheme": "dark",
+  "viewport": "1920x1200",
+  "summary": {
+    "checked": 106,
+    "failures": 0,
+    "gradientExcluded": 0
+  },
+  "failures": [],
+  "samples": [
+    {
+      "sel": ".skip-link",
+      "text": "본문으로 바로가기",
+      "color": "oklch(0.22 0.02 240)",
+      "bg": "rgb(191,197,202)",
+      "bgFrom": "skip-link",
+      "ratio": 9.91,
+      "need": 4.5
+    },
+    {
+      "sel": ".brand-mark",
+      "text": "SE",
+      "color": "oklch(0.93 0.008 240)",
+      "bg": "rgb(36,42,46)",
+      "bgFrom": "nav-rail",
+      "ratio": 11.86,
+      "need": 4.5
+    },
+    {
+      "sel": ".nav-group-label",
+      "text": "현장 기능",
+      "color": "oklch(0.78 0.012 240)",
+      "bg": "rgb(36,42,46)",
+      "bgFrom": "nav-rail",
+      "ratio": 7.3,
+      "need": 4.5
+    },
+    {
+      "sel": ".nav-name",
+      "text": "조종",
+      "color": "oklch(0.93 0.008 240)",
+      "bg": "rgb(36,42,46)",
+      "bgFrom": "nav-rail",
+      "ratio": 11.86,
+      "need": 4.5
+    },
+    {
+      "sel": ".nav-sub",
+      "text": "라이브 · 관측",
+      "color": "oklch(0.78 0.012 240)",
+      "bg": "rgb(36,42,46)",
+      "bgFrom": "nav-rail",
+      "ratio": 7.3,
+      "need": 4.5
+    },
+    {
+      "sel": ".nav-name",
+      "text": "임무",
+      "color": "oklch(0.93 0.008 240)",
+      "bg": "rgb(36,42,46)",
+      "bgFrom": "nav-rail",
+      "ratio": 11.86,
+      "need": 4.5
+    }
+  ]
+}

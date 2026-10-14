@@ -1,0 +1,9 @@
+# User-flow and input evidence (2026-10-14)
+
+- Mouse: opened the mobile menu and navigated to Mission; selected flights and diagnostic scenarios; confirmed `aria-current=page`/`location` states.
+- Keyboard: Escape closed the cockpit drawer and restored focus. ArrowRight moved the post-flight review tab selection to Evidence, then Sync.
+- Keyboard: when focused, both the Evidence table and the post-flight Evidence table scrolled horizontally by 130px per ArrowRight (302px total available); ArrowLeft returned.
+- Review states: completed simulated record displayed 10:52:10 UTC to 11:01:54 UTC and 9분 44초 · 수신시각 간격; zero-event record displayed 0건 and disabled opinion control.
+- Mission sync and Core-save demonstrations left persistent mock feedback after transient toast dismissal; network capture after each action was empty. Upload remained disabled without Core URL+token.
+- Horizontal mouse-wheel input did not advance the table consistently in the managed browser session; no claim is made for wheel scrolling. Touch/swipe, glove use, device sunlight, and actual RC touch are not tested.
+- Raw traces are in `functional-input-checks.txt`; static-network receipts are `mission-sync-network-requests.txt` and `evidence-upload-gate-network-requests.txt`.

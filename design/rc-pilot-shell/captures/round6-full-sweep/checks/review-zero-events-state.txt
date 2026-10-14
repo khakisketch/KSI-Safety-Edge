@@ -1,0 +1,9 @@
+{
+  "active": "postflight",
+  "flight": "SIM-FLT-022",
+  "eventCount": "0건 · SIMULATED",
+  "emptyEventNotice": "이 비행에는 기록된 사건이 없습니다",
+  "falsePositiveDisabled": true,
+  "endedAt": "알 수 없음",
+  "duration": "알 수 없음 · 시작/종료 정보 없음"
+}

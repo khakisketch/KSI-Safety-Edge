@@ -1,0 +1,29 @@
+=== MENU MOUSE + ESCAPE KEY ===
+"{\"open\":true,\"expanded\":\"true\",\"focus\":\"주 메뉴 닫기\"}"
+"{\"open\":false,\"focusRestored\":true}"
+"{\"active\":\"preflight\",\"navOpen\":false,\"current\":\"page\"}"
+=== MISSION SYNC MOCK ===
+"{\"inline\":\"현장 동기화 요청 예시 · 서버 호출 없음 · 결과는 알 수 없습니다.\",\"toastVisible\":false}"
+No requests captured
+=== REVIEW KEYBOARD TABS + TIME / EMPTY EVENT ===
+"{\"selected\":\"evidence\",\"focus\":\"evidence\"}"
+"{\"selected\":\"sync\",\"focus\":\"sync\"}"
+"{\"flight\":\"SIM-FLT-023\",\"start\":\"10:52:10 UTC\",\"end\":\"11:01:54 UTC\",\"duration\":\"9분 44초 · 수신시각 간격\"}"
+"{\"flight\":\"SIM-FLT-022\",\"events\":\"0건 · SIMULATED\",\"opinionDisabled\":true}"
+=== REVIEW EVIDENCE REGION KEYBOARD SCROLL ===
+0
+"{\"panel\":\"evidence\",\"focused\":true,\"left\":130,\"max\":302}"
+=== EVIDENCE REGION KEYBOARD + MOUSE SCROLL ===
+0
+"{\"focused\":true,\"left\":130,\"max\":302}"
+0
+✓ Done
+✓ Done
+"{\"input\":\"mouse wheel\",\"left\":0,\"max\":302}"
+=== CORE SAVE FEEDBACK + UPLOAD GATE ===
+"{\"feedback\":\"목업 · Core 설정 저장을 시연했지만 입력값은 저장·전송하지 않았습니다. 업로드는 비활성입니다.\",\"uploadDisabled\":true}"
+No requests captured
+=== DIAGNOSTICS ACTIVE LOCATION + SCENARIO ===
+"{\"active\":\"diagnostics\",\"settingsCurrent\":\"location\",\"pressed\":\"true\",\"mop\":\"끊김\"}"
+=== CONSOLE / ERRORS ===
+✓ Console log cleared

@@ -1,0 +1,21 @@
+{
+  "scheme": "light",
+  "viewport": [
+    1920,
+    1200
+  ],
+  "document": [
+    1920,
+    1200
+  ],
+  "body": [
+    1920,
+    1200
+  ],
+  "main": [
+    1920,
+    1200
+  ],
+  "active": "inflight",
+  "navOpen": false
+}

@@ -1,0 +1,7 @@
+# Android source-level checks (2026-10-14)
+
+- `strings.xml` parsed as well-formed XML.
+- Four added string resources exist and are referenced by `MainActivity.kt` (revision display/accessibility and duration copy).
+- `formatFlightDuration` present; project `minSdk=26`, consistent with `java.time` use.
+- `git diff --check`: PASS. No Android layout XML changes.
+- Gradle and device rendering were not run per scope; no commit made.

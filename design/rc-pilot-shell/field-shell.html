@@ -49,12 +49,12 @@ small { font-size: 0.8rem; }
 .brand-mark { width: 2.65rem; height: 2.65rem; display: grid; place-items: center; border: 2px solid var(--fg); border-radius: 0.7rem; font-family: var(--font-mono); font-weight: 800; font-size: 0.85rem; letter-spacing: -0.08em; }
 .nav-item { min-width: 0; min-height: 4.25rem; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 0.3rem; padding: 0.4rem 0.15rem; border: 1px solid transparent; background: transparent; border-radius: 0.55rem; text-align: center; position: relative; font-size: 0.75rem; line-height: 1.12; }
 .nav-item:hover { background: var(--surface-subtle); }
-.nav-item[aria-current="page"] { background: var(--surface-subtle); border-color: var(--border); color: var(--fg); }
-.nav-item[aria-current="page"]::before { content: ""; position: absolute; inset-inline-start: -0.58rem; inset-block: 0.8rem; width: 0.2rem; border-radius: 0 0.2rem 0.2rem 0; background: var(--accent); }
+.nav-item[aria-current="page"], .nav-item[aria-current="location"] { background: var(--surface-subtle); border-color: var(--border); color: var(--fg); }
+.nav-item[aria-current="page"]::before, .nav-item[aria-current="location"]::before { content: ""; position: absolute; inset-inline-start: -0.58rem; inset-block: 0.8rem; width: 0.2rem; border-radius: 0 0.2rem 0.2rem 0; background: var(--accent); }
 .nav-icon { width: 1.25rem; height: 1.25rem; display: block; }
 .nav-icon path, .nav-icon circle, .nav-icon rect, .nav-icon line { stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .nav-name { display: block; font-weight: 800; font-size: 0.78rem; }
-.nav-sub { display: block; margin-block-start: 0.08rem; color: var(--text-quiet); font-size: 0.75rem; font-weight: 600; }
+.nav-sub { display: block; margin-block-start: 0.08rem; color: var(--text-quiet); font-size: 0.78rem; font-weight: 600; }
 .nav-spacer { flex: 1; }
 .rail-note { padding: 0.55rem 0.1rem; color: var(--text-quiet); text-align: center; font-family: var(--font-mono); font-size: 0.63rem; border-block-start: 1px solid var(--border); }
 .workspace { min-width: 0; }
@@ -116,6 +116,8 @@ main { width: 100%; min-width: 0; padding: 1rem clamp(1rem, 2vw, 1.8rem) 2rem; }
 .video-center p { margin-block-start: 0.4rem; color: oklch(88% 0.008 240); font-size: 0.84rem; line-height: 1.45; }
 .button-primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
 .button-primary:hover { background: color-mix(in oklch, var(--primary) 88%, var(--fg)); border-color: var(--primary); color: var(--on-primary); }
+.button-quiet { background: transparent; color: var(--fg); border-color: var(--border); }
+.button-quiet:hover { background: var(--surface-subtle); border-color: var(--muted); }
 .link-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.45rem; padding: 0.7rem 0.85rem 0.2rem; }
 .metric { min-width: 0; padding: 0.48rem 0.55rem; background: var(--surface-subtle); border-radius: 0.35rem; }
 .metric-label { display: block; color: var(--text-quiet); font-size: 0.76rem; }
@@ -142,6 +144,7 @@ main { width: 100%; min-width: 0; padding: 1rem clamp(1rem, 2vw, 1.8rem) 2rem; }
 .data-cell { min-width: 0; padding: 0.65rem; border: 1px solid var(--border); border-radius: 0.4rem; background: var(--surface-raised); }
 .data-cell span { display: block; color: var(--text-quiet); font-size: 0.78rem; font-weight: 700; }
 .data-cell strong { display: block; margin-block-start: 0.25rem; font-family: var(--font-mono); font-size: 0.86rem; overflow-wrap: anywhere; }
+.data-cell small { display: block; margin-block-start: 0.22rem; color: var(--text-quiet); font-size: 0.73rem; line-height: 1.35; }
 .action-group { padding: 0.85rem; border-block-start: 1px solid var(--border); }
 .action-group:first-child { border-block-start: 0; }
 .action-group h3 { margin-block-end: 0.6rem; font-size: 0.84rem; }
@@ -162,6 +165,8 @@ main { width: 100%; min-width: 0; padding: 1rem clamp(1rem, 2vw, 1.8rem) 2rem; }
 .action-feedback { position: fixed; z-index: 50; inset-inline: 50% auto; inset-block-end: 1rem; width: max-content; max-width: min(34rem, calc(100vw - 2rem)); padding: 0.75rem 1rem; border-radius: 0.45rem; color: var(--on-primary); background: var(--primary); box-shadow: 0 0.4rem 1.5rem oklch(0% 0 0 / 0.2); opacity: 0; transform: translate(-50%, 0.5rem); pointer-events: none; transition: opacity 140ms ease, transform 140ms ease; font-size: 0.84rem; font-weight: 700; }
 .action-feedback.is-visible { opacity: 1; transform: translate(-50%, 0); }
 .table-wrap { width: 100%; overflow-x: auto; }
+.table-scroll-hint { display: none; margin: 0.45rem 0.7rem 0; color: var(--text-quiet); font-size: 0.72rem; }
+.table-scroll-hint[hidden] { display: none !important; }
 table { width: 100%; table-layout: fixed; border-collapse: collapse; text-align: start; font-size: 0.84rem; }
 th, td { padding: 0.62rem 0.7rem; border-block-end: 1px solid var(--border); vertical-align: top; }
 th { color: var(--text-quiet); font-size: 0.76rem; font-weight: 800; overflow-wrap: anywhere; }
@@ -192,8 +197,8 @@ tbody tr:last-child td { border-block-end: 0; }
 .sync-count span { display: block; margin-block-start: 0.25rem; color: var(--text-quiet); font-size: 0.75rem; }
 .sync-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.5rem; padding: 0.8rem; }
 .sync-fact { padding: 0.6rem; border: 1px solid var(--border); border-radius: 0.38rem; }
-.sync-fact span { display: block; color: var(--text-quiet); font-size: 0.69rem; }
-.sync-fact strong { display: block; margin-block-start: 0.2rem; font-size: 0.79rem; overflow-wrap: anywhere; }
+.sync-fact span { display: block; color: var(--text-quiet); font-size: 0.72rem; }
+.sync-fact strong { display: block; margin-block-start: 0.2rem; font-size: 0.82rem; overflow-wrap: anywhere; }
 .divider { height: 1px; background: var(--border); margin-block: 0.8rem; }
 .footnote { color: var(--text-quiet); font-size: 0.79rem; line-height: 1.5; }
 .info-strip { display: flex; align-items: flex-start; gap: 0.55rem; padding: 0.75rem 0.85rem; border-block-start: 1px solid var(--border); color: var(--text-quiet); font-size: 0.8rem; line-height: 1.45; }
@@ -202,11 +207,11 @@ tbody tr:last-child td { border-block-end: 0; }
 .device-meta div { display: flex; justify-content: space-between; gap: 0.75rem; border-block-end: 1px solid var(--border); padding-block-end: 0.45rem; }
 .device-meta dt { color: var(--text-quiet); font-size: 0.82rem; }
 .device-meta dd { margin: 0; text-align: end; font-size: 0.82rem; font-weight: 800; overflow-wrap: anywhere; }
-.settings-state-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
-.settings-state-item { min-height: 6.7rem; padding: 0.55rem; }
+.settings-state-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
+.settings-state-item { min-height: 7.5rem; padding: 0.65rem; }
 .settings-state-item .status-label { font-size: 0.73rem; }
 .settings-state-item .status-value { margin-block-start: 0.22rem; font-size: 0.88rem; line-height: 1.3; }
-.settings-state-item .status-detail { font-size: 0.75rem; line-height: 1.4; }
+.settings-state-item .status-detail { font-size: 0.78rem; line-height: 1.42; }
 .field-required { color: var(--text-quiet); font-size: 0.75rem; font-weight: 700; }
 .operator-state { margin: 0; padding: 0.65rem 0.75rem; border: 1px solid color-mix(in oklch, var(--attention) 55%, var(--border)); border-radius: 0.4rem; background: var(--attention-bg); font-size: 0.82rem; line-height: 1.45; }
 .operator-state[data-registered="true"] { border-color: color-mix(in oklch, var(--success) 55%, var(--border)); background: color-mix(in oklch, var(--success) 10%, var(--surface)); }
@@ -238,7 +243,7 @@ tbody tr:last-child td { border-block-end: 0; }
   .nav-rail { position: fixed; inset: auto 0 0; width: 100%; height: auto; min-height: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.15rem; padding: 0.3rem 0.35rem calc(0.3rem + env(safe-area-inset-bottom)); border-inline-end: 0; border-block-start: 1px solid var(--border); box-shadow: 0 -0.3rem 1rem oklch(0% 0 0 / 0.06); }
   .rail-brand, .rail-note, .nav-spacer { display: none; }
   .nav-item { min-height: 3.6rem; gap: 0.16rem; border-radius: 0.4rem; font-size: 0.7rem; }
-  .nav-item[aria-current="page"]::before { inset-inline-start: 0.35rem; inset-block: 0.2rem; width: 0.18rem; }
+  .nav-item[aria-current="page"]::before, .nav-item[aria-current="location"]::before { inset-inline-start: 0.35rem; inset-block: 0.2rem; width: 0.18rem; }
   .nav-icon { width: 1.1rem; height: 1.1rem; }
   .nav-name { font-size: 0.69rem; }
   .nav-sub { font-size: 0.63rem; }
@@ -501,8 +506,8 @@ body { min-width: 20rem; min-height: 0; }
 .nav-group-label { margin: 0.55rem 0.12rem 0.18rem; color: var(--text-quiet); font: 800 0.61rem/1.2 var(--font-mono); letter-spacing: 0.055em; text-transform: uppercase; }
 .nav-tools-label { margin-block-start: 0.8rem; padding-block-start: 0.65rem; border-block-start: 1px solid var(--border); }
 .nav-item { min-height: 3.35rem; display: flex; flex-direction: row; justify-content: flex-start; gap: 0.48rem; padding: 0.38rem 0.36rem; border-radius: 0.42rem; text-align: start; font-size: 0.76rem; }
-.nav-item[aria-current="page"] { background: color-mix(in oklch, var(--accent) 8%, var(--surface)); border-color: color-mix(in oklch, var(--accent) 35%, var(--border)); }
-.nav-item[aria-current="page"]::before { inset-inline-start: -0.56rem; inset-block: 0.48rem; width: 0.18rem; }
+.nav-item[aria-current="page"], .nav-item[aria-current="location"] { background: color-mix(in oklch, var(--accent) 8%, var(--surface)); border-color: color-mix(in oklch, var(--accent) 35%, var(--border)); }
+.nav-item[aria-current="page"]::before, .nav-item[aria-current="location"]::before { inset-inline-start: -0.56rem; inset-block: 0.48rem; width: 0.18rem; }
 .nav-step { flex: 0 0 1.3rem; color: var(--fg); font: 800 0.66rem/1 var(--font-mono); }
 .nav-icon { flex: 0 0 1.1rem; width: 1.1rem; height: 1.1rem; }
 .nav-name { font-size: 0.78rem; }
@@ -630,21 +635,22 @@ main { height: 100%; min-height: 0; padding: 0.68rem clamp(0.75rem, 1.25vw, 1.35
   #postflight-evidence-table[hidden], #postflight-evidence-unknown[hidden] { display: none !important; }
 
 /* Other destinations share the same shell and scroll only when their content needs it. */
-.postflight-workspace { display: grid; grid-template-columns: minmax(13rem, 0.3fr) minmax(0, 1fr); gap: 0.8rem; align-items: start; }
+.postflight-workspace { display: grid; grid-template-columns: minmax(15rem, 0.32fr) minmax(0, 1fr); gap: 0.8rem; align-items: start; }
 .flight-list-pane { overflow: hidden; }
 .flight-choice-list { display: grid; gap: 0.45rem; padding: 0.65rem; }
 .flight-choice { width: 100%; min-height: 5.15rem; padding: 0.58rem 0.65rem; text-align: start; }
 .flight-choice.is-selected { border-color: color-mix(in oklch, var(--accent) 55%, var(--border)); background: color-mix(in oklch, var(--accent) 8%, var(--surface)); box-shadow: inset 0.2rem 0 0 var(--accent); }
 .flight-choice-top { display: flex; justify-content: space-between; gap: 0.4rem; align-items: center; }
-.flight-choice-top strong { font: 800 0.75rem/1.2 var(--font-mono); }
-.flight-choice-top span { color: var(--text-quiet); font-size: 0.67rem; }
-.flight-choice > span:nth-child(2), .flight-choice small { display: block; margin-block-start: 0.32rem; font-size: 0.72rem; }
+.flight-choice-top strong { font: 800 0.78rem/1.2 var(--font-mono); }
+.flight-choice-top span { color: var(--text-quiet); font-size: 0.72rem; }
+.flight-choice > span:nth-child(2), .flight-choice small { display: block; margin-block-start: 0.32rem; font-size: 0.75rem; }
 .flight-choice small { color: var(--text-quiet); }
-.flight-list-note { margin: 0 0.7rem 0.7rem; color: var(--text-quiet); font-size: 0.69rem; line-height: 1.4; }
+.flight-list-note { margin: 0 0.7rem 0.7rem; color: var(--text-quiet); font-size: 0.73rem; line-height: 1.4; }
 .postflight-content { min-width: 0; }
-.postflight-tabs { display: flex; gap: 0.25rem; margin-block-end: 0.65rem; padding: 0.2rem; border: 1px solid var(--border); border-radius: 0.42rem; background: var(--surface-subtle); }
-.postflight-tabs button { min-height: 2.7rem; padding: 0.45rem 0.75rem; border-color: transparent; background: transparent; font-size: 0.78rem; }
-.postflight-tabs button[aria-selected="true"] { border-color: var(--border); background: var(--surface); box-shadow: 0 1px 1px oklch(0% 0 0 / 0.04); }
+.postflight-tabs { display: flex; gap: 0.2rem; margin-block-end: 0.65rem; padding: 0; border-block-end: 1px solid var(--border); background: transparent; }
+.postflight-tabs button { position: relative; min-height: 2.9rem; padding: 0.45rem 0.9rem; border: 1px solid transparent; border-block-end: 3px solid transparent; border-radius: 0.38rem 0.38rem 0 0; background: transparent; color: var(--text-quiet); font-size: 0.82rem; }
+.postflight-tabs button:hover { color: var(--fg); background: var(--surface-subtle); }
+.postflight-tabs button[aria-selected="true"] { color: var(--fg); border-color: var(--border); border-block-end-color: var(--accent); background: var(--surface); box-shadow: none; }
 .postflight-panel[hidden] { display: none !important; }
 .postflight-panel .two-column { align-items: stretch; }
 .postflight-honesty-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; margin-block-start: 0.65rem; }
@@ -709,7 +715,7 @@ main { height: 100%; min-height: 0; padding: 0.68rem clamp(0.75rem, 1.25vw, 1.35
   .rail-brand .brand-mark { width: 2rem; height: 2rem; }
   .nav-group-label { margin-inline: 0.15rem; text-align: center; font-size: 0.48rem; }
   .nav-item { min-height: 3.2rem; display: flex; flex-direction: column; justify-content: center; gap: 0.14rem; padding: 0.28rem 0.12rem; text-align: center; }
-  .nav-item[aria-current="page"]::before { inset-inline-start: -0.24rem; inset-block: 0.65rem; }
+  .nav-item[aria-current="page"]::before, .nav-item[aria-current="location"]::before { inset-inline-start: -0.24rem; inset-block: 0.65rem; }
   .nav-step { flex: 0 0 auto; }
   .nav-icon { flex-basis: 1rem; }
   .nav-name { font-size: 0.66rem; }
@@ -767,6 +773,9 @@ main { height: 100%; min-height: 0; padding: 0.68rem clamp(0.75rem, 1.25vw, 1.35
   .postflight-workspace, .postflight-evidence-grid, .postflight-sync-grid { grid-template-columns: minmax(0, 1fr); }
   .diagnostic-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .video-demo-states { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .postflight-tabs button { min-width: 0; flex: 1 1 0; padding-inline: 0.35rem; font-size: 0.75rem; white-space: normal; }
+  #evidence-page table, #postflight-evidence-table table { min-width: 42rem; }
+  .table-scroll-hint { display: block; }
   .scenario-switch { align-items: stretch; flex-direction: column; gap: 0.35rem; }
   .scenario-label { white-space: nowrap; }
   .scenario-switch .segmented { width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.18rem; }
@@ -1025,19 +1034,20 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
       </button>
       <button class="nav-item" type="button" data-page-target="preflight" aria-current="false" data-od-id="nav-preflight">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v15H4z"></path><path d="M8 3.5v4M16 3.5v4M7.5 11h9M7.5 14.5h6"></path></svg>
-        <span><span class="nav-name">임무</span><span class="nav-sub">계획 · 준비</span></span>
+        <span><span class="nav-name">임무</span><span class="nav-sub">비행 전 · 준비</span></span>
       </button>
       <button class="nav-item" type="button" data-page-target="postflight" aria-current="false" data-od-id="nav-postflight">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14v15H5z"></path><path d="M8 8h8M8 11.5h8M8 15h5"></path></svg>
-        <span><span class="nav-name">기록</span><span class="nav-sub">비행 · 사건</span></span>
+        <span><span class="nav-name">기록</span><span class="nav-sub">비행 후 · 검토</span></span>
       </button>
       <button class="nav-item" type="button" data-page-target="evidence" aria-current="false" data-od-id="nav-evidence">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14v15H5z"></path><path d="M8 8h8M8 11.5h8M8 15h5"></path><path d="m14.5 17 1.6 1.6 3.1-3.5"></path></svg>
         <span><span class="nav-name">증거</span><span class="nav-sub">로컬 · 동기화</span></span>
       </button>
+      <p class="nav-group-label nav-tools-label">기기 · 앱</p>
       <button class="nav-item" type="button" data-page-target="settings" aria-current="false" data-od-id="nav-settings">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="m19 13.5 1.2 1-.9 1.7-1.5-.3-1.5 1-.2 1.5h-2l-.7-1.4-1.7-.3-1.2.9-1.7-.9.3-1.5-1-1.5-1.5-.2v-2l1.4-.7.3-1.7-.9-1.2.9-1.7 1.5.3 1.5-1 .2-1.5h2l.7 1.4 1.7.3 1.2-.9 1.7.9-.3 1.5 1 1.5 1.5.2v2l-1.4.7z"></path></svg>
-        <span><span class="nav-name">설정</span><span class="nav-sub">조종사 · 시스템</span></span>
+        <span><span class="nav-name">설정</span><span class="nav-sub">앱 · 조종사</span></span>
       </button>
       <div class="nav-spacer"></div>
       <div class="rail-note">RC / 7″</div>
@@ -1166,7 +1176,7 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
 
         <section class="page" id="mission-page" data-page-panel="preflight" aria-labelledby="mission-title" data-od-id="page-mission" hidden>
           <div class="page-heading">
-            <div><p class="eyebrow">01 / PRE-FLIGHT</p><h2 id="mission-title" data-od-id="heading-mission" tabindex="-1">비행 전 준비</h2></div>
+            <div><p class="eyebrow">01 / 비행 전</p><h2 id="mission-title" data-od-id="heading-mission" tabindex="-1">비행 전 준비</h2></div>
             <p class="page-summary">KSI 기록 준비만 확인 · 비행 안전 승인이 아닙니다 · [SIMULATED]</p>
           </div>
           <div class="two-column">
@@ -1178,7 +1188,7 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
                 <div class="mission-overview">
                   <div class="data-cell" data-od-id="mission-data-1"><span>사이트</span><strong>SIM-SITE-A</strong></div>
                   <div class="data-cell" data-od-id="mission-data-2"><span>선택 번들</span><strong>SIM-BUNDLE-07</strong></div>
-                  <div class="data-cell" data-od-id="mission-data-3"><span>미션 리비전</span><strong>3</strong></div>
+                  <div class="data-cell mission-revision-cell" data-od-id="mission-data-3"><span>미션 리비전 ID</span><strong>SIM-REV-A-003</strong><small>선택 번들에 고정된 임무 구성 · 예시</small></div>
                   <div class="data-cell" data-od-id="mission-data-4"><span>구역</span><strong>A</strong></div>
                   <div class="data-cell" data-od-id="mission-data-5"><span>비행 ID</span><strong id="mission-flight-id">SIM-FLT-024</strong></div>
                   <div class="data-cell" data-od-id="mission-data-6"><span>기록 상태</span><strong id="mission-flight-state">기록 없음</strong></div>
@@ -1192,6 +1202,7 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
                   <button class="button-primary" type="button" data-action="sync-sites" data-od-id="sync-sites">현장 동기화</button>
                   <button type="button" data-action="download-bundle" data-od-id="download-bundle">번들 내려받기</button>
                 </div>
+                <p class="inline-state" id="mission-sync-feedback" role="status" aria-live="polite" aria-atomic="true">실행 전 · 동기화 결과는 알 수 없습니다. 이 화면은 서버에 연결되지 않습니다.</p>
               </div>
               <div class="action-group">
                 <h3 data-od-id="heading-extra-4">준비 · 적용 · 재조정</h3>
@@ -1207,11 +1218,11 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
               <section class="panel" aria-labelledby="flight-actions-title" data-od-id="flight-actions">
                 <div class="panel-heading"><div><h3 id="flight-actions-title" data-od-id="heading-flight-actions-title">기록 · 관측 세션</h3><span class="subline">예시 동작만 표시 · 실제 기체 비행 제어 없음</span></div></div>
                 <div class="action-group">
-                  <div class="action-row">
-                    <button type="button" data-action="start-flight" data-od-id="start-flight">로컬 기록 시작</button>
+                  <div class="action-row mission-primary-action"><button class="button-primary" type="button" data-action="start-flight" data-od-id="start-flight">로컬 기록 시작</button></div>
+                  <div class="action-row mission-secondary-actions">
                     <button type="button" data-action="mission-start" data-od-id="mission-start">관측 세션 시작</button>
-                    <button type="button" data-action="mission-stop" data-od-id="mission-stop">관측 세션 정지</button>
-                    <button type="button" data-action="end-flight" data-od-id="end-flight">로컬 기록 종료</button>
+                    <button class="button-quiet" type="button" data-action="mission-stop" data-od-id="mission-stop">관측 세션 정지</button>
+                    <button class="button-quiet" type="button" data-action="end-flight" data-od-id="end-flight">로컬 기록 종료</button>
                   </div>
                 </div>
                 <p class="inline-state">현재 예시 상태 <strong id="mission-action-state">기록 없음</strong></p>
@@ -1235,14 +1246,14 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
 
         <section class="page" id="review-page" data-page-panel="postflight" aria-labelledby="review-title" data-od-id="page-review" hidden>
           <div class="page-heading">
-            <div><p class="eyebrow">03 / POST-FLIGHT</p><h2 id="review-title" data-od-id="heading-review" tabindex="-1">비행 후 검토</h2></div>
+            <div><p class="eyebrow">03 / 비행 후</p><h2 id="review-title" data-od-id="heading-review" tabindex="-1">비행 후 검토</h2></div>
             <p class="page-summary">로컬 비행 선택 · 상세 · 증거 · 동기화 상태</p>
           </div>
           <div class="postflight-workspace">
             <aside class="flight-list-pane panel" aria-labelledby="flight-list-title">
               <div class="panel-heading"><div><h3 id="flight-list-title">로컬 비행 목록</h3><span class="subline">기기 내 기록 예시</span></div><span class="simulated-tag">[SIMULATED]</span></div>
               <div class="flight-choice-list" role="group" aria-label="검토할 비행 선택">
-                <button class="flight-choice is-selected" type="button" data-flight-select="0" aria-pressed="true"><span class="flight-choice-top"><strong>SIM-FLT-024</strong><span>선택됨</span></span><span>검토 가능 · 로컬</span><small>사건 2건 · 증거 3건</small></button>
+                <button class="flight-choice is-selected" type="button" data-flight-select="0" aria-pressed="true"><span class="flight-choice-top"><strong>SIM-FLT-024</strong><span>선택됨</span></span><span>기록 중 · 로컬</span><small>사건 2건 · 증거 3건</small></button>
                   <button class="flight-choice" type="button" data-flight-select="1" aria-pressed="false"><span class="flight-choice-top"><strong>SIM-FLT-023</strong><span>선택</span></span><span>종료 · 로컬</span><small>사건 2건 · 증거 수 미확인</small></button>
                   <button class="flight-choice" type="button" data-flight-select="2" aria-pressed="false"><span class="flight-choice-top"><strong>SIM-FLT-022</strong><span>선택</span></span><span>종료 · 로컬</span><small>사건 0건 · 증거 수 미확인</small></button>
               </div>
@@ -1268,7 +1279,9 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
                         <div class="detail-row"><dt>기록 상태</dt><dd id="review-flight-state">검토 가능 · 로컬</dd></div>
                         <div class="detail-row"><dt>사건 수</dt><dd id="review-event-count">2건 · SIMULATED</dd></div>
                         <div class="detail-row"><dt>증거 수</dt><dd id="review-evidence-count">3건 · 로컬 카운트 예시</dd></div>
-                        <div class="detail-row"><dt>시작 시각</dt><dd>알 수 없음 · RC 수신시각(근사) 기준</dd></div>
+                        <div class="detail-row"><dt>시작 시각</dt><dd id="review-start-time">알 수 없음</dd></div>
+                        <div class="detail-row"><dt>종료 시각</dt><dd id="review-end-time">알 수 없음 · 기록 중</dd></div>
+                        <div class="detail-row"><dt>기록 소요</dt><dd id="review-record-duration">알 수 없음 · 종료 전</dd></div>
                       </dl>
                     </div>
                   </section>
@@ -1299,7 +1312,8 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
                   </section>
                   <section class="panel" aria-labelledby="postflight-evidence-list-title">
                     <div class="panel-heading"><div><h3 id="postflight-evidence-list-title">로컬 증거 목록</h3><span class="subline" id="postflight-evidence-list-summary">로컬 카운트 예시 · 3건 미동기화</span></div><button type="button" data-action="refresh-local">새로고침(로컬)</button></div>
-                    <div class="table-wrap" id="postflight-evidence-table"><table><thead><tr><th scope="col">로컬 ID</th><th scope="col">자료</th><th scope="col">상태</th></tr></thead><tbody><tr><td class="mono">SIM-EVD-024-001</td><td>관측 요약</td><td>미동기화</td></tr><tr><td class="mono">SIM-EVD-024-002</td><td>레코더 항목</td><td>미동기화</td></tr><tr><td class="mono">SIM-EVD-024-003</td><td>이벤트 메타데이터</td><td>미동기화</td></tr></tbody></table></div>
+                    <p class="table-scroll-hint" id="postflight-evidence-scroll-hint">표를 좌우로 밀거나, 표에 포커스한 뒤 ←/→ 키로 확인하세요.</p>
+                    <div class="table-wrap" id="postflight-evidence-table" role="region" aria-label="선택 비행의 로컬 증거 목록 · 가로 스크롤" tabindex="0"><table><thead><tr><th scope="col">로컬 ID</th><th scope="col">자료</th><th scope="col">로컬 수신 완전성</th><th scope="col">동기화</th></tr></thead><tbody><tr><td class="mono">SIM-EVD-024-001</td><td>관측 요약</td><td>완료 · 예시</td><td>미동기화</td></tr><tr><td class="mono">SIM-EVD-024-002</td><td>레코더 항목</td><td>부분 · 예시</td><td>미동기화</td></tr><tr><td class="mono">SIM-EVD-024-003</td><td>이벤트 메타데이터</td><td>알 수 없음</td><td>미동기화</td></tr></tbody></table></div>
                     <p class="info-strip" id="postflight-evidence-unknown" hidden>선택 비행의 로컬 증거 목록은 알 수 없습니다.</p>
                     <p class="info-strip"><span aria-hidden="true">·</span><span>로컬 완전성 알 수 없음 · 서버 상태 알 수 없음</span></p>
                   </section>
@@ -1324,7 +1338,7 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
 
         <section class="page" id="evidence-page" data-page-panel="evidence" aria-labelledby="evidence-title" data-od-id="page-evidence" hidden>
           <div class="page-heading">
-            <div><p class="eyebrow">04 / 증거·동기화</p><h2 id="evidence-title" data-od-id="heading-evidence" tabindex="-1">증거·동기화</h2></div>
+            <div><p class="eyebrow">04 / 로컬 증거</p><h2 id="evidence-title" data-od-id="heading-evidence" tabindex="-1">증거·동기화</h2></div>
             <p class="page-summary">로컬 우선 · 오프라인 저장 · 서버 상태를 임의로 추정하지 않습니다.</p>
           </div>
           <div class="two-column">
@@ -1334,17 +1348,18 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
                 <div><strong>3건</strong><span>미동기화 증거 · 계속 표시</span></div>
                 <span class="simulated-tag">[SIMULATED]</span>
               </div>
-              <div class="table-wrap">
+              <p class="table-scroll-hint">표를 좌우로 밀거나, 표에 포커스한 뒤 ←/→ 키로 확인하세요.</p>
+              <div class="table-wrap" role="region" aria-label="로컬 증거 목록 · 가로 스크롤" tabindex="0">
                 <table>
-                  <thead><tr><th scope="col">로컬 ID</th><th scope="col">자료</th><th scope="col">로컬 완전성</th><th scope="col">동기화</th></tr></thead>
+                  <thead><tr><th scope="col">로컬 ID</th><th scope="col">자료</th><th scope="col">로컬 수신 완전성</th><th scope="col">동기화</th></tr></thead>
                   <tbody>
-                    <tr><td class="mono">SIM-EVD-024-001</td><td>관측 요약</td><td>알 수 없음</td><td>미동기화</td></tr>
-                    <tr><td class="mono">SIM-EVD-024-002</td><td>레코더 항목</td><td>알 수 없음</td><td>미동기화</td></tr>
+                    <tr><td class="mono">SIM-EVD-024-001</td><td>관측 요약</td><td>완료 · 예시</td><td>미동기화</td></tr>
+                    <tr><td class="mono">SIM-EVD-024-002</td><td>레코더 항목</td><td>부분 · 예시</td><td>미동기화</td></tr>
                     <tr><td class="mono">SIM-EVD-024-003</td><td>이벤트 메타데이터</td><td>알 수 없음</td><td>미동기화</td></tr>
                   </tbody>
                 </table>
               </div>
-              <p class="info-strip"><span aria-hidden="true">·</span><span>미동기화 카운트는 숨기지 않습니다. Core 미설정 · 서버측 상태 알 수 없음.</span></p>
+              <p class="info-strip"><span aria-hidden="true">·</span><span>완료·부분은 로컬 수신 완전성의 예시이며 서버 커밋과 별도입니다. 미동기화 3건을 계속 표시하고 서버 상태는 알 수 없음으로 둡니다.</span></p>
             </section>
 
             <div class="stack">
@@ -1360,8 +1375,9 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
                   <div class="action-row">
                     <button class="button-primary" type="button" data-action="upload-now" data-od-id="upload-now" aria-describedby="upload-gate-note" disabled>지금 업로드</button>
                     <button type="button" data-action="server-state" data-od-id="server-state">서버 상태</button>
+                    <button type="button" data-page-link="settings">Core 설정 보기</button>
                   </div>
-                  <p class="field-hint" id="upload-gate-note" style="margin-block-start:0.45rem">업로드 비활성 · Core URL과 토큰이 모두 설정되어야 합니다.</p>
+                  <p class="field-hint" id="upload-gate-note" style="margin-block-start:0.45rem">업로드 비활성 · Core URL과 토큰이 모두 필요합니다. 이 목업에서는 저장·업로드를 하지 않습니다.</p>
                 </div>
                 <p class="inline-state" id="server-state-note">동기화 요청 결과: 알 수 없음 · 이 프로토타입은 서버에 연결되지 않습니다.</p>
               </section>
@@ -1382,7 +1398,7 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
 
         <section class="page" id="diagnostics-page" data-page-panel="diagnostics" aria-labelledby="diagnostics-title" hidden>
           <div class="page-heading">
-            <div><p class="eyebrow">TOOLS / DIAGNOSTICS</p><h2 id="diagnostics-title" tabindex="-1">진단 · 상태 출처</h2></div>
+            <div><p class="eyebrow">설정 / 출처별 상태</p><h2 id="diagnostics-title" tabindex="-1">시스템 진단</h2></div>
             <span class="simulated-tag">[SIMULATED]</span>
           </div>
           <section class="panel diagnostics-scenario-panel" aria-labelledby="scenario-title">
@@ -1422,8 +1438,8 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
 
         <section class="page" id="settings-page" data-page-panel="settings" aria-labelledby="settings-title" data-od-id="page-settings" hidden>
           <div class="page-heading">
-            <div><p class="eyebrow">05 / 설정·개발</p><h2 id="settings-title" data-od-id="heading-settings" tabindex="-1">설정·개발</h2></div>
-            <div class="page-summary"><span>앱 정보 · 시각 기준 · 조종사 및 Core 설정</span><button class="settings-system-link" type="button" data-page-link="diagnostics">시스템 진단</button></div>
+            <div><p class="eyebrow">05 / 앱 · 조종사</p><h2 id="settings-title" data-od-id="heading-settings" tabindex="-1">설정</h2></div>
+            <div class="page-summary"><span>앱 정보 · 시각 기준 · 조종사 및 Core 설정</span><button class="settings-system-link" type="button" data-page-link="diagnostics">시스템 진단 보기</button></div>
           </div>
           <div class="two-column">
             <section class="panel" aria-labelledby="time-contract-title" data-od-id="time-contract">
@@ -1465,12 +1481,13 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
             <section class="panel" aria-labelledby="core-save-state-title" data-od-id="core-save-state">
               <div class="panel-heading"><div><h3 id="core-save-state-title">Core 저장 상태</h3><span class="subline">실제 앱 동작 예시 · 이 목업은 저장하지 않습니다</span></div><span class="simulated-tag">[SIMULATED]</span></div>
               <div class="content-pad stack">
-                <div class="settings-state-grid" role="group" aria-label="Core 저장 상태 예시">
-                  <article class="status-item settings-state-item" data-severity="info"><span class="status-label">저장 결과 예시</span><strong class="status-value">Core 설정 저장</strong><span class="status-detail">앱의 저장 성공 안내</span></article>
+                <div class="settings-state-grid" role="group" aria-label="Core 저장 결과와 오류 예시">
+                  <article class="status-item settings-state-item" data-severity="info"><span class="status-label">저장 성공 예시</span><strong class="status-value">설정 저장됨</strong><span class="status-detail">실제 앱에서 Core 설정 저장에 성공한 경우 · 예시</span></article>
+                  <article class="status-item settings-state-item" data-severity="problem"><span class="status-label">보안 저장소 오류 예시</span><strong class="status-value">토큰 저장 실패</strong><span class="status-detail">기기 보안 저장소에 저장되지 않았습니다. 저장소 상태를 확인한 뒤 다시 시도하세요.</span></article>
                   <article class="status-item settings-state-item" data-severity="info"><span class="status-label">토큰 저장 위치</span><strong class="status-value">기기 보안 저장소</strong><span class="status-detail">실제 앱에서 Core 토큰을 보관</span></article>
                   <article class="status-item settings-state-item" data-severity="attention"><span class="status-label">업로드 조건</span><strong class="status-value">비활성</strong><span class="status-detail">Core URL과 토큰 모두 필요</span></article>
                 </div>
-                <p class="field-hint">보안 저장소 오류 시 저장 실패를 알립니다. 실제 엔드포인트나 토큰을 입력하지 마세요.</p>
+                <p class="field-hint">성공·오류 문구는 상태 예시입니다. 실제 엔드포인트나 토큰을 입력하지 마세요.</p>
               </div>
             </section>
           </div>
@@ -1609,6 +1626,7 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
       const navReveal = document.getElementById("nav-reveal");
       const navBackdrop = document.querySelector(".nav-backdrop");
       const navClose = document.querySelector(".nav-close");
+      const settingsNavSub = document.querySelector('[data-page-target="settings"] .nav-sub');
       const cockpitAttention = document.getElementById("cockpit-attention");
       const cockpitAttentionTitle = document.getElementById("cockpit-attention-title");
       const cockpitAttentionCopy = document.getElementById("cockpit-attention-copy");
@@ -1626,9 +1644,9 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
       let demoTick = 0;
       let demoFlightNumber = 24;
       const flights = [
-        { id: "SIM-FLT-024", state: "검토 가능 · 로컬", events: "2건 · SIMULATED", evidence: "3건 · 로컬 카운트 예시", evidenceSummary: "로컬 카운트 예시 · 3건 미동기화", unsynced: "3건 · SIMULATED", hasEvidence: true },
-        { id: "SIM-FLT-023", state: "종료 · 로컬", events: "2건 · SIMULATED", evidence: "알 수 없음 · 로컬 목록 미확인", evidenceSummary: "선택 비행의 로컬 카운트 알 수 없음", unsynced: "알 수 없음", hasEvidence: false },
-        { id: "SIM-FLT-022", state: "종료 · 로컬", events: "0건 · SIMULATED", evidence: "알 수 없음 · 로컬 목록 미확인", evidenceSummary: "선택 비행의 로컬 카운트 알 수 없음", unsynced: "알 수 없음", hasEvidence: false }
+        { id: "SIM-FLT-024", state: "기록 중 · 로컬", events: "2건 · SIMULATED", evidence: "3건 · 로컬 카운트 예시", evidenceSummary: "로컬 카운트 예시 · 3건 미동기화", unsynced: "3건 · SIMULATED", startedAt: "알 수 없음", endedAt: "알 수 없음 · 기록 중", duration: "알 수 없음 · 종료 전", hasEvidence: true },
+        { id: "SIM-FLT-023", state: "종료 · 로컬", events: "2건 · SIMULATED", evidence: "알 수 없음 · 로컬 목록 미확인", evidenceSummary: "선택 비행의 로컬 카운트 알 수 없음", unsynced: "알 수 없음", startedAt: "10:52:10 UTC", endedAt: "11:01:54 UTC", duration: "9분 44초 · 수신시각 간격", hasEvidence: false },
+        { id: "SIM-FLT-022", state: "종료 · 로컬", events: "0건 · SIMULATED", evidence: "알 수 없음 · 로컬 목록 미확인", evidenceSummary: "선택 비행의 로컬 카운트 알 수 없음", unsynced: "알 수 없음", startedAt: "알 수 없음", endedAt: "알 수 없음", duration: "알 수 없음 · 시작/종료 정보 없음", hasEvidence: false }
       ];
       const events = [
         { kind: "DETECTED_ONLY", title: "[DETECTED_ONLY] 객체 탐지 · 예시 이벤트", observationTitle: "객체 탐지 · 예시 이벤트", time: "Edge +00:14.228", receiptTime: "Edge 원시 +00:14.228 · RC 시각으로 변환하지 않음" },
@@ -1752,9 +1770,10 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
         document.querySelectorAll("[data-page-target]").forEach(function (button) {
           const active = button.dataset.pageTarget === (pageName === "diagnostics" ? "settings" : pageName);
           button.classList.toggle("is-active", active);
-          button.setAttribute("aria-current", active ? "page" : "false");
+          button.setAttribute("aria-current", active ? (pageName === "diagnostics" ? "location" : "page") : "false");
         });
-        const pageNames = { preflight: "임무 · 계획 및 준비", inflight: "조종 · 라이브 뷰", postflight: "기록 · 비행 검토", evidence: "증거 · 로컬 및 동기화", diagnostics: "설정 · 시스템 진단", settings: "설정 · 조종사 및 앱" };
+        if (settingsNavSub) settingsNavSub.textContent = pageName === "diagnostics" ? "시스템 진단" : "앱 · 조종사";
+        const pageNames = { preflight: "임무 · 비행 전 준비", inflight: "조종 · 라이브 뷰", postflight: "기록 · 비행 후 검토", evidence: "증거 · 로컬 및 동기화", diagnostics: "설정 · 시스템 진단", settings: "설정 · 앱 및 조종사" };
         document.getElementById("active-page-name").textContent = pageNames[pageName] || "현장 조종";
         const activeHeading = document.querySelector('[data-page-panel="' + pageName + '"] h2');
         if (activeHeading && pageName !== "inflight") activeHeading.focus({ preventScroll: true });
@@ -1810,10 +1829,14 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
         document.getElementById("review-flight-state").textContent = flight.state;
         document.getElementById("review-event-count").textContent = flight.events;
         document.getElementById("review-evidence-count").textContent = flight.evidence;
+        document.getElementById("review-start-time").textContent = flight.startedAt;
+        document.getElementById("review-end-time").textContent = flight.endedAt;
+        document.getElementById("review-record-duration").textContent = flight.duration;
         document.getElementById("postflight-evidence-subline").textContent = flight.evidenceSummary;
         document.getElementById("postflight-evidence-list-summary").textContent = flight.hasEvidence ? "로컬 카운트 예시 · 3건 미동기화" : "선택 비행의 로컬 카운트 알 수 없음";
         document.getElementById("postflight-unsynced-count").textContent = flight.unsynced;
         document.getElementById("postflight-evidence-table").hidden = !flight.hasEvidence;
+        document.getElementById("postflight-evidence-scroll-hint").hidden = !flight.hasEvidence;
         document.getElementById("postflight-evidence-unknown").hidden = flight.hasEvidence;
         document.querySelectorAll("[data-flight-select]").forEach(function (button) {
           const selected = Number(button.dataset.flightSelect) === reviewFlightIndex;
@@ -1875,6 +1898,22 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
         mopOverride = state;
         renderStatus(currentScenario);
       }
+
+      document.querySelectorAll(".table-wrap[tabindex='0']").forEach(function (region) {
+        region.addEventListener("keydown", function (event) {
+          const maxScroll = region.scrollWidth - region.clientWidth;
+          if (maxScroll <= 0) return;
+          const step = Math.max(48, Math.round(region.clientWidth * 0.35));
+          let nextScroll = region.scrollLeft;
+          if (event.key === "ArrowRight") nextScroll = Math.min(maxScroll, nextScroll + step);
+          else if (event.key === "ArrowLeft") nextScroll = Math.max(0, nextScroll - step);
+          else return;
+          if (nextScroll !== region.scrollLeft) {
+            event.preventDefault();
+            region.scrollLeft = nextScroll;
+          }
+        });
+      });
 
       document.querySelectorAll("[data-page-target]").forEach(function (button) {
         button.addEventListener("click", function () {
@@ -2033,9 +2072,13 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
           setVideoDemoState("unknown");
           announce("영상 입력 수신 시각 미확인 예시 · 지연/실패와 구분합니다.");
         } else if (action === "sync-sites") {
-          announce("현장 동기화 요청 예시 · 실제 서버 호출 없음.");
+          const message = "현장 동기화 요청 예시 · 서버 호출 없음 · 결과는 알 수 없습니다.";
+          document.getElementById("mission-sync-feedback").textContent = message;
+          announce(message);
         } else if (action === "download-bundle") {
-          announce("번들 내려받기 예시 · 실제 파일을 받지 않았습니다.");
+          const message = "번들 내려받기 예시 · 실제 파일을 받지 않았습니다. 번들 상태는 알 수 없습니다.";
+          document.getElementById("mission-sync-feedback").textContent = message;
+          announce(message);
         } else if (action === "prepare" || action === "apply" || action === "reconcile") {
           const labels = { prepare: "준비", apply: "적용", reconcile: "재조정" };
           announce(labels[action] + " 단계 예시 · 실제 임무 상태는 변경되지 않았습니다.");

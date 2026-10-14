@@ -12,7 +12,7 @@
     <string name="btn_reconcile">재조정</string>
     <string name="btn_start">시작</string>
     <string name="btn_stop">정지</string>
-    <string name="btn_end_flight">KSI 기록 종료</string>
+    <string name="btn_end_flight">KSI 로컬 기록 종료</string>
     <string name="btn_sync_sites">현장 동기화</string>
     <string name="btn_sync_bundle">번들 내려받기</string>
     <string name="btn_start_flight">비행 시작</string>
@@ -63,7 +63,7 @@
     <string name="review_criteria_note">검토 시 표시 기준 — 사건 0건 ≠ 안전 확인 · 시간은 RC 수신시각(근사) · 서버에서 가져오기는 동작 예시(서버 데이터는 알 수 없음)</string>
     <string name="mission_cell_site">사이트</string>
     <string name="mission_cell_bundle">선택 번들</string>
-    <string name="mission_cell_revision">미션 리비전</string>
+    <string name="mission_cell_revision">미션 리비전 ID</string>
     <string name="mission_cell_zones">구역</string>
     <string name="mission_cell_flight_id">비행 ID</string>
     <string name="mission_cell_flight_state">비행 상태</string>
@@ -79,10 +79,10 @@
     <string name="nav_review">기록</string>
     <string name="nav_evidence">증거</string>
     <string name="nav_settings">설정</string>
-    <string name="page_title_mission">임무 설정</string>
-    <string name="page_title_review">비행 기록</string>
-    <string name="page_title_evidence">증거 · 동기화</string>
-    <string name="page_title_settings">설정</string>
+    <string name="page_title_mission">임무 · 비행 전 준비</string>
+    <string name="page_title_review">기록 · 비행 후 검토</string>
+    <string name="page_title_evidence">증거 · 로컬 및 동기화</string>
+    <string name="page_title_settings">설정 · 앱 및 조종사</string>
     <string name="cockpit_status_header">운용 상태</string>
     <string name="cockpit_status_key">■ 문제  ▲ 주의  · 정보</string>
     <string name="cockpit_mop">MOP 전송</string>
@@ -94,8 +94,8 @@
     <string name="settings_time_header">시간 · 수신시각(근사) 고지</string>
     <string name="app_mark">SE</string>
     <string name="rail_note">RC / 7″</string>
-    <string name="page_title_inflight">조종 · 관측</string>
-    <string name="mission_prep_title">임무 설정</string>
+    <string name="page_title_inflight">조종 · 라이브 뷰</string>
+    <string name="mission_prep_title">비행 전 준비</string>
     <string name="mission_prep_hint">현장 선택 → 기록 세션 → 기체 임무 적용</string>
     <string name="mission_readiness_note">KSI 임무·기록 준비만 표시합니다. 비행 안전 상태는 DJI Pilot 2에서 확인하세요.</string>
     <string name="title_mission_selection">이번 관측 임무</string>
@@ -105,7 +105,7 @@
     <string name="mission_apply_sequence">기체 임무 상태</string>
     <string name="btn_mission_start">관측 세션 시작</string>
     <string name="btn_mission_stop">관측 세션 정지</string>
-    <string name="btn_start_flight_recording">KSI 기록 세션 시작</string>
+    <string name="btn_start_flight_recording">KSI 로컬 기록 시작</string>
     <string name="mission_session_boundary">세션 시작은 Edge 관측을 시작하는 동작입니다. 기체 이륙·비행 조종은 DJI Pilot 2 권한이며 MOP 응답은 별도로 확인하세요.</string>
     <string name="flight_record_start_note">KSI 로컬 기록과 녹화를 시작합니다. 기체 비행 조종은 DJI Pilot 2에서 합니다.</string>
     <string name="top_no_active_flight">활성 KSI 기록 없음</string>
@@ -120,7 +120,7 @@
     <string name="video_overlay_honesty">AI 박스는 프레임 대응 검증 전까지 영상에 표시하지 않습니다.</string>
     <string name="ai_overlay_unverified">영상 오버레이 보류 · Edge 분석과 DJI 라이브 프레임의 대응 검증 전에는 박스를 표시하지 않습니다.</string>
     <string name="video_waiting_for_frames">라이브 영상 대기 중\n비행 조종 상태는 DJI Pilot 2에서 확인하세요.</string>
-    <string name="postflight_title">로컬 비행 기록 · 검토</string>
+    <string name="postflight_title">비행 후 검토</string>
     <string name="title_local_flights">기기 내 비행 기록</string>
     <string name="title_event_review">사건 · 관측 검토</string>
     <string name="btn_open_evidence">증거·동기화</string>
@@ -140,4 +140,8 @@
     <string name="btn_toggle_ai_observations">AI 관측</string>
     <string name="postflight_no_event_detail">이 비행에는 기록된 사건이 없습니다.</string>
     <string name="postflight_no_event_action">사건 선택 후 의견 기록</string>
+    <string name="mission_revision_display_format">리비전 ID · %1$s</string>
+    <string name="mission_revision_accessibility_format">선택 번들에 고정된 임무 구성 · 미션 리비전 ID %1$s</string>
+    <string name="mission_revision_unknown_accessibility">미션 리비전 ID를 알 수 없습니다.</string>
+    <string name="review_duration_line_format">기록 소요 %1$s · RC 수신시각 간격</string>
 </resources>

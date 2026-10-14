@@ -18,6 +18,8 @@ import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import java.time.Duration
+import java.time.Instant
 import ksi.rc.EvidenceSource
 
 /**
@@ -211,12 +213,19 @@ class MainActivity : AppCompatActivity() {
         appHeader = findViewById(R.id.appHeader)
         headerDivider = findViewById(R.id.headerDivider)
         tvCockpitSim = findViewById(R.id.tvCockpitSim)
+        findViewById<Button>(R.id.btnStartFlight).apply {
+            backgroundTintList = ContextCompat.getColorStateList(
+                this@MainActivity,
+                R.color.ksi_primary,
+            )
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_on_primary))
+        }
         findViewById<Button>(R.id.btnEndFlight).apply {
             backgroundTintList = ContextCompat.getColorStateList(
                 this@MainActivity,
-                R.color.ksi_problem,
+                R.color.ksi_surface,
             )
-            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_on_primary))
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_fg))
         }
         etCoreUrl.setText(app.config.coreUrl)
         etCoreToken.setText(app.config.coreToken)
@@ -615,9 +624,15 @@ class MainActivity : AppCompatActivity() {
         tvMissionSite.text = "현장 ID · ${selectedSiteId?.take(8) ?: "선택 필요"}"
         tvMissionBundle.text = "번들 ID · ${selectedBundle?.get("bundle_id")?.asText()?.take(8) ?: "선택 필요"}"
         val snapshot = selectedBundle?.get("mission_snapshot")
-        tvMissionRevision.text = "미션 rev · " +
-            (flight?.get("mission_revision_id")?.asText()?.take(8)
-                ?: snapshot?.get("mission_revision_id")?.asText()?.take(8) ?: "-")
+        val revisionId = flight?.get("mission_revision_id")?.asText()
+            ?: snapshot?.get("mission_revision_id")?.asText()
+        tvMissionRevision.text = getString(
+            R.string.mission_revision_display_format,
+            revisionId?.take(8) ?: "-",
+        )
+        tvMissionRevision.contentDescription = revisionId?.let {
+            getString(R.string.mission_revision_accessibility_format, it)
+        } ?: getString(R.string.mission_revision_unknown_accessibility)
         val zoneCount = flight?.get("zone_revision_ids")?.size()
             ?: snapshot?.get("zones")?.size()
         tvMissionZone.text = "구역 · ${zoneCount?.let { "${it}개" } ?: "-"}"
@@ -1385,10 +1400,30 @@ class MainActivity : AppCompatActivity() {
             append("미션 rev ${row.missionRevisionId.take(8)} · 번들 ${row.bundleSha256.take(8)} · ")
             append("구역 ${row.zoneRevisionIds.size}개\n")
             append("시작 ${row.startedAtUtc?.take(19) ?: "알 수 없음"} · 종료 ${row.endedAtUtc?.take(19) ?: "-"} (RC 수신시각 근사)\n")
+            append(getString(
+                R.string.review_duration_line_format,
+                formatFlightDuration(row.startedAtUtc, row.endedAtUtc),
+            ) + "\n")
             append("관측 ${row.observationCount} · 객체 관측 ${row.detectionOnlyCount} · 후보 ${row.candidateCount} · ")
             append("커버 ${row.coveredFrames ?: "-"} / 공백 ${row.skippedFrames ?: "-"}프레임\n")
             append("로컬 증거 ${row.artifactCompleteCount}/${row.artifactCount} 완료 · ")
             append("서버 커밋 확인 ${row.artifactSyncedCount}/${row.artifactCount} · 링크 공백 ${row.mopGapCount}")
+        }
+    }
+
+    private fun formatFlightDuration(startedAtUtc: String?, endedAtUtc: String?): String {
+        if (startedAtUtc.isNullOrBlank() || endedAtUtc.isNullOrBlank()) return "알 수 없음"
+        val duration = runCatching {
+            Duration.between(Instant.parse(startedAtUtc), Instant.parse(endedAtUtc))
+        }.getOrNull()?.takeIf { !it.isNegative } ?: return "알 수 없음"
+        val totalSeconds = duration.seconds
+        val hours = totalSeconds / 3600
+        val minutes = totalSeconds % 3600 / 60
+        val seconds = totalSeconds % 60
+        return when {
+            hours > 0 -> "${hours}시간 ${minutes}분"
+            minutes > 0 -> "${minutes}분 ${seconds}초"
+            else -> "${seconds}초"
         }
     }
 

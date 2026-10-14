@@ -1,0 +1,10 @@
+Scope: cockpit quick-status strip on 1920x1200 rendered CSS background; `cockpit-gradient-only.png` hides text/control overlays only so the underlying unchanged gradient can be sampled.
+Interior band y=64..104, x=68..1909. Brightest sampled RGB=(9, 19, 25) at x=79, y=64; dark base sample RGB=(2, 9, 14).
+Ratios below use sRGB relative luminance and are against the brightest sampled pixel (also record base ratio):
+- neutral mark oklch(82% 0.01 240) RGB=[191, 197, 202]: brightest 10.77:1; base 11.50:1
+- label oklch(78% 0.01 240) RGB=[178, 184, 189]: brightest 9.37:1; base 10.00:1
+- value oklch(95% 0.008 240) RGB=[234, 239, 243]: brightest 16.21:1; base 17.31:1
+- problem value oklch(81% 0.08 28) RGB=[240, 174, 164]: brightest 10.10:1; base 10.78:1
+- attention value oklch(84% 0.075 82) RGB=[227, 198, 147]: brightest 11.41:1; base 12.18:1
+- attention copy oklch(76% 0.01 240) RGB=[172, 178, 183]: brightest 8.76:1; base 9.36:1
+All sampled status colors exceed 4.5:1; status marks are decorative and text severity remains explicit. This is a simulated empty video plane, not contrast over a live/bright video frame; A9-4 remains required for actual footage.

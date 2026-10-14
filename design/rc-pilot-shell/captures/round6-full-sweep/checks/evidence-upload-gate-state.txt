@@ -1,0 +1,5 @@
+{
+  "uploadDisabled": true,
+  "gate": "업로드 비활성 · Core URL과 토큰이 모두 필요합니다. 이 목업에서는 저장·업로드를 하지 않습니다.",
+  "coreConfigured": false
+}

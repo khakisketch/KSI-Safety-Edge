@@ -1,0 +1,67 @@
+{
+  "url": "/field-shell.html",
+  "scheme": "light",
+  "viewport": "1920x1200",
+  "summary": {
+    "checked": 37,
+    "failures": 0,
+    "gradientExcluded": 0
+  },
+  "failures": [],
+  "samples": [
+    {
+      "sel": ".skip-link",
+      "text": "본문으로 바로가기",
+      "color": "oklch(1 0 0)",
+      "bg": "rgb(22,35,44)",
+      "bgFrom": "skip-link",
+      "ratio": 16.02,
+      "need": 4.5
+    },
+    {
+      "sel": ".quick-status-mark",
+      "text": "·",
+      "color": "oklch(0.73 0.01 240)",
+      "bg": "rgb(5,12,18)",
+      "bgFrom": "video-stage",
+      "ratio": 8.26,
+      "need": 4.5
+    },
+    {
+      "sel": ".quick-label",
+      "text": "KSI 기록",
+      "color": "oklch(0.78 0.01 240)",
+      "bg": "rgb(5,12,18)",
+      "bgFrom": "video-stage",
+      "ratio": 9.82,
+      "need": 4.5
+    },
+    {
+      "sel": ".STRONG",
+      "text": "KSI 로컬 기록 중",
+      "color": "oklch(0.95 0.008 240)",
+      "bg": "rgb(5,12,18)",
+      "bgFrom": "video-stage",
+      "ratio": 16.99,
+      "need": 4.5
+    },
+    {
+      "sel": ".quick-status-mark",
+      "text": "·",
+      "color": "oklch(0.73 0.01 240)",
+      "bg": "rgb(5,12,18)",
+      "bgFrom": "video-stage",
+      "ratio": 8.26,
+      "need": 4.5
+    },
+    {
+      "sel": ".quick-label",
+      "text": "MOP",
+      "color": "oklch(0.78 0.01 240)",
+      "bg": "rgb(5,12,18)",
+      "bgFrom": "video-stage",
+      "ratio": 9.82,
+      "need": 4.5
+    }
+  ]
+}

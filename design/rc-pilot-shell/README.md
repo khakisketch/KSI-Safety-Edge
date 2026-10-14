@@ -2,9 +2,9 @@
 
 앱(`android-rc`)의 시각 기준이 되는 단일 HTML 프로토타입. 브라우저로 열어 확인한다.
 
-- **현재 정본(작업본)**: `field-shell.html` — 2026-10-14 현장 보조 화면 정리
-  (무박스 상태 띠·영상 입력 7상태·기록 요청/실제 쓰기 분리·비행 후 검토). sha256 `6e483b9e…`
-  (2026-10-14 round5 수정 포함, **미커밋 작업본** — 커밋 전 수치는 변동 가능).
+- **현재 정본(작업본)**: `field-shell.html` — 2026-10-14 round6 전 화면 심화
+  (업무 단계 내비게이션·임무/기록·사후 검토·증거/동기화 설명·모바일 표 키보드 스크롤).
+  sha256 `7b8c4124…` (**미커밋 작업본** — 커밋 전 수치는 변동 가능).
 - **직전 커밋 기준선**: `783ec0b`(10-14 디자인, main) · `c5f41ee`(round 4) · `ff4b5b4`(round 3, `cdb72c9b…`).
 - **렌더(필수 경로)**:
 
@@ -15,7 +15,9 @@
   기준 뷰포트 1920×1200(가로, RC Plus 2). `file://`은 렌더러에서 차단되므로 로컬 서버로 연다.
 - **캡처**: `captures/round1-before/`, `captures/round1-refined/`, `captures/round2-cockpit/`,
   `captures/round3-review/`(9장, 1920×1200), `captures/round4-settings-ux/`(라이트/다크 10장),
-  `captures/round5-field-use/`(29장 + **RECEIPT.md**: 라이트/다크·1920/1024/390·axe·수동 대비)
+  `captures/round5-field-use/`(29장 + **RECEIPT.md**),
+  `captures/round6-full-sweep/`(18장 before + 18장 화면 매트릭스 after + 3개 추가 상태,
+  **RECEIPT.md**·검사 JSON·캡처 해시 목록)
 
 ## 라운드 이력
 
@@ -28,10 +30,12 @@
 | round 4 설정 UX | 설정 페이지 재정비(기록자 표시 정보·Core 저장 상태·권한 안내) + 검토 페이지 오탐 표기 | `c5f41ee` |
 | 2026-10-14 현장 보조 화면 정리 | 무박스 상태 띠, 영상 입력 상태(미연결/연결 중/신호 없음/프레임 미수신/지연/시각 미확인), 기록 요청≠쓰기, 비행 후 검토(0건 비행·의견 비활성) | `783ec0b` |
 | round5 캡처 영수증·정합 보강 | 390 시나리오 스위치·비행없음 누수·영상 7상태 정합, Android KSI 기록 셀/문구, 캡처 29장+RECEIPT | 작업본 `6e483b9e…` (미커밋) |
+| round6 전 화면 심화 | 비행 전/후 명확화, 동기화 결과의 지속 표시, 로컬 완전성·동기화 분리, 리뷰 시간/0건 상태, 모바일 증거표 키보드 스크롤, Android 문구 정합 | 작업본 `7b8c4124…` (미커밋) |
 
 상세 기록: `history/2026-10-13-round1-review-findings.md`,
 `history/2026-10-13-round2-redesign-change-note.md`,
-`history/2026-10-13-round3-review-findings.md`
+`history/2026-10-13-round3-review-findings.md`,
+`history/2026-10-14-round6-full-sweep.md`
 
 ## 보존 제약 (디자인 변경 시 불변)
 
@@ -42,8 +46,11 @@
 ## 상태
 
 - 2026-10-13 round 3·4: round-4 결과는 `android-rc` 설정 포트(`de62114`)까지 커밋·푸시됐다.
-- 2026-10-14 사용자 확인(방향): 카드 최소화·영상 중심·비행 후 상세. 이후 세부 정리는 브라우저
-  렌더 검증(axe 위반 0, 일부 대비 수동 확인 미완) 완료 — **실기 렌더·햇빛·장갑 검증은 A9-4**.
+- 2026-10-14 사용자 확인(방향): 카드 최소화·영상 중심·비행 후 상세. round6 브라우저 검증에서 axe
+  위반 0, 보조 대비 측정을 완료 — **실기 렌더·햇빛·장갑·실제 영상 대비는 A9-4**.
+- 2026-10-14 round6: `captures/round6-full-sweep/RECEIPT.md` 참조. 화면 매트릭스 18장 after와
+  추가 상태 3장, axe 21개(위반 0), desktop/mobile 대비 보조 측정 18개. Detector의 타이포그래피
+  warning/advisory는 영수증에 남겼으며, 실제 기기 판독성은 A9-4에서 확인해야 한다.
 - 렌더 검증 규칙(영수증·독립 리뷰·보존 제약): `docs/verification/dev-harness-runbook.md`.
   디자인·렌더 검증은 Design Specialist에 위임하며, OpenDesign 도구는 은퇴(이력 보관)다.
 - 이전 OpenDesign 프로젝트(`ksi-safety-edge-rc-pilot` / `ksi-safety-edge-rc-review`)는

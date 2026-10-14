@@ -1,0 +1,47 @@
+# Automated checks (2026-10-14)
+
+Axe: 21 reports; violations=0.
+- axe-dark-01-cockpit.json: violations=0, incomplete=1, passes=20.
+- axe-dark-02-mission.json: violations=0, incomplete=0, passes=22.
+- axe-dark-03-review.json: violations=0, incomplete=0, passes=24.
+- axe-dark-04-evidence.json: violations=0, incomplete=0, passes=24.
+- axe-dark-05-settings.json: violations=0, incomplete=1, passes=25.
+- axe-dark-06-diagnostics.json: violations=0, incomplete=0, passes=20.
+- axe-light-01-cockpit.json: violations=0, incomplete=1, passes=20.
+- axe-light-02-mission.json: violations=0, incomplete=0, passes=22.
+- axe-light-03-review.json: violations=0, incomplete=0, passes=24.
+- axe-light-04-evidence.json: violations=0, incomplete=0, passes=24.
+- axe-light-05-settings.json: violations=0, incomplete=1, passes=25.
+- axe-light-06-diagnostics.json: violations=0, incomplete=0, passes=20.
+- axe-mobile-light-01-cockpit.json: violations=0, incomplete=1, passes=20.
+- axe-mobile-light-02-mission.json: violations=0, incomplete=1, passes=23.
+- axe-mobile-light-03-review.json: violations=0, incomplete=1, passes=25.
+- axe-mobile-light-04-evidence.json: violations=0, incomplete=1, passes=25.
+- axe-mobile-light-05-settings.json: violations=0, incomplete=1, passes=26.
+- axe-mobile-light-06-diagnostics.json: violations=0, incomplete=1, passes=21.
+- axe-state-mission-sync-feedback.json: violations=0, incomplete=0, passes=22.
+- axe-state-review-completed-times.json: violations=0, incomplete=0, passes=24.
+- axe-state-review-zero-events.json: violations=0, incomplete=0, passes=24.
+
+Contrast helper: 18 viewport/theme reports.
+- contrast-dark-01-cockpit.json: viewport=1920x1200, checked=37, failures=0.
+- contrast-dark-02-mission.json: viewport=1920x1200, checked=69, failures=0.
+- contrast-dark-03-review.json: viewport=1920x1200, checked=75, failures=0.
+- contrast-dark-04-evidence.json: viewport=1920x1200, checked=72, failures=0.
+- contrast-dark-05-settings.json: viewport=1920x1200, checked=76, failures=0.
+- contrast-dark-06-diagnostics.json: viewport=1920x1200, checked=106, failures=0.
+- contrast-light-01-cockpit.json: viewport=1920x1200, checked=37, failures=0.
+- contrast-light-02-mission.json: viewport=1920x1200, checked=69, failures=0.
+- contrast-light-03-review.json: viewport=1920x1200, checked=75, failures=0.
+- contrast-light-04-evidence.json: viewport=1920x1200, checked=72, failures=0.
+- contrast-light-05-settings.json: viewport=1920x1200, checked=76, failures=0.
+- contrast-light-06-diagnostics.json: viewport=1920x1200, checked=106, failures=0.
+- contrast-mobile-light-01-cockpit.json: viewport=390x844, checked=49, failures=0.
+- contrast-mobile-light-02-mission.json: viewport=390x844, checked=58, failures=0.
+- contrast-mobile-light-03-review.json: viewport=390x844, checked=64, failures=0.
+- contrast-mobile-light-04-evidence.json: viewport=390x844, checked=62, failures=0.
+- contrast-mobile-light-05-settings.json: viewport=390x844, checked=65, failures=0.
+- contrast-mobile-light-06-diagnostics.json: viewport=390x844, checked=95, failures=0.
+
+Cockpit video-plane gradient was measured separately in cockpit-gradient-contrast.txt; image: cockpit-gradient-only.png.
+Functional evidence: functional-input-checks.txt and functional-summary.txt.
