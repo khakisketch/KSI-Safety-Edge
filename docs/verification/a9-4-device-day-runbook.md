@@ -41,7 +41,7 @@ bash scripts/rc_device_day.sh build       # device APK + "DJI 키 주입: 있음
 | 4 | 임무 적용 | 앱: 임무 준비 → 동기화 → Start flight → Apply | PREPARE/APPLY 왕복·ACK, digest 검증 표시 | `shot 04-*.png` |
 | 5 | 로컬 저장·재시작 | 관측 저장 확인 → `stop` → `launch` → `pull-store` | 재시작 복원, `rc-store` 존재·증가 | rc-store.tar, logcat |
 | 6 | 통신 복구 | Manifold 앱 stop→start(또는 채널 단절) → 복구 | 동일 msg_id 재전송·누락 복구, ACK | logcat, `shot 06-*` |
-| 7 | 업로드(WorkManager) | 비행 종료 → 동기화 예약 | 상태 표시; Core 설정 시 COMMITTED | `shot 07-*`, Core 조회 결과 |
+| 7 | 업로드(WorkManager) | 비행 종료 → 동기화 예약 | 상태 표시; Core 설정 시 COMMITTED | `shot 07-*`, Core 조회 결과, **RC→Core 대조(아래)** |
 | 8 | 시계 기록 | `facts`의 date/UTC + `manifold` | RC 시계 편차를 **값 그대로** 기록(보정 전후 혼합 금지) | device-facts.txt |
 | 9 | 실패 주입(선택) | `stop` 후 재기동(프로세스 사망 재현) | 복원 또는 정직한 실패 표시 | logcat |
 | 10 | 마감 | `log-stop` → `pull-store` → notes.md 마감 | — | 전체 |
@@ -51,6 +51,25 @@ bash scripts/rc_device_day.sh build       # device APK + "DJI 키 주입: 있음
 
 **권한(첫 실행)** — 앱이 SDK 선언 위험 권한(위치·전화상태·저장소 등)을 첫 실행에서 자동 요청한다.
 승인/거부 결과는 상태줄에 표시된다 — 거부 시 일부 SDK 기능이 제한될 수 있으니 결과를 캡처한다.
+
+### 업로드 후 RC→Core 대조 (필수 증거)
+
+"업로드 완료" 표시만으로는 RC→Core 전달을 주장하지 않는다. `pull-store`로 회수한 RC 저장소와
+Core 응답을 1:1로 대조해 증거 파일로 남긴다(읽기 전용, 업로드 실행 없음).
+
+```bash
+bash scripts/rc_device_day.sh pull-store
+python scripts/rc_core_correlate.py \
+  --store docs/verification/evidence/<date>-a9-4/rc-store.tar \
+  --core-url http://127.0.0.1:8000 --token <읽기 토큰> \
+  --out docs/verification/evidence/<date>-a9-4/08-rc-core-correlation.txt
+```
+
+- 대조 항목: 비행 존재·업로드 상태, 증거(존재/committed/sha256), 관측·사건 ID, 사건-증거 연결,
+  의견(업로드 영수증 vs Core 반영), 부트별 세션.
+- 판정: `OK`(전부 일치) / `DISCREPANCY`(미도달·모순 있음 — 그대로 notes.md에 기록) / 실행 오류.
+  pending 의견은 실패가 아니다(업로드 전 상태).
+- 이 보고서는 RC 기록과 Core 응답의 일치만 뜻한다. 현장 원본의 진위·안전 판정·운영 인증은 포함하지 않는다.
 
 ### UI 실기 확인 (C67 후속 — 같은 세션에서)
 

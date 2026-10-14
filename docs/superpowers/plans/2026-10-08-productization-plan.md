@@ -165,6 +165,8 @@
 - 2026-10-14 **L1 현장 사용 흐름 보강(`259697d` 커밋·푸시, CI 3/3)** — 사용자 승인: 조종 메인의 카드 밀도/시각 피로를 줄이고 임무·기록·증거·설정까지 개선. 순수 모델/기록 보강: ① 관측 pulse는 마지막 **관측 채널** 수신만 사용(다른 artifact 수신으로 AI 최신성 위장 금지) ② 비행 후 사건 검토의 암묵적 20건 잘림 제거(재시작 포함 회귀) ③ 영상 입력 RC monotonic 수신 경과시간 모델 추가(미수신/미확인/단절/지연 분리; **디코딩/표시/촬영시각 입증 아님**) ④ 녹화 요청과 실제 sample 쓰기를 분리, 뒤 구간 복구가 이전 실패를 지우지 않음 ⑤ 각 세그먼트 첫 SPS/PPS 보유 키프레임 전 대기는 write 실패로 처리하지 않음, sample 0인 세그먼트는 증거 발행 금지 ⑥ 매체 없는 비행의 대기 중 의견도 동기화 상태에서 숨기지 않음. 새 API·안전 판단·ACTIVE·운영 신원 인증 없음. 실제 RC/영상/MP4 재생·터치는 A9-4에서만 검증 가능. Python `scripts/run_all_tests.sh` **121 passed**. RC/기체 세션 입력은 여전히 대기.
   - 호스트 통합 확인: rc-ports **6/6**, rc-core **67/67**, rc-msdk **28/28**, rc-app bench **39 통과 + WM 6 스킵**, device **39/39**, bench/device APK 빌드 성공. 이 호스트(aarch64)에서는 WM 6건이 스킵됐고, 푸시한 `259697d`의 **x86_64 CI(run `38545627802`, 3/3 green)에서 WM 6건 실실행 포함 전체 통과**를 확인했다. 순수 모델·기록 변경 독립 검토에서 실질 계약 회귀 없음; 지적된 segment core 진단 getter 스레드 가시성은 synchronized로 보강했다.
   - 추가 Android 정적 검사: 두 플레이버 lint **오류 0**, 경고 각 **201**(미사용 리소스·하드코딩 문구·레이아웃/의존성 권고 등)은 유지. 검사에서 발견한 minSdk 26/27 경로의 API28 전용 `PermissionInfo.getProtection` 호출은 SDK 버전 가드와 이전 API fallback으로 수정했다. 이 정적 검사는 실제 기기의 권한 승인·거부나 화면 렌더를 입증하지 않는다.
+- 2026-10-14 **RC→Core 대조 도구(하드웨어 독립, `e15058e` 이후 증분)** — `scripts/rc_core_correlate.py` + `harness/src/ksi_harness/rc_store_read.py`·`rc_core_correlate.py`(순수): RC pull 저장소(FileRcStore NDJSON)와 Core 읽기 응답을 1:1 대조 — 비행/업로드 상태, 증거 존재·committed·sha256, 관측·사건 ID, 사건-증거 연결, 의견(업로드 영수증 vs Core 반영; pending 구분), 부트별 세션. 판정 OK/DISCREPANCY, malformed 라인 은폐 없음, **읽기 전용(업로드 실행·서버 변경 없음)**. 블루프린트 §6.4가 요구한 "expected-record 대조 절차"를 구현·연결(A9-4 런북 §업로드 후 대조). 테스트 13건(스토어 리더 4·대조 9). 실제 대조 실행은 A9-4 장치 세션에서 한다.
+
 
 
 

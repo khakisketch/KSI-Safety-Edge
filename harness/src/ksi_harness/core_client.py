@@ -97,6 +97,30 @@ class CoreClient:
     def list_sessions(self, flight_id: str) -> dict:
         return self._get(f"/flights/{flight_id}/flight-sessions")
 
+    # -- read listings for correlation (RC→Core 대조) ---------------------------
+    def _list_paged(self, path: str, limit: int, params: dict | None = None) -> list[dict]:
+        base = dict(params or {})
+        items: list[dict] = []
+        cursor: str | None = None
+        while True:
+            query = dict(base, limit=limit)
+            if cursor:
+                query["cursor"] = cursor
+            page = self._get(path, params=query)
+            items.extend(page.get("items", []))
+            cursor = page.get("next_cursor")
+            if not cursor:
+                return items
+
+    def list_observations(self, flight_id: str, limit: int = 500) -> list[dict]:
+        return self._list_paged(f"/flights/{flight_id}/observations", limit)
+
+    def list_flight_events(self, flight_id: str, limit: int = 500) -> list[dict]:
+        return self._list_paged("/events", limit, params={"flight_id": flight_id})
+
+    def list_artifacts(self, flight_id: str) -> list[dict]:
+        return list(self._get(f"/flights/{flight_id}/artifacts").get("items", []))
+
     # -- batches ------------------------------------------------------------------
     def post_batch(self, flight_id: str, kind: str, client_batch_id: str, items: list) -> dict:
         if kind not in _BATCH_PATHS:
