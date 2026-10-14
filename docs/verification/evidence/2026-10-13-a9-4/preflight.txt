@@ -1,0 +1,13 @@
+# preflight — host 2026-10-13 18:02:28 KST
+arch: aarch64
+adb: Android Debug Bridge version 1.0.41
+aapt2: /home/ksi/Android/sdk/build-tools/34.0.0/aapt2
+qemu sysroot: OK (/home/ksi/Android/sysroot/root)
+DJI 키(local.properties): 없음 — device 빌드는 KEY_MISSING으로 기동(정상 폴백)
+APK: android-rc/rc-app/build/outputs/apk/device/debug/rc-app-device-debug.apk (167046036 bytes)
+
+# preflight — devices
+장치: 없음 — RC USB 연결 + 개발자 모드/adb 허용 필요
+
+# preflight — manifold (read-only)
+Manifold(172.30.1.33): 접속 불가 — MOP/DPK 왕복 전 확인 필요
