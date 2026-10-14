@@ -26,7 +26,7 @@
 - Digest fields (`content_sha256`, `manifest_sha256`, `bundle_sha256`) hold
   the hex SHA256 of the **RFC 8785 canonical JSON of the object excluding
   the digest field itself**.
-- Implementation: `libs/ksi_contracts/canonical.py`
+- Implementation: `libs/ksi_contracts/src/ksi_contracts/canonical.py`
   (`canonical_bytes`, `digest_sha256`, `digest_excluding`, `verify_digest`,
   `set_digest`). Golden vectors live in
   `libs/ksi_contracts/tests/test_canonical.py`.
@@ -39,11 +39,11 @@
 ## Validation layers
 
 1. **Schema** — types/required/enum/conditional fields:
-   `libs/ksi_contracts/validators.py::validate_schema`
-   (schemas via `libs/ksi_contracts/schema_store.py`).
+   `libs/ksi_contracts/src/ksi_contracts/validators.py::validate_schema`
+   (schemas via `libs/ksi_contracts/src/ksi_contracts/schema_store.py`).
 2. **Domain** — cross-field meaning (interval order, period order, digest
    match, uniqueness, state consistency):
-   `libs/ksi_contracts/validators.py::validate_domain` /
+   `libs/ksi_contracts/src/ksi_contracts/validators.py::validate_domain` /
    `validate_all`. Error strings carry stable `CODE:` prefixes.
 3. **Reference** — tenant/site/flight/boot/observation/evidence/config
    ownership and existence: Core server (W2).

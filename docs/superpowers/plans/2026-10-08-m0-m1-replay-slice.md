@@ -1,6 +1,8 @@
 # KSI Safety Edge — M0/M1 재생 슬라이스 Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: superpowers:subagent-driven-development — 각 작업은 developer 서브에이전트가 수행하고, Primary(Build)가 통합·검증한다. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **상태: 완료(과거 계획)** — M0/M1(재생 슬라이스)은 완료됐다. 이 문서는 당시 실행·검증 기록이며,
+> 여기의 실행 지시(예: 서브에이전트 구동 방식)는 현재 작업 지시가 아니다. 현행 상태는
+> `docs/superpowers/product-state.md`를 따른다. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 계약 기준선(M0)과 재생 기반 전체 흐름(M1: 임무 적용→RC 오프라인 저장→서버 업로드→조회, 장애 복구)을 구현하고 E01~E12를 통과한다.
 

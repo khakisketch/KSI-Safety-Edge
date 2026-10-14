@@ -1,6 +1,9 @@
 # KSI Safety Edge — SI 자산 재사용 감사·이식 원장 (workstream ledger)
 
 - 작성: 2026-10-08 (Build 전환 후) · 상태: **B0·W2·W3·W4 완료** — PSDK 앱 DPK 장치 빌드 완료, 다음은 DPK 기동 세션(기체/RC)
+- 문서 성격: **완료된 과거 원장(이력)**. 본문의 "다음" 서술은 당시 시점이다. **§0 불변 원칙만
+  현행 참조**로 유지되며(제품화 원장이 상위 기준으로 인용), 현재 진행·상태는
+  `docs/superpowers/plans/2026-10-08-productization-plan.md`와 `docs/superpowers/product-state.md`를 따른다.
 - 사용자 지시(승인 범위): ① H1 전 SI 자산 정밀 감사 ② 재사용/독립 경계와 중복 최소화 계획 ③ 격리 환경에서 실제 빌드·실행 ④ 재사용 모듈 확정 후 Safety Edge 최소 실행 파이프라인 연결 ⑤ SI 운영 코드·제품 계약 변경 금지 ⑥ H1 없이 기체 통합 완료 주장 금지.
 - 감사 정적 보고서(plan 위치): `/home/ksi/.opencode/plan/2026-10-08-ksi-safety-edge-reuse-audit.md`
 - 확정 개발 순서(2026-10-08 사용자 보정):

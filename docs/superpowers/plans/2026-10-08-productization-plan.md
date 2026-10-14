@@ -1,6 +1,6 @@
 # KSI Safety Edge — 제품화 실행 계획 (workstream ledger)
 
-- 작성: 2026-10-08 · 상태: **실행 중 — W5 완료·검증(C15). AI/RC 줄기 준비 조사 완료**
+- 작성: 2026-10-08 · 갱신: 2026-10-14 · 상태: **L1 소프트웨어·Replay 경로 구현, A9-4 실기 인수 대기**. 아래 날짜별 이력은 당시 상태이며 현재 판단은 `docs/superpowers/product-state.md`를 따른다.
 - 사용자 지시(2026-10-08): "그렇다면 문서 등 반영하고 장기적으로 개발해줘 제품을 완성하기 위해" — 6단계 경로·인수 사다리·개발 줄기를 문서로 반영하고 장기 개발을 진행.
 - 상위 기준: `docs/superpowers/specs/2026-10-08-integrated-design.md`(설계 기준본) · `docs/superpowers/plans/2026-10-08-reuse-audit-and-porting.md` §0(불변 원칙) · `docs/superpowers/product-state.md`(마일스톤).
 - 본 원장은 제품화 ①~⑥ 진행·증거·게이트를 기록한다. SI 재사용 판정·B0~W4 이력은 기존 원장에 보존.
@@ -116,8 +116,8 @@
 | 단계 | 내용 | 상태 |
 |---|---|---|
 | A0 | 개발 환경: JDK17 + Android SDK cmdline-tools + platform/build-tools (+호스트 aarch64 도구 지원 확인) | **완료**(JDK17·adb·Gradle 8.10.2·amd64 컨테이너 에뮬레이션; aapt2는 x86_64 컨테이너 경로) |
-| A1 | `android-rc/` 골격(Kotlin·Gradle) + 빌드·테스트 | **진행** — `rc-core`(Kotlin/JVM) MOP 계약 포팅 + Python 골든 6/6 PASS |
-| A2 | 임무 설정·MOP 클라이언트(기존 계약 재사용) | **진행** — `MissionController`/`MopEndpoint`/`RcStore` 구현, 계약 시험 10종(+MOP 골든 6) PASS |
+| A1 | `android-rc/` 골격(Kotlin·Gradle) + 빌드·테스트 | **소프트웨어 완료** — Kotlin/JVM·Android 플레이버·APK 빌드·CI. 실제 RC 기동은 A9-4 별도 |
+| A2 | 임무 설정·MOP 클라이언트(기존 계약 재사용) | **소프트웨어 완료(C34~C42)** — `MissionController`/`MopEndpoint`/`RcStore`, 골든·재시작/재전송·실 Core 통합 시험. 실 MOP 왕복은 A9-4 별도 |
 | A3 | 로컬 증거·업로드·조회 | **완료** — 영속 저장·인제스트(A3-a) + **업로드·COMMITTED·재전송·로컬 우선 조회(A3-b, C41~C42)**; 실 Core(uvicorn) E2E PASS·독립 리뷰 반영 |
 | A4 | 앱 셸·MSDK 초기화(rc-core 통합·APK) | **완료(C44)** — `:rc-app` 4섹션 셸·RcSession 단일 상태·APK 빌드·서명 검증; 실기 설치·실행은 RC 접근 게이트 |
 | A5 | 임무·위험구역 동기화(오프라인 적용) | **완료(C45~C47)** — 비행 단위 ID·수신시각 기준·데모 격리(C45), 사이트/구역/스냅샷/번들 동기화+digest 검증+불변 핀(C46), 리뷰 수정(C47); 실 Core E2E(오프라인 적용) PASS |
@@ -126,7 +126,7 @@
 | A8 | 자동 동기화·상태 분리 | **완료(C52~C54)** — heartbeat/AI(관측)/사건 채널 분리(수신시각·재시작 보존), MOP 재전송 타이머(동일 msg_id·중복 전송 금지·유실 없음), WorkManager 백그라운드 업로드(네트워크 제약·reachability 선확인·COMMITTED 유지·ALREADY_SYNCED 단락), SyncPolicy 재시도 규칙 |
 | C55~C56 | L1 소프트웨어 마감(사용자 검토 3건) | **완료** — ①PARTIAL 원인 분류(복구 가능/서버 미보유)·유한 재시도·복구 시 재동기화, ②오탐 의견 서버 전송(append-only·영수증·실패 재시도), ③세그먼트(사건 0건 비행 포함) 표준 아티팩트 경로 + `VideoRecorder` seam(가짜 캡처 없음) |
 | C57~C58 | WM 실행 하네스 + 늦은 의견 동기화 수정 | **완료** — Robolectric 하네스·`SyncWorkerDecision` 순수 추출(호스트 전수 시험)·플랫폼 한계 증거 기록(`2026-10-10-wm/`, x86_64 러너 스크립트), **ALREADY_SYNCED가 아티팩트만 보던 결함 수정**(의견 포함·토글/스캔 enqueue·회귀 시험) |
-| A9 진행 | MSDK 어댑터·MOP 전송·증거 연결·영상 | **진행(C59~C63)** — C59~C62(어댑터·init·양방향 MOP·tick→증거). **C63(A9-3)**: 실제 영상 표시(MediaCodec→SurfaceView)·MP4 세그먼트(MediaMuxer·CSD 키프레임 시작·tmp→mp4 증거 규율)·`SegmentNames` 계약·SegmentIngestor 연결·백그라운드 인제스트; CE 리뷰 P1 4건 실결함 수정(리뷰 기록 `report.md`). **실기 게이트: 채널 연결·MISSION 왕복·영상 수신·PTS/재생 검증·WM 실기동**; 다음: 실장비 지상 세션(H1/A9-4) |
+| A9 진행 | MSDK 어댑터·MOP 전송·증거 연결·영상 | **A9-1~3 코드 완료(C59~C64), A9-4 실기 미실시** — init·양방향 MOP·tick→증거·영상 표시·MP4 세그먼트·재시작 재개. 10/14 보강: 영상 RC 수신 경과시간·실제 녹화 쓰기/일부 구간 실패 분리·SPS/PPS 키프레임 대기 회귀. **실기 게이트: 채널 연결·MISSION 왕복·영상 수신·PTS/재생 검증·WM 실기동** |
 | H1-now | 장치 재부팅·fs·시계·root ro 점검 | **차단** — dji 계정 polkit/sudo 권한 거부(사용자 콘솔 조치; 루트 fsck 강행·강제 rw 전환 금지) |
 
 - 2026-10-09 **A3-b(업로드·COMMITTED·재전송·로컬 우선 조회) 구현(C41)**: ① `CoreTransport`/`JdkCoreTransport`(전송 경계 — Android 앱은 자체 구현 주입)+`CoreApi`(등록→applications→sessions→batches→manifest ingest→chunks, 읽기 API). ② `ManifestBuilder`/`SessionBuilder` — 하네스 `build_manifest`/`synthesize_session` 의미론 이식; **갭은 Edge 선언만 기록**(HEARTBEAT `unrecoverable_gaps`; 수신 seq는 갭 아님, 선언된 채널 내 누락만 `SYNTHESIZED` 확장) + **Python `set_digest` 골든 매니페스트 digest 일치 시험**. ③ `EvidenceUploader` — register→applications→sessions(서버 보유 세션 skip)→batches(**내용 기반 client_batch_id** — 데이터 증가 시 409 영구 충돌 회피; 하네스 고정 id 갭 개선)→per-boot manifest→open(resume)→resident skip→chunks(fsync·coverage·sha 검증된 로컬 완전 바이트만; 불완전은 `incompleteLocal` 정직 보고)→complete; **COMMITTED 응답에서만 SYNCED 마킹**, PARTIAL은 missing 보고만·삭제 없음. ④ 업로드 영수증 영속화(`FileRcStore`: app_uploads/batch_receipts/synced + seq 인덱스 재시작 복원) — **재시작·중단 후 재개 시험**(chunk 전송 실패→재시작→완주, 서버 범위 병합 멱등). ⑤ `LocalFirstEvidence` — 로컬 보유 시 서버 무호출, 없을 때만 서버(**커서 페이지네이션 순회** — 100건 초과 조용한 잘림 방지), 출처(LOCAL/SERVER) 항상 표기. 시험 **45/45**(골든 6·미션 11·증거 4·견고성 12·매니페스트 4·업로더 4·조회 3·**실제 Core E2E 1**). E2E: Kotlin 미션 적용+증거 인제스트→실 uvicorn Core 업로드→`COMPLETE`·이벤트/관측/coverage/evidence/오브젝트 다운로드 검증. 미검증 유지: MSDK 실기체 경로(MOP 실전송·RC Plus 2)·에지 시계 앵커 매핑(toUtc 주입 계약)·대표 영상.
@@ -161,6 +161,10 @@
 - 2026-10-12 **C65(A-1 사후 검토 콘솔 + CI)** — L1 두 번째 여정(안전관리자 조회)의 첫 사용자 표면: ① `GET /review` — Core 내장 **정적 콘솔**(데이터 미포함·새 인증/계약 없음; 운영자가 읽기 토큰을 페이지에 넣으면 기존 read API만 Bearer로 호출): 비행 목록/상세(`upload_state`·`completeness` 그대로)·coverage(`data_completeness`·커버/스킵·gaps·quality_reasons)·관측 분포·사건+근거/증거(다운로드·이미지 미리보기)·**“사건 0건 ≠ 안전 확인”** 정직 표기 ② additive read `GET /flights/{flightId}/artifacts` — 세션 manifest 기준으로 **사건 0건 비행의 `RC_PROXY_SEGMENT` 증거도 열람**(`committed` 플래그, cross-org 404; openapi.yaml 동일 스타일) ③ `.github/workflows/ci.yml` — python/edge/android 3 job, **WM 6건은 x86_64 러너에서 실제 실행**(호스트 aarch64 스킵 해소)·bench APK·device 플레이버 컴파일. 검증: core **22/22**·전체 Python **86/86**·uvicorn 스모크(`/review` 200 text/html). 커밋 `46b6d4c`·`8492a86`. **미검증: 실제 사용자 인증·운영 UI(디자인 워크스페이스 병행)·실데이터 화면 품질.**
 
 - 2026-10-12 **CI 첫 실행이 실제 결함 2건 검출·수정(C65 후속)** — x86_64 러너에서 WM 스위트가 **처음 실제 실행**되며: ① `DemoFeed.demoBundle`이 A5 계약 미준수(`mission_snapshot` 없음) → 스위트 5/6 실패 → 수정+호스트 회귀 `DemoBundleShapeTest` ② `Result.success(data)` vs `Result.success()` 동등 비교(WorkManager Result는 outputData 포함 → 영구 실패 잠재) → 결과 클래스+상태 검증으로 교체. **CI 3/3 job green**(run [`38258861942`](https://github.com/khakisketch/ksi-safety-edge/actions/runs/38258861942), 코드 `ecd2f21`) — **WM 6건 실실행 통과(호스트 aarch64 스킵 갭 해소)**. 실기(실 RC) 실행은 A9-4 유지.
+
+- 2026-10-14 **L1 현장 사용 흐름 보강(작업본, 미커밋)** — 사용자 승인: 조종 메인의 카드 밀도/시각 피로를 줄이고 임무·기록·증거·설정까지 개선. 순수 모델/기록 보강: ① 관측 pulse는 마지막 **관측 채널** 수신만 사용(다른 artifact 수신으로 AI 최신성 위장 금지) ② 비행 후 사건 검토의 암묵적 20건 잘림 제거(재시작 포함 회귀) ③ 영상 입력 RC monotonic 수신 경과시간 모델 추가(미수신/미확인/단절/지연 분리; **디코딩/표시/촬영시각 입증 아님**) ④ 녹화 요청과 실제 sample 쓰기를 분리, 뒤 구간 복구가 이전 실패를 지우지 않음 ⑤ 각 세그먼트 첫 SPS/PPS 보유 키프레임 전 대기는 write 실패로 처리하지 않음, sample 0인 세그먼트는 증거 발행 금지 ⑥ 매체 없는 비행의 대기 중 의견도 동기화 상태에서 숨기지 않음. 새 API·안전 판단·ACTIVE·운영 신원 인증 없음. 실제 RC/영상/MP4 재생·터치는 A9-4에서만 검증 가능. Python `scripts/run_all_tests.sh` **121 passed**. RC/기체 세션 입력은 여전히 대기.
+  - 호스트 통합 확인: rc-ports **6/6**, rc-core **67/67**, rc-msdk **28/28**, rc-app bench **39 통과 + WM 6 스킵**, device **39/39**, bench/device APK 빌드 성공. 이번 작업본의 WM 플랫폼 실행은 이 aarch64 호스트에서 스킵했으며 과거 CI 통과를 이번 수정의 새 CI 결과로 주장하지 않는다. 순수 모델·기록 변경 독립 검토에서 실질 계약 회귀 없음; 지적된 segment core 진단 getter 스레드 가시성은 synchronized로 보강했다.
+  - 추가 Android 정적 검사: 두 플레이버 lint **오류 0**, 경고 각 **201**(미사용 리소스·하드코딩 문구·레이아웃/의존성 권고 등)은 유지. 검사에서 발견한 minSdk 26/27 경로의 API28 전용 `PermissionInfo.getProtection` 호출은 SDK 버전 가드와 이전 API fallback으로 수정했다. 이 정적 검사는 실제 기기의 권한 승인·거부나 화면 렌더를 입증하지 않는다.
 
 
 

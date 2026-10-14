@@ -34,7 +34,7 @@
 | 구성 | 역할 | 기술 |
 |---|---|---|
 | **Edge (기체 탑재)** | Matrice 4 + Manifold 3, 사람·중장비 탐지·추적·공간 분석 | C++ (PSDK), ONNX / TensorRT |
-| **RC (조종기)** | 오프라인 기록·미션 적용·복구 후 업로드 | Android (MSDK), Kotlin, SQLite WAL |
+| **RC (조종기)** | 오프라인 기록·미션 적용·복구 후 업로드 | Android (MSDK), Kotlin, append-only 로그·증거 파일 |
 | **Core (서버)** | 증거 수집·데이터 점검·의견 기록(개발·검증용) | Python FastAPI, SQLite / 파일 오브젝트 저장 |
 
 ![시스템 아키텍처](spatial_architecture.png)
@@ -85,13 +85,14 @@
 > 아래 화면은 시연 환경 캡처이며, 화면 우측 상단의 `[SIMULATED]` 표기를 유지합니다.
 > 현장명은 예시(`SIM-FLT-024` 등)이며 특정 실현장을 지칭하지 않습니다.
 
-### RC 조종(관측) — 오프라인 상태에서도 운용 상태·AI 관측 피드를 확인
+### RC 조종(관측) — 영상과 기록 상태 중심의 보조 화면
 
 ![RC 조종 관측 화면](design/rc-pilot-shell/captures/round3-review/01-observe-normal.png)
 
-- 좌: 운용 상태(비행·MOP 링크·기체·인터넷·레코더·미동기화·AI 관측·요약)
-- 중: 라이브 뷰 + MOP 연결/해제/재전송, 프레임↔관측 매핑 미검증 시 정직 표시
-- 우: MOP 송수신 카운터 + AI 관측 피드(`[DETECT]`/`[SHADOW]`는 신호 표시이며 안전 판정이 아님)
+- 위 이미지는 이전 시연 배치입니다. 현재 RC 정본은 `design/rc-pilot-shell/field-shell.html`과 Android 앱입니다.
+- 현재 메인은 영상·출처별 상태 띠를 중심으로 표시하며, 연결·저장 실패와 미수신을 구별합니다. 비행 조종 기준은 **DJI Pilot 2**입니다.
+- AI 사건 상세는 비행 후 기록에서 검토합니다. `[DETECTED_ONLY]`/`[SHADOW]`는 관측/후보 기록이며 안전 확인이나 경고가 아닙니다.
+- 영상 프레임 매핑 검증 전에는 박스를 표시하지 않습니다. 영상 입력 수신·실제 화면 표시·증거 저장 성공도 각각 별도로 확인합니다.
 
 ### Core 데이터 점검 — 개발자용 시연 화면 (운영자 검토 아님)
 
@@ -136,6 +137,7 @@
 
 | 경로 | 내용 |
 |---|---|
+| `AGENTS.md` | 개발 정본 진입 안내(문서 지도) — 현행/과거/보존 구분 |
 | `contracts/` | JSON Schema·OpenAPI·계약 정책 (경계의 기준본) |
 | `libs/ksi_contracts/` | canonical digest·도메인 검증 공용 패키지 |
 | `edge/` | 기체 탑재 관측 코어 (C++) |
