@@ -1,0 +1,30 @@
+{
+  "source": "design/rc-pilot-shell/field-shell.html",
+  "sourceSha256": "8d8ce077f0e5025c1c924042a7f13d153f362b2ec4d03cb62cdeb89feda52277",
+  "renderer": "visible Playwright Chromium; CSS pixel viewport",
+  "route": "preflight",
+  "viewports": [
+    {
+      "viewport": [1366, 768],
+      "document": { "client": [1366, 768], "scroll": [1366, 768] },
+      "main": { "client": [1366, 713], "scroll": [1366, 827], "scrollTop": 0 },
+      "primaryAction": { "selector": "#mission-page [data-action=start-flight]", "rect": { "x": 559, "y": 701.3, "width": 237.7, "height": 44, "bottom": 745.3 }, "fullyInsideViewport": true },
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": [1536, 864],
+      "document": { "client": [1536, 864], "scroll": [1536, 864] },
+      "main": { "client": [1536, 809], "scroll": [1536, 826], "scrollTop": 0 },
+      "primaryAction": { "selector": "#mission-page [data-action=start-flight]", "rect": { "x": 627.4, "y": 699.4, "width": 270.8, "height": 44, "bottom": 743.4 }, "fullyInsideViewport": true },
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": [1920, 830],
+      "document": { "client": [1920, 830], "scroll": [1920, 830] },
+      "main": { "client": [1920, 775], "scroll": [1920, 827], "scrollTop": 0 },
+      "primaryAction": { "selector": "#mission-page [data-action=start-flight]", "rect": { "x": 781.5, "y": 701, "width": 346.7, "height": 44, "bottom": 745 }, "fullyInsideViewport": true },
+      "horizontalOverflow": false
+    }
+  ],
+  "interpretation": "The document remains viewport-sized; longer mission content scrolls within main. The complete local-record-start button is above the fold at all requested desktop landscape sizes."
+}

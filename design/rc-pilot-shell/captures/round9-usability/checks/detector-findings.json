@@ -1,0 +1,35 @@
+[
+  {
+    "antipattern": "numbered-section-labels",
+    "name": "Tiny numbered section labels",
+    "description": "Small numeric index labels riding next to section headings, repeated section after section, are AI editorial scaffolding — a page numbering its own chapters instead of earning structure. Let hierarchy, content, and rhythm carry the sequence.",
+    "severity": "advisory",
+    "category": "slop",
+    "file": "/home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/design/rc-pilot-shell/field-shell.html",
+    "line": 0,
+    "snippet": "tiny numbered label \"01 / 비행 전\" beside h2 \"비행 전 준비\" (3 on page)",
+    "advisory": true
+  },
+  {
+    "antipattern": "numbered-section-labels",
+    "name": "Tiny numbered section labels",
+    "description": "Small numeric index labels riding next to section headings, repeated section after section, are AI editorial scaffolding — a page numbering its own chapters instead of earning structure. Let hierarchy, content, and rhythm carry the sequence.",
+    "severity": "advisory",
+    "category": "slop",
+    "file": "/home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/design/rc-pilot-shell/field-shell.html",
+    "line": 0,
+    "snippet": "tiny numbered label \"03 / 비행 후\" beside h2 \"비행 후 검토\" (3 on page)",
+    "advisory": true
+  },
+  {
+    "antipattern": "numbered-section-labels",
+    "name": "Tiny numbered section labels",
+    "description": "Small numeric index labels riding next to section headings, repeated section after section, are AI editorial scaffolding — a page numbering its own chapters instead of earning structure. Let hierarchy, content, and rhythm carry the sequence.",
+    "severity": "advisory",
+    "category": "slop",
+    "file": "/home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/design/rc-pilot-shell/field-shell.html",
+    "line": 0,
+    "snippet": "tiny numbered label \"04 / 로컬 증거\" beside h2 \"증거·동기화\" (3 on page)",
+    "advisory": true
+  }
+]

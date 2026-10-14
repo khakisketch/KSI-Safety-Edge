@@ -1,0 +1,23 @@
+{
+  "renderer": "visible Playwright Chromium keyboard input",
+  "navDrawer": {
+    "open": { "focus": "nav-close", "ariaExpanded": true, "navInert": false, "backdropVisible": true },
+    "tabFromClose": "inflight nav item",
+    "shiftTabFromFirstNavItem": "nav-close",
+    "shiftTabFromCloseWrapsTo": "settings nav item",
+    "tabFromLastNavItemWrapsTo": "nav-close",
+    "escape": { "focus": "#nav-reveal", "ariaExpanded": false, "navInert": true, "backdropHidden": true }
+  },
+  "routeChange": { "drawerCloses": true, "headingReceivesFocus": true, "ariaCurrentUpdates": true, "mainScrollTopResetsTo": 0 },
+  "missionTabOrderFromFocusedHeading": [
+    "sync-sites",
+    "download-bundle",
+    "prepare",
+    "apply",
+    "start-flight",
+    "reconcile",
+    "mission-start",
+    "mission-stop"
+  ],
+  "postflightTabs": { "arrowRight": ["detail", "evidence", "sync"], "home": "detail", "selectedTabMatchesVisiblePanel": true }
+}

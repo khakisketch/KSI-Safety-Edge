@@ -1,0 +1,19 @@
+Round9 interaction smoke — visible Playwright Chromium
+
+Navigation
+- Opened drawer on cockpit and non-cockpit routes; same hamburger control is available.
+- Drawer focus, Tab/Shift+Tab wrap, Escape restoration, and page-heading focus verified at 390x844.
+- Route changes set the active aria-current value and reset main.scrollTop to 0.
+- Settings → diagnostics link remains reachable; diagnostics is marked aria-current="location" under Settings.
+
+Mission manual flow
+- Keyboard Tab sequence: sync-sites → download-bundle → prepare → apply → start-flight → reconcile → mission-start → mission-stop.
+- Clicked sync-sites, download-bundle, prepare, apply, start-flight, mission-start, mission-stop, and end-flight.
+- Sync/bundle status remains "미확인 · 로컬 반영 · [SIMULATED]"; copy explicitly says no server call, no file download, and no real mission/device state change.
+- Mission flight status remains the existing example state; no control is automated or combined.
+- Network monitor: one static document request; no non-static/API/fetch/XHR requests after the interaction sequence.
+
+Other routes and gates
+- Review tabs: ArrowRight changed detail → evidence → sync; Home returned to detail, with the matching panel visible.
+- Evidence upload action remains disabled while Core URL/token are unconfigured.
+- All six destination routes rendered at 390x844 and 1536x864 or 1920x830; no document horizontal overflow.

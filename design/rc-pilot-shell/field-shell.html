@@ -1114,6 +1114,255 @@ body[data-active-page="inflight"] .nav-sub { font-size: var(--type-caption); }
 @media (min-width: 1501px) and (min-height: 900px) {
   body[data-active-page="inflight"] .video-bottom-hud { inset-inline: 0.8rem; width: auto; transform: none; }
 }
+
+/* Round 9: keep the same navigation control and dark identity chrome across destinations.
+   The flight cockpit remains edge-to-edge; the other pages keep their reading canvas. */
+:root {
+  --shell-chrome-bg: oklch(16% 0.018 240);
+  --shell-chrome-fg: oklch(96% 0.006 240);
+  --shell-chrome-muted: oklch(82% 0.01 240);
+  --shell-chrome-border: oklch(76% 0.01 240 / 0.3);
+}
+body[data-active-page]:not([data-active-page="inflight"]) .app-shell {
+  display: block;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+}
+body[data-active-page]:not([data-active-page="inflight"]) .workspace {
+  display: grid;
+  width: 100%;
+  height: 100dvh;
+  min-height: 0;
+  grid-template-rows: var(--shell-header) minmax(0, 1fr);
+  padding-block-end: 0;
+}
+body[data-active-page]:not([data-active-page="inflight"]) .topbar {
+  display: flex;
+  min-height: var(--shell-header);
+  height: var(--shell-header);
+  padding: 0 1rem 0 4.2rem;
+  background: var(--shell-chrome-bg);
+  color: var(--shell-chrome-fg);
+  border-block-end-color: var(--shell-chrome-border);
+}
+body[data-active-page]:not([data-active-page="inflight"]) .topbar .brand-mark {
+  border-color: var(--shell-chrome-fg);
+}
+body[data-active-page]:not([data-active-page="inflight"]) .topbar .wordmark-copy small,
+body[data-active-page]:not([data-active-page="inflight"]) .topbar .time-note,
+body[data-active-page]:not([data-active-page="inflight"]) .topbar .rc-online-tag {
+  color: var(--shell-chrome-muted);
+}
+body[data-active-page]:not([data-active-page="inflight"]) .topbar .simulated-tag {
+  color: var(--shell-chrome-fg);
+  border-color: var(--shell-chrome-border);
+}
+body[data-active-page]:not([data-active-page="inflight"]) main {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+}
+
+body[data-active-page] .nav-reveal {
+  position: fixed;
+  z-index: 61;
+  inset: 0.65rem auto auto 0.65rem;
+  width: 3rem;
+  min-height: 3rem;
+  display: grid;
+  place-items: center;
+  padding: 0.45rem;
+  border-color: var(--shell-chrome-border);
+  border-radius: 0.42rem;
+  background: var(--shell-chrome-bg);
+  color: var(--shell-chrome-fg);
+  box-shadow: 0 0.2rem 0.8rem oklch(0% 0 0 / 0.2);
+}
+body[data-active-page] .nav-reveal:hover {
+  background: oklch(27% 0.018 240 / 0.98);
+  color: var(--shell-chrome-fg);
+}
+body[data-active-page] .nav-reveal svg { width: 1.15rem; height: 1.15rem; }
+body[data-active-page] .nav-reveal svg path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+body[data-active-page].nav-open .nav-reveal {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body[data-active-page] .nav-backdrop {
+  position: fixed;
+  z-index: 51;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: oklch(0% 0 0 / 0.42);
+}
+body[data-active-page] .nav-backdrop:hover { background: oklch(0% 0 0 / 0.42); }
+body[data-active-page] .nav-backdrop[hidden] { display: none; }
+body[data-active-page] .nav-rail {
+  position: fixed;
+  z-index: 52;
+  inset: 0 auto 0 0;
+  width: min(20rem, 88vw);
+  height: 100dvh;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.38rem;
+  padding: 0.8rem 0.7rem;
+  overflow-y: auto;
+  border: 0;
+  border-inline-end: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0.5rem 0 2rem oklch(0% 0 0 / 0.22);
+  transform: translateX(-105%);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 180ms ease, visibility 180ms ease;
+}
+body[data-active-page].nav-open .nav-rail {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+}
+body[data-active-page] .rail-brand {
+  min-height: 3.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 0.35rem;
+  padding: 0 0.15rem 0.6rem;
+}
+body[data-active-page] .rail-brand .brand-mark { width: 2.25rem; height: 2.25rem; }
+body[data-active-page] .nav-close {
+  min-height: 3rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.32rem 0.55rem;
+  font-size: var(--type-caption);
+}
+body[data-active-page] .nav-group-label {
+  margin: 0.35rem 0.2rem 0.15rem;
+  color: var(--text-quiet);
+  font-size: var(--type-caption);
+}
+body[data-active-page] .nav-tools-label {
+  display: block;
+  margin-block-start: 0.75rem;
+  padding-block-start: 0.6rem;
+  border-block-start: 1px solid var(--border);
+}
+body[data-active-page] .nav-item {
+  min-height: 3.5rem;
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 0.65rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.42rem;
+  text-align: start;
+}
+body[data-active-page] .nav-item[aria-current="page"],
+body[data-active-page] .nav-item[aria-current="location"] {
+  background: color-mix(in oklch, var(--accent) 8%, var(--surface));
+  border-color: color-mix(in oklch, var(--accent) 35%, var(--border));
+}
+body[data-active-page] .nav-item[aria-current="page"]::before,
+body[data-active-page] .nav-item[aria-current="location"]::before {
+  inset-inline-start: -0.72rem;
+  inset-block: 0.65rem;
+  width: 0.2rem;
+}
+body[data-active-page] .nav-item .nav-icon {
+  flex: 0 0 1.2rem;
+  width: 1.2rem;
+  height: 1.2rem;
+}
+body[data-active-page] .nav-item .nav-step { display: none; }
+body[data-active-page] .nav-name { font-size: var(--type-ui); }
+body[data-active-page] .nav-sub {
+  display: block;
+  font-size: var(--type-caption);
+  line-height: 1.3;
+  word-break: keep-all;
+}
+body[data-active-page] .nav-spacer { display: block; }
+body[data-active-page] .rail-note { display: block; font-size: var(--type-caption); }
+
+body[data-active-page="inflight"] .video-heading-group .cockpit-shell-mark {
+  width: 2.1rem;
+  height: 2.1rem;
+  flex: 0 0 2.1rem;
+  border-color: var(--shell-chrome-border);
+  border-radius: 0.42rem;
+  color: var(--shell-chrome-fg);
+}
+
+@media (max-width: 820px) {
+  body[data-active-page]:not([data-active-page="inflight"]) .workspace {
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  body[data-active-page]:not([data-active-page="inflight"]) .topbar {
+    height: auto;
+    min-height: var(--shell-header);
+    padding: 0.5rem 0.75rem 0.5rem 4.2rem;
+  }
+  body[data-active-page] .rail-note { display: none; }
+}
+
+/* On short landscape displays, protect the whole local-record primary action above the fold. */
+@media (min-width: 721px) and (max-height: 900px) {
+  body[data-active-page]:not([data-active-page="inflight"]) .workspace {
+    grid-template-rows: 3.45rem minmax(0, 1fr);
+  }
+  body[data-active-page]:not([data-active-page="inflight"]) .topbar {
+    height: 3.45rem;
+    min-height: 3.45rem;
+  }
+  body[data-active-page]:not([data-active-page="inflight"]) main {
+    padding-block: 0.45rem 0.6rem;
+  }
+  #mission-page .page-heading { margin-block: 0 0.45rem; }
+  #mission-page .panel-heading { min-height: 2.55rem; padding: 0.48rem 0.7rem; }
+  #mission-page .content-pad { padding: 0.62rem; }
+  #mission-page .data-cell { padding: 0.42rem 0.52rem; }
+  #mission-page .data-cell strong { margin-block-start: 0.16rem; }
+  #mission-page .data-cell small { margin-block-start: 0.12rem; line-height: 1.25; }
+  #mission-page .mission-readiness { margin-block-start: 0.4rem; padding-block-start: 0.35rem; }
+  #mission-page .mission-readiness-row { padding-block: 0.2rem; }
+  #mission-page .action-group { padding: 0.48rem 0.65rem; }
+  #mission-page .action-group h3 { margin-block-end: 0.42rem; }
+  #mission-page .mission-flow button { min-height: 2.75rem; padding-block: 0.42rem; }
+  #mission-page .mission-primary-note { margin-block-start: 0.32rem; }
+  #mission-page .mission-additional-action { margin-block-start: 0.42rem; padding-block-start: 0.35rem; }
+  #mission-page .inline-state { padding-block: 0.55rem; }
+  #mission-page .page-footer { margin-block-start: 0.55rem; padding-block-start: 0.42rem; }
+}
+@media (min-width: 721px) and (max-height: 800px) {
+  #mission-page .mission-overview { gap: 0.4rem; }
+  #mission-page .data-cell { padding-block: 0.36rem; }
+  #mission-page .action-group { padding-block: 0.42rem; }
+  #mission-page .mission-flow-heading { margin-block-end: 0.38rem; }
+}
+@media (max-width: 420px) {
+  #mission-page .mission-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; }
+  #mission-page .data-cell { padding: 0.5rem; }
+}
+@media (max-width: 360px) {
+  #mission-page .mission-overview { grid-template-columns: minmax(0, 1fr); }
+}
   </style>
 </head>
 <body data-active-page="inflight">
@@ -1194,8 +1443,9 @@ body[data-active-page="inflight"] .nav-sub { font-size: var(--type-caption); }
                 <span class="cockpit-attention-mark" aria-hidden="true">▲</span>
                 <span><strong id="cockpit-attention-title"></strong> <small id="cockpit-attention-copy"></small></span>
               </div>
-              <div class="video-top-overlay">
-                <div class="video-heading-group">
+                <div class="video-top-overlay">
+                  <div class="video-heading-group">
+                  <span class="brand-mark cockpit-shell-mark" aria-hidden="true">SE</span>
                   <h3 id="video-title" data-od-id="heading-video">라이브 뷰</h3>
                   <span class="hud-pill">DJI / MSDK</span>
                   <span class="simulated-tag">[SIMULATED]</span>
@@ -1882,7 +2132,7 @@ body[data-active-page="inflight"] .nav-sub { font-size: var(--type-caption); }
         navReveal.setAttribute("aria-expanded", "false");
         navReveal.setAttribute("aria-label", "주 메뉴 열기");
         navReveal.tabIndex = 0;
-        navRail.inert = pageName === "inflight";
+        navRail.inert = true;
         document.querySelectorAll("[data-page-target]").forEach(function (button) {
           const active = button.dataset.pageTarget === (pageName === "diagnostics" ? "settings" : pageName);
           button.classList.toggle("is-active", active);
@@ -1897,12 +2147,11 @@ body[data-active-page="inflight"] .nav-sub { font-size: var(--type-caption); }
       }
 
       function setNavigationOpen(open, returnFocus) {
-        const canOpen = document.body.dataset.activePage === "inflight";
-        const nextOpen = Boolean(open && canOpen);
+        const nextOpen = Boolean(open);
         window.clearTimeout(navFocusTimer);
         document.body.classList.toggle("nav-open", nextOpen);
         navBackdrop.hidden = !nextOpen;
-        navRail.inert = canOpen && !nextOpen;
+        navRail.inert = !nextOpen;
         navReveal.setAttribute("aria-expanded", nextOpen ? "true" : "false");
         navReveal.setAttribute("aria-label", nextOpen ? "주 메뉴 닫기" : "주 메뉴 열기");
         navReveal.tabIndex = nextOpen ? -1 : 0;

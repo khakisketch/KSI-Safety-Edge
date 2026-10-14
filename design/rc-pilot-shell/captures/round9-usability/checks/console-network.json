@@ -1,0 +1,8 @@
+{
+  "renderer": "visible Playwright Chromium",
+  "consoleErrors": 0,
+  "consoleWarnings": 0,
+  "nonStaticRequestsAfterMissionSmoke": 0,
+  "staticDocumentRequestsObserved": 1,
+  "note": "No API/backend behavior was exercised; all prototype action feedback remained [SIMULATED]."
+}

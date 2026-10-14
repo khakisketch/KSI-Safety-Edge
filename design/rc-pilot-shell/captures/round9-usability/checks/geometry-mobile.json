@@ -1,0 +1,25 @@
+{
+  "source": "design/rc-pilot-shell/field-shell.html",
+  "sourceSha256": "8d8ce077f0e5025c1c924042a7f13d153f362b2ec4d03cb62cdeb89feda52277",
+  "renderer": "visible Playwright Chromium; CSS pixel viewport",
+  "viewport": [390, 844],
+  "document": { "client": [390, 844], "scroll": [390, 844], "horizontalOverflow": false },
+  "mission": {
+    "main": { "client": [390, 791], "scroll": [390, 1925], "maxScrollTop": 1134 },
+    "overviewColumns": 2,
+    "dataCells": 8,
+    "primaryActionInitial": { "top": 1142.6, "bottom": 1190.6, "fullyInsideViewport": false },
+    "primaryActionAfterScrollTop800": { "top": 342.6, "bottom": 390.6, "fullyInsideViewport": true },
+    "primaryActionFocusedCaptureScrollTop": 671,
+    "footerAtMaximumScroll": { "top": 785.7, "bottom": 834.8, "withinMainViewport": true }
+  },
+  "otherRoutes": {
+    "postflight": { "mainScrollHeight": 1676, "horizontalOverflow": false },
+    "evidence": { "mainScrollHeight": 1512, "horizontalOverflow": false, "tableHasItsOwnHorizontalScroll": true },
+    "settings": { "mainScrollHeight": 2126, "horizontalOverflow": false },
+    "diagnostics": { "mainScrollHeight": 1773, "horizontalOverflow": false },
+    "inflight": { "mainScrollHeight": 844, "horizontalOverflow": false }
+  },
+  "drawer": { "width": 320, "viewportWidth": 390, "horizontalOverflow": false },
+  "interpretation": "At 390px the mission facts use two columns; all secondary content remains reachable by main scrolling. Only the evidence table itself scrolls horizontally, with the existing scroll hint and keyboard-operable region."
+}
