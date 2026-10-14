@@ -1,0 +1,3 @@
+Baseline HTML (git HEAD, before typography): 7b8c41241415bb8f289758ed0bedb483f94e9ca903968d16fe3b5934378d13df
+Final HTML: 2f3c22e100dfd36a45ea13d8cebde0d6aceb341944fa26e335de2e7fde4f602e
+Final Android layout: 1d8f7fb1d1a859f2a7182854095f465dd1514a2b44ff473a356ebdd18b4c017d

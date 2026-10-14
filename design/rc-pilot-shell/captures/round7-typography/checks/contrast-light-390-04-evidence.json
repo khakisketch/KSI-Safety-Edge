@@ -1,0 +1,67 @@
+{
+  "url": "/field-shell.html",
+  "scheme": "light",
+  "viewport": "390x844",
+  "summary": {
+    "checked": 62,
+    "failures": 0,
+    "gradientExcluded": 0
+  },
+  "failures": [],
+  "samples": [
+    {
+      "sel": ".skip-link",
+      "text": "본문으로 바로가기",
+      "color": "oklch(1 0 0)",
+      "bg": "rgb(22,35,44)",
+      "bgFrom": "skip-link",
+      "ratio": 16.02,
+      "need": 4.5
+    },
+    {
+      "sel": ".nav-name",
+      "text": "조종",
+      "color": "oklch(0.22 0.02 240)",
+      "bg": "rgb(255,255,255)",
+      "bgFrom": "nav-rail",
+      "ratio": 17.27,
+      "need": 4.5
+    },
+    {
+      "sel": ".nav-name",
+      "text": "임무",
+      "color": "oklch(0.22 0.02 240)",
+      "bg": "rgb(255,255,255)",
+      "bgFrom": "nav-rail",
+      "ratio": 17.27,
+      "need": 4.5
+    },
+    {
+      "sel": ".nav-name",
+      "text": "기록",
+      "color": "oklch(0.22 0.02 240)",
+      "bg": "rgb(255,255,255)",
+      "bgFrom": "nav-rail",
+      "ratio": 17.27,
+      "need": 4.5
+    },
+    {
+      "sel": ".nav-name",
+      "text": "증거",
+      "color": "oklch(0.22 0.02 240)",
+      "bg": "rgb(252,241,242)",
+      "bgFrom": "nav-item",
+      "ratio": 15.63,
+      "need": 4.5
+    },
+    {
+      "sel": ".nav-name",
+      "text": "설정",
+      "color": "oklch(0.22 0.02 240)",
+      "bg": "rgb(255,255,255)",
+      "bgFrom": "nav-rail",
+      "ratio": 17.27,
+      "need": 4.5
+    }
+  ]
+}

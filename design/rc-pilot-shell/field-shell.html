@@ -12,6 +12,7 @@
   --accent: oklch(58% 0.16 145); --text-quiet: oklch(41% 0.018 240); --surface-subtle: oklch(96% 0.006 245); --surface-raised: oklch(100% 0 0); --primary: oklch(25% 0.025 240); --on-primary: oklch(100% 0 0);
   --focus: oklch(44% 0.12 248); --problem: oklch(48% 0.18 28); --problem-bg: oklch(96% 0.03 25); --attention: oklch(48% 0.12 72); --attention-bg: oklch(96% 0.035 82); --info: oklch(43% 0.1 248);
   --info-bg: oklch(96% 0.02 248); --success: oklch(39% 0.1 145); --video-bg: oklch(19% 0.018 240); --video-fg: oklch(96% 0.006 240); --video-grid: oklch(38% 0.02 240); --radius: 0.65rem;
+  --type-caption: 0.75rem; --type-ui: 0.8125rem; --type-body: 0.875rem;
   --font-ui: "Noto Sans KR", "Malgun Gothic", -apple-system, BlinkMacSystemFont, system-ui, sans-serif; --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-family: var(--font-ui); font-size: 100%; font-synthesis: none; text-rendering: optimizeLegibility;
   font-variant-numeric: tabular-nums; background: var(--bg); color: var(--fg);
 }
@@ -1012,6 +1013,78 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
 @media (max-height: 620px) and (min-width: 641px) {
   body[data-active-page="inflight"] .quick-status { inset-block-start: 3.65rem; }
   body[data-active-page="inflight"] .cockpit-attention { inset-block-start: 9.55rem; }
+}
+
+/* Round 7: a compact but legible role scale; layout and copy remain unchanged. */
+.eyebrow, .nav-group-label, .nav-item, .nav-step, .nav-sub, .scenario-label,
+.state-label, .dev-only, .simulated-tag, .time-note, .wordmark-copy small, .rc-online-tag,
+.data-cell small, .settings-state-item .status-label,
+.nav-close, .video-heading-group .hud-pill, .video-center-kicker,
+.ai-panel-heading .eyebrow, .feed-source-state, .detection-select .feed-type,
+.selected-observation-label, .selected-observation-label .state-label,
+.system-details > summary small, .system-detail-layout .status-key,
+#observe-page .system-detail-layout .status-label,
+#observe-page .system-detail-layout .severity,
+.system-mop-module .panel-heading .subline, .system-mop-module .metric-label,
+.flight-choice-top span, .field-required,
+body[data-active-page="inflight"] .video-heading-group .hud-pill,
+body[data-active-page="inflight"] .video-overlay-controls .state-label {
+  font-size: var(--type-caption);
+}
+
+.nav-name, body[data-active-page="inflight"] .nav-name,
+.quick-status-item strong, body[data-active-page="inflight"] .quick-status-item strong,
+.video-heading-group h3, body[data-active-page="inflight"] .video-heading-group h3,
+.video-overlay-controls button, body[data-active-page="inflight"] .video-overlay-controls button,
+.video-center p, body[data-active-page="inflight"] .video-center p,
+.cockpit-attention strong, body[data-active-page="inflight"] .cockpit-attention strong,
+.video-demo-states button, .scenario-switch .segmented button,
+.settings-system-link, body[data-active-page="inflight"] .nav-close,
+.mop-action-dock button, body[data-active-page="inflight"] .mop-action-dock button,
+.ai-panel-intro, .detection-select .feed-copy strong,
+.detection-select .feed-copy small, .selected-observation > p,
+.mapping-notice, .mapping-notice strong, .ai-feed-module .feed-footnote,
+.system-details > summary .details-action,
+.system-mop-module .panel-heading h3, .system-mop-module .metric-value,
+.system-mop-module .recent-receive, .system-mop-module .action-group h3,
+.system-mop-module .action-row button, .system-evidence-module .panel-heading h3,
+.system-evidence-module .evidence-line, .system-evidence-module .evidence-link,
+.system-detail-layout .status-board-head h3,
+#observe-page .system-detail-layout .status-value,
+#observe-page .system-detail-layout .status-detail,
+#observe-page .system-detail-layout .status-action,
+.flight-choice > span:nth-child(2), .flight-choice small, .flight-list-note,
+.table-scroll-hint, th, .field-hint, .footnote, .info-strip,
+.append-log p, .page-footer, .postflight-honesty-grid .notice,
+.flight-heading-meta, .table-wrap td,
+body[data-active-page="inflight"] .mop-action-dock button {
+  font-size: var(--type-ui);
+}
+
+.table-wrap table, .table-wrap td { font-size: var(--type-body); }
+.detail-row dt { font-size: var(--type-ui); }
+.detail-row dd { font-size: var(--type-body); }
+
+#observe-page .phase-heading .eyebrow,
+#observe-page .flight-heading-meta,
+#observe-page .flight-heading-meta .simulated-tag,
+.flight-heading-meta .simulated-tag,
+.video-heading-group .simulated-tag,
+body[data-active-page="inflight"] .video-heading-group .simulated-tag,
+.quick-status-item > span.quick-label,
+body[data-active-page="inflight"] .quick-status-item > span.quick-label,
+.video-bottom-hud, body[data-active-page="inflight"] .video-bottom-hud,
+.cockpit-attention small, body[data-active-page="inflight"] .cockpit-attention small,
+.system-details > summary .details-action {
+  font-size: var(--type-caption);
+}
+.page .phase-heading .eyebrow,
+body[data-active-page="inflight"] .nav-group-label,
+body[data-active-page="inflight"] .nav-sub { font-size: var(--type-caption); }
+
+/* Keep the full-screen cockpit HUD inside the wide viewport rather than inheriting its centered preview transform. */
+@media (min-width: 1501px) and (min-height: 900px) {
+  body[data-active-page="inflight"] .video-bottom-hud { inset-inline: 0.8rem; width: auto; transform: none; }
 }
   </style>
 </head>

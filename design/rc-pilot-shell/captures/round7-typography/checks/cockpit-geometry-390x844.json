@@ -1,0 +1,79 @@
+{
+  "active": "inflight",
+  "body": [
+    390,
+    844
+  ],
+  "document": [
+    390,
+    844
+  ],
+  "main": {
+    "client": [
+      390,
+      844
+    ],
+    "scroll": [
+      390,
+      844
+    ]
+  },
+  "navOpen": false,
+  "noHorizontalOverflow": true,
+  "noOverlap": true,
+  "noScroll": true,
+  "overflowNodes": [],
+  "overlaps": [],
+  "scheme": "light",
+  "viewport": [
+    390,
+    844
+  ],
+  "visibleOverlayRects": [
+    {
+      "bottom": 58.4,
+      "height": 48,
+      "right": 58.4,
+      "selector": "#nav-reveal",
+      "width": 48,
+      "x": 10.4,
+      "y": 10.4
+    },
+    {
+      "bottom": 86.7,
+      "height": 77.9,
+      "right": 382.8,
+      "selector": ".video-top-overlay",
+      "width": 321.2,
+      "x": 61.6,
+      "y": 8.8
+    },
+    {
+      "bottom": 223.7,
+      "height": 110.1,
+      "right": 383.3,
+      "selector": ".quick-status",
+      "width": 376.6,
+      "x": 6.7,
+      "y": 113.6
+    },
+    {
+      "bottom": 480.1,
+      "height": 116.3,
+      "right": 378.3,
+      "selector": ".video-center",
+      "width": 366.6,
+      "x": 11.7,
+      "y": 363.9
+    },
+    {
+      "bottom": 837.6,
+      "height": 35.5,
+      "right": 382.3,
+      "selector": ".video-bottom-hud",
+      "width": 374.7,
+      "x": 7.7,
+      "y": 802.1
+    }
+  ]
+}

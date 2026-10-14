@@ -2,9 +2,9 @@
 
 앱(`android-rc`)의 시각 기준이 되는 단일 HTML 프로토타입. 브라우저로 열어 확인한다.
 
-- **현재 정본(작업본)**: `field-shell.html` — 2026-10-14 round6 전 화면 심화
-  (업무 단계 내비게이션·임무/기록·사후 검토·증거/동기화 설명·모바일 표 키보드 스크롤).
-  sha256 `7b8c4124…` (**미커밋 작업본** — 커밋 전 수치는 변동 가능).
+- **현재 정본(작업본)**: `field-shell.html` — 2026-10-14 round7 타이포그래피 정리
+  (12/13/14px 역할 스케일·Android 글자 크기 대응, 1920px 조종 HUD 잘림 수정).
+  sha256 `2f3c22e1…` (**미커밋 작업본** — 커밋 전 수치는 변동 가능).
 - **직전 커밋 기준선**: `783ec0b`(10-14 디자인, main) · `c5f41ee`(round 4) · `ff4b5b4`(round 3, `cdb72c9b…`).
 - **렌더(필수 경로)**:
 
@@ -17,7 +17,9 @@
   `captures/round3-review/`(9장, 1920×1200), `captures/round4-settings-ux/`(라이트/다크 10장),
   `captures/round5-field-use/`(29장 + **RECEIPT.md**),
   `captures/round6-full-sweep/`(18장 before + 18장 화면 매트릭스 after + 3개 추가 상태,
-  **RECEIPT.md**·검사 JSON·캡처 해시 목록)
+  **RECEIPT.md**·검사 JSON·캡처 해시 목록),
+  `captures/round7-typography/`(전체 1920 light/dark·390 light 매트릭스, focused 비교,
+  detector·axe·contrast·geometry·해시 검사, **RECEIPT.md**)
 
 ## 라운드 이력
 
@@ -31,11 +33,13 @@
 | 2026-10-14 현장 보조 화면 정리 | 무박스 상태 띠, 영상 입력 상태(미연결/연결 중/신호 없음/프레임 미수신/지연/시각 미확인), 기록 요청≠쓰기, 비행 후 검토(0건 비행·의견 비활성) | `783ec0b` |
 | round5 캡처 영수증·정합 보강 | 390 시나리오 스위치·비행없음 누수·영상 7상태 정합, Android KSI 기록 셀/문구, 캡처 29장+RECEIPT | 작업본 `6e483b9e…` (미커밋) |
 | round6 전 화면 심화 | 비행 전/후 명확화, 동기화 결과의 지속 표시, 로컬 완전성·동기화 분리, 리뷰 시간/0건 상태, 모바일 증거표 키보드 스크롤, Android 문구 정합 | 작업본 `7b8c4124…` (미커밋) |
+| round7 타이포그래피 | HTML 12/13/14px 역할 스케일, Android `textSize`만 대응 조정, 11.68px 본문 advisory 해소, 1920px 조종 하단 HUD 잘림 수정 | 작업본 `2f3c22e1…` (미커밋) |
 
 상세 기록: `history/2026-10-13-round1-review-findings.md`,
 `history/2026-10-13-round2-redesign-change-note.md`,
 `history/2026-10-13-round3-review-findings.md`,
-`history/2026-10-14-round6-full-sweep.md`
+`history/2026-10-14-round6-full-sweep.md`,
+`history/2026-10-14-round7-typography.md`
 
 ## 보존 제약 (디자인 변경 시 불변)
 
@@ -48,6 +52,8 @@
 - 2026-10-13 round 3·4: round-4 결과는 `android-rc` 설정 포트(`de62114`)까지 커밋·푸시됐다.
 - 2026-10-14 사용자 확인(방향): 카드 최소화·영상 중심·비행 후 상세. round6 브라우저 검증에서 axe
   위반 0, 보조 대비 측정을 완료 — **실기 렌더·햇빛·장갑·실제 영상 대비는 A9-4**.
+- 2026-10-14 round7: `captures/round7-typography/RECEIPT.md` 참조. HTML/Android 글자 크기만 정리했고,
+  1920/1024/390 조종 레이아웃·접근성·대비를 재검증했다. 단계 번호는 업무 순서를 설명하므로 유지했다.
 - 2026-10-14 round6: `captures/round6-full-sweep/RECEIPT.md` 참조. 화면 매트릭스 18장 after와
   추가 상태 3장, axe 21개(위반 0), desktop/mobile 대비 보조 측정 18개. Detector의 타이포그래피
   warning/advisory는 영수증에 남겼으며, 실제 기기 판독성은 A9-4에서 확인해야 한다.
