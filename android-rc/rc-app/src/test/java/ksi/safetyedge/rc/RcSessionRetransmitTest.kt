@@ -30,6 +30,21 @@ class RcSessionRetransmitTest {
     }
 
     @Test
+    fun foreground_listener_receives_link_state_changes_and_can_detach() {
+        val link = FakeDroneLink()
+        val session = session(link)
+        var updates = 0
+        session.setUiStateListener { updates += 1 }
+
+        link.connect() // CONNECTING, then CONNECTED
+        assertEquals(2, updates)
+
+        session.setUiStateListener(null)
+        link.disconnect()
+        assertEquals(2, updates)
+    }
+
+    @Test
     fun tick_sends_once_when_connected_then_retransmits_identical_bytes() {
         val link = FakeDroneLink()
         val session = session(link)

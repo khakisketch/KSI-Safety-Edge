@@ -21,4 +21,6 @@
     <color name="ksi_video_bg">#0C151B</color>
     <color name="ksi_video_fg">#EEF2F5</color>
     <color name="ksi_video_grid">#39444C</color>
+    <color name="ksi_problem_video">#FF9F96</color>
+    <color name="ksi_attention_video">#FFD18A</color>
 </resources>

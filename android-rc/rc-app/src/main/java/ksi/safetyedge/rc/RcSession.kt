@@ -49,6 +49,14 @@ class RcSession(
     var lastInbound: String = "-"; private set
     var lastError: String? = null; private set
 
+    /** Optional foreground UI observer; callback must be thread-safe and fast. */
+    @Volatile
+    private var uiStateListener: (() -> Unit)? = null
+
+    fun setUiStateListener(listener: (() -> Unit)?) {
+        uiStateListener = listener
+    }
+
     /** App-scoped background work (upload/query): survives rotation. */
     val bg: java.util.concurrent.ExecutorService =
         Executors.newSingleThreadExecutor()
@@ -71,8 +79,14 @@ class RcSession(
             }
         }
         link.setListener(object : DroneLink.Listener {
-            override fun onBytes(bytes: ByteArray) = onLinkBytes(bytes)
-            override fun onState(state: DroneLink.State) { /* pulled by UI */ }
+            override fun onBytes(bytes: ByteArray) {
+                onLinkBytes(bytes)
+                uiStateListener?.invoke()
+            }
+
+            override fun onState(state: DroneLink.State) {
+                uiStateListener?.invoke()
+            }
         })
     }
 

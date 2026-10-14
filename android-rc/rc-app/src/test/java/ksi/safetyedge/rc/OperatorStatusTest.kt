@@ -103,6 +103,26 @@ class OperatorStatusTest {
     }
 
     @Test
+    fun requested_recording_is_not_the_same_as_written_frames() {
+        val waiting = OperatorStatus.evaluate(input().copy(recorderWrittenFrames = 0L))
+        assertNotNull(waiting.item("녹화 입력 대기"))
+        assertTrue(waiting.none { it.label == "영상 녹화 중" })
+        val writing = OperatorStatus.evaluate(input().copy(recorderWrittenFrames = 10L))
+        assertNotNull(writing.item("영상 녹화 중"))
+        val failed = OperatorStatus.evaluate(input().copy(
+            recorderWrittenFrames = 10L, recorderHasWriteFailure = true,
+        ))
+        assertEquals(OperatorStatus.Severity.PROBLEM, failed.item("녹화 오류")!!.severity)
+        assertTrue(failed.none { it.label == "영상 녹화 중" })
+    }
+
+    @Test
+    fun observation_delay_boundary_matches_the_glanceable_label() {
+        assertNotNull(OperatorStatus.evaluate(input(observationAgeMs = 5_000L)).item("AI 관측 지연"))
+        assertTrue(OperatorStatus.evaluate(input(observationAgeMs = 4_999L)).none { it.label == "AI 관측 지연" })
+    }
+
+    @Test
     fun evidence_and_sync_states_follow_local_facts_only() {
         val receiving = OperatorStatus.evaluate(
             input(artifactsTotal = 3, artifactsComplete = 1),
@@ -130,6 +150,13 @@ class OperatorStatusTest {
 
         val noCore = OperatorStatus.evaluate(input(coreConfigured = false))
         assertNotNull(noCore.item("Core 미설정"))
+        val opinionsWithoutMedia = OperatorStatus.evaluate(input(
+            artifactsTotal = 0, artifactsComplete = 0, artifactsSynced = 0,
+            pendingAnnotations = 2, coreConfigured = false,
+        ))
+        assertNotNull(opinionsWithoutMedia.item("로컬 증거 없음"))
+        assertTrue(opinionsWithoutMedia.item("늦은 의견 동기화 대기")!!.detail.contains("2건"))
+        assertTrue(opinionsWithoutMedia.none { it.label == "증거 동기화 완료" })
     }
 
     @Test

@@ -42,9 +42,20 @@ class SegmentRecorderCore(
     private val finalized = mutableListOf<File>()
     private var stopped = false
     private var currentWriteFailed = false
+    private var needsKeyFrame = true
+    private var writtenFrames = 0L
+    private var currentWrittenFrames = 0L
 
+    @get:Synchronized
+    val writtenFrameCount: Long get() = writtenFrames
+
+    @get:Synchronized
+    val hasWriteFailure: Boolean get() = currentWriteFailed || failedSegments > 0
+
+    @get:Synchronized
     var failedSegments = 0
         private set
+    @get:Synchronized
     var lastError: String? = null
         private set
 
@@ -68,6 +79,8 @@ class SegmentRecorderCore(
         segmentStartMs = elapsedMs
         stopped = false
         currentWriteFailed = false
+        needsKeyFrame = true
+        writtenFrames = 0L
         return openSegment()
     }
 
@@ -82,7 +95,9 @@ class SegmentRecorderCore(
         return maxIndex + 1
     }
 
-    /** Appends one frame; rotates first when this frame crossed the boundary. */
+    /** Consumes one frame; rotates first at a boundary. True also covers
+     *  pre-keyframe/CSD waiting (nothing was written, but no write failed).
+     *  [writtenFrameCount] alone reports actual samples accepted by a writer. */
     @Synchronized
     fun onFrame(frame: EncodedVideoFrame, elapsedMs: Long): Boolean {
         if (stopped) return false
@@ -109,9 +124,25 @@ class SegmentRecorderCore(
             }
         }
         val current = writer ?: return false
+        // Starting mid-GOP is a wait, not a bad write. Do not call the
+        // writer until this segment has a keyframe with real codec config:
+        // its false result means untrusted bytes, not "waiting for SPS/PPS".
+        if (needsKeyFrame) {
+            if (!frame.isKeyFrame || frame.sps == null || frame.sps.isEmpty() ||
+                frame.pps == null || frame.pps.isEmpty() ||
+                frame.width <= 0 || frame.height <= 0 || frame.data.isEmpty()
+            ) return true
+            needsKeyFrame = false
+        }
         return try {
             val written = current.write(frame)
-            if (!written) currentWriteFailed = true
+            if (written) {
+                writtenFrames += 1
+                currentWrittenFrames += 1
+            } else {
+                currentWriteFailed = true
+                lastError = "frame write failed"
+            }
             written
         } catch (exc: Exception) {
             currentWriteFailed = true
@@ -140,6 +171,8 @@ class SegmentRecorderCore(
         activeFinal = finalFile
         activeTmp = tmp
         currentWriteFailed = false
+        needsKeyFrame = true
+        currentWrittenFrames = 0L
         writer = try {
             writerFactory(tmp)
         } catch (exc: Exception) {
@@ -162,6 +195,7 @@ class SegmentRecorderCore(
         activeTmp = null
         activeFinal = null
         val writeFailed = currentWriteFailed
+        val noSamples = currentWrittenFrames == 0L
         currentWriteFailed = false
         val closed = try {
             active.close()
@@ -169,11 +203,16 @@ class SegmentRecorderCore(
             lastError = "close failed: ${exc.message}"
             false
         }
-        if (!closed || writeFailed || tmp == null || finalFile == null) {
+        if (!closed || writeFailed || noSamples || tmp == null || finalFile == null) {
             // A failed muxer OR an untrusted frame means the bytes cannot be
             // presented: the .tmp stays on disk for diagnosis and is never
             // renamed to evidence (review C63 #5).
             failedSegments += 1
+            if (lastError == null) lastError = when {
+                writeFailed -> "frame write failed"
+                noSamples -> "no video samples written"
+                else -> "segment close failed"
+            }
             if (closed && (tmp == null || finalFile == null)) {
                 lastError = "segment bookkeeping missing"
             }

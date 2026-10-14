@@ -7,7 +7,7 @@ package ksi.safetyedge.rc
  *
  * This is the BEHAVIOR contract, not the look: layout, typography, colors
  * and touch ergonomics are owned by the design workspace (see
- * `docs/verification/operator-flow-spec.md` §디자인 위임). The UI renders
+ * `docs/plans/2026-10-12-b1-operator-flow-contract.md` §디자인 위임). The UI renders
  * these items; it does not re-decide them.
  *
  * Display-threshold constants below are status INDICATORS, not safety
@@ -44,6 +44,8 @@ object OperatorStatus {
         val coveredFrames: Long?,
         val skippedFrames: Long?,
         val coreConfigured: Boolean,
+        val recorderWrittenFrames: Long? = null,
+        val recorderHasWriteFailure: Boolean? = null,
     )
 
     /** Heartbeat older than this shows "지연" (indicator only). */
@@ -132,8 +134,18 @@ object OperatorStatus {
                 "벤치 빌드(가짜 녹화 없음)",
                 null,
             )
-            "RECORDING" ->
-                items += Item(Severity.INFO, "영상 녹화 중", "", null)
+            "RECORDING" -> when {
+                input.recorderHasWriteFailure == true -> items += Item(
+                    Severity.PROBLEM, "녹화 오류",
+                    "일부 구간 저장 실패 · 이후 구간 재시도 중",
+                    "로그 확인",
+                )
+                input.recorderWrittenFrames == 0L -> items += Item(
+                    Severity.INFO, "녹화 입력 대기", "기록 요청됨 · 저장된 영상 프레임 없음", null,
+                )
+                else -> items += Item(Severity.INFO, "영상 녹화 중",
+                    if (input.recorderWrittenFrames == null) "영상 저장 진행은 미확인" else "", null)
+            }
             "ERROR" -> items += Item(
                 Severity.PROBLEM, "녹화 오류",
                 "불완전 .tmp는 증거가 되지 않음",
@@ -151,12 +163,23 @@ object OperatorStatus {
         // 6. Evidence / sync (local facts only; server state is never guessed).
         when {
             !input.hasActiveFlight -> Unit
-            input.artifactsTotal == 0 ->
+            input.artifactsTotal == 0 -> {
                 items += Item(
                     Severity.INFO, "로컬 증거 없음",
                     "완료 세그먼트 없음(롤오버·종료 시 확정)",
                     null,
                 )
+                // Opinions are their own append-only data. A flight with
+                // no media artifacts can still have unsynced opinions.
+                if (input.pendingAnnotations > 0) {
+                    items += Item(
+                        Severity.ATTENTION, "늦은 의견 동기화 대기",
+                        "${input.pendingAnnotations}건" +
+                            if (!input.coreConfigured) " · Core 미설정" else "",
+                        null,
+                    )
+                }
+            }
             else -> {
                 if (input.artifactsComplete < input.artifactsTotal) {
                     items += Item(
@@ -193,7 +216,7 @@ object OperatorStatus {
         // 7. Observation quality (gap ≠ safety; zero events ≠ safe).
         if (input.hasActiveFlight) {
             val age = input.observationAgeMs
-            if (age != null && age > OBSERVATION_STALE_MS) {
+            if (age != null && age >= OBSERVATION_STALE_MS) {
                 items += Item(
                     Severity.ATTENTION, "AI 관측 지연",
                     "${age / 1000}s",
