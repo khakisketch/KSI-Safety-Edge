@@ -65,6 +65,8 @@ python scripts/rc_core_correlate.py \
   --out docs/verification/evidence/<date>-a9-4/08-rc-core-correlation.txt
 ```
 
+- `--core-url`은 서버 루트 또는 `/api/v1/edge` 전체 주소 모두 허용한다(루트만 주면 보정; 앱 설정과 동일 API).
+
 - 대조 항목: 비행 존재·업로드 상태, 증거(존재/committed/sha256), 관측·사건 ID, 사건-증거 연결,
   의견(업로드 영수증 vs Core 반영), 부트별 세션.
 - 판정: `OK`(전부 일치) / `DISCREPANCY`(미도달·모순 있음 — 그대로 notes.md에 기록) / 실행 오류.

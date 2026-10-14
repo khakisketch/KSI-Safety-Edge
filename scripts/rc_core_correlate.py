@@ -84,7 +84,8 @@ class CoreClientReads:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--store", required=True, help="rc-store 디렉터리 또는 rc-store.tar")
-    parser.add_argument("--core-url", default=os.environ.get("KSI_CORE_URL", ""))
+    parser.add_argument("--core-url", default=os.environ.get("KSI_CORE_URL", ""),
+                        help="Core API 주소(서버 루트만 줘도 /api/v1/edge 보정)")
     parser.add_argument("--token", default=os.environ.get("KSI_CORE_TOKEN", ""))
     parser.add_argument("--out", default=None, help="보고서 저장 경로(미지정 시 stdout만)")
     parser.add_argument("--flight", action="append", default=None,
@@ -94,6 +95,10 @@ def main(argv: list[str] | None = None) -> int:
     if not args.core_url or not args.token:
         print("오류: --core-url/--token(또는 KSI_CORE_URL/KSI_CORE_TOKEN)이 필요합니다.", file=sys.stderr)
         return 1
+    # The frozen API base is /api/v1/edge (앱 설정과 동일). 서버 루트만 준 경우 보정한다.
+    core_url = args.core_url.rstrip("/")
+    if not core_url.endswith("/api/v1/edge"):
+        core_url = core_url + "/api/v1/edge"
 
     store_path = Path(args.store)
     if not store_path.exists():
@@ -113,13 +118,13 @@ def main(argv: list[str] | None = None) -> int:
             print("오류: 스토어에 flights.ndjson 기록이 없습니다(pull 확인).", file=sys.stderr)
             return 1
 
-        client = CoreClient(args.core_url, args.token)
+        client = CoreClient(core_url, args.token)
         try:
             report = correlate(store, CoreClientReads(client), args.flight)
         finally:
             client.close()
 
-        text = render_text(report, args.core_url)
+        text = render_text(report, core_url)
         print(text)
         if args.out:
             out = Path(args.out)
