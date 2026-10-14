@@ -36,8 +36,17 @@ class SegmentRotationPolicy(val segmentSeconds: Int = 300) {
  */
 class MsdkVideoRecorder(private val context: Context) :
     VideoRecorder, VideoFrameSink {
+    @Volatile
     override var state: VideoRecorder.State = VideoRecorder.State.IDLE
         private set
+
+    override val writtenFrameCount: Long?
+        get() = core?.writtenFrameCount
+    override val hasWriteFailure: Boolean?
+        get() = core?.hasWriteFailure ?: lastSessionFailed
+
+    @Volatile
+    private var lastSessionFailed = false
 
     /** Mission `recording_policy.segment_seconds`, applied before start.
      *  Mutation while RECORDING is ignored with a recorded reason (review
@@ -51,6 +60,7 @@ class MsdkVideoRecorder(private val context: Context) :
             field = value
         }
 
+    @Volatile
     var lastError: String? = null
         private set
 
@@ -72,9 +82,11 @@ class MsdkVideoRecorder(private val context: Context) :
             Mp4SegmentWriter(tmp.absolutePath)
         }
         startedElapsedMs = SystemClock.elapsedRealtime()
+        lastSessionFailed = false
         if (!core.start(directory, 0L)) {
             lastError = core.lastError ?: "segment start failed"
             state = VideoRecorder.State.ERROR
+            lastSessionFailed = true
             return
         }
         this.core = core
@@ -107,6 +119,7 @@ class MsdkVideoRecorder(private val context: Context) :
         state = VideoRecorder.State.IDLE
         val files = active.stop()
         if (active.failedSegments > 0) {
+            lastSessionFailed = true
             lastError =
                 "${active.failedSegments} segment(s) failed: ${active.lastError ?: "?"}"
         }

@@ -2,13 +2,19 @@ package ksi.safetyedge.rc
 
 import android.graphics.Typeface
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
@@ -33,12 +39,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvMissionFlightState: TextView
     private lateinit var tvMissionStarted: TextView
     private lateinit var tvOpsStatus: TextView
+    private lateinit var tvPrimaryAlert: TextView
+    private lateinit var tvAiPeek: TextView
     private lateinit var tvLink: TextView
     private lateinit var tvStatus: TextView
     private lateinit var tvVideo: TextView
-    private lateinit var tvAi: TextView
-    private lateinit var tvEvents: TextView
+    private lateinit var tvVideoPlaceholder: TextView
+    private lateinit var tvVideoStatus: TextView
+    private lateinit var tvInternetStatus: TextView
+    private lateinit var tvEvidenceStatus: TextView
     private lateinit var tvFlights: TextView
+    private lateinit var spHistoryFlight: Spinner
     private lateinit var tvFlightDetail: TextView
     private lateinit var tvFlightEvents: TextView
     private lateinit var tvFlightArtifacts: TextView
@@ -60,11 +71,25 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvAppVersion: TextView
     private lateinit var tvUploadGate: TextView
     private lateinit var surfaceVideo: android.view.SurfaceView
+    private lateinit var spSite: Spinner
+    private lateinit var spBundle: Spinner
+    private lateinit var navRail: View
+    private lateinit var rightStatusPanel: View
+    private lateinit var developerTools: View
+    private lateinit var btnFocusMode: Button
+    private lateinit var btnTogglePanel: Button
+    private lateinit var appHeader: View
+    private lateinit var headerDivider: View
+    private lateinit var tvCockpitSim: TextView
 
-    // C67 cockpit shell: nav rail + five areas (approved design).
+    // The menu is feature-based; flight phases are expressed within each page.
     private lateinit var tvPageTitle: TextView
     private lateinit var tvTopSim: TextView
     private lateinit var tvTopUtc: TextView
+    private lateinit var tvTopContext: TextView
+    private lateinit var tvAircraftStatus: TextView
+    private lateinit var tvMopStatus: TextView
+    private lateinit var tvRecorderStatus: TextView
 
     // MSDK declares dangerous permissions (location/phone/storage); targetSdk
     // 34 requires a runtime grant — request the declared set once per launch
@@ -93,12 +118,39 @@ class MainActivity : AppCompatActivity() {
     private var hasSyncReport = false
     private var selectedSiteId: String? = null
     private var selectedBundleId: String? = null
-    private var videoFrames = 0L
-    private var eventGeneration = 0
+    private var siteIds: List<String> = emptyList()
+    private var siteAdapterLabels: List<String> = emptyList()
+    private var bundleIds: List<String> = emptyList()
+    private var bundleAdapterLabels: List<String> = emptyList()
+    private var updatingMissionSelectors = false
+    private var flightChromeCollapsed = false
+    @Volatile private var cockpitStateDirty = true
+    private var activityResumed = false
     private var selectedFlightId: String? = null
+    private var historyFlightIds: List<String> = emptyList()
+    private var historyAdapterLabels: List<String> = emptyList()
+    private var updatingHistorySelector = false
     private var selectedEventRows: List<FlightHistoryModel.EventRow> = emptyList()
     private var selectedEventIndex = 0
     private var historyGeneration = 0
+    private val cockpitHandler = Handler(Looper.getMainLooper())
+    private val cockpitTicker = object : Runnable {
+        override fun run() {
+            if (!activityResumed || isDestroyed) return
+            if (::navRail.isInitialized &&
+                findViewById<View>(R.id.pageObserve).visibility == View.VISIBLE
+            ) {
+                if (cockpitStateDirty) {
+                    cockpitStateDirty = false
+                    refreshLiveCockpit()
+                } else {
+                    updateAiPeekFreshness()
+                    refreshVideo()
+                }
+            }
+            cockpitHandler.postDelayed(this, COCKPIT_REFRESH_MS)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -116,12 +168,17 @@ class MainActivity : AppCompatActivity() {
         tvMissionFlightState = findViewById(R.id.tvMissionFlightState)
         tvMissionStarted = findViewById(R.id.tvMissionStarted)
         tvOpsStatus = findViewById(R.id.tvOpsStatus)
+        tvPrimaryAlert = findViewById(R.id.tvPrimaryAlert)
+        tvAiPeek = findViewById(R.id.tvAiPeek)
         tvLink = findViewById(R.id.tvLink)
         tvStatus = findViewById(R.id.tvStatus)
         tvVideo = findViewById(R.id.tvVideo)
-        tvAi = findViewById(R.id.tvAi)
-        tvEvents = findViewById(R.id.tvEvents)
+        tvVideoPlaceholder = findViewById(R.id.tvVideoPlaceholder)
+        tvVideoStatus = findViewById(R.id.tvVideoStatus)
+        tvInternetStatus = findViewById(R.id.tvInternetStatus)
+        tvEvidenceStatus = findViewById(R.id.tvEvidenceStatus)
         tvFlights = findViewById(R.id.tvFlights)
+        spHistoryFlight = findViewById(R.id.spHistoryFlight)
         tvFlightDetail = findViewById(R.id.tvFlightDetail)
         tvFlightEvents = findViewById(R.id.tvFlightEvents)
         tvFlightArtifacts = findViewById(R.id.tvFlightArtifacts)
@@ -143,6 +200,23 @@ class MainActivity : AppCompatActivity() {
         tvAppVersion = findViewById(R.id.tvAppVersion)
         tvUploadGate = findViewById(R.id.tvUploadGate)
         surfaceVideo = findViewById(R.id.surfaceVideo)
+        spSite = findViewById(R.id.spSite)
+        spBundle = findViewById(R.id.spBundle)
+        navRail = findViewById(R.id.navRail)
+        rightStatusPanel = findViewById(R.id.rightStatusPanel)
+        developerTools = findViewById(R.id.developerTools)
+        btnFocusMode = findViewById(R.id.btnFocusMode)
+        btnTogglePanel = findViewById(R.id.btnTogglePanel)
+        appHeader = findViewById(R.id.appHeader)
+        headerDivider = findViewById(R.id.headerDivider)
+        tvCockpitSim = findViewById(R.id.tvCockpitSim)
+        findViewById<Button>(R.id.btnEndFlight).apply {
+            backgroundTintList = ContextCompat.getColorStateList(
+                this@MainActivity,
+                R.color.ksi_problem,
+            )
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_on_primary))
+        }
         etCoreUrl.setText(app.config.coreUrl)
         etCoreToken.setText(app.config.coreToken)
         app.config.coreTokenStorageError?.let {
@@ -158,53 +232,36 @@ class MainActivity : AppCompatActivity() {
         tvPageTitle = findViewById(R.id.tvPageTitle)
         tvTopSim = findViewById(R.id.tvTopSim)
         tvTopUtc = findViewById(R.id.tvTopUtc)
+        tvTopContext = findViewById(R.id.tvTopContext)
+        tvAircraftStatus = findViewById(R.id.tvAircraftStatus)
+        tvMopStatus = findViewById(R.id.tvMopStatus)
+        tvRecorderStatus = findViewById(R.id.tvRecorderStatus)
+        tvError.setOnClickListener { tvError.visibility = View.GONE }
+        bindMissionSelectors()
+        bindHistorySelector()
         navTargets.forEach { (navId, _) -> on(navId) { showPage(navId) } }
-        showPage(R.id.btnNavObserve)
+        on(R.id.btnFocusMode) { toggleFocusMode() }
+        on(R.id.btnTogglePanel) { toggleFlightPanel() }
+        on(R.id.btnOpenEvidence) { showEvidencePage() }
+        on(R.id.btnToggleDeveloper) {
+            val expanded = developerTools.visibility != View.VISIBLE
+            developerTools.visibility = if (expanded) View.VISIBLE else View.GONE
+        }
+        showPage(
+            if (session.activeFlight != null) R.id.btnNavObserve else R.id.btnNavMission,
+        )
 
         // -- operational mission (A5: bundle attach comes from the synced
         //    mission store; until then the controller shows "not attached").
         on(R.id.btnSyncSites) { syncSites() }
         on(R.id.btnSyncBundle) { syncBundleLatest() }
         on(R.id.btnStartFlight) { startFlight() }
-        on(R.id.btnPrepare) { run("준비") { session.controller?.prepare() } }
-        on(R.id.btnApply) { run("적용") { session.controller?.apply() } }
-        on(R.id.btnReconcile) { run("재조정") { session.controller?.reconcile() } }
-        on(R.id.btnStart) { run("시작") { session.controller?.startSession() } }
-        on(R.id.btnStop) { run("정지") { session.controller?.stopSession() } }
-        on(R.id.btnEndFlight) {
-            val ended = session.endFlight()
-            if (ended != null) {
-                val flightId = ended.get("flight_id").asText()
-                // A8 policy: a finished flight is queued for background sync
-                // (network-constrained; COMMITTED checks stay in the uploader).
-                SyncScheduler.enqueue(applicationContext, flightId)
-                // A9-3 review: finalize + SHA-256 + chunk ingestion can take
-                // seconds on large segments — keep it OFF the UI thread.
-                show("비행 종료: ${flightId.take(8)} — 자동 동기화 예약 · 세그먼트 인제스트 중…")
-                session.bg.execute {
-                    val ingest = ingestRecordedSegments(flightId)
-                    val segmentNote = when {
-                        ingest.total == 0 -> "세그먼트 0(레코더 없음/영상 미수신)"
-                        ingest.problems.isNotEmpty() && ingest.ingested == 0 ->
-                            "세그먼트 ${ingest.total}개 로컬 보관(사유 ${ingest.problems.size}건)"
-                        ingest.ingested == ingest.total ->
-                            "세그먼트 ${ingest.ingested}개 → 증거 인제스트"
-                        else -> "세그먼트 ${ingest.ingested}/${ingest.total} 인제스트"
-                    }
-                    val problemNote = ingest.problems.take(3).joinToString("\n")
-                    runOnUiThread {
-                        if (!isDestroyed) {
-                            show(
-                                "비행 종료: ${flightId.take(8)} — 자동 동기화 예약 · $segmentNote" +
-                                    if (problemNote.isEmpty()) "" else "\n$problemNote",
-                            )
-                        }
-                    }
-                }
-            } else {
-                show("진행 중인 비행 없음")
-            }
-        }
+        on(R.id.btnPrepare) { run("임무 준비 요청") { session.controller?.prepare() } }
+        on(R.id.btnApply) { run("임무 적용 요청") { session.controller?.apply() } }
+        on(R.id.btnReconcile) { run("적용 상태 확인") { session.controller?.reconcile() } }
+        on(R.id.btnStart) { run("관측 세션 시작") { session.controller?.startSession() } }
+        on(R.id.btnStop) { run("관측 세션 정지") { session.controller?.stopSession() } }
+        on(R.id.btnEndFlight) { confirmEndFlight() }
 
         // -- operational link
         on(R.id.btnConnect) { session.link.connect(); session.pumpOutbound(); refresh() }
@@ -222,9 +279,9 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onFrame(frameCount: Long) {
-                // Bench source never fires; H1 should throttle UI updates
-                // instead of refreshing per frame.
-                videoFrames = frameCount
+                // Receipt counts are refreshed on the 1s UI ticker; encoded
+                // input receipt does not establish successful display.
+                cockpitStateDirty = true
             }
         })
         on(R.id.btnVideoConnect) { app.videoSource.connect(); refresh() }
@@ -262,10 +319,10 @@ class MainActivity : AppCompatActivity() {
         on(R.id.btnRefreshEvidence) { refreshEvidence() }
 
         // -- A7 flight history
-        on(R.id.btnFlightPrev) { stepFlight(-1) }
-        on(R.id.btnFlightNext) { stepFlight(+1) }
-        on(R.id.btnEventPrev) { stepEvent(-1) }
-        on(R.id.btnEventNext) { stepEvent(+1) }
+        on(R.id.btnFlightPrev) { stepFlight(+1) }
+        on(R.id.btnFlightNext) { stepFlight(-1) }
+        on(R.id.btnEventPrev) { stepEvent(+1) }
+        on(R.id.btnEventNext) { stepEvent(-1) }
         on(R.id.btnFlagFalsePositive) { toggleFalsePositive() }
         on(R.id.btnViewEvidence) { viewEvidence(localOnly = true) }
         on(R.id.btnFetchEvidence) { viewEvidence(localOnly = false) }
@@ -305,7 +362,7 @@ class MainActivity : AppCompatActivity() {
                 },
             )
         }
-        on(R.id.btnUpload) { uploadNow() }
+        on(R.id.btnUpload) { uploadNow(selectedFlightId) }
         on(R.id.btnServerState) { serverState() }
 
         refresh()
@@ -332,10 +389,24 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        activityResumed = true
+        session.setUiStateListener { cockpitStateDirty = true }
         refresh()
+        cockpitHandler.removeCallbacks(cockpitTicker)
+        cockpitHandler.postDelayed(cockpitTicker, COCKPIT_REFRESH_MS)
+    }
+
+    override fun onPause() {
+        activityResumed = false
+        session.setUiStateListener(null)
+        cockpitHandler.removeCallbacks(cockpitTicker)
+        super.onPause()
     }
 
     override fun onDestroy() {
+        activityResumed = false
+        session.setUiStateListener(null)
+        cockpitHandler.removeCallbacks(cockpitTicker)
         // The app-scoped video source must not retain an Activity-bound
         // listener across rotation.
         app.videoSource.setListener(null)
@@ -345,6 +416,7 @@ class MainActivity : AppCompatActivity() {
     private fun on(id: Int, action: () -> Unit) {
         findViewById<Button>(id).setOnClickListener {
             session.clearError()
+            shownError = null
             try {
                 action()
             } catch (exc: Exception) {
@@ -353,6 +425,152 @@ class MainActivity : AppCompatActivity() {
             session.syncFlightState()
             refresh()
         }
+    }
+
+    private fun bindMissionSelectors() {
+        spSite.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long,
+            ) {
+                if (updatingMissionSelectors) return
+                val siteId = siteIds.getOrNull(position) ?: return
+                if (siteId == selectedSiteId) return
+                selectedSiteId = siteId
+                selectedBundleId = session.store.missionBundles()
+                    .lastOrNull { it.get("site_id")?.asText() == siteId }
+                    ?.get("bundle_id")?.asText()
+                refresh()
+            }
+        }
+        spBundle.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long,
+            ) {
+                if (updatingMissionSelectors) return
+                val bundleId = bundleIds.getOrNull(position) ?: return
+                if (bundleId == selectedBundleId) return
+                selectedBundleId = bundleId
+                refresh()
+            }
+        }
+    }
+
+    private fun bindHistorySelector() {
+        spHistoryFlight.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long,
+            ) {
+                if (updatingHistorySelector) return
+                val flightId = historyFlightIds.getOrNull(position) ?: return
+                if (flightId == selectedFlightId) return
+                selectedFlightId = flightId
+                selectedEventIndex = 0
+                refreshHistory()
+                refreshEvidence()
+            }
+        }
+    }
+
+    private fun refreshMissionSelectors() {
+        val sites = session.store.sites()
+        val nextSiteIds = sites.mapNotNull { it.get("site_id")?.asText() }
+        val nextSiteLabels = sites.mapIndexed { index, site ->
+            val name = site.get("name")?.asText()?.takeIf { it.isNotBlank() } ?: "현장 ${index + 1}"
+            "$name · ${nextSiteIds.getOrNull(index)?.take(8) ?: "-"}"
+        }
+        val active = session.activeFlight
+        if (selectedSiteId == null || selectedSiteId !in nextSiteIds) {
+            selectedSiteId = active?.get("site_id")?.asText()?.takeIf { it in nextSiteIds }
+                ?: nextSiteIds.firstOrNull()
+        }
+        siteIds = nextSiteIds
+        val siteDisplay = nextSiteLabels.ifEmpty { listOf("현장 없음 · 먼저 동기화하세요") }
+
+        val candidates = selectedSiteId?.let { siteId ->
+            session.store.missionBundles().filter { it.get("site_id")?.asText() == siteId }
+        }.orEmpty()
+        val nextBundleIds = candidates.mapNotNull { it.get("bundle_id")?.asText() }
+        val nextBundleLabels = candidates.mapIndexed { index, bundle ->
+            val bundleId = bundle.get("bundle_id")?.asText() ?: "-"
+            val revision = bundle.get("mission_snapshot")?.get("mission_revision_id")
+                ?.asText()?.take(8) ?: "리비전 미상"
+            "${index + 1}. ${bundleId.take(8)} · rev $revision"
+        }
+        if (selectedBundleId == null || selectedBundleId !in nextBundleIds) {
+            val activeBundle = active?.get("bundle_id")?.asText()
+            selectedBundleId = activeBundle?.takeIf { it in nextBundleIds }
+                ?: nextBundleIds.lastOrNull()
+        }
+        bundleIds = nextBundleIds
+        val bundleDisplay = nextBundleLabels.ifEmpty { listOf("번들 없음 · 내려받기가 필요합니다") }
+
+        updatingMissionSelectors = true
+        if (siteAdapterLabels != siteDisplay) {
+            siteAdapterLabels = siteDisplay
+            spSite.adapter = ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item,
+                siteDisplay,
+            ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        }
+        val siteIndex = selectedSiteId?.let { siteIds.indexOf(it) }?.takeIf { it >= 0 } ?: 0
+        if (siteDisplay.isNotEmpty()) spSite.setSelection(siteIndex, false)
+
+        if (bundleAdapterLabels != bundleDisplay) {
+            bundleAdapterLabels = bundleDisplay
+            spBundle.adapter = ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item,
+                bundleDisplay,
+            ).also { it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item) }
+        }
+        val bundleIndex = selectedBundleId?.let { bundleIds.indexOf(it) }?.takeIf { it >= 0 } ?: 0
+        if (bundleDisplay.isNotEmpty()) spBundle.setSelection(bundleIndex, false)
+        updatingMissionSelectors = false
+    }
+
+    private fun toggleFocusMode() {
+        flightChromeCollapsed = !flightChromeCollapsed
+        updateFlightChrome()
+    }
+
+    private fun toggleFlightPanel() {
+        val open = rightStatusPanel.visibility != View.VISIBLE
+        rightStatusPanel.visibility = if (open) View.VISIBLE else View.GONE
+        btnTogglePanel.setText(
+            if (open) R.string.btn_close_ops_panel else R.string.btn_open_ops_panel,
+        )
+    }
+
+    private fun showEvidencePage() {
+        showPage(R.id.btnNavEvidence)
+        refreshEvidence()
+    }
+
+    private fun updateFlightChrome() {
+        val collapsed = flightChromeCollapsed &&
+            findViewById<View>(R.id.pageObserve).visibility == View.VISIBLE
+        navRail.visibility = if (collapsed) View.GONE else View.VISIBLE
+        appHeader.visibility = if (collapsed) View.GONE else View.VISIBLE
+        headerDivider.visibility = if (collapsed) View.GONE else View.VISIBLE
+        btnFocusMode.setText(
+            if (collapsed) R.string.btn_show_menu else R.string.btn_hide_menu,
+        )
     }
 
     private fun run(label: String, action: () -> Unit) {
@@ -377,31 +595,45 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refresh() {
+        cockpitStateDirty = false
         val flight = session.activeFlight
         val store = session.store
-        renderOpsStatus(flight, store)
+        val opsItems = renderOpsStatus(flight, store)
         refreshTopBar()
         refreshConnectEmphasis()
+        refreshMissionSelectors()
         val selectedBundle = selectedBundleId?.let { store.missionBundle(it) }
-        val missionCache = "컨트롤러: ${session.missionSummary()}\n" +
-            "미션 캐시: 현장=${store.sites().size} " +
-            "구역rev=${selectedSiteId?.let { store.zoneRevisions(it).size } ?: 0} " +
-            "번들=${store.missionBundles().size} " +
-            "sha=${selectedBundle?.get("bundle_sha256")?.asText()?.take(12) ?: "-"}"
-        tvMission.text = if (flight == null) {
-            "$missionCache\n비행이 없습니다 — 현장 동기화 → 번들 내려받기 → 비행 시작"
+        tvMission.text = if (selectedBundle == null) {
+            "이 기기에 선택 가능한 번들이 없습니다. 현장 동기화 후 번들을 내려받으세요."
         } else {
-            missionCache
+            "기체 임무 상태 · ${missionStateLabel()}\n" +
+                "선택 번들 digest: ${selectedBundle.get("bundle_sha256")?.asText()?.take(12) ?: "-"} " +
+                "(다운로드 시 검증)"
         }
-        tvMissionSite.text = selectedSiteId?.take(8) ?: "-"
-        tvMissionBundle.text = selectedBundle?.get("bundle_id")?.asText()?.take(8) ?: "-"
-        tvMissionRevision.text =
-            flight?.get("mission_revision_id")?.asText()?.take(8) ?: "-"
-        tvMissionZone.text =
-            flight?.get("zone_revision_ids")?.size()?.let { "${it}개" } ?: "0개"
-        tvMissionFlightId.text = flight?.get("flight_id")?.asText()?.take(8) ?: "-"
-        tvMissionFlightState.text = flight?.get("state")?.asText() ?: "비행 없음"
-        tvMissionStarted.text = flight?.get("started_at_utc")?.asText() ?: "알 수 없음"
+        tvMissionSite.text = "현장 ID · ${selectedSiteId?.take(8) ?: "선택 필요"}"
+        tvMissionBundle.text = "번들 ID · ${selectedBundle?.get("bundle_id")?.asText()?.take(8) ?: "선택 필요"}"
+        val snapshot = selectedBundle?.get("mission_snapshot")
+        tvMissionRevision.text = "미션 rev · " +
+            (flight?.get("mission_revision_id")?.asText()?.take(8)
+                ?: snapshot?.get("mission_revision_id")?.asText()?.take(8) ?: "-")
+        val zoneCount = flight?.get("zone_revision_ids")?.size()
+            ?: snapshot?.get("zones")?.size()
+        tvMissionZone.text = "구역 · ${zoneCount?.let { "${it}개" } ?: "-"}"
+        tvMissionFlightId.text = "기록 ID · ${flight?.get("flight_id")?.asText()?.take(8) ?: "없음"}"
+        tvMissionFlightState.text = "기록 상태 · ${flight?.get("state")?.asText() ?: "미시작"}"
+        tvMissionStarted.text = "시작 수신 · ${flight?.get("started_at_utc")?.asText()?.take(19) ?: "-"}"
+        findViewById<Button>(R.id.btnSyncSites).isEnabled = app.config.coreConfigured
+        findViewById<Button>(R.id.btnSyncBundle).isEnabled =
+            app.config.coreConfigured && selectedSiteId != null
+        findViewById<Button>(R.id.btnStartFlight).isEnabled =
+            selectedBundle != null && flight == null
+        val hasController = session.controller != null
+        findViewById<Button>(R.id.btnPrepare).isEnabled = hasController
+        findViewById<Button>(R.id.btnApply).isEnabled = hasController
+        findViewById<Button>(R.id.btnReconcile).isEnabled = hasController
+        findViewById<Button>(R.id.btnStart).isEnabled = hasController
+        findViewById<Button>(R.id.btnStop).isEnabled = hasController
+        findViewById<Button>(R.id.btnEndFlight).isEnabled = flight != null
 
         val endpoint = session.controller?.endpoint
         val simulatedTag = if (session.link.isSimulated) " SIMULATED" else ""
@@ -422,15 +654,10 @@ class MainActivity : AppCompatActivity() {
             "manifold/link=${session.link.state}$simulatedTag\n" +
             "인터넷=${internetLabel()}"
 
-        val videoSim = if (app.videoSource.isSimulated) "SIMULATED" else "MSDK"
-        val overlay = if (app.videoSource.frameMappingVerified) {
-            "오버레이=허용(매핑 검증됨)"
-        } else {
-            "오버레이=비활성(프레임↔관측 매핑 미검증; 탐지는 목록 표시, 그리지 않음)"
-        }
-        tvVideo.text = "영상[$videoSim]=${app.videoSource.state} frames=$videoFrames\n$overlay"
+        refreshVideo()
+        refreshCockpitFacts(opsItems)
 
-        refreshObservation(flight?.get("flight_id")?.asText())
+        updateAiPeekFreshness()
         refreshHistory()
 
         val demoStore = demo.session.store
@@ -457,20 +684,32 @@ class MainActivity : AppCompatActivity() {
         val err = session.lastError
         if (!err.isNullOrEmpty() && err != shownError) {
             shownError = err
-            tvError.text = "링크/인제스트 참고: $err"
+            show("오류 · 링크/인제스트: $err")
         }
+    }
+
+    /** Refresh live cockpit facts at the UI cadence after new MOP bytes or
+     *  link transitions; history/evidence pages are not rescanned here. */
+    private fun refreshLiveCockpit() {
+        val flight = session.activeFlight
+        val opsItems = renderOpsStatus(flight, session.store)
+        refreshTopBar()
+        refreshConnectEmphasis()
+        refreshVideo()
+        refreshCockpitFacts(opsItems)
+        updateAiPeekFreshness()
     }
 
     /**
      * B-1: one honest summary of "what is happening / what to do", computed
      * from real session facts via the host-tested [OperatorStatus] model.
      * Rendering here is intentionally plain text; the visual treatment is
-     * design-workspace owned (docs/verification/operator-flow-spec.md).
+     * design-workspace owned (docs/plans/2026-10-12-b1-operator-flow-contract.md).
      */
     private fun renderOpsStatus(
         flight: com.fasterxml.jackson.databind.node.ObjectNode?,
         store: ksi.rc.FileRcStore,
-    ) {
+    ): List<OperatorStatus.Item> {
         val flightId = flight?.get("flight_id")?.asText()
         val now = ReceiptClock.now()
         val summary = flightId?.let { store.summariesFor(it).lastOrNull() }
@@ -502,6 +741,8 @@ class MainActivity : AppCompatActivity() {
             coveredFrames = summary?.get("covered_frames")?.asLong(),
             skippedFrames = summary?.get("skipped_frames")?.asLong(),
             coreConfigured = session.coreConfigured(),
+            recorderWrittenFrames = app.videoRecorder?.writtenFrameCount,
+            recorderHasWriteFailure = app.videoRecorder?.hasWriteFailure,
         )
         // C67: render the contract items with the approved severity colours —
         // ▮ problem (red) / ▲ attention (amber) / · info (blue); label bold.
@@ -533,13 +774,219 @@ class MainActivity : AppCompatActivity() {
             item.action?.let { styled.append("  → $it") }
         }
         tvOpsStatus.text = styled
+        // A local recording failure means evidence may be lost; surface it
+        // ahead of recoverable link/connectivity issues without changing the
+        // underlying independent status facts.
+        val priority = items.firstOrNull { it.label == "녹화 오류" }
+            ?: items.firstOrNull { it.severity != OperatorStatus.Severity.INFO }
+        if (priority == null) {
+            tvPrimaryAlert.setText(R.string.no_urgent_action)
+            tvPrimaryAlert.setTextColor(ContextCompat.getColor(this, R.color.ksi_video_fg))
+        } else {
+            val marker = if (priority.severity == OperatorStatus.Severity.PROBLEM) "■" else "▲"
+            tvPrimaryAlert.text = buildString {
+                append("$marker KSI · ${priority.label}")
+                if (priority.detail.isNotBlank()) append(" · ${priority.detail}")
+                priority.action?.let { append(" · 다음 조치: $it") }
+                if (priority.label == "AI 관측 지연") append(" · 안전 판정 아님")
+                if (priority.label == "녹화 오류") append(" · 로컬 증거가 저장되지 않을 수 있음")
+                if (priority.label == "녹화 입력 대기") append(" · 실제 저장 프레임이 아직 확인되지 않음")
+            }
+            val color = if (priority.severity == OperatorStatus.Severity.PROBLEM) {
+                R.color.ksi_problem_video
+            } else {
+                R.color.ksi_attention_video
+            }
+            tvPrimaryAlert.setTextColor(ContextCompat.getColor(this, color))
+        }
+        return items
     }
 
     /** C67 top bar: page title + SIMULATED tag (never hidden) + receipt note. */
     private fun refreshTopBar() {
         val simulated = session.link.isSimulated || app.videoSource.isSimulated
         tvTopSim.visibility = if (simulated) View.VISIBLE else View.GONE
+        tvCockpitSim.visibility = if (simulated) View.VISIBLE else View.GONE
         tvTopUtc.text = getString(R.string.top_receipt_note)
+        val flight = session.activeFlight
+        tvTopContext.text = flight?.let {
+            "기록 세션 · ${it.get("flight_id")?.asText()?.take(8) ?: "-"}"
+        } ?: getString(R.string.top_no_active_flight)
+    }
+
+    private fun refreshVideo() {
+        val source = app.videoSource
+        val freshness = VideoFreshnessModel.evaluate(
+            sourceState = source.state,
+            receivedFrameCount = source.receivedFrameCount,
+            lastFrameReceivedElapsedMs = source.lastFrameReceivedElapsedMs,
+            nowElapsedMs = SystemClock.elapsedRealtime(),
+        )
+        val count = source.receivedFrameCount?.toString() ?: "알 수 없음"
+        val encodedState = freshness.label
+        val compact = when (freshness.status) {
+            VideoFreshnessModel.Status.DISCONNECTED -> "미연결"
+            VideoFreshnessModel.Status.CONNECTING -> "연결 중"
+            VideoFreshnessModel.Status.NO_SIGNAL -> "신호 없음"
+            VideoFreshnessModel.Status.NO_FRAMES -> "프레임 미수신"
+            VideoFreshnessModel.Status.UNKNOWN -> "수신 시각 미확인"
+            VideoFreshnessModel.Status.RECENT -> {
+                val age = freshness.ageMs
+                if (age == null) "입력 최근 시각 미확인"
+                else if (age < 1_000L) "입력 최근 <1초"
+                else "입력 최근 ${age / 1_000L}초"
+            }
+            VideoFreshnessModel.Status.STALE -> "입력 지연 ≥${freshness.ageMs?.div(1_000L) ?: "?"}초"
+        }
+        val markerAndColor = when (freshness.status) {
+            VideoFreshnessModel.Status.NO_SIGNAL,
+            VideoFreshnessModel.Status.CONNECTING,
+            VideoFreshnessModel.Status.STALE -> "▲" to R.color.ksi_attention
+            VideoFreshnessModel.Status.UNKNOWN -> "?" to R.color.ksi_info
+            else -> "·" to R.color.ksi_info
+        }
+        renderStatusChip(
+            tvVideoStatus,
+            "영상 · $compact",
+            markerAndColor.second,
+            markerAndColor.first,
+        )
+        tvVideoStatus.contentDescription = when (freshness.status) {
+            VideoFreshnessModel.Status.STALE -> "영상 인코딩 입력 수신 지연. 마지막 입력 ${freshness.ageMs?.div(1_000L) ?: "알 수 없음"}초 전. 비행 안전 경고가 아닙니다. 화면 표시 상태는 확인되지 않았습니다."
+            VideoFreshnessModel.Status.UNKNOWN -> "영상 입력 수신 시각을 알 수 없습니다. 지연 또는 표시 성공으로 추측하지 않습니다."
+            else -> "영상 인코딩 입력 상태: $compact. 입력 수신은 디코딩 또는 화면 표시를 확인하지 않습니다."
+        }
+        val mapping = if (source.frameMappingVerified) {
+            "프레임 매핑 확인 · overlay 기능 검증은 별도"
+        } else {
+            "프레임 매핑 미검증 · AI 박스 표시 안 함"
+        }
+        val simulated = if (source.isSimulated) " · [SIMULATED]" else ""
+        tvVideo.text = "인코딩 입력 $count · $encodedState · 화면 표시/디코딩 확인 안 됨 · $mapping$simulated"
+        tvVideo.contentDescription = "영상 입력 수신 상태: $encodedState, 수신 프레임 수 $count. 입력 수신은 디코딩·화면 표시를 확인하지 않습니다. $mapping$simulated"
+        tvVideoPlaceholder.text = when (freshness.status) {
+            VideoFreshnessModel.Status.DISCONNECTED -> "영상 미연결\n비행 조종은 DJI Pilot 2 · KSI는 관측·기록 보조"
+            VideoFreshnessModel.Status.CONNECTING -> "영상 연결 중 · 입력 프레임 대기\n비행 조종은 DJI Pilot 2"
+            VideoFreshnessModel.Status.NO_SIGNAL -> "영상 신호 없음 · 입력 프레임 없음\n이는 비행 안전 경고가 아닙니다"
+            VideoFreshnessModel.Status.NO_FRAMES -> "인코딩 입력 프레임 미수신\n화면 표시 상태는 확인되지 않았습니다"
+            VideoFreshnessModel.Status.UNKNOWN -> "영상 입력 수신 시각 미확인\n프레임 신선도/표시 상태를 추측하지 않습니다"
+            VideoFreshnessModel.Status.RECENT -> "인코딩 입력 최근 수신\n디코딩·화면 표시 상태는 별도 확인"
+            VideoFreshnessModel.Status.STALE -> "인코딩 입력 수신 지연\n${freshness.label} · 비행 안전 경고가 아닙니다"
+        }
+        // Hide the center note while fresh input may be rendering, so it does
+        // not obstruct the view. The input-only state and unverified display
+        // caveat remain visible in the top status/detail text.
+        tvVideoPlaceholder.visibility = if (freshness.status == VideoFreshnessModel.Status.RECENT) {
+            View.GONE
+        } else {
+            View.VISIBLE
+        }
+        tvVideoPlaceholder.contentDescription = tvVideoPlaceholder.text
+    }
+
+    private fun refreshCockpitFacts(items: List<OperatorStatus.Item>) {
+        val mop = items.firstOrNull {
+            it.label.startsWith("MOP") || it.label.contains("하트비트")
+        }
+        val mopCompact = when {
+            mop == null -> "MOP · 상태 미확인"
+            mop.label.contains("정상") -> "MOP · 정상"
+            mop.label.contains("지연") -> "MOP · 하트비트 지연"
+            mop.label.contains("끊김") -> "MOP · 끊김"
+            mop.label.contains("연결 중") -> "MOP · 연결 중"
+            mop.detail.contains("미수신") -> "MOP · 하트비트 미수신"
+            else -> "MOP · 연결"
+        }
+        renderStatusChip(
+            tvMopStatus,
+            mopCompact,
+            statusColor(mop?.severity ?: OperatorStatus.Severity.INFO),
+            statusMarker(mop?.severity ?: OperatorStatus.Severity.INFO),
+        )
+
+        val aircraft = items.firstOrNull { it.label.startsWith("기체") }
+        val aircraftCompact = when {
+            aircraft == null -> "기체 · 알 수 없음"
+            aircraft.label.contains("알 수 없음") -> "기체 · 알 수 없음"
+            aircraft.label.contains("미연결") -> "기체 · 미연결"
+            else -> "기체 · 연결"
+        }
+        renderStatusChip(
+            tvAircraftStatus,
+            aircraftCompact,
+            statusColor(aircraft?.severity ?: OperatorStatus.Severity.INFO),
+            if (aircraft?.label?.contains("알 수 없음") == true) "?" else statusMarker(aircraft?.severity ?: OperatorStatus.Severity.INFO),
+        )
+
+        val internet = internetStatus()
+        val (internetValue, internetMarker) = when (internet) {
+            "validated" -> "검증됨" to "·"
+            "connected (unvalidated)" -> "미검증" to "?"
+            "no internet", "none" -> "없음" to "·"
+            else -> "알 수 없음" to "?"
+        }
+        renderStatusChip(tvInternetStatus, "인터넷 · $internetValue", R.color.ksi_info, internetMarker)
+
+        val recorder = app.videoRecorder
+        val writeFailure = recorder?.hasWriteFailure == true || recorder?.state == VideoRecorder.State.ERROR
+        val written = recorder?.writtenFrameCount
+        val (recorderLabel, recorderSeverity) = when {
+            recorder == null -> "REC · 미지원" to OperatorStatus.Severity.INFO
+            writeFailure -> "REC · 일부 저장 오류" to OperatorStatus.Severity.PROBLEM
+            recorder.state == VideoRecorder.State.RECORDING && written == 0L -> "REC · 입력 대기" to OperatorStatus.Severity.INFO
+            recorder.state == VideoRecorder.State.RECORDING && written == null -> "REC · 입력 미확인" to OperatorStatus.Severity.INFO
+            recorder.state == VideoRecorder.State.RECORDING -> "REC · 저장 $written" to OperatorStatus.Severity.INFO
+            recorder.state == VideoRecorder.State.ERROR -> "REC · 오류" to OperatorStatus.Severity.PROBLEM
+            else -> "REC · 대기" to OperatorStatus.Severity.INFO
+        }
+        renderStatusChip(tvRecorderStatus, recorderLabel, statusColor(recorderSeverity), statusMarker(recorderSeverity))
+
+        val activeFlightId = session.activeFlight?.get("flight_id")?.asText()
+        val activeArtifacts = activeFlightId?.let { session.store.artifactsFor(it) }.orEmpty()
+        val pending = activeArtifacts.count { artifact ->
+            !session.store.isArtifactSynced(artifact.get("artifact_id").asText())
+        }
+        val evidenceLabel = when {
+            activeFlightId == null -> "증거 · 기록 없음"
+            activeArtifacts.isEmpty() -> "증거 · 완료 구간 없음"
+            pending > 0 -> "증거 · 미동기화 $pending"
+            else -> "증거 · 동기화 ${activeArtifacts.size}"
+        }
+        renderStatusChip(tvEvidenceStatus, evidenceLabel, R.color.ksi_info)
+    }
+
+    private fun statusColor(severity: OperatorStatus.Severity): Int = when (severity) {
+        OperatorStatus.Severity.PROBLEM -> R.color.ksi_problem
+        OperatorStatus.Severity.ATTENTION -> R.color.ksi_attention
+        OperatorStatus.Severity.INFO -> R.color.ksi_info
+    }
+
+    private fun statusMarker(severity: OperatorStatus.Severity): String = when (severity) {
+        OperatorStatus.Severity.PROBLEM -> "■"
+        OperatorStatus.Severity.ATTENTION -> "▲"
+        OperatorStatus.Severity.INFO -> "·"
+    }
+
+    private fun renderStatusChip(view: TextView, text: String, colorId: Int, marker: String = "·") {
+        view.text = "$marker $text"
+        view.setTextColor(ContextCompat.getColor(this, colorId))
+    }
+
+    private fun missionStateLabel(): String {
+        val controller = session.controller ?: return "기록 세션 시작 후 기체 임무 제어 연결"
+        return when (controller.state.name) {
+            "IDLE" -> "기체 확인 대기"
+            "PREPARING" -> "준비 요청 중"
+            "PREPARED" -> "준비 응답 확인"
+            "APPLYING" -> "번들 적용 요청 중"
+            "STATUS_UNKNOWN" -> "적용 상태 미확인 · 재조정 필요"
+            "APPLIED" -> "번들 적용 응답 확인"
+            "SESSION_PENDING" -> "관측 세션 응답 대기"
+            "RUNNING" -> "관측 세션 실행 보고"
+            "STOPPED" -> "관측 세션 정지 보고"
+            "REJECTED" -> "기체에서 요청 거부"
+            else -> "상태 ${controller.state.name}"
+        }
     }
 
     /**
@@ -558,8 +1005,10 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    /** C67: five-area navigation (approved design — nav rail + page switching). */
+    /** Feature navigation; immersive cockpit is one destination, not a menu phase. */
     private fun showPage(navId: Int) {
+        val cockpit = navId == R.id.btnNavObserve
+        flightChromeCollapsed = cockpit
         navTargets.forEach { (nav, page) ->
             findViewById<View>(page).visibility = if (nav == navId) View.VISIBLE else View.GONE
             val button = findViewById<Button>(nav)
@@ -576,101 +1025,108 @@ class MainActivity : AppCompatActivity() {
                 R.id.btnNavReview -> R.string.page_title_review
                 R.id.btnNavEvidence -> R.string.page_title_evidence
                 R.id.btnNavSettings -> R.string.page_title_settings
-                else -> R.string.page_title_observe
+                else -> R.string.page_title_inflight
             },
         )
+        rightStatusPanel.visibility = View.GONE
+        btnTogglePanel.setText(R.string.btn_open_ops_panel)
+        updateFlightChrome()
+        if (cockpit) {
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        } else {
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        }
     }
 
     private fun refreshEvidence() {
-        val flight = session.activeFlight
-        val flightId = flight?.get("flight_id")?.asText()
-        if (flightId == null) {
-            tvEvidence.text = "진행 중인 비행 없음 (증거는 비행 단위)"
-            return
-        }
         val store = session.store
-        val events = store.eventsFor(flightId)
-        val observations = store.observationsFor(flightId)
-        val artifacts = store.artifactsFor(flightId)
-        val synced = artifacts.count { store.isArtifactSynced(it.get("artifact_id").asText()) }
+        val rows = FlightHistoryModel.flights(store)
+        val activeId = session.activeFlight?.get("flight_id")?.asText()
+        val selectedId = selectedFlightId?.takeIf { id -> rows.any { it.flightId == id } }
+            ?: activeId?.takeIf { id -> rows.any { it.flightId == id } }
+            ?: rows.firstOrNull()?.flightId
+        if (selectedId != null) selectedFlightId = selectedId
+
+        val allArtifacts = rows.flatMap { row -> store.artifactsFor(row.flightId) }
+        val total = allArtifacts.size
+        val complete = allArtifacts.count { store.isArtifactComplete(it.get("artifact_id").asText()) }
+        val committed = allArtifacts.count { store.isArtifactSynced(it.get("artifact_id").asText()) }
+        val pending = total - committed
         val lines = StringBuilder()
-        lines.append("로컬 관측=${observations.size} 사건=${events.size} ")
-        lines.append("요약=${store.summariesFor(flightId).size}\n")
-        for (artifact in artifacts) {
-            val id = artifact.get("artifact_id").asText()
-            val complete = store.artifactBytes(id) != null
-            lines.append("아티팩트 ${id.take(8)} 크기=${artifact.get("size_bytes").asLong()} " +
-                "complete=$complete synced=${store.isArtifactSynced(id)}\n")
+        lines.append("전체 로컬 자료 · 비행 ${rows.size}건 · 증거 ${total}건\n")
+        lines.append("로컬 수신 완료 $complete/$total · 서버 커밋 확인 $committed/$total · 대기/미확인 ${pending}건\n")
+        lines.append("\n선택 비행 · ")
+        val selected = selectedId?.let { id -> rows.firstOrNull { it.flightId == id } }
+        if (selected == null) {
+            lines.append("기록 없음")
+        } else {
+            lines.append("${selected.siteName ?: selected.siteId.take(8)} · ${selected.flightId.take(8)}\n")
+            lines.append("관측 ${selected.observationCount} · 사건 ${selected.eventCount} · ")
+            lines.append("수신시각 ${selected.startedAtUtc?.take(19) ?: "알 수 없음"} (근사)\n\n")
+            val selectedArtifacts = store.artifactsFor(selected.flightId)
+            if (selectedArtifacts.isEmpty()) {
+                lines.append("이 비행의 로컬 증거 자료가 없습니다. 사건 0건이나 안전 확인을 뜻하지 않습니다.")
+            } else {
+                selectedArtifacts.take(12).forEach { artifact ->
+                    val id = artifact.get("artifact_id")?.asText() ?: "-"
+                    val bytes = artifact.get("size_bytes")?.asLong() ?: 0L
+                    val localComplete = store.isArtifactComplete(id)
+                    val serverCommitted = store.isArtifactSynced(id)
+                    lines.append("${id.take(8)} · ${artifact.get("media_type")?.asText() ?: "자료"} · ${bytes}B\n")
+                    lines.append("  로컬 ${if (localComplete) "수신 완료" else "수신 미완료"} · ")
+                    lines.append("서버 ${if (serverCommitted) "커밋 확인" else "미확인"}\n")
+                }
+                if (selectedArtifacts.size > 12) {
+                    lines.append("외 ${selectedArtifacts.size - 12}건 · 상세 상태는 비행 이력에서 확인")
+                }
+            }
         }
-        lines.append("아티팩트=${artifacts.size} synced=$synced (SYNCED는 COMMITTED 후에만)")
         tvEvidence.text = lines.toString()
+        val hasSelection = selectedId != null
+        val canReachCore = session.coreConfigured()
+        val selectedHasPending = selected?.let { row ->
+            store.artifactsFor(row.flightId).any { artifact ->
+                !store.isArtifactSynced(artifact.get("artifact_id").asText())
+            } || store.pendingAnnotations().any {
+                it.get("flight_id")?.asText() == row.flightId
+            }
+        } == true
+        findViewById<Button>(R.id.btnUpload).isEnabled =
+            hasSelection && canReachCore && selectedHasPending
+        findViewById<Button>(R.id.btnServerState).isEnabled = hasSelection && canReachCore
     }
 
-    /** A6/A8: AI/observation status + event cards — derived from the store only. */
-    private fun refreshObservation(flightId: String?) {
+    private fun updateAiPeekFreshness() {
+        if (!::tvAiPeek.isInitialized) return
+        val flightId = session.activeFlight?.get("flight_id")?.asText()
         if (flightId == null) {
-            tvAi.text = "AI: 진행 중인 비행 없음 (먼저 비행을 시작하세요)"
-            tvEvents.text = "-"
+            tvAiPeek.text = "AI 관측 · 기록 없음"
+            tvAiPeek.setTextColor(ContextCompat.getColor(this, R.color.ksi_video_fg))
+            tvAiPeek.contentDescription =
+                "AI 관측 수신 상태. 활성 기록이 없어 관측 수신을 기다리는 중입니다."
             return
         }
-        val store = session.store
-        val pulse = ObservationModel.observationPulse(store, flightId)
-        val eventCount = store.eventsFor(flightId).size
-        val now = ReceiptClock.now()
-        val hbAge = ObservationModel.heartbeatAgeMs(store, flightId, now)
-        val obsAge = ObservationModel.observationAgeMs(store, flightId, now)
-        val evAge = ObservationModel.eventAgeMs(store, flightId, now)
-        fun ageText(ageMs: Long?): String =
-            if (ageMs == null) "없음" else "${ageMs / 1000.0}s 전"
-        fun stateText(state: String): String = when (state) {
-            "OK" -> "정상"
-            "STALE" -> "지연"
-            else -> "없음"
-        }
-        val hbState = ObservationModel.classifyFreshness(
-            hbAge, ObservationModel.HEARTBEAT_STALE_MS,
+        val ageMs = ObservationModel.observationAgeMs(
+            session.store,
+            flightId,
+            ReceiptClock.now(),
         )
-        val obsState = ObservationModel.classifyFreshness(
-            obsAge, ObservationModel.STALE_DATA_MS,
-        )
-        tvAi.text =
-            "channels — heartbeat=${stateText(hbState)}(${ageText(hbAge)}) · " +
-            "AIobs=${stateText(obsState)}(${ageText(obsAge)}) · " +
-            "lastEvent=${ageText(evAge)}\n" +
-            "withheld=${pulse.withheld} degraded=${pulse.degraded} · " +
-            ObservationModel.aiVerdict(pulse.count, eventCount)
-
-        val generation = ++eventGeneration
-        session.bg.execute {
-            val cards = ObservationModel.eventCards(session.store, flightId)
-            val text = buildString {
-                if (cards.isEmpty()) {
-                    append("수신된 사건 없음(로컬 저장소)")
-                } else {
-                    for (card in cards.take(10)) {
-                        val kind = if (card.detectionOnly) "관측" else "위험후보(경고 아님)"
-                        append("[${card.mode}·$kind]")
-                        append(" ${card.eventType} q=${card.observationQuality}")
-                        append(" edge_ns=${card.detectedAtEdgeNs}")
-                        if (card.evidence.isNotEmpty()) {
-                            append(
-                                " · " + when {
-                                    card.evidenceSynced -> "증거: 동기화됨"
-                                    card.evidenceComplete -> "증거: 수신 완료(미동기화)"
-                                    else -> "증거: 미완료"
-                                },
-                            )
-                        }
-                        append("\n")
-                    }
-                }
-            }
-            runOnUiThread {
-                if (generation == eventGeneration && !isDestroyed) {
-                    tvEvents.text = text
-                }
-            }
+        val freshness = ObservationModel.observationFreshnessLabel(ageMs)
+        val stale = ageMs != null && ageMs >= ObservationModel.STALE_DATA_MS
+        val state = when {
+            ageMs == null -> "미수신"
+            stale -> "수신 지연 · $freshness"
+            else -> freshness
         }
+        tvAiPeek.text = "AI 관측 · $state"
+        tvAiPeek.setTextColor(
+            ContextCompat.getColor(
+                this,
+                if (stale) R.color.ksi_attention_video else R.color.ksi_video_fg,
+            ),
+        )
+        tvAiPeek.contentDescription =
+            "AI 관측 수신 상태: $state. 수신 지연은 안전 판정이 아닙니다."
     }
 
     // -- A7 flight history ------------------------------------------------------
@@ -792,15 +1248,20 @@ class MainActivity : AppCompatActivity() {
                 }
                 val (source, bytes) = slice
                 val bitmap = decodeSampled(bytes)
+                val sourceLabel = when (source) {
+                    EvidenceSource.LOCAL -> "기기 로컬"
+                    EvidenceSource.SERVER -> "Core 응답"
+                    else -> "출처 미확인"
+                }
                 runOnUiThread {
                     if (bitmap != null) {
                         ivEvidence.setImageBitmap(bitmap)
                         tvEvidenceMeta.text =
-                            "evidence ${artifactId.take(8)} ${bytes.size}B source=$source (이미지 표시)"
+                            "증거 ${artifactId.take(8)} · ${bytes.size}B · 출처 $sourceLabel · 이미지 표시"
                     } else {
                         ivEvidence.setImageDrawable(null)
                         tvEvidenceMeta.text =
-                            "evidence ${artifactId.take(8)} ${bytes.size}B source=$source (이미지 아님 — 메타만)"
+                            "증거 ${artifactId.take(8)} · ${bytes.size}B · 출처 $sourceLabel · 이미지 형식 아님"
                     }
                 }
             } catch (exc: Exception) {
@@ -841,22 +1302,10 @@ class MainActivity : AppCompatActivity() {
             val selected = selectedFlightId?.takeIf { id ->
                 rows.any { it.flightId == id }
             } ?: rows.firstOrNull()?.flightId
-            val listText = buildString {
-                if (rows.isEmpty()) {
-                    append("아직 기록된 비행이 없습니다")
-                } else {
-                    rows.forEachIndexed { index, row ->
-                        append(if (row.flightId == selected) "▶ " else "   ")
-                        append("[$index] ${row.flightId.take(8)} ${row.state}")
-                        append(" obs=${row.observationCount} ev=${row.eventCount}")
-                        append("(${row.detectionOnlyCount}탐지/${row.candidateCount}후보)")
-                        append(" evid=${row.artifactCompleteCount}/${row.artifactCount}")
-                        append(" synced=${row.artifactSyncedCount}")
-                        if (row.falsePositiveCount > 0) append(" 오탐의심=${row.falsePositiveCount}")
-                        append(" ${row.startedAtUtc?.take(19) ?: "-"}(수신)")
-                        if (index < rows.size - 1) append("\n")
-                    }
-                }
+            val labels = rows.mapIndexed { index, row ->
+                val site = row.siteName ?: row.siteId.take(8)
+                val received = row.startedAtUtc?.take(16) ?: "시작 시각 미상"
+                "${index + 1}. $site · ${row.flightId.take(8)} · $received (수신 근사)"
             }
             val detail = selected?.let { FlightHistoryModel.detail(session.store, it) }
             val detailText = detail?.let { renderDetail(it) } ?: "-"
@@ -866,12 +1315,37 @@ class MainActivity : AppCompatActivity() {
                 if (generation != historyGeneration || isDestroyed) return@runOnUiThread
                 selectedFlightId = selected
                 selectedEventRows = detail?.events ?: emptyList()
+                historyFlightIds = rows.map { it.flightId }
+                val displayLabels = labels.ifEmpty { listOf("비행 기록 없음") }
+                updatingHistorySelector = true
+                if (historyAdapterLabels != displayLabels) {
+                    historyAdapterLabels = displayLabels
+                    spHistoryFlight.adapter = ArrayAdapter(
+                        this,
+                        android.R.layout.simple_spinner_item,
+                        displayLabels,
+                    ).also {
+                        it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                    }
+                }
+                val selectedIndex = selected?.let { id ->
+                    historyFlightIds.indexOf(id).takeIf { it >= 0 }
+                } ?: 0
+                spHistoryFlight.setSelection(selectedIndex, false)
+                updatingHistorySelector = false
+                val selectedPosition = selected?.let { id ->
+                    historyFlightIds.indexOf(id).takeIf { it >= 0 }
+                }
+                tvFlights.text = if (rows.isEmpty()) {
+                    "이 기기에 저장된 비행 기록이 없습니다."
+                } else {
+                    "${rows.size}개 로컬 기록 · 선택 ${selectedPosition?.plus(1) ?: "-"}/${rows.size} · 최근 기록 우선"
+                }
                 if (selectedEventRows.isEmpty()) {
                     selectedEventIndex = 0
                 } else {
                     selectedEventIndex = selectedEventIndex.coerceIn(0, selectedEventRows.size - 1)
                 }
-                tvFlights.text = listText
                 tvFlightDetail.text = detailText
                 tvFlightEvents.text = eventsText
                 tvFlightArtifacts.text = artifactsText
@@ -882,44 +1356,39 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderDetail(detail: FlightHistoryModel.FlightDetail): String {
         val row = detail.row
+        val state = when (row.state) {
+            "STARTED" -> "기록 중"
+            "ENDED" -> "기록 종료"
+            else -> row.state
+        }
         return buildString {
-            append("비행 ${row.flightId.take(8)} state=${row.state}\n")
-            append("현장 ${row.siteId.take(8)}")
-            if (row.siteName != null) append(" (${row.siteName})")
-            append(" 미션rev=${row.missionRevisionId.take(8)} ")
-            append("bundle=${row.bundleSha256.take(8)}\n")
-            append("시간(수신 기준): start=${row.startedAtUtc ?: "-"} ")
-            append("end=${row.endedAtUtc ?: "-"} lastData=${row.lastReceivedUtc ?: "-"}\n")
-            append("위험구역 핀: ")
-            if (detail.zonePins.isEmpty()) {
-                append("없음")
-            } else {
-                detail.zonePins.forEach { pin ->
-                    append("[${pin.ruleKind ?: "?"} ${pin.revisionId.take(8)}")
-                    append(if (pin.stored) " 저장됨]" else " 캐시없음]")
-                    append(" ")
-                }
-            }
-            append("\n관측/공백: obs=${row.observationCount} ")
-            append("aiUptime=${row.aiUptimeRatio ?: "-"} ")
-            append("covered=${row.coveredFrames ?: "-"} skipped=${row.skippedFrames ?: "-"} ")
-            append("MOP갭=${row.mopGapCount} 요약=${if (detail.summaryPresent) "있음" else "없음"}")
+            append("${row.siteName ?: "현장 ${row.siteId.take(8)}"} · ${row.flightId.take(8)} · $state\n")
+            append("미션 rev ${row.missionRevisionId.take(8)} · 번들 ${row.bundleSha256.take(8)} · ")
+            append("구역 ${row.zoneRevisionIds.size}개\n")
+            append("시작 ${row.startedAtUtc?.take(19) ?: "알 수 없음"} · 종료 ${row.endedAtUtc?.take(19) ?: "-"} (RC 수신시각 근사)\n")
+            append("관측 ${row.observationCount} · 객체 관측 ${row.detectionOnlyCount} · 후보 ${row.candidateCount} · ")
+            append("커버 ${row.coveredFrames ?: "-"} / 공백 ${row.skippedFrames ?: "-"}프레임\n")
+            append("로컬 증거 ${row.artifactCompleteCount}/${row.artifactCount} 완료 · ")
+            append("서버 커밋 확인 ${row.artifactSyncedCount}/${row.artifactCount} · 링크 공백 ${row.mopGapCount}")
         }
     }
 
     private fun renderFlightEvents(detail: FlightHistoryModel.FlightDetail): String =
         buildString {
             if (detail.events.isEmpty()) {
-                append("사건 0건 — 정상적인 비행 기록 (AI가 분석했지만 사건이 없을 수 있음)")
+                if (detail.row.observationCount == 0) {
+                    append("관측 데이터 없음 · 사건 0건과 구분 필요 · 안전 확인 아님")
+                } else {
+                    append("관측 ${detail.row.observationCount}건 · 사건 0건 · 정상 기록일 수 있으나 안전 확인은 아님")
+                }
             } else {
                 detail.events.forEachIndexed { index, row ->
-                    append(if (index == selectedEventIndex) "▶ " else "   ")
-                    append("[$index] [${row.card.mode}")
-                    append(if (row.card.detectionOnly) "·관측]" else "·위험후보(경고 아님)]")
-                    append(" ${row.card.eventType} q=${row.card.observationQuality}")
+                    append(if (index == selectedEventIndex) "▶ " else "· ")
+                    append(if (row.card.detectionOnly) "객체 관측" else "위험 후보 · 경고 아님")
+                    append(" [${row.card.mode}] · 품질 ${row.card.observationQuality}")
                     if (row.card.evidence.isNotEmpty()) {
-                        append(" 증거:${row.card.evidence.count { it.complete }}/${row.card.evidence.size}수신")
-                        if (row.card.evidenceSynced) append("·동기화")
+                        append(" · 증거 로컬 ${row.card.evidence.count { it.complete }}/${row.card.evidence.size}")
+                        if (row.card.evidenceSynced) append(" · 서버 커밋 확인")
                     }
                     if (row.effectiveAnnotation == FlightHistoryModel.ANNOTATION_FALSE_POSITIVE) {
                         append(" · 오탐 의심")
@@ -936,12 +1405,12 @@ class MainActivity : AppCompatActivity() {
     private fun renderArtifacts(detail: FlightHistoryModel.FlightDetail): String =
         buildString {
             if (detail.artifacts.isEmpty()) {
-                append("증거 없음")
+                append("연결된 증거가 없습니다")
             } else {
                 detail.artifacts.forEachIndexed { index, artifact ->
-                    append("${artifact.artifactId.take(8)} ${artifact.mediaType} ")
-                    append("${artifact.sizeBytes}B ")
-                    append("수신=${artifact.complete} synced=${artifact.synced}")
+                    append("${artifact.artifactId.take(8)} · ${artifact.mediaType} · ${artifact.sizeBytes}B · ")
+                    append("로컬 ${if (artifact.complete) "완료" else "수신 중"} · ")
+                    append("서버 ${if (artifact.synced) "커밋 확인" else "미확인"}")
                     if (index < detail.artifacts.size - 1) append("\n")
                 }
             }
@@ -964,20 +1433,25 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.btn_flag_false_positive)
         }
         tvEventDetail.text = buildString {
-            append("사건=${row.card.eventId.take(8)} ${row.card.eventType} ")
-            append("mode=${row.card.mode} q=${row.card.observationQuality}\n")
-            append("edge_monotonic_ns=${row.card.detectedAtEdgeNs} (Edge 도메인 — UTC 변환 안 함)\n")
-            append("증거: ")
+            append(if (row.card.detectionOnly) "객체 관측" else "위험 후보 · 경고 아님")
+            append(" · ${row.card.eventType} · ${row.card.mode}\n")
+            append("사건 ID ${row.card.eventId.take(8)} · 관측 품질 ${row.card.observationQuality}\n")
+            append("분석 시각 원값 ${row.card.detectedAtEdgeNs} (Edge 단조시계 · RC UTC 변환 안 함)\n")
+            append("연결 증거: ")
             if (row.card.evidence.isEmpty()) {
                 append("없음")
             } else {
                 row.card.evidence.forEach { link ->
-                    append("[${link.artifactId.take(8)} ")
-                    append("수신=${link.complete} synced=${link.synced}] ")
+                    append("[${link.artifactId.take(8)} · 로컬 ${if (link.complete) "완료" else "미완료"} · ")
+                    append("서버 ${if (link.synced) "커밋 확인" else "미확인"}] ")
                 }
             }
-            append("\n주석 기록=${row.annotationCount} ")
-            append("유효표시=${row.effectiveAnnotation ?: "없음"} (append-only)")
+            val annotationLabel = when (row.effectiveAnnotation) {
+                FlightHistoryModel.ANNOTATION_FALSE_POSITIVE -> "오탐 의심"
+                FlightHistoryModel.ANNOTATION_NEEDS_REVIEW -> "검토 필요"
+                else -> "없음"
+            }
+            append("\n의견 이력 ${row.annotationCount}건 · 현재 표시 $annotationLabel (원본은 변경되지 않음)")
         }
     }
 
@@ -1080,16 +1554,71 @@ class MainActivity : AppCompatActivity() {
         }
         try {
             val record = session.startFlightFromBundle(bundle)
+            selectedFlightId = record.get("flight_id").asText()
             val segmentSeconds = bundle.get("mission_snapshot")
                 ?.get("recording_policy")?.get("segment_seconds")?.asInt() ?: 300
             app.startFlightRecording(record.get("flight_id").asText(), segmentSeconds)
             show(
-                "비행 시작: ${record.get("flight_id").asText().take(8)} " +
-                    "(bundle ${bundleId.take(8)} 고정; prepare/apply 오프라인 실행;" +
-                    " 녹화=${segmentSeconds}s 구간, 벤치=레코더 없음)",
+                "KSI 로컬 기록 시작: ${record.get("flight_id").asText().take(8)} · " +
+                "번들 ${bundleId.take(8)} 고정 · ${segmentSeconds}초 녹화 구간 · " +
+                if (app.videoRecorder == null) "벤치 빌드 · 실제 녹화 없음" else "기록 세션 활성",
             )
         } catch (exc: Exception) {
             show("시작 실패: ${exc.message}")
+        }
+    }
+
+    private fun confirmEndFlight() {
+        if (session.activeFlight == null) {
+            show("종료할 비행 기록이 없습니다")
+            return
+        }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("KSI 기록 세션 종료")
+            .setMessage("KSI 로컬 관측·녹화 기록을 종료하고 녹화 구간을 마무리합니다. 기체 비행 조종은 DJI Pilot 2에서 계속 확인하세요.")
+            .setNegativeButton("계속 기록", null)
+            .setPositiveButton("KSI 기록 종료") { _, _ -> finishFlight() }
+            .show()
+    }
+
+    private fun finishFlight() {
+        try {
+            val ended = session.endFlight()
+            if (ended == null) {
+                show("종료할 비행 기록이 없습니다")
+                return
+            }
+            val flightId = ended.get("flight_id").asText()
+            selectedFlightId = flightId
+            SyncScheduler.enqueue(applicationContext, flightId)
+            showPage(R.id.btnNavReview)
+            show("KSI 기록 ${flightId.take(8)} 종료 · 로컬 자료 정리 및 자동 동기화 예약 중…")
+            refreshHistory()
+            refreshEvidence()
+            session.bg.execute {
+                val ingest = ingestRecordedSegments(flightId)
+                val segmentNote = when {
+                    ingest.total == 0 -> "세그먼트 0(레코더 없음/영상 미수신)"
+                    ingest.problems.isNotEmpty() && ingest.ingested == 0 ->
+                        "세그먼트 ${ingest.total}개 로컬 보관(사유 ${ingest.problems.size}건)"
+                    ingest.ingested == ingest.total ->
+                        "세그먼트 ${ingest.ingested}개 → 증거 인제스트"
+                    else -> "세그먼트 ${ingest.ingested}/${ingest.total} 인제스트"
+                }
+                val problemNote = ingest.problems.take(3).joinToString("\n")
+                runOnUiThread {
+                    if (!isDestroyed) {
+                        show(
+                            "KSI 기록 ${flightId.take(8)} 종료 · $segmentNote" +
+                                if (problemNote.isEmpty()) "" else "\n$problemNote",
+                        )
+                        refreshHistory()
+                        refreshEvidence()
+                    }
+                }
+            }
+        } catch (exc: Exception) {
+            show("비행 기록 종료 실패: ${exc.message}")
         }
     }
 
@@ -1145,40 +1674,52 @@ class MainActivity : AppCompatActivity() {
             ?.get("recording_policy")?.get("segment_seconds")?.asInt() ?: 300
     }
 
-    private fun uploadNow() {
+    private fun uploadNow(requestedFlightId: String? = null) {
         val uploader = session.uploader()
         if (uploader == null) {
-            show("업로드 비활성: 먼저 Core URL과 토큰을 설정하세요")
+            show("동기화 불가: 설정에서 Core URL과 토큰을 확인하세요")
+            return
+        }
+        val flightId = requestedFlightId
+            ?: session.activeFlight?.get("flight_id")?.asText()
+            ?: FlightHistoryModel.flights(session.store).firstOrNull()?.flightId
+        if (flightId == null) {
+            show("동기화할 로컬 비행 기록이 없습니다")
             return
         }
         val spec = try {
-            session.uploadSpec()
+            session.uploadSpec(flightId)
         } catch (exc: Exception) {
             show("업로드 거부: ${exc.message}")
             return
         }
-        tvSync.text = "업로드 중…"
+        tvSync.text = "비행 ${flightId.take(8)} · Core 동기화 요청 중…\n" +
+            "완료 여부는 서버 커밋 응답으로 확인합니다."
         session.bg.execute {
             try {
                 val report = uploader.uploadFlight(spec)
                 val lines = StringBuilder()
-                lines.append("state=${report.uploadState} timeBasis=${report.timeBasis} " +
-                    "앱=${report.applicationsUploaded} 세션=${report.sessionsUploaded} " +
-                    "의견=${report.annotationsUploaded}\n")
+                val uploadState = when (report.uploadState) {
+                    "COMMITTED" -> "서버 커밋 확인"
+                    "PARTIAL" -> "일부 자료 미완료"
+                    else -> "서버 응답 ${report.uploadState}"
+                }
+                lines.append("비행 ${flightId.take(8)} · $uploadState\n")
+                lines.append("시각 기준 ${report.timeBasis} · 임무 적용 ${report.applicationsUploaded} · " +
+                    "세션 ${report.sessionsUploaded} · 의견 ${report.annotationsUploaded}\n")
                 for (boot in report.boots) {
-                    lines.append("부트 ${boot.bootId.take(8)} ${boot.status} " +
-                        "chunks=${boot.chunksSent} missing=${boot.missingArtifacts.size} " +
-                        "synced=${boot.synced.size} " +
-                        "receipt=${boot.receivedStartedUtc ?: "-"}\n")
+                    lines.append("수집 세션 ${boot.bootId.take(8)} · ${boot.status} · " +
+                        "전송 ${boot.chunksSent} · 누락 ${boot.missingArtifacts.size} · " +
+                        "커밋 확인 ${boot.synced.size}\n")
                 }
                 if (report.sessionDrift.isNotEmpty()) {
-                    lines.append("세션 드리프트: ${report.sessionDrift.size}건(서버가 이전 스냅샷 보유)\n")
+                    lines.append("서버와 기존 세션 자료 차이 ${report.sessionDrift.size}건 · 상세 확인 필요\n")
                 }
                 if (report.boots.any { it.incompleteLocal.isNotEmpty() }) {
-                    lines.append("미완료 로컬 증거 — 완성되면 다음 동기화에서 자동 재시도됨\n")
+                    lines.append("로컬 미완료 증거가 있습니다 · 완성 후 재시도됩니다\n")
                 }
                 if (report.annotationFailures.isNotEmpty()) {
-                    lines.append("의견 기록 실패(재시도 예정): " +
+                    lines.append("의견 기록 ${report.annotationFailures.size}건 실패 · 재시도 예정: " +
                         report.annotationFailures.joinToString().take(120) + "\n")
                 }
                 runOnUiThread {
@@ -1195,15 +1736,17 @@ class MainActivity : AppCompatActivity() {
     private fun serverState() {
         val query = session.query()
         if (query == null) {
-            show("업로드 비활성: 먼저 Core URL과 토큰을 설정하세요")
+            show("Core 확인 불가: 설정에서 URL과 토큰을 확인하세요")
             return
         }
-        val flight = session.activeFlight
-        if (flight == null) {
-            show("조회할 진행 중 비행 없음")
+        val flightId = session.activeFlight?.get("flight_id")?.asText()
+            ?: selectedFlightId
+            ?: FlightHistoryModel.flights(session.store).firstOrNull()?.flightId
+        if (flightId == null) {
+            show("서버에서 확인할 로컬 비행 기록이 없습니다")
             return
         }
-        val flightId = flight.get("flight_id").asText()
+        tvSync.text = "비행 ${flightId.take(8)} · Core 응답 확인 중…"
         session.bg.execute {
             try {
                 val api = ksi.rc.CoreApi(
@@ -1214,9 +1757,18 @@ class MainActivity : AppCompatActivity() {
                 val serverEvents = query.events(flightId)
                 runOnUiThread {
                     hasSyncReport = true
-                    tvSync.text = "core=server upload_state=$uploadState " +
-                        "서버 사건=${serverEvents.items.size} (${serverEvents.source}, " +
-                        "${if (serverEvents.source == EvidenceSource.LOCAL) "오프라인 사본" else "가져옴"})"
+                    val stateLabel = when (uploadState) {
+                        "COMMITTED" -> "서버 커밋 확인"
+                        "PARTIAL" -> "서버 일부 자료 미완료"
+                        else -> "서버 상태 $uploadState"
+                    }
+                    tvSync.text = "Core 응답 · 비행 ${flightId.take(8)} · $stateLabel\n" +
+                        "사건 응답 ${serverEvents.items.size}건 · " +
+                        if (serverEvents.source == EvidenceSource.LOCAL) {
+                            "기기 로컬 사본(서버 사건 응답 아님)"
+                        } else {
+                            "Core에서 조회"
+                        }
                 }
             } catch (exc: Exception) {
                 runOnUiThread { show("서버 조회 실패: ${exc.message}") }
@@ -1242,7 +1794,13 @@ class MainActivity : AppCompatActivity() {
         val missing = declared.filter { permission ->
             try {
                 val info = packageManager.getPermissionInfo(permission, 0)
-                info.protection == android.content.pm.PermissionInfo.PROTECTION_DANGEROUS &&
+                val protection = if (android.os.Build.VERSION.SDK_INT >= 28) {
+                    info.protection
+                } else {
+                    @Suppress("DEPRECATION")
+                    (info.protectionLevel and android.content.pm.PermissionInfo.PROTECTION_MASK_BASE)
+                }
+                protection == android.content.pm.PermissionInfo.PROTECTION_DANGEROUS &&
                     packageManager.checkPermission(permission, packageName) !=
                     android.content.pm.PackageManager.PERMISSION_GRANTED
             } catch (_: Exception) {
@@ -1279,6 +1837,29 @@ class MainActivity : AppCompatActivity() {
         }
 
     private fun show(message: String) {
-        tvError.text = message
+        val problem = listOf("실패", "오류", "거부", "불가", "미승인", "미등록")
+            .any { it in message }
+        if (!problem) {
+            tvError.visibility = View.GONE
+            if (message.isNotBlank()) {
+                android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+        tvError.text = "$message  ·  눌러 닫기"
+        tvError.visibility = View.VISIBLE
+        tvError.setBackgroundColor(
+            ContextCompat.getColor(
+                this,
+                R.color.ksi_problem_bg,
+            ),
+        )
+        tvError.setTextColor(
+            ContextCompat.getColor(this, R.color.ksi_problem),
+        )
+    }
+
+    private companion object {
+        const val COCKPIT_REFRESH_MS = 1_000L
     }
 }

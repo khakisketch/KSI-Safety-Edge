@@ -23,6 +23,14 @@ interface VideoSource {
     val state: State
     val isSimulated: Boolean
 
+    /** Actual encoded frame receipts during the current connection, not
+     *  successfully decoded/displayed frames. Null = source cannot report. */
+    val receivedFrameCount: Long? get() = null
+
+    /** Monotonic RC receipt clock (elapsedRealtime milliseconds), never DJI
+     *  exposure time or end-to-end latency. Null = no measured receipt. */
+    val lastFrameReceivedElapsedMs: Long? get() = null
+
     /** True only after the H1 frame<->observation mapping is verified. */
     val frameMappingVerified: Boolean
 
@@ -37,6 +45,7 @@ class FakeVideoSource : VideoSource {
     override var state: VideoSource.State = VideoSource.State.DISCONNECTED
         private set
     override val isSimulated: Boolean = true
+    override val receivedFrameCount: Long = 0L
     override val frameMappingVerified: Boolean = false
 
     override fun setListener(listener: VideoSource.Listener?) {

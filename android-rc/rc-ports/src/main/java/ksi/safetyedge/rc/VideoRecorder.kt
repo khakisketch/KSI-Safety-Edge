@@ -20,6 +20,14 @@ interface VideoRecorder {
 
     val state: State
 
+    /** Actual samples accepted by the writer, not the request to start.
+     *  Null means this recorder cannot report progress. */
+    val writtenFrameCount: Long? get() = null
+
+    /** Write/finalize failures persist for the current recording session
+     *  even when a later segment recovers. Null = not measured. */
+    val hasWriteFailure: Boolean? get() = null
+
     /** Start recording for a flight (segment rollover per mission policy). */
     fun start(flightId: String)
 

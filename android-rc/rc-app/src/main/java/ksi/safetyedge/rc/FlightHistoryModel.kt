@@ -96,7 +96,9 @@ object FlightHistoryModel {
                 stored = revision != null,
             )
         }
-        val events = ObservationModel.eventCards(store, flightId).map { card ->
+        // A cockpit preview may be capped, but postflight review must not
+        // silently hide older events from a flight with more than 20 records.
+        val events = ObservationModel.eventCards(store, flightId, limit = Int.MAX_VALUE).map { card ->
             val records = store.annotationsFor(card.eventId)
             EventRow(card, effectiveAnnotation(records), records.size, effectiveActorId(records))
         }

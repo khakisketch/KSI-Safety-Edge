@@ -35,16 +35,21 @@ class SegmentRecorderCoreTest {
         }
     }
 
-    private fun frame(ts: Long = 0L) = EncodedVideoFrame(
+    private fun frame(
+        ts: Long = 0L,
+        isKeyFrame: Boolean = true,
+        sps: ByteArray? = ByteArray(2),
+        pps: ByteArray? = ByteArray(2),
+    ) = EncodedVideoFrame(
         data = ByteArray(4),
         pts = ts,
         seq = ts,
-        isKeyFrame = true,
+        isKeyFrame = isKeyFrame,
         width = 1280,
         height = 720,
         fps = 15,
-        sps = ByteArray(2),
-        pps = ByteArray(2),
+        sps = sps,
+        pps = pps,
     )
 
     private fun tempDir(): File = Files.createTempDirectory("seg-rec").toFile()
@@ -115,6 +120,19 @@ class SegmentRecorderCoreTest {
         assertEquals(1, files.size)
         assertEquals("seg-00001.mp4", files[0].name)
         assertEquals(1, core.failedSegments)
+        assertTrue(core.hasWriteFailure)
+    }
+
+    @Test
+    fun an_open_writer_without_any_samples_is_not_evidence() {
+        val dir = tempDir()
+        val core = SegmentRecorderCore(SegmentRotationPolicy(1)) { FakeWriter(it) }
+        assertTrue(core.start(dir, 0))
+        assertTrue(core.onFrame(frame(isKeyFrame = false, sps = null, pps = null), 0))
+        assertEquals(0L, core.writtenFrameCount)
+        assertTrue(core.stop().isEmpty())
+        assertTrue(core.hasWriteFailure)
+        assertFalse(File(dir, "seg-00000.mp4").exists())
     }
 
     @Test
@@ -177,6 +195,64 @@ class SegmentRecorderCoreTest {
     }
 
     @Test
+    fun pre_config_frames_wait_without_poisoning_the_segment() {
+        val dir = tempDir()
+        var writes = 0
+        val core = SegmentRecorderCore(SegmentRotationPolicy(1)) { tmp ->
+            object : VideoSegmentWriter {
+                override fun write(frame: EncodedVideoFrame): Boolean {
+                    writes += 1
+                    return frame.isKeyFrame && frame.sps != null && frame.sps.isNotEmpty() &&
+                        frame.pps != null && frame.pps.isNotEmpty()
+                }
+                override fun close(): Boolean {
+                    tmp.writeBytes(ByteArray(16))
+                    return true
+                }
+            }
+        }
+        core.start(dir, 0)
+        assertEquals(0L, core.writtenFrameCount)
+        assertTrue(core.onFrame(frame(isKeyFrame = false, sps = null, pps = null), 0))
+        assertTrue(core.onFrame(frame(pps = null), 50))
+        assertTrue(core.onFrame(frame(sps = ByteArray(0)), 60))
+        assertTrue(core.onFrame(frame(isKeyFrame = false), 75))
+        assertEquals(0, writes)
+        assertEquals(0L, core.writtenFrameCount)
+        assertFalse(core.hasWriteFailure)
+        assertTrue(core.onFrame(frame(), 100))
+        assertEquals(1L, core.writtenFrameCount)
+        assertEquals(1, core.stop().size)
+        assertEquals(0, core.failedSegments)
+    }
+
+    @Test
+    fun every_rotated_segment_waits_for_its_own_keyframe() {
+        val dir = tempDir()
+        var writes = 0
+        val core = SegmentRecorderCore(SegmentRotationPolicy(1)) { tmp ->
+            object : VideoSegmentWriter {
+                override fun write(frame: EncodedVideoFrame): Boolean {
+                    writes += 1
+                    return true
+                }
+                override fun close(): Boolean {
+                    tmp.writeBytes(ByteArray(16))
+                    return true
+                }
+            }
+        }
+        core.start(dir, 0)
+        core.onFrame(frame(), 0)
+        core.onFrame(frame(isKeyFrame = false), 1_000)
+        assertEquals(1, writes)
+        core.onFrame(frame(), 1_100)
+        assertEquals(2, writes)
+        assertEquals(2L, core.writtenFrameCount)
+        assertEquals(2, core.stop().size)
+    }
+
+    @Test
     fun a_segment_with_an_untrusted_write_is_never_published() {
         val dir = tempDir()
         var writes = 0
@@ -197,9 +273,11 @@ class SegmentRecorderCoreTest {
         assertTrue(core.onFrame(frame(), 0))
         assertFalse(core.onFrame(frame(), 10))
         assertTrue(core.onFrame(frame(), 20))
+        assertTrue(core.hasWriteFailure)
         val files = core.stop()
         assertTrue(files.isEmpty())
         assertEquals(1, core.failedSegments)
+        assertTrue(core.hasWriteFailure)
         assertTrue(File(dir, "seg-00000.mp4.tmp").exists())
         assertFalse(File(dir, "seg-00000.mp4").exists())
     }

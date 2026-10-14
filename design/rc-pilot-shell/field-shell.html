@@ -37,6 +37,7 @@ a { color: inherit; }
 h1, h2, h3, h4, p { margin: 0; }
 h1 { font-size: 1.125rem; line-height: 1.2; letter-spacing: -0.02em; }
 h2 { font-size: clamp(1.25rem, 1.1rem + 0.35vw, 1.55rem); line-height: 1.2; letter-spacing: -0.02em; }
+.page-heading h2:focus-visible { outline: 2px solid var(--focus); outline-offset: 0.2rem; border-radius: 0.12rem; }
 h3 { font-size: 1rem; line-height: 1.3; }
 small { font-size: 0.8rem; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
@@ -149,6 +150,7 @@ main { width: 100%; min-width: 0; padding: 1rem clamp(1rem, 2vw, 1.8rem) 2rem; }
 .inline-state { padding: 0.7rem 0.85rem; border-block-start: 1px solid var(--border); background: var(--surface-subtle); font-size: 0.82rem; line-height: 1.45; }
 .inline-state strong { font-family: var(--font-mono); }
 .state-label { display: inline-flex; align-items: center; min-height: 1.55rem; padding: 0.18rem 0.42rem; border: 1px solid var(--border); border-radius: 0.25rem; font-size: 0.7rem; font-weight: 800; }
+.postflight-panel .panel-heading > .state-label { flex: 0 0 auto; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .detail-list { display: grid; gap: 0.55rem; }
 .detail-row { display: grid; grid-template-columns: minmax(6.2rem, 0.55fr) minmax(0, 1fr); gap: 0.65rem; padding-block: 0.5rem; border-block-end: 1px solid var(--border); }
 .detail-row:last-child { border-block-end: 0; }
@@ -487,34 +489,551 @@ tbody tr:last-child td { border-block-end: 0; }
   color: var(--problem);
   background: color-mix(in oklch, var(--problem-bg) 78%, var(--problem));
 }
+
+/* Phase-led RC shell: video and independent AI observations are the working surface. */
+:root { --shell-rail: 7.25rem; --shell-header: 3.65rem; --shell-gap: 0.7rem; }
+html, body { width: 100%; height: 100%; min-height: 0; overflow: hidden; }
+body { min-width: 20rem; min-height: 0; }
+.app-shell { width: 100%; height: 100dvh; min-height: 0; grid-template-columns: var(--shell-rail) minmax(0, 1fr); }
+.nav-rail { position: relative; inset-block-start: auto; height: 100dvh; min-height: 0; gap: 0.3rem; padding: 0.7rem 0.55rem; overflow-y: auto; }
+.rail-brand { min-height: 3.4rem; margin-block-end: 0.25rem; }
+.brand-mark { border-radius: 0.55rem; }
+.nav-group-label { margin: 0.55rem 0.12rem 0.18rem; color: var(--text-quiet); font: 800 0.61rem/1.2 var(--font-mono); letter-spacing: 0.055em; text-transform: uppercase; }
+.nav-tools-label { margin-block-start: 0.8rem; padding-block-start: 0.65rem; border-block-start: 1px solid var(--border); }
+.nav-item { min-height: 3.35rem; display: flex; flex-direction: row; justify-content: flex-start; gap: 0.48rem; padding: 0.38rem 0.36rem; border-radius: 0.42rem; text-align: start; font-size: 0.76rem; }
+.nav-item[aria-current="page"] { background: color-mix(in oklch, var(--accent) 8%, var(--surface)); border-color: color-mix(in oklch, var(--accent) 35%, var(--border)); }
+.nav-item[aria-current="page"]::before { inset-inline-start: -0.56rem; inset-block: 0.48rem; width: 0.18rem; }
+.nav-step { flex: 0 0 1.3rem; color: var(--fg); font: 800 0.66rem/1 var(--font-mono); }
+.nav-icon { flex: 0 0 1.1rem; width: 1.1rem; height: 1.1rem; }
+.nav-name { font-size: 0.78rem; }
+.nav-sub { margin-block-start: 0.14rem; font-size: 0.64rem; line-height: 1.15; }
+.rail-note { font-size: 0.61rem; }
+.workspace { height: 100dvh; min-height: 0; display: grid; grid-template-rows: var(--shell-header) minmax(0, 1fr); }
+.topbar { min-height: var(--shell-header); height: var(--shell-header); padding: 0 1rem; gap: 0.8rem; }
+.wordmark { gap: 0.6rem; }
+.wordmark .brand-mark { width: 2.1rem; height: 2.1rem; }
+.wordmark-copy strong { font-size: 0.89rem; }
+.wordmark-copy small { margin-block-start: 0; font-size: 0.72rem; }
+.topbar-meta { flex: 0 1 auto; gap: 0.85rem; }
+.time-note { font-size: 0.74rem; }
+.simulated-tag { min-height: 1.8rem; font-size: 0.68rem; }
+.rc-online-tag { display: inline-flex; align-items: center; gap: 0.38rem; padding-inline-start: 0.7rem; border-inline-start: 1px solid var(--border); color: var(--text-quiet); font-size: 0.73rem; font-weight: 750; white-space: nowrap; }
+.status-dot { display: inline-block; width: 0.48rem; height: 0.48rem; border-radius: 50%; background: var(--muted); }
+main { height: 100%; min-height: 0; padding: 0.68rem clamp(0.75rem, 1.25vw, 1.35rem); overflow: auto; }
+.page { min-width: 0; }
+.page-heading { margin-block: 0 0.8rem; }
+.page-heading .eyebrow { margin-block-end: 0.15rem; }
+.page-heading h2 { font-size: clamp(1.25rem, 1.1rem + 0.4vw, 1.55rem); }
+.phase-heading { flex: 0 0 auto; align-items: center; min-height: 2.75rem; margin: 0; }
+.phase-heading .eyebrow { display: block !important; }
+.phase-heading h2 { line-height: 1.08; }
+.flight-heading-meta { display: flex; align-items: center; gap: 0.65rem; color: var(--text-quiet); font-size: 0.76rem; }
+#observe-page.is-active { display: flex; height: 100%; min-height: 0; flex-direction: column; gap: 0.55rem; overflow: hidden; }
+#observe-page .page-heading .eyebrow, #observe-page .page-summary { display: block; }
+.quick-status { flex: 0 0 auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.45rem; }
+.quick-status-item { min-width: 0; min-height: 3.15rem; display: flex; flex-direction: column; justify-content: center; padding: 0.36rem 0.65rem; border: 1px solid var(--border); border-radius: 0.42rem; background: var(--surface); }
+.quick-status-item > span { color: var(--text-quiet); font-size: 0.67rem; font-weight: 750; line-height: 1.2; }
+.quick-status-item strong { display: block; margin-block-start: 0.12rem; font-size: 0.82rem; line-height: 1.15; overflow-wrap: anywhere; }
+.quick-status-item[data-severity="problem"] { border-color: color-mix(in oklch, var(--problem) 60%, var(--border)); background: var(--problem-bg); }
+.quick-status-item[data-severity="attention"] { border-color: color-mix(in oklch, var(--attention) 60%, var(--border)); background: var(--attention-bg); }
+.observe-cockpit, #observe-page .observe-cockpit { position: relative; flex: 1 1 auto; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(20rem, 27%); gap: var(--shell-gap); align-items: stretch; }
+#observe-page .video-stage { position: relative; width: auto; height: auto; min-width: 0; min-height: 0; overflow: hidden; border: 1px solid oklch(41% 0.018 240); border-radius: 0.55rem; background: oklch(15% 0.018 240); color: var(--video-fg); }
+.video-stage .video-plane { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; max-height: none; display: block; aspect-ratio: auto; border: 0; background-color: oklch(15% 0.018 240); background-image: radial-gradient(ellipse at 49% 46%, oklch(22% 0.02 235 / 0.62), transparent 54%), linear-gradient(145deg, oklch(18% 0.02 238), oklch(13% 0.018 240) 72%); background-size: cover; background-position: center; background-repeat: no-repeat; }
+.video-stage .video-plane::before, .video-stage .video-plane::after { display: none; }
+.video-top-overlay { position: absolute; z-index: 3; inset: 0.65rem 0.7rem auto; width: auto; max-width: none; display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; transform: none; }
+.video-heading-group { min-width: 0; gap: 0.48rem; }
+.video-heading-group h3 { font-size: 0.88rem; }
+.video-heading-group .hud-pill { border-color: oklch(65% 0.01 240 / 0.45); background: oklch(20% 0.018 240 / 0.92); font-size: 0.67rem; }
+.video-heading-group .simulated-tag { min-height: 1.55rem; padding: 0.18rem 0.38rem; font-size: 0.64rem; }
+.video-overlay-controls { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 0.32rem; }
+.video-overlay-controls .state-label { color: var(--video-fg); border-color: oklch(70% 0.01 240 / 0.55); background: oklch(20% 0.018 240 / 0.92); }
+.video-overlay-controls button { min-height: 2.75rem; padding: 0.42rem 0.62rem; color: oklch(22% 0.02 240); background: oklch(96% 0.006 240); border-color: oklch(84% 0.01 240); font-size: 0.72rem; }
+.video-overlay-controls button:hover { color: oklch(22% 0.02 240); background: oklch(87% 0.008 240); border-color: oklch(72% 0.012 240); }
+.video-overlay-controls [data-toggle-focus] { border-color: oklch(82% 0.02 145); }
+.video-center { position: absolute; z-index: 1; inset: 50% auto auto 50%; width: min(80%, 30rem); max-width: none; padding: 1.1rem; transform: translate(-50%, -50%); text-align: center; }
+.video-signal { display: none; }
+.video-center-kicker { display: inline-flex; align-items: center; gap: 0.4rem; margin-block-end: 0.7rem; padding: 0; border: 0; border-radius: 0; color: oklch(79% 0.055 238); font: 700 0.72rem/1.2 var(--font-ui); letter-spacing: 0.01em; }
+.video-center-kicker .status-dot { background: oklch(72% 0.07 238); }
+.video-center h3 { font-size: clamp(1.35rem, 1.1rem + 0.55vw, 1.85rem); letter-spacing: -0.025em; }
+.video-center p { max-width: 29rem; margin: 0.52rem auto 0; color: oklch(76% 0.01 240); font-size: 0.88rem; }
+.video-bottom-hud { position: absolute; z-index: 3; inset: auto 0.75rem 0.65rem; display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; color: oklch(76% 0.01 240); font: 650 0.66rem/1.35 var(--font-mono); }
+#observe-page .observe-right-rail { position: relative; inset: auto; width: auto; max-height: none; min-width: 0; min-height: 0; display: block; grid-column: auto; overflow: hidden; border: 1px solid var(--border); border-radius: 0.55rem; background: var(--surface); box-shadow: none; }
+.ai-feed-module { height: 100%; min-height: 0; display: flex; flex-direction: column; padding: 0.75rem; overflow: auto; }
+.ai-panel-heading { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; padding-block-end: 0.55rem; border-block-end: 1px solid var(--border); }
+.ai-panel-heading .eyebrow { margin: 0 0 0.12rem; font-size: 0.59rem; }
+.ai-panel-heading h3 { font-size: 1rem; }
+.feed-source-state { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 0.35rem; color: var(--text-quiet); font-size: 0.67rem; font-weight: 800; }
+.feed-source-state .status-dot { width: 0.38rem; height: 0.38rem; }
+.ai-panel-intro { flex: 0 0 auto; padding: 0.5rem 0; color: var(--text-quiet); font-size: 0.75rem; line-height: 1.4; }
+.ai-feed-module .feed-list { flex: 0 0 auto; display: grid; gap: 0.35rem; padding: 0; }
+.ai-feed-module .feed-item { display: block; padding: 0; border: 0; }
+.detection-select { width: 100%; min-height: 4.15rem; display: grid; grid-template-columns: minmax(5.5rem, auto) minmax(0, 1fr) auto; align-items: center; gap: 0.48rem; padding: 0.45rem 0.5rem; border-radius: 0.38rem; text-align: start; }
+.detection-select[aria-pressed="true"] { border-color: color-mix(in oklch, var(--accent) 55%, var(--border)); background: color-mix(in oklch, var(--accent) 8%, var(--surface)); box-shadow: inset 0.18rem 0 0 var(--accent); }
+.detection-select .feed-type { min-width: 0; padding: 0.3rem 0.32rem; font-size: 0.61rem; white-space: nowrap; }
+.detection-select .feed-copy { min-width: 0; }
+.detection-select .feed-copy strong { font-size: 0.77rem; line-height: 1.27; }
+.detection-select .feed-copy small { margin-block-start: 0.18rem; font-size: 0.66rem; }
+.detection-chevron { color: var(--text-quiet); font: 700 0.85rem/1 var(--font-mono); }
+.selected-observation { flex: 0 0 auto; margin-block-start: 0.65rem; padding: 0.65rem; border: 1px solid var(--border); border-radius: 0.4rem; background: var(--surface-subtle); }
+.selected-observation-label { display: flex; align-items: center; justify-content: space-between; gap: 0.45rem; color: var(--text-quiet); font-size: 0.67rem; font-weight: 750; }
+.selected-observation-label .state-label { min-height: 1.35rem; font-size: 0.62rem; }
+.selected-observation h4 { margin-block-start: 0.4rem; font-size: 0.84rem; line-height: 1.3; }
+.selected-observation > p { margin-block-start: 0.25rem; color: var(--text-quiet); font-size: 0.69rem; }
+.selected-observation-note { padding-block-start: 0.45rem; border-block-start: 1px solid var(--border); line-height: 1.4; }
+.mapping-notice { flex: 0 0 auto; margin-block-start: 0.58rem; padding: 0.55rem 0.62rem; border-inline-start: 0.2rem solid var(--attention); background: var(--attention-bg); font-size: 0.7rem; line-height: 1.45; }
+.mapping-notice strong { display: inline-block; margin-block-end: 0.1rem; font-size: 0.73rem; }
+.ai-feed-module .feed-footnote { flex: 0 0 auto; margin: 0.5rem 0 0; padding-block-start: 0.35rem; border-block-start: 1px solid var(--border); font-size: 0.66rem; }
+.system-details { flex: 0 0 auto; max-height: 29vh; overflow: auto; border: 1px solid var(--border); border-radius: 0.45rem; background: var(--surface); }
+.system-details > summary { min-height: 2.85rem; display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; padding: 0.35rem 0.75rem; cursor: pointer; list-style: none; }
+.system-details > summary::-webkit-details-marker { display: none; }
+.system-details > summary::before { content: "+"; width: 1.1rem; flex: 0 0 1.1rem; color: var(--accent); font: 700 1.1rem/1 var(--font-mono); }
+.system-details[open] > summary::before { content: "−"; }
+.system-details > summary > span:first-of-type { flex: 1; display: flex; align-items: baseline; gap: 0.75rem; min-width: 0; }
+.system-details > summary strong { font-size: 0.78rem; }
+.system-details > summary small { color: var(--text-quiet); font-size: 0.68rem; }
+.details-action { color: var(--text-quiet); font-size: 0.68rem; font-weight: 800; }
+.system-detail-layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(15rem, 0.95fr) minmax(12rem, 0.7fr); gap: 0.55rem; padding: 0 0.55rem 0.55rem; }
+.system-detail-layout > .panel, .system-detail-layout > .operator-rail { min-width: 0; border: 1px solid var(--border); border-radius: 0.4rem; background: var(--surface-raised); }
+.system-detail-layout .operator-rail { position: relative; inset: auto; width: auto; max-height: none; overflow: visible; padding: 0.5rem; box-shadow: none; }
+.system-detail-layout .status-board-head { flex-direction: row; align-items: center; gap: 0.3rem; padding: 0 0.15rem 0.35rem; border-block-end: 1px solid var(--border); }
+.system-detail-layout .status-board-head h3 { font-size: 0.78rem; }
+.system-detail-layout .status-key { gap: 0.35rem; font-size: 0.62rem; }
+#observe-page .system-detail-layout .status-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.28rem; }
+#observe-page .system-detail-layout .status-item { min-height: 4.35rem; padding: 0.32rem; border: 1px solid var(--border); border-radius: 0.28rem; background: var(--surface); }
+#observe-page .system-detail-layout .status-item[data-severity="problem"] { background: var(--problem-bg); }
+#observe-page .system-detail-layout .status-item[data-severity="attention"] { background: var(--attention-bg); }
+#observe-page .system-detail-layout .status-label { font-size: 0.64rem; }
+#observe-page .system-detail-layout .severity { font-size: 0.61rem; }
+#observe-page .system-detail-layout .status-value { font-size: 0.72rem; }
+#observe-page .system-detail-layout .status-detail, #observe-page .system-detail-layout .status-action { font-size: 0.6rem; line-height: 1.3; }
+.system-mop-module .panel-heading { min-height: 2.5rem; padding: 0.4rem 0.55rem; }
+.system-mop-module .panel-heading h3 { font-size: 0.77rem; }
+.system-mop-module .panel-heading .subline { font-size: 0.62rem; }
+.system-mop-module .link-metrics { gap: 0.25rem; padding: 0.45rem 0.55rem 0.1rem; }
+.system-mop-module .metric { padding: 0.3rem; }
+.system-mop-module .metric-label, .system-mop-module .metric-value { font-size: 0.64rem; }
+.system-mop-module .recent-receive { margin: 0 0.55rem 0.15rem; font-size: 0.62rem; }
+.system-mop-module .action-group { padding: 0.45rem 0.55rem; }
+.system-mop-module .action-group h3 { margin-block-end: 0.3rem; font-size: 0.66rem; }
+.system-mop-module .action-row { gap: 0.25rem; }
+.system-mop-module .action-row button { min-height: 2.45rem; flex: 1 1 auto; padding: 0.35rem; font-size: 0.63rem; }
+.system-evidence-module .panel-heading { min-height: 2.5rem; padding: 0.4rem 0.55rem; }
+.system-evidence-module .panel-heading h3 { font-size: 0.77rem; }
+.system-evidence-module .evidence-summary { padding: 0.35rem 0.55rem; }
+.system-evidence-module .evidence-line { padding-block: 0.3rem; font-size: 0.65rem; }
+.system-evidence-module .evidence-link { width: calc(100% - 1.1rem); min-height: 2.45rem; margin: 0 0.55rem 0.5rem; font-size: 0.66rem; }
+#observe-page.ai-collapsed .observe-cockpit { grid-template-columns: minmax(0, 1fr); }
+#observe-page.is-focus .quick-status, #observe-page.is-focus .system-details { display: none; }
+#observe-page.is-focus .observe-cockpit { grid-template-columns: minmax(0, 1fr); }
+#observe-page:has(.status-item[data-status-index="1"][data-severity="problem"]) .system-mop-module .action-row button.button-primary { color: var(--problem); background: var(--problem-bg); border: 2px solid var(--problem); font-weight: 900; }
+#observe-page:has(.status-item[data-status-index="1"][data-severity="problem"]) .system-mop-module .action-row button.button-primary:hover { color: var(--problem); background: color-mix(in oklch, var(--problem-bg) 78%, var(--problem)); }
+  #postflight-evidence-table[hidden], #postflight-evidence-unknown[hidden] { display: none !important; }
+
+/* Other destinations share the same shell and scroll only when their content needs it. */
+.postflight-workspace { display: grid; grid-template-columns: minmax(13rem, 0.3fr) minmax(0, 1fr); gap: 0.8rem; align-items: start; }
+.flight-list-pane { overflow: hidden; }
+.flight-choice-list { display: grid; gap: 0.45rem; padding: 0.65rem; }
+.flight-choice { width: 100%; min-height: 5.15rem; padding: 0.58rem 0.65rem; text-align: start; }
+.flight-choice.is-selected { border-color: color-mix(in oklch, var(--accent) 55%, var(--border)); background: color-mix(in oklch, var(--accent) 8%, var(--surface)); box-shadow: inset 0.2rem 0 0 var(--accent); }
+.flight-choice-top { display: flex; justify-content: space-between; gap: 0.4rem; align-items: center; }
+.flight-choice-top strong { font: 800 0.75rem/1.2 var(--font-mono); }
+.flight-choice-top span { color: var(--text-quiet); font-size: 0.67rem; }
+.flight-choice > span:nth-child(2), .flight-choice small { display: block; margin-block-start: 0.32rem; font-size: 0.72rem; }
+.flight-choice small { color: var(--text-quiet); }
+.flight-list-note { margin: 0 0.7rem 0.7rem; color: var(--text-quiet); font-size: 0.69rem; line-height: 1.4; }
+.postflight-content { min-width: 0; }
+.postflight-tabs { display: flex; gap: 0.25rem; margin-block-end: 0.65rem; padding: 0.2rem; border: 1px solid var(--border); border-radius: 0.42rem; background: var(--surface-subtle); }
+.postflight-tabs button { min-height: 2.7rem; padding: 0.45rem 0.75rem; border-color: transparent; background: transparent; font-size: 0.78rem; }
+.postflight-tabs button[aria-selected="true"] { border-color: var(--border); background: var(--surface); box-shadow: 0 1px 1px oklch(0% 0 0 / 0.04); }
+.postflight-panel[hidden] { display: none !important; }
+.postflight-panel .two-column { align-items: stretch; }
+.postflight-honesty-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; margin-block-start: 0.65rem; }
+.postflight-honesty-grid .notice { font-size: 0.76rem; }
+.postflight-evidence-grid, .postflight-sync-grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); }
+.postflight-evidence-grid .preview-frame { min-height: 13rem; }
+.postflight-sync-grid .sync-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.diagnostics-scenario-panel { margin-block-end: 0.75rem; }
+.diagnostics-scenario-panel .content-pad { padding: 0.65rem 0.85rem; }
+.diagnostics-status-panel { margin-block-end: 0.75rem; }
+.diagnostic-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.5rem; padding: 0.7rem; }
+.diagnostic-grid .status-item { min-height: 6rem; }
+.diagnostics-lower-grid { align-items: stretch; }
+.diagnostics-lower-grid .content-pad { padding: 0.75rem; }
+.demo-bench > summary { cursor: pointer; list-style: none; }
+.demo-bench > summary::-webkit-details-marker { display: none; }
+.demo-bench > summary::after { content: "+"; flex: 0 0 auto; margin-inline-start: 0.65rem; color: var(--accent); font: 800 1.15rem/1 var(--font-mono); }
+.demo-bench[open] > summary::after { content: "−"; }
+.diagnostics-lower-grid .link-metrics { padding: 0.7rem; }
+.video-demo-states { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem; }
+.video-demo-states button { min-height: 3rem; padding: 0.45rem; font-size: 0.72rem; }
+
+@media (max-width: 1280px) {
+  :root { --shell-rail: 7rem; }
+  main { padding-inline: 0.72rem; }
+  .observe-cockpit, #observe-page .observe-cockpit { display: grid; grid-template-columns: minmax(0, 1fr) minmax(18rem, 30%); }
+  .video-top-overlay { align-items: flex-start; }
+  .video-overlay-controls button { min-height: 2.5rem; padding-inline: 0.48rem; font-size: 0.66rem; }
+  .system-detail-layout { grid-template-columns: minmax(0, 1.5fr) minmax(14rem, 1fr); }
+  .system-evidence-module { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1fr) auto; align-items: center; }
+  .system-evidence-module .panel-heading { border: 0; }
+  .system-evidence-module .evidence-link { width: auto; min-width: 9rem; margin: 0 0.55rem; }
+}
+@media (max-width: 1050px) {
+  .nav-rail { padding-inline: 0.38rem; }
+  .nav-group-label { font-size: 0.57rem; }
+  .nav-item { gap: 0.35rem; padding-inline: 0.25rem; }
+  .nav-step { flex-basis: 1.12rem; }
+  .nav-name { font-size: 0.72rem; }
+  .nav-sub { font-size: 0.6rem; }
+  .topbar-meta { gap: 0.48rem; }
+  .time-note { font-size: 0.68rem; }
+  .observe-cockpit, #observe-page .observe-cockpit { grid-template-columns: minmax(0, 1fr) minmax(17rem, 32%); }
+  .video-top-overlay { display: grid; grid-template-columns: 1fr; gap: 0.35rem; }
+  .video-overlay-controls { justify-content: flex-start; }
+  .quick-status-item { padding-inline: 0.42rem; }
+  .quick-status-item strong { font-size: 0.75rem; }
+  .ai-panel-intro { padding-block: 0.3rem; }
+  .detection-select { min-height: 3.7rem; }
+  .selected-observation { margin-block-start: 0.42rem; padding: 0.48rem; }
+  .mapping-notice { margin-block-start: 0.42rem; padding: 0.42rem 0.5rem; }
+  .ai-feed-module .feed-footnote { margin-block-start: 0.35rem; padding-block-start: 0.25rem; }
+  .system-details { max-height: 27vh; }
+  .system-detail-layout { grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.8fr); }
+  .system-evidence-module { grid-column: 1 / -1; }
+}
+@media (max-width: 820px) {
+  :root { --shell-rail: 4.6rem; --shell-header: 3.3rem; --shell-gap: 0.45rem; }
+  .app-shell { display: grid; grid-template-columns: var(--shell-rail) minmax(0, 1fr); }
+  .nav-rail { position: relative; inset: auto; width: auto; height: 100dvh; min-height: 0; display: flex; flex-direction: column; padding: 0.48rem 0.25rem; border-block-start: 0; box-shadow: none; }
+  .rail-brand { display: grid; min-height: 2.8rem; }
+  .rail-brand .brand-mark { width: 2rem; height: 2rem; }
+  .nav-group-label { margin-inline: 0.15rem; text-align: center; font-size: 0.48rem; }
+  .nav-item { min-height: 3.2rem; display: flex; flex-direction: column; justify-content: center; gap: 0.14rem; padding: 0.28rem 0.12rem; text-align: center; }
+  .nav-item[aria-current="page"]::before { inset-inline-start: -0.24rem; inset-block: 0.65rem; }
+  .nav-step { flex: 0 0 auto; }
+  .nav-icon { flex-basis: 1rem; }
+  .nav-name { font-size: 0.66rem; }
+  .nav-sub { display: none; }
+  .rail-note { font-size: 0.52rem; }
+  .workspace { height: 100dvh; grid-template-rows: var(--shell-header) minmax(0, 1fr); padding-block-end: 0; }
+  .topbar { min-height: var(--shell-header); height: var(--shell-header); flex-wrap: nowrap; padding-inline: 0.55rem; }
+  .wordmark-copy small, .rc-online-tag { display: none; }
+  .topbar-meta { flex: 0 1 auto; justify-content: flex-end; }
+  .time-note { white-space: normal; }
+  main { padding: 0.55rem; }
+  #observe-page.is-active { height: 100%; }
+  .phase-heading { min-height: 2.15rem; }
+  .phase-heading .eyebrow { font-size: 0.58rem; }
+  .phase-heading h2 { font-size: 1.12rem; }
+  .flight-heading-meta { gap: 0.3rem; font-size: 0.65rem; }
+  .flight-heading-meta .simulated-tag { min-height: 1.5rem; font-size: 0.58rem; }
+  .quick-status { gap: 0.25rem; }
+  .quick-status-item { min-height: 2.7rem; padding: 0.28rem; }
+  .quick-status-item > span { font-size: 0.57rem; }
+  .quick-status-item strong { font-size: 0.66rem; }
+  .observe-cockpit, #observe-page .observe-cockpit { grid-template-columns: minmax(0, 1fr) minmax(14rem, 35%); }
+  .video-top-overlay { inset: 0.4rem; }
+  .video-heading-group { flex-wrap: wrap; }
+  .video-overlay-controls button { min-height: 2.35rem; padding-inline: 0.35rem; font-size: 0.59rem; }
+  .video-overlay-controls .state-label { min-height: 1.35rem; font-size: 0.59rem; }
+  .video-center { width: 94%; padding: 0.45rem; }
+  .video-center h3 { font-size: 1.2rem; }
+  .video-center p { font-size: 0.75rem; }
+  .video-bottom-hud { inset-inline: 0.4rem; bottom: 0.4rem; font-size: 0.56rem; }
+  .ai-feed-module { padding: 0.5rem; }
+  .ai-panel-intro { font-size: 0.67rem; }
+  .detection-select { grid-template-columns: minmax(4.8rem, auto) minmax(0, 1fr) auto; gap: 0.28rem; padding-inline: 0.32rem; }
+  .detection-select .feed-type { font-size: 0.54rem; }
+  .detection-select .feed-copy strong { font-size: 0.68rem; }
+  .detection-select .feed-copy small { font-size: 0.58rem; }
+  .selected-observation { padding: 0.48rem; }
+  .mapping-notice { font-size: 0.62rem; }
+  .system-details > summary { padding-inline: 0.5rem; }
+  .system-details > summary > span:first-of-type { gap: 0.35rem; }
+  .system-details > summary small { font-size: 0.58rem; }
+  .system-detail-layout { grid-template-columns: minmax(0, 1fr); }
+  .postflight-workspace { grid-template-columns: minmax(11rem, 0.35fr) minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .app-shell { display: block; }
+  .nav-rail { position: fixed; inset: auto 0 0; width: 100%; height: auto; min-height: 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 0.1rem; padding: 0.25rem 0.3rem calc(0.25rem + env(safe-area-inset-bottom)); border-inline-end: 0; border-block-start: 1px solid var(--border); box-shadow: 0 -0.3rem 1rem oklch(0% 0 0 / 0.06); }
+  .rail-brand, .nav-group-label, .nav-spacer, .rail-note { display: none; }
+  .nav-item { min-height: 3.1rem; flex-direction: column; gap: 0.12rem; }
+  .nav-item .nav-step { display: none; }
+  .nav-icon { width: 0.95rem; height: 0.95rem; }
+  .workspace { height: 100dvh; padding-block-end: 3.6rem; }
+  .topbar-meta .time-note { display: none; }
+  .observe-cockpit, #observe-page .observe-cockpit { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(15rem, 1fr) minmax(12rem, 0.8fr); }
+  .postflight-workspace, .postflight-evidence-grid, .postflight-sync-grid { grid-template-columns: minmax(0, 1fr); }
+  .diagnostic-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .video-demo-states { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* In-flight is a video-first cockpit; the working chrome is on-demand. */
+body[data-active-page="inflight"] .app-shell { display: block; height: 100dvh; }
+body[data-active-page="inflight"] .workspace { display: block; width: 100%; height: 100dvh; }
+body[data-active-page="inflight"] .topbar { display: none; }
+body[data-active-page="inflight"] main { width: 100%; height: 100dvh; padding: 0; overflow: hidden; }
+body[data-active-page="inflight"] #observe-page.is-active { position: relative; display: block; width: 100%; height: 100%; min-height: 0; overflow: hidden; }
+body[data-active-page="inflight"] #observe-page > .phase-heading,
+body[data-active-page="inflight"] #observe-page > .system-details { display: none; }
+body[data-active-page="inflight"] #observe-page .observe-cockpit { position: absolute; inset: 0; display: block; min-height: 0; }
+body[data-active-page="inflight"] #observe-page .video-stage { position: absolute; inset: 0; width: 100%; height: 100%; min-height: 0; border: 0; border-radius: 0; }
+body[data-active-page="inflight"] .video-stage .video-plane { background-color: oklch(13% 0.018 240); background-image: radial-gradient(ellipse at 50% 48%, oklch(22% 0.02 235 / 0.62), transparent 58%), linear-gradient(145deg, oklch(18% 0.02 238), oklch(12% 0.018 240) 72%); }
+body[data-active-page="inflight"] .video-top-overlay { inset: 0.65rem 0.7rem auto 4.2rem; width: auto; max-width: none; display: flex; align-items: center; justify-content: space-between; gap: 0.7rem; transform: none; padding: 0; border: 0; border-radius: 0; background: transparent; }
+body[data-active-page="inflight"] .video-heading-group { gap: 0.5rem; }
+body[data-active-page="inflight"] .video-heading-group h3 { font-size: 0.86rem; }
+body[data-active-page="inflight"] .video-overlay-controls { gap: 0.2rem; }
+body[data-active-page="inflight"] .video-overlay-controls button { min-height: 2.15rem; padding: 0.3rem 0.48rem; border-color: oklch(72% 0.01 240 / 0.34); border-radius: 0.32rem; background: oklch(16% 0.018 240 / 0.46); color: oklch(91% 0.008 240); font-size: 0.68rem; }
+body[data-active-page="inflight"] .video-overlay-controls button:hover { border-color: oklch(82% 0.01 240 / 0.55); background: oklch(27% 0.018 240 / 0.8); color: white; }
+body[data-active-page="inflight"] .video-overlay-controls .state-label { display: none; }
+body[data-active-page="inflight"] .quick-status { position: absolute; z-index: 5; inset: 3.3rem auto auto 4.2rem; display: flex; flex-wrap: wrap; gap: 0; max-width: calc(100% - 4.8rem); }
+body[data-active-page="inflight"] .quick-status-item { min-height: 1.55rem; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.3rem; padding: 0.2rem 0.48rem; border: 0; border-radius: 0; background: transparent; color: var(--video-fg); }
+body[data-active-page="inflight"] .quick-status-item + .quick-status-item { border-inline-start: 1px solid oklch(76% 0.01 240 / 0.24); }
+body[data-active-page="inflight"] .quick-status-item > span { color: oklch(73% 0.01 240); font-size: 0.66rem; white-space: nowrap; }
+body[data-active-page="inflight"] .quick-status-item strong { margin: 0; color: oklch(93% 0.008 240); font-size: 0.73rem; font-weight: 600; line-height: 1.1; white-space: nowrap; }
+body[data-active-page="inflight"] .quick-status-item[data-severity="problem"] strong { color: oklch(78% 0.09 28); }
+body[data-active-page="inflight"] .quick-status-item[data-severity="attention"] strong { color: oklch(83% 0.07 82); }
+body[data-active-page="inflight"] .cockpit-attention { position: absolute; z-index: 6; inset: 5.4rem 0.7rem auto 4.2rem; width: max-content; max-width: min(34rem, calc(100% - 5rem)); display: flex; align-items: baseline; gap: 0.36rem; padding: 0; border: 0; border-radius: 0; background: transparent; color: oklch(91% 0.008 240); box-shadow: none; }
+body[data-active-page="inflight"] .cockpit-attention[hidden] { display: none; }
+body[data-active-page="inflight"] .cockpit-attention-mark { flex: 0 0 auto; color: oklch(81% 0.08 28); font-size: 0.72rem; font-weight: 700; line-height: 1; }
+body[data-active-page="inflight"] .cockpit-attention[data-severity="problem"] .cockpit-attention-mark,
+body[data-active-page="inflight"] .cockpit-attention[data-severity="problem"] strong { color: oklch(81% 0.08 28); }
+body[data-active-page="inflight"] .cockpit-attention strong { display: inline; font-size: 0.72rem; line-height: 1.35; font-weight: 700; }
+body[data-active-page="inflight"] .cockpit-attention small { display: inline; margin-inline-start: 0.28rem; color: oklch(76% 0.01 240); font-size: 0.66rem; line-height: 1.35; }
+body[data-active-page="inflight"] .video-center { width: min(84%, 36rem); }
+body[data-active-page="inflight"] .video-bottom-hud { inset: auto 0.8rem 0.65rem; justify-content: flex-end; color: oklch(82% 0.01 240); font-size: 0.66rem; text-align: end; }
+.nav-reveal { display: none; }
+.nav-backdrop { display: none; }
+.nav-backdrop[hidden] { display: none; }
+.nav-close { display: none; }
+body[data-active-page="inflight"] .nav-reveal { position: fixed; z-index: 61; inset: 0.65rem auto auto 0.65rem; width: 2.9rem; min-height: 2.9rem; display: grid; place-items: center; padding: 0.45rem; border-color: oklch(80% 0.01 240 / 0.4); border-radius: 0.42rem; background: oklch(16% 0.018 240 / 0.9); color: var(--video-fg); box-shadow: 0 0.2rem 0.8rem oklch(0% 0 0 / 0.2); }
+body[data-active-page="inflight"] .nav-reveal:hover { background: oklch(27% 0.018 240 / 0.98); }
+body[data-active-page="inflight"] .nav-reveal svg { width: 1.15rem; height: 1.15rem; }
+body[data-active-page="inflight"] .nav-reveal svg path { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+body[data-active-page="inflight"] .nav-rail { position: fixed; z-index: 52; inset: 0 auto 0 0; width: min(17rem, 86vw); height: 100dvh; min-height: 0; display: flex; flex-direction: column; align-items: stretch; gap: 0.38rem; padding: 0.8rem 0.7rem; overflow-y: auto; border: 0; border-inline-end: 1px solid var(--border); background: var(--surface); box-shadow: 0.5rem 0 2rem oklch(0% 0 0 / 0.22); transform: translateX(-105%); visibility: hidden; pointer-events: none; transition: transform 180ms ease, visibility 180ms ease; }
+body[data-active-page="inflight"].nav-open .nav-rail { transform: translateX(0); visibility: visible; pointer-events: auto; }
+body[data-active-page="inflight"] .nav-backdrop { position: fixed; z-index: 51; inset: 0; display: block; width: 100%; height: 100%; min-height: 0; padding: 0; border: 0; border-radius: 0; background: oklch(0% 0 0 / 0.4); }
+body[data-active-page="inflight"] .nav-backdrop[hidden] { display: none; }
+body[data-active-page="inflight"] .rail-brand { min-height: 3.2rem; display: flex; align-items: center; justify-content: space-between; margin: 0 0 0.35rem; padding: 0 0.15rem 0.6rem; }
+body[data-active-page="inflight"] .rail-brand .brand-mark { width: 2.25rem; height: 2.25rem; }
+body[data-active-page="inflight"] .nav-close { min-height: 2.35rem; display: inline-flex; align-items: center; gap: 0.35rem; padding: 0.32rem 0.55rem; font-size: 0.7rem; }
+body[data-active-page="inflight"] .nav-group-label { margin: 0.35rem 0.2rem 0.15rem; color: var(--text-quiet); font-size: 0.64rem; }
+body[data-active-page="inflight"] .nav-tools-label { display: none; }
+body[data-active-page="inflight"] .nav-item { min-height: 3.5rem; flex-direction: row; justify-content: flex-start; gap: 0.65rem; padding: 0.45rem 0.55rem; border-radius: 0.42rem; text-align: start; }
+body[data-active-page="inflight"] .nav-item[aria-current="page"]::before { inset-inline-start: -0.72rem; inset-block: 0.65rem; width: 0.2rem; }
+body[data-active-page="inflight"] .nav-item .nav-icon { flex: 0 0 1.2rem; width: 1.2rem; height: 1.2rem; }
+body[data-active-page="inflight"] .nav-item .nav-step { display: none; }
+body[data-active-page="inflight"] .nav-name { font-size: 0.83rem; }
+body[data-active-page="inflight"] .nav-sub { display: block; font-size: 0.66rem; }
+body[data-active-page="inflight"] .nav-spacer { display: block; }
+body[data-active-page="inflight"] .rail-note { display: block; font-size: 0.64rem; }
+body[data-active-page="inflight"].nav-open .nav-reveal { opacity: 0; pointer-events: none; }
+body[data-active-page="inflight"] #observe-page.is-focus .video-heading-group { opacity: 0.12; pointer-events: none; }
+.settings-system-link { align-self: start; white-space: nowrap; }
+
+@media (max-width: 640px) {
+  body[data-active-page="inflight"] .action-feedback { inset-block-end: calc(4rem + env(safe-area-inset-bottom)); }
+  body[data-active-page="inflight"] .video-top-overlay { inset: 0.55rem 0.55rem auto 3.8rem; display: grid; grid-template-columns: 1fr; gap: 0.3rem; align-items: flex-start; }
+  body[data-active-page="inflight"] .video-heading-group { gap: 0.3rem; }
+  body[data-active-page="inflight"] .video-heading-group h3 { font-size: 0.73rem; }
+  body[data-active-page="inflight"] .video-heading-group .hud-pill { display: none; }
+  body[data-active-page="inflight"] .video-heading-group .simulated-tag { min-height: 1.35rem; font-size: 0.55rem; }
+  body[data-active-page="inflight"] .video-overlay-controls { gap: 0.18rem; }
+  body[data-active-page="inflight"] .video-overlay-controls button { min-height: 1.9rem; padding-inline: 0.38rem; font-size: 0.59rem; }
+  body[data-active-page="inflight"] .quick-status { inset: 4.8rem 0.35rem auto 0.35rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 0.1rem; max-width: none; }
+  body[data-active-page="inflight"] .quick-status-item { min-height: 1.45rem; gap: 0.2rem; padding: 0.18rem 0.32rem; }
+  body[data-active-page="inflight"] .quick-status-item:nth-child(3n + 1) { border-inline-start: 0; }
+  body[data-active-page="inflight"] .quick-status-item:nth-child(n + 4) { border-block-start: 1px solid oklch(76% 0.01 240 / 0.16); }
+  body[data-active-page="inflight"] .quick-status-item > span { font-size: 0.58rem; }
+  body[data-active-page="inflight"] .quick-status-item strong { font-size: 0.64rem; }
+  body[data-active-page="inflight"] .cockpit-attention { inset: 8.25rem 0.45rem auto 0.45rem; max-width: calc(100% - 0.9rem); gap: 0.28rem; }
+  body[data-active-page="inflight"] .cockpit-attention strong { font-size: 0.63rem; }
+  body[data-active-page="inflight"] .cockpit-attention small { font-size: 0.57rem; }
+  body[data-active-page="inflight"] .video-center { width: 94%; }
+  body[data-active-page="inflight"] .video-center h3 { font-size: 1.15rem; }
+  body[data-active-page="inflight"] .video-center p { font-size: 0.72rem; }
+  body[data-active-page="inflight"] .video-bottom-hud { inset-inline: 0.45rem; bottom: 0.45rem; font-size: 0.55rem; }
+  .nav-rail { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .settings-system-link { min-height: 2.6rem; font-size: 0.72rem; }
+}
+@media (max-height: 620px) and (min-width: 641px) {
+  body[data-active-page="inflight"] .quick-status { inset-block-start: 2.9rem; }
+}
+
+/* Calm, unboxed field strip: facts remain visible without turning them into alerts. */
+body[data-active-page="inflight"] .video-overlay-controls button,
+body[data-active-page="inflight"] .nav-reveal,
+body[data-active-page="inflight"] .nav-close { min-height: 3rem; }
+body[data-active-page="inflight"] .nav-reveal { width: 3rem; }
+body[data-active-page="inflight"] .video-overlay-controls button { padding-inline: 0.65rem; font-size: 0.78rem; }
+body[data-active-page="inflight"] .quick-status {
+  inset: 3.9rem 0.8rem auto 4.2rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0;
+  max-width: none;
+  padding-block: 0.12rem;
+  border-block: 1px solid oklch(76% 0.01 240 / 0.2);
+}
+body[data-active-page="inflight"] .quick-status-item {
+  min-height: 2.5rem;
+  display: inline-grid;
+  grid-template-columns: auto auto minmax(0, auto);
+  align-items: center;
+  gap: 0.24rem;
+  padding: 0.25rem 0.48rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--video-fg);
+}
+body[data-active-page="inflight"] .quick-status-item + .quick-status-item { border-inline-start: 1px solid oklch(76% 0.01 240 / 0.24); }
+body[data-active-page="inflight"] .quick-status-mark { color: oklch(82% 0.01 240); font: 800 0.8rem/1 var(--font-mono); }
+body[data-active-page="inflight"] .quick-status-item[data-severity="problem"] .quick-status-mark,
+body[data-active-page="inflight"] .quick-status-item[data-severity="problem"] strong { color: oklch(81% 0.08 28); }
+body[data-active-page="inflight"] .quick-status-item[data-severity="attention"] .quick-status-mark,
+body[data-active-page="inflight"] .quick-status-item[data-severity="attention"] strong { color: oklch(84% 0.075 82); }
+body[data-active-page="inflight"] .quick-status-item > span.quick-label { color: oklch(78% 0.01 240); font-size: 0.76rem; white-space: nowrap; }
+body[data-active-page="inflight"] .quick-status-item strong { color: oklch(95% 0.008 240); font-size: 0.82rem; font-weight: 650; line-height: 1.2; white-space: nowrap; }
+body[data-active-page="inflight"] .cockpit-attention { inset-block-start: 7.1rem; max-width: min(56rem, calc(100% - 5rem)); }
+body[data-active-page="inflight"] #observe-page.is-focus .quick-status,
+body[data-active-page="inflight"] #observe-page.is-focus .video-heading-group { display: flex; opacity: 1; pointer-events: auto; }
+body[data-active-page="inflight"] #observe-page.is-focus .video-center h3 { font-size: clamp(1.55rem, 1.3rem + 0.65vw, 2rem); }
+body[data-active-page="inflight"] #observe-page.is-focus .video-center p { font-size: 1rem; }
+.mop-actions-toggle { min-width: 3rem; }
+.mop-action-dock[hidden] { display: none !important; }
+.mop-action-dock {
+  position: absolute;
+  z-index: 8;
+  inset: auto 0.8rem 3.2rem auto;
+  width: min(24rem, calc(100% - 1.6rem));
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.7rem;
+  border: 1px solid oklch(78% 0.01 240 / 0.48);
+  border-radius: 0.45rem;
+  background: oklch(16% 0.018 240 / 0.96);
+  color: var(--video-fg);
+  box-shadow: 0 0.35rem 1.2rem oklch(0% 0 0 / 0.28);
+}
+.mop-action-dock p { font-size: 0.8rem; line-height: 1.4; }
+.mop-action-dock .action-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.4rem; }
+.mop-action-dock button { min-height: 3rem; padding-inline: 0.4rem; color: var(--fg); font-size: 0.76rem; }
+body[data-active-page="inflight"] .video-bottom-hud { inset: auto 0.8rem 0.65rem; display: flex; justify-content: space-between; gap: 0.8rem; font: 650 0.76rem/1.4 var(--font-ui); text-align: start; }
+body[data-active-page="inflight"] .video-bottom-hud span { max-width: 48%; }
+body[data-active-page="inflight"] .video-bottom-hud span:first-child { text-align: start; }
+body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align: end; }
+
+@media (max-width: 640px) {
+  body[data-active-page="inflight"] .video-top-overlay { inset: 0.55rem 0.45rem auto 3.85rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0.3rem; }
+  body[data-active-page="inflight"] .video-heading-group { gap: 0.4rem; }
+  body[data-active-page="inflight"] .video-heading-group h3 { font-size: 0.8rem; }
+  body[data-active-page="inflight"] .video-heading-group .simulated-tag { min-height: 1.5rem; font-size: 0.65rem; }
+  body[data-active-page="inflight"] .video-overlay-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); justify-content: stretch; gap: 0.22rem; }
+  body[data-active-page="inflight"] .video-overlay-controls button { min-width: 0; min-height: 3rem; padding-inline: 0.24rem; font-size: 0.69rem; white-space: normal; }
+  body[data-active-page="inflight"] .quick-status {
+    inset: 7.1rem 0.42rem auto 0.42rem;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: stretch;
+    row-gap: 0;
+    padding-block: 0.16rem;
+  }
+  body[data-active-page="inflight"] #observe-page.is-focus .quick-status { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  body[data-active-page="inflight"] .quick-status-item {
+    min-height: 3rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: center;
+    align-items: baseline;
+    column-gap: 0.22rem;
+    row-gap: 0.02rem;
+    padding: 0.16rem 0.24rem;
+  }
+  body[data-active-page="inflight"] .quick-status-item:nth-child(4n + 1) { border-inline-start: 0; }
+  body[data-active-page="inflight"] .quick-status-item:nth-child(n + 5) { border-block-start: 1px solid oklch(76% 0.01 240 / 0.16); }
+  body[data-active-page="inflight"] .quick-status-mark { grid-column: 1; grid-row: 1 / 3; align-self: center; }
+  body[data-active-page="inflight"] .quick-status-item > span.quick-label { grid-column: 2; grid-row: 1; font-size: 0.7rem; }
+  body[data-active-page="inflight"] .quick-status-item strong { grid-column: 2; grid-row: 2; font-size: 0.78rem; white-space: normal; overflow-wrap: anywhere; }
+  body[data-active-page="inflight"] .cockpit-attention { inset: 14.2rem 0.45rem auto 0.45rem; max-width: calc(100% - 0.9rem); }
+  body[data-active-page="inflight"] .cockpit-attention strong { font-size: 0.78rem; }
+  body[data-active-page="inflight"] .cockpit-attention small { font-size: 0.72rem; }
+  body[data-active-page="inflight"] .video-center { width: 94%; }
+  body[data-active-page="inflight"] .video-center h3 { font-size: 1.22rem; }
+  body[data-active-page="inflight"] .video-center p { font-size: 0.82rem; }
+  body[data-active-page="inflight"] .video-bottom-hud { inset: auto 0.48rem calc(0.4rem + env(safe-area-inset-bottom)); display: grid; grid-template-columns: 1fr; gap: 0.12rem; font-size: 0.72rem; }
+  body[data-active-page="inflight"] .video-bottom-hud span { max-width: 100%; text-align: start !important; }
+  body[data-active-page="inflight"] .mop-action-dock { inset-inline: 0.5rem; inset-block-end: 4rem; width: auto; }
+  body[data-active-page="inflight"] .mop-action-dock .action-row { grid-template-columns: 1fr; }
+  body[data-active-page="inflight"] .nav-close { min-height: 3rem; }
+}
+@media (min-width: 641px) and (max-width: 1100px) {
+  body[data-active-page="inflight"] .quick-status {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: stretch;
+  }
+  body[data-active-page="inflight"] #observe-page.is-focus .quick-status { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  body[data-active-page="inflight"] .quick-status-item {
+    min-height: 2.6rem;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto auto;
+    align-content: center;
+    align-items: baseline;
+    column-gap: 0.3rem;
+    row-gap: 0.02rem;
+    padding: 0.18rem 0.38rem;
+  }
+  body[data-active-page="inflight"] .quick-status-mark { grid-column: 1; grid-row: 1 / 3; align-self: center; }
+  body[data-active-page="inflight"] .quick-status-item > span.quick-label { grid-column: 2; grid-row: 1; }
+  body[data-active-page="inflight"] .quick-status-item strong { grid-column: 2; grid-row: 2; white-space: normal; }
+  body[data-active-page="inflight"] .quick-status-item:nth-child(4n + 1) { border-inline-start: 0; }
+  body[data-active-page="inflight"] .quick-status-item:nth-child(n + 5) { border-block-start: 1px solid oklch(76% 0.01 240 / 0.16); }
+  body[data-active-page="inflight"] .cockpit-attention { inset-block-start: 9.75rem; max-width: min(56rem, calc(100% - 5rem)); }
+}
+@media (max-height: 620px) and (min-width: 641px) {
+  body[data-active-page="inflight"] .quick-status { inset-block-start: 3.65rem; }
+  body[data-active-page="inflight"] .cockpit-attention { inset-block-start: 9.55rem; }
+}
   </style>
 </head>
-<body>
+<body data-active-page="inflight">
   <a class="skip-link" href="#main-content" data-od-id="skip-to-main">본문으로 바로가기</a>
   <div class="app-shell" data-od-id="app-shell">
-    <nav class="nav-rail" aria-label="주 메뉴" data-od-id="primary-navigation">
-      <div class="rail-brand" aria-label="KSI Safety Edge">
+    <button class="nav-reveal" type="button" id="nav-reveal" aria-label="주 메뉴 열기" aria-expanded="false" aria-controls="primary-navigation">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
+    </button>
+    <button class="nav-backdrop" type="button" aria-label="메뉴 닫기" hidden></button>
+    <nav class="nav-rail" id="primary-navigation" aria-label="주 메뉴" inert data-od-id="primary-navigation">
+      <div class="rail-brand">
         <div class="brand-mark" aria-hidden="true">SE</div>
+        <button class="nav-close" type="button" aria-label="주 메뉴 닫기">× <span>닫기</span></button>
       </div>
-      <button class="nav-item is-active" type="button" data-page-target="observe" aria-current="page" data-od-id="nav-observe">
-        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"></circle><circle cx="12" cy="12" r="2.3"></circle><line x1="12" y1="1.8" x2="12" y2="5"></line><line x1="12" y1="19" x2="12" y2="22.2"></line></svg>
-        <span><span class="nav-name">조종</span><span class="nav-sub">관측</span></span>
+      <p class="nav-group-label">현장 기능</p>
+      <button class="nav-item is-active" type="button" data-page-target="inflight" aria-current="page" data-od-id="nav-inflight">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12 21 5l-7 16-3-7-8-2Z"></path><path d="m11 14 5-5"></path></svg>
+        <span><span class="nav-name">조종</span><span class="nav-sub">라이브 · 관측</span></span>
       </button>
-      <button class="nav-item" type="button" data-page-target="mission" aria-current="false" data-od-id="nav-mission">
-        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5.5h14v14H5z"></path><path d="M8 9h8M8 12.5h8M8 16h4"></path><path d="M8 2.5v3M16 2.5v3"></path></svg>
-        <span><span class="nav-name">임무</span><span class="nav-sub">준비</span></span>
+      <button class="nav-item" type="button" data-page-target="preflight" aria-current="false" data-od-id="nav-preflight">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5h16v15H4z"></path><path d="M8 3.5v4M16 3.5v4M7.5 11h9M7.5 14.5h6"></path></svg>
+        <span><span class="nav-name">임무</span><span class="nav-sub">계획 · 준비</span></span>
       </button>
-      <button class="nav-item" type="button" data-page-target="review" aria-current="false" data-od-id="nav-review">
-        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4.5h16v15H4z"></path><path d="M7.5 8h9M7.5 11.5h6M7.5 15h3.5"></path><circle cx="17" cy="16.5" r="2.2"></circle></svg>
-        <span><span class="nav-name">비행 기록</span><span class="nav-sub">검토</span></span>
+      <button class="nav-item" type="button" data-page-target="postflight" aria-current="false" data-od-id="nav-postflight">
+        <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14v15H5z"></path><path d="M8 8h8M8 11.5h8M8 15h5"></path></svg>
+        <span><span class="nav-name">기록</span><span class="nav-sub">비행 · 사건</span></span>
       </button>
       <button class="nav-item" type="button" data-page-target="evidence" aria-current="false" data-od-id="nav-evidence">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h14v15H5z"></path><path d="M8 8h8M8 11.5h8M8 15h5"></path><path d="m14.5 17 1.6 1.6 3.1-3.5"></path></svg>
-        <span><span class="nav-name">증거</span><span class="nav-sub">동기화</span></span>
+        <span><span class="nav-name">증거</span><span class="nav-sub">로컬 · 동기화</span></span>
       </button>
       <button class="nav-item" type="button" data-page-target="settings" aria-current="false" data-od-id="nav-settings">
         <svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="m19 13.5 1.2 1-.9 1.7-1.5-.3-1.5 1-.2 1.5h-2l-.7-1.4-1.7-.3-1.2.9-1.7-.9.3-1.5-1-1.5-1.5-.2v-2l1.4-.7.3-1.7-.9-1.2.9-1.7 1.5.3 1.5-1 .2-1.5h2l.7 1.4 1.7.3 1.2-.9 1.7.9-.3 1.5 1 1.5 1.5.2v2l-1.4.7z"></path></svg>
-        <span><span class="nav-name">설정</span><span class="nav-sub">개발</span></span>
+        <span><span class="nav-name">설정</span><span class="nav-sub">조종사 · 시스템</span></span>
       </button>
       <div class="nav-spacer"></div>
       <div class="rail-note">RC / 7″</div>
@@ -526,157 +1045,131 @@ tbody tr:last-child td { border-block-end: 0; }
           <div class="brand-mark" aria-hidden="true">SE</div>
           <div class="wordmark-copy">
             <strong>KSI Safety Edge</strong>
-            <small>현장 조종</small>
+            <small id="active-page-name">조종 · 라이브 뷰</small>
           </div>
         </div>
         <div class="topbar-meta">
-          <span class="simulated-tag" aria-label="시뮬레이션 데이터">[SIMULATED]</span>
+          <span class="simulated-tag">[SIMULATED]</span>
           <span class="time-note">UTC 11:42:18 · RC 수신시각(근사)</span>
-          <div class="scenario-switch" role="group" aria-label="상태 예시 전환">
-            <span class="scenario-label">상태 예시</span>
-            <div class="segmented">
-              <button type="button" class="scenario-button" data-scenario="normal" aria-pressed="true" data-od-id="scenario-normal">정상</button>
-              <button type="button" class="scenario-button" data-scenario="no-flight" aria-pressed="false" data-od-id="scenario-no-flight">비행 없음</button>
-              <button type="button" class="scenario-button" data-scenario="problem" aria-pressed="false" data-od-id="scenario-problem">문제</button>
-            </div>
-          </div>
+          <span class="rc-online-tag"><span class="status-dot" aria-hidden="true"></span> RC 로컬 화면</span>
         </div>
       </header>
 
       <main id="main-content" data-od-id="main-content">
-        <section class="page is-active" id="observe-page" data-page-panel="observe" aria-labelledby="observe-title" data-od-id="page-observe">
-          <div class="page-heading">
-            <h2 id="observe-title" data-od-id="heading-observe" tabindex="-1">조종(관측)</h2>
+        <section class="page is-active" id="observe-page" data-page-panel="inflight" aria-labelledby="observe-title" data-od-id="page-observe">
+            <div class="page-heading phase-heading">
+            <div><p class="eyebrow">LIVE FLIGHT</p><h2 id="observe-title" data-od-id="heading-observe" tabindex="-1">조종</h2></div>
+                <div class="flight-heading-meta"><span class="mono" id="observe-flight-id">SIM-FLT-024</span><span class="simulated-tag">[SIMULATED]</span></div>
           </div>
 
           <div class="observe-cockpit" data-od-id="observe-content">
-          <section class="operator-rail" aria-labelledby="status-board-title" data-od-id="operator-status">
-            <div class="status-board-head">
-              <h3 id="status-board-title" data-od-id="heading-status-board-title">운용 상태 <span class="sr-only">기체, MOP 링크, 인터넷 상태는 각각 독립 보고입니다.</span></h3>
-              <div class="status-key" aria-label="심각도 표기">
-                <span class="key-item"><span class="key-mark">■</span> 문제</span>
-                <span class="key-item"><span class="key-mark">▲</span> 주의</span>
-                <span class="key-item"><span class="key-mark">·</span> 정보</span>
+            <section class="video-stage" aria-labelledby="video-title" data-od-id="live-video-region">
+              <div class="video-plane" id="video-plane" aria-hidden="true"></div>
+              <div class="quick-status" role="group" aria-label="KSI 기록 상태 · 각 출처별 독립 상태 · 시뮬레이션 예시">
+                <div class="quick-status-item" data-quick-index="0" data-severity="info"><span class="quick-status-mark" aria-hidden="true">·</span><span class="quick-label">KSI 기록</span><strong>로컬 기록 중</strong></div>
+                <div class="quick-status-item" data-quick-index="1" data-severity="info"><span class="quick-status-mark" aria-hidden="true">·</span><span class="quick-label">MOP</span><strong>정상</strong></div>
+                <div class="quick-status-item" data-quick-index="2" data-severity="info"><span class="quick-status-mark" aria-hidden="true">·</span><span class="quick-label">기체</span><strong>연결</strong></div>
+                <div class="quick-status-item" data-quick-index="3" data-severity="info"><span class="quick-status-mark" aria-hidden="true">·</span><span class="quick-label">인터넷</span><strong>없음</strong></div>
+                <div class="quick-status-item" data-video-quick data-severity="info"><span class="quick-status-mark" aria-hidden="true">·</span><span class="quick-label">영상</span><strong id="quick-video-state">미연결</strong></div>
+                <div class="quick-status-item" data-quick-index="4" data-severity="info"><span class="quick-status-mark" aria-hidden="true">·</span><span class="quick-label">레코더</span><strong>저장 샘플 0</strong></div>
+                <div class="quick-status-item" data-quick-index="5" data-severity="info"><span class="quick-status-mark" aria-hidden="true">·</span><span class="quick-label">로컬 증거</span><strong>미동기화 3건</strong></div>
+                <div class="quick-status-item" data-quick-index="6" data-severity="info"><span class="quick-status-mark" aria-hidden="true">·</span><span class="quick-label">관측 수신</span><strong>최근 수신 2.1초</strong></div>
               </div>
-            </div>
-            <div class="status-grid" id="status-grid">
-              <article class="status-item" data-status-index="0" data-severity="info" data-od-id="status-flight">
-                <div class="status-topline"><span class="status-label">비행 상태</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div>
-                <strong class="status-value">비행 진행 중</strong><span class="status-detail">활성 비행 · SIM-FLT-024</span><span class="status-action">조치: 추가 안내 없음</span>
-              </article>
-              <article class="status-item" data-status-index="1" data-severity="info" data-od-id="status-mop">
-                <div class="status-topline"><span class="status-label">MOP 링크</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div>
-                <strong class="status-value">정상</strong><span class="status-detail">하트비트 3.4초 전 · [SIMULATED]</span><span class="status-action">조치: 조치 안내 없음</span>
-              </article>
-              <article class="status-item" data-status-index="2" data-severity="info" data-od-id="status-aircraft">
-                <div class="status-topline"><span class="status-label">기체</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div>
-                <strong class="status-value">연결</strong><span class="status-detail">링크 보고값 · 미보고면 알 수 없음</span><span class="status-action">조치: 조치 안내 없음</span>
-              </article>
-              <article class="status-item" data-status-index="3" data-severity="info" data-od-id="status-internet">
-                <div class="status-topline"><span class="status-label">인터넷</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div>
-                <strong class="status-value">없음</strong><span class="status-detail">ConnectivityManager · 미검증이면 인터넷 미검증</span><span class="status-action">조치: 오프라인 기록 유지</span>
-              </article>
-              <article class="status-item" data-status-index="4" data-severity="info" data-od-id="status-recorder">
-                <div class="status-topline"><span class="status-label">레코더</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div>
-                <strong class="status-value">녹화 중</strong><span class="status-detail">VideoRecorder 상태</span><span class="status-action">조치: 상태 유지</span>
-              </article>
-              <article class="status-item" data-status-index="5" data-severity="info" data-od-id="status-evidence">
-                <div class="status-topline"><span class="status-label">로컬 증거</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div>
-                <strong class="status-value">미동기화 3건</strong><span class="status-detail">로컬 스토어 카운트</span><span class="status-action">조치: 자동 동기화 처리 · 서버 상태 추측 금지</span>
-              </article>
-              <article class="status-item" data-status-index="6" data-severity="info" data-od-id="status-ai">
-                <div class="status-topline"><span class="status-label">AI 관측</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div>
-                <strong class="status-value">최근 관측 2.1초</strong><span class="status-detail">관측 나이(실측) · 참고 기준 5초</span><span class="status-action">조치: 지연 시 MOP 링크·기체 상태 확인</span>
-              </article>
-              <article class="status-item" data-status-index="7" data-severity="info" data-od-id="status-summary">
-                <div class="status-topline"><span class="status-label">최근 요약</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div>
-                <strong class="status-value">사건 2건 · 공백 0프레임</strong><span class="status-detail">직전 요약 · SIM-FLT-024</span><span class="status-action">사건 0건 — 정상 기록일 수 있음 / 안전 확인 아님</span>
-              </article>
-            </div>
-          </section>
-
-          <section class="video-stage" aria-labelledby="video-title" data-od-id="live-video-region">
-            <div class="video-plane" id="video-plane" aria-hidden="true"></div>
-            <div class="video-top-overlay">
-              <div class="video-heading-group">
-                <h3 id="video-title" data-od-id="heading-video">라이브 뷰</h3>
-                <span class="hud-pill">VIDEO / MSDK</span>
-                <span class="simulated-tag">[SIMULATED]</span>
+              <div class="cockpit-attention" id="cockpit-attention" role="status" aria-live="polite" hidden>
+                <span class="cockpit-attention-mark" aria-hidden="true">▲</span>
+                <span><strong id="cockpit-attention-title"></strong> <small id="cockpit-attention-copy"></small></span>
               </div>
-              <div class="video-overlay-controls" role="group" aria-label="영상 제어">
-                <span class="state-label" id="video-state">연결 대기</span>
-                <button type="button" data-action="video-connect" data-od-id="connect-video">영상 연결</button>
-                <button type="button" data-action="video-disconnect" data-od-id="disconnect-video">영상 해제</button>
-              </div>
-            </div>
-                <div class="video-center">
-                  <div class="video-signal" aria-hidden="true">
-                    <span style="--level:0.5rem"></span><span style="--level:1rem"></span><span style="--level:1.55rem"></span><span style="--level:0.85rem"></span><span style="--level:1.3rem"></span><span style="--level:0.6rem"></span><span style="--level:1.7rem"></span><span style="--level:1.05rem"></span><span style="--level:0.45rem"></span><span style="--level:1.35rem"></span><span style="--level:0.8rem"></span>
-                  </div>
-                  <h3 data-od-id="heading-extra-1">실제 수신 프레임 없음</h3>
-                  <p>프레임↔관측 매핑 미검증 · 관측 오버레이 미표시</p>
+              <div class="video-top-overlay">
+                <div class="video-heading-group">
+                  <h3 id="video-title" data-od-id="heading-video">라이브 뷰</h3>
+                  <span class="hud-pill">DJI / MSDK</span>
+                  <span class="simulated-tag">[SIMULATED]</span>
                 </div>
-            <div class="video-bottom-hud"><span>수신 프레임: 알 수 없음</span></div>
-            <div class="mop-control-dock" role="group" aria-labelledby="mop-actions-title" data-od-id="mop-actionbar">
-              <h4 id="mop-actions-title" data-od-id="heading-mop-actions">MOP</h4>
-              <div class="action-row">
-                <button class="button-primary" type="button" data-action="mop-connect" data-od-id="connect-mop">연결</button>
-                <button type="button" data-action="mop-disconnect" data-od-id="disconnect-mop">연결 해제</button>
-                <button type="button" data-action="retry-unacked" data-od-id="retry-unacked">미확인 재전송</button>
+                <div class="video-overlay-controls" role="group" aria-label="영상 제어">
+                  <span class="state-label" id="video-state">미연결</span>
+                  <button type="button" data-action="video-connect" data-od-id="connect-video">영상 연결</button>
+                  <button type="button" data-action="video-disconnect" data-od-id="disconnect-video">해제</button>
+                  <button type="button" data-toggle-focus aria-pressed="false">화면 확대</button>
+                  <button class="mop-actions-toggle" type="button" id="mop-actions-toggle" data-toggle-mop-actions aria-expanded="false" aria-controls="mop-action-dock" aria-label="MOP 링크 조작 열기">MOP</button>
+                </div>
               </div>
-            </div>
-          </section>
-
-          <aside class="observe-right-rail" aria-label="관측 보조 정보">
-            <section class="cockpit-module" aria-labelledby="link-metrics-title" data-od-id="link-traffic-summary">
-              <div class="cockpit-module-heading"><h3 id="link-metrics-title" data-od-id="heading-link-metrics">MOP 전송</h3><span>지연 ▲: Manifold 상태 확인</span></div>
-              <div class="link-metrics" aria-label="MOP 전송 요약">
-                <div class="metric" data-od-id="mop-metric-1"><span class="metric-label">수신 · 저장</span><strong class="metric-value">24</strong></div>
-                <div class="metric" data-od-id="mop-metric-2"><span class="metric-label">수신 · 중복</span><strong class="metric-value">1</strong></div>
-                <div class="metric" data-od-id="mop-metric-3"><span class="metric-label">수신 · 실패</span><strong class="metric-value">0</strong></div>
-                <div class="metric" data-od-id="mop-metric-4"><span class="metric-label">송신 · pending / acked</span><strong class="metric-value">2 / 18</strong></div>
+              <div class="video-center">
+                <span class="video-center-kicker"><span class="status-dot" aria-hidden="true"></span><span id="video-kicker">DJI 영상 · 미수신 · [SIMULATED]</span></span>
+                <h3 id="video-center-title" data-od-id="heading-extra-1">라이브 영상 대기 중</h3>
+                <p id="video-center-copy">실제 프레임 입력·표시 상태는 확인할 수 없습니다. 비행 조종은 DJI Pilot 2, KSI는 관측·기록 보조입니다.</p>
               </div>
-              <p class="recent-receive">최근 수신 <strong>11:42:04</strong></p>
+              <div class="video-bottom-hud">
+                <span>DJI Pilot 2 · 비행 조종 기준</span>
+                <span>KSI · 관측·기록 보조 · 영상 프레임 상태는 별도</span>
+              </div>
+              <div class="mop-action-dock" id="mop-action-dock" role="group" aria-label="MOP 링크 조작 예시" hidden>
+                <p><strong>MOP 링크</strong> · 연결/전송 조작은 예시이며 실제 송신하지 않습니다 · [SIMULATED]</p>
+                <div class="action-row">
+                  <button class="button-primary" type="button" data-action="mop-connect">연결</button>
+                  <button type="button" data-action="mop-disconnect">연결 해제</button>
+                  <button type="button" data-action="retry-unacked">미확인 재전송</button>
+                </div>
+              </div>
             </section>
 
-            <section class="cockpit-module" aria-labelledby="feed-title" data-od-id="ai-event-feed">
-              <div class="cockpit-module-heading"><h3 id="feed-title" data-od-id="heading-event-feed">AI 관측 피드</h3><span>사건 신호 · 안전 판정 아님</span></div>
-              <ul class="feed-list">
-                <li class="feed-item" data-od-id="event-detect-example">
-                  <span class="feed-type detect">[DETECT]</span>
-                  <span class="feed-copy"><strong>객체 탐지 · 예시 이벤트</strong><small>Edge +00:14.228 · [SIMULATED]</small></span>
-                </li>
-                <li class="feed-item" data-od-id="event-shadow-example">
-                  <span class="feed-type shadow">[SHADOW]</span>
-                  <span class="feed-copy"><strong>위험 후보 · 경고 아님</strong><small>Edge +00:16.804 · [SIMULATED]</small></span>
-                </li>
-              </ul>
-              <p class="feed-footnote">Edge 모노토닉 시각은 변환하지 않습니다.</p>
-            </section>
-
-            <section class="cockpit-module" aria-labelledby="evidence-summary-title" data-od-id="evidence-sync-summary">
-              <div class="cockpit-module-heading"><h3 id="evidence-summary-title" data-od-id="heading-evidence-summary">증거 · 동기화</h3><span>로컬 우선</span></div>
-              <div class="evidence-summary">
-                <div class="evidence-line"><span>로컬 완전성</span><strong>알 수 없음</strong></div>
-                <div class="evidence-line"><span>Core 설정</span><strong>미설정</strong></div>
-                <div class="evidence-line"><span>서버 상태</span><strong>알 수 없음</strong></div>
-              </div>
-              <button class="evidence-link" type="button" data-page-link="evidence" data-od-id="open-evidence">증거·동기화 열기</button>
-            </section>
-          </aside>
           </div>
+
+          <details class="system-details" id="system-details">
+            <summary><span><strong>운용 세부</strong><small>기체 · MOP · 인터넷 · 레코더 · 로컬 증거 · 전송 지표</small></span><span class="details-action">펼치기</span></summary>
+            <div class="system-detail-layout">
+              <section class="operator-rail" aria-labelledby="status-board-title" data-od-id="operator-status">
+                <div class="status-board-head">
+                  <h3 id="status-board-title" data-od-id="heading-status-board-title">운용 상태 <span class="sr-only">기체, MOP 링크, 인터넷 상태는 각각 독립 보고입니다.</span></h3>
+                  <div class="status-key" aria-label="심각도 표기">
+                    <span class="key-item"><span class="key-mark">■</span> 문제</span>
+                    <span class="key-item"><span class="key-mark">▲</span> 주의</span>
+                    <span class="key-item"><span class="key-mark">·</span> 정보</span>
+                  </div>
+                </div>
+                <div class="status-grid" id="status-grid">
+                  <article class="status-item" data-status-index="0" data-severity="info" data-od-id="status-flight"><div class="status-topline"><span class="status-label">기록 상태</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">로컬 기록 중</strong><span class="status-detail">활성 로컬 기록 · SIM-FLT-024</span><span class="status-action">조치: 추가 안내 없음</span></article>
+                  <article class="status-item" data-status-index="1" data-severity="info" data-od-id="status-mop"><div class="status-topline"><span class="status-label">MOP 링크</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">정상</strong><span class="status-detail">하트비트 3.4초 전 · [SIMULATED]</span><span class="status-action">조치: 조치 안내 없음</span></article>
+                  <article class="status-item" data-status-index="2" data-severity="info" data-od-id="status-aircraft"><div class="status-topline"><span class="status-label">기체</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">연결</strong><span class="status-detail">링크 보고값 · 미보고면 알 수 없음</span><span class="status-action">조치: 조치 안내 없음</span></article>
+                  <article class="status-item" data-status-index="3" data-severity="info" data-od-id="status-internet"><div class="status-topline"><span class="status-label">인터넷</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">없음</strong><span class="status-detail">ConnectivityManager · 미검증이면 인터넷 미검증</span><span class="status-action">조치: 오프라인 기록 유지</span></article>
+                  <article class="status-item" data-status-index="4" data-severity="info" data-od-id="status-recorder"><div class="status-topline"><span class="status-label">레코더</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">저장 샘플 0</strong><span class="status-detail">녹화 요청 예시 · writer 수락 샘플 0 · [SIMULATED]</span><span class="status-action">조치: 저장 샘플 확인 전 실제 쓰기로 표시하지 않음</span></article>
+                  <article class="status-item" data-status-index="5" data-severity="info" data-od-id="status-evidence"><div class="status-topline"><span class="status-label">로컬 증거</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">미동기화 3건</strong><span class="status-detail">로컬 스토어 카운트</span><span class="status-action">조치: 자동 동기화 처리 · 서버 상태 추측 금지</span></article>
+                  <article class="status-item" data-status-index="6" data-severity="info" data-od-id="status-ai"><div class="status-topline"><span class="status-label">AI 관측</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">최근 관측 2.1초</strong><span class="status-detail">관측 나이(실측) · 참고 기준 5초</span><span class="status-action">조치: 지연 시 MOP 링크·기체 상태 확인</span></article>
+                  <article class="status-item" data-status-index="7" data-severity="info" data-od-id="status-summary"><div class="status-topline"><span class="status-label">최근 요약</span><span class="severity"><span class="severity-symbol" aria-hidden="true">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">사건 2건 · 공백 0프레임</strong><span class="status-detail">직전 요약 · SIM-FLT-024</span><span class="status-action">사건 0건 — 정상 기록일 수 있음 / 안전 확인 아님</span></article>
+                </div>
+              </section>
+              <section class="panel system-mop-module" aria-labelledby="link-metrics-title" data-od-id="link-traffic-summary">
+                <div class="panel-heading"><div><h3 id="link-metrics-title" data-od-id="heading-link-metrics">MOP 전송 지표</h3><span class="subline">지연 ▲: Manifold 상태 확인</span></div><span class="simulated-tag">[SIMULATED]</span></div>
+                <div class="link-metrics" aria-label="MOP 전송 요약">
+                  <div class="metric" data-od-id="mop-metric-1"><span class="metric-label">수신 · 저장</span><strong class="metric-value">24</strong></div>
+                  <div class="metric" data-od-id="mop-metric-2"><span class="metric-label">수신 · 중복</span><strong class="metric-value">1</strong></div>
+                  <div class="metric" data-od-id="mop-metric-3"><span class="metric-label">수신 · 실패</span><strong class="metric-value">0</strong></div>
+                  <div class="metric" data-od-id="mop-metric-4"><span class="metric-label">송신 · pending / acked</span><strong class="metric-value">2 / 18</strong></div>
+                </div>
+                <p class="recent-receive">최근 수신 <strong>11:42:04</strong> · RC 수신시각(근사)</p>
+                <div class="action-group">
+                  <h3 id="mop-actions-title" data-od-id="heading-mop-actions">MOP 링크 조작 예시</h3>
+                  <div class="action-row"><button class="button-primary" type="button" data-action="mop-connect" data-od-id="connect-mop">연결</button><button type="button" data-action="mop-disconnect" data-od-id="disconnect-mop">연결 해제</button><button type="button" data-action="retry-unacked" data-od-id="retry-unacked">미확인 재전송</button></div>
+                </div>
+              </section>
+              <section class="panel system-evidence-module" aria-labelledby="evidence-summary-title" data-od-id="evidence-sync-summary">
+                <div class="panel-heading"><div><h3 id="evidence-summary-title" data-od-id="heading-evidence-summary">증거 · 동기화</h3><span class="subline">로컬 우선</span></div></div>
+                <div class="evidence-summary"><div class="evidence-line"><span>로컬 완전성</span><strong>알 수 없음</strong></div><div class="evidence-line"><span>Core 설정</span><strong>미설정</strong></div><div class="evidence-line"><span>서버 상태</span><strong>알 수 없음</strong></div></div>
+                <button class="evidence-link" type="button" data-page-link="evidence" data-od-id="open-evidence">유틸리티 열기</button>
+              </section>
+            </div>
+          </details>
         </section>
 
-        <section class="page" id="mission-page" data-page-panel="mission" aria-labelledby="mission-title" data-od-id="page-mission" hidden>
+        <section class="page" id="mission-page" data-page-panel="preflight" aria-labelledby="mission-title" data-od-id="page-mission" hidden>
           <div class="page-heading">
-            <div><p class="eyebrow">02 / 임무</p><h2 id="mission-title" data-od-id="heading-mission" tabindex="-1">임무 준비</h2></div>
-            <p class="page-summary">오프라인에서도 준비 상태를 확인합니다. 모든 값은 [SIMULATED].</p>
+            <div><p class="eyebrow">01 / PRE-FLIGHT</p><h2 id="mission-title" data-od-id="heading-mission" tabindex="-1">비행 전 준비</h2></div>
+            <p class="page-summary">KSI 기록 준비만 확인 · 비행 안전 승인이 아닙니다 · [SIMULATED]</p>
           </div>
           <div class="two-column">
             <section class="panel" aria-labelledby="mission-summary-title" data-od-id="mission-overview">
               <div class="panel-heading"><div><h3 id="mission-summary-title" data-od-id="heading-mission-summary-title">현재 임무</h3><span class="subline">현재 상태 예시 · 조종 화면과 같은 비행</span></div><span class="simulated-tag">[SIMULATED]</span></div>
               <div class="content-pad">
-                <p class="notice" id="mission-status-note" aria-live="polite"><strong id="mission-status-label">비행 진행 중</strong> · <span id="mission-status-copy">활성 비행 SIM-FLT-024가 있습니다.</span></p>
+                <p class="notice" id="mission-status-note" aria-live="polite"><strong id="mission-status-label">로컬 기록 중</strong> · <span id="mission-status-copy">활성 로컬 기록 SIM-FLT-024가 있습니다.</span></p>
                 <div class="divider"></div>
                 <div class="mission-overview">
                   <div class="data-cell" data-od-id="mission-data-1"><span>사이트</span><strong>SIM-SITE-A</strong></div>
@@ -684,7 +1177,7 @@ tbody tr:last-child td { border-block-end: 0; }
                   <div class="data-cell" data-od-id="mission-data-3"><span>미션 리비전</span><strong>3</strong></div>
                   <div class="data-cell" data-od-id="mission-data-4"><span>구역</span><strong>A</strong></div>
                   <div class="data-cell" data-od-id="mission-data-5"><span>비행 ID</span><strong id="mission-flight-id">SIM-FLT-024</strong></div>
-                  <div class="data-cell" data-od-id="mission-data-6"><span>비행 상태</span><strong id="mission-flight-state">비행 없음</strong></div>
+                  <div class="data-cell" data-od-id="mission-data-6"><span>기록 상태</span><strong id="mission-flight-state">기록 없음</strong></div>
                   <div class="data-cell" data-od-id="mission-data-7"><span>시작 시각</span><strong>알 수 없음</strong></div>
                   <div class="data-cell" data-od-id="mission-data-8"><span>시각 기준</span><strong>RC 수신시각(근사)</strong></div>
                 </div>
@@ -708,16 +1201,16 @@ tbody tr:last-child td { border-block-end: 0; }
 
             <div class="stack">
               <section class="panel" aria-labelledby="flight-actions-title" data-od-id="flight-actions">
-                <div class="panel-heading"><div><h3 id="flight-actions-title" data-od-id="heading-flight-actions-title">비행 제어</h3><span class="subline">예시 동작만 표시 · 실제 비행 제어 없음</span></div></div>
+                <div class="panel-heading"><div><h3 id="flight-actions-title" data-od-id="heading-flight-actions-title">기록 · 관측 세션</h3><span class="subline">예시 동작만 표시 · 실제 기체 비행 제어 없음</span></div></div>
                 <div class="action-group">
                   <div class="action-row">
-                    <button type="button" data-action="start-flight" data-od-id="start-flight">비행 시작</button>
-                    <button type="button" data-action="mission-start" data-od-id="mission-start">시작</button>
-                    <button type="button" data-action="mission-stop" data-od-id="mission-stop">정지</button>
-                    <button type="button" data-action="end-flight" data-od-id="end-flight">비행 종료</button>
+                    <button type="button" data-action="start-flight" data-od-id="start-flight">로컬 기록 시작</button>
+                    <button type="button" data-action="mission-start" data-od-id="mission-start">관측 세션 시작</button>
+                    <button type="button" data-action="mission-stop" data-od-id="mission-stop">관측 세션 정지</button>
+                    <button type="button" data-action="end-flight" data-od-id="end-flight">로컬 기록 종료</button>
                   </div>
                 </div>
-                <p class="inline-state">현재 예시 상태 <strong id="mission-action-state">비행 없음</strong></p>
+                <p class="inline-state">현재 예시 상태 <strong id="mission-action-state">기록 없음</strong></p>
               </section>
               <section class="panel" aria-labelledby="offline-note-title" data-od-id="offline-note">
                 <div class="panel-heading"><h3 id="offline-note-title" data-od-id="heading-offline-note-title">현장 기록 원칙</h3></div>
@@ -736,74 +1229,93 @@ tbody tr:last-child td { border-block-end: 0; }
           <p class="page-footer">모든 제어 버튼은 화면 시연용이며 실제 임무·기체·서버에 변경을 보내지 않습니다.</p>
         </section>
 
-        <section class="page" id="review-page" data-page-panel="review" aria-labelledby="review-title" data-od-id="page-review" hidden>
+        <section class="page" id="review-page" data-page-panel="postflight" aria-labelledby="review-title" data-od-id="page-review" hidden>
           <div class="page-heading">
-            <div><p class="eyebrow">03 / 비행 기록</p><h2 id="review-title" data-od-id="heading-review" tabindex="-1">비행 기록(검토)</h2></div>
-            <p class="page-summary">로컬 우선 · 항목 이동과 의견 기록은 추가 기록형 예시입니다.</p>
+            <div><p class="eyebrow">03 / POST-FLIGHT</p><h2 id="review-title" data-od-id="heading-review" tabindex="-1">비행 후 검토</h2></div>
+            <p class="page-summary">로컬 비행 선택 · 상세 · 증거 · 동기화 상태</p>
           </div>
-          <div class="two-column">
-            <section class="panel" aria-labelledby="flight-detail-title" data-od-id="flight-detail">
-              <div class="panel-heading"><div><h3 id="flight-detail-title" data-od-id="heading-flight-detail-title">비행 상세</h3><span class="subline">목록 이동 · [SIMULATED]</span></div><span class="state-label" id="review-flight-index">1 / 2</span></div>
-              <div class="content-pad">
-                <div class="review-controls">
-                  <button type="button" data-action="previous-flight" data-od-id="previous-flight">이전 비행</button>
-                  <button type="button" data-action="next-flight" data-od-id="next-flight">다음 비행</button>
-                </div>
-                <div class="divider"></div>
-                <dl class="detail-list">
-                  <div class="detail-row"><dt>비행 ID</dt><dd class="mono" id="review-flight-id">SIM-FLT-024</dd></div>
-                  <div class="detail-row"><dt>비행 상태</dt><dd id="review-flight-state">검토 가능 · 로컬</dd></div>
-                  <div class="detail-row"><dt>사건 수</dt><dd id="review-event-count">2건 · SIMULATED</dd></div>
-                  <div class="detail-row"><dt>증거 수</dt><dd>3건 · 로컬 카운트 예시</dd></div>
-                  <div class="detail-row"><dt>시작 시각</dt><dd>알 수 없음 · RC 수신시각(근사) 기준</dd></div>
-                </dl>
+          <div class="postflight-workspace">
+            <aside class="flight-list-pane panel" aria-labelledby="flight-list-title">
+              <div class="panel-heading"><div><h3 id="flight-list-title">로컬 비행 목록</h3><span class="subline">기기 내 기록 예시</span></div><span class="simulated-tag">[SIMULATED]</span></div>
+              <div class="flight-choice-list" role="group" aria-label="검토할 비행 선택">
+                <button class="flight-choice is-selected" type="button" data-flight-select="0" aria-pressed="true"><span class="flight-choice-top"><strong>SIM-FLT-024</strong><span>선택됨</span></span><span>검토 가능 · 로컬</span><small>사건 2건 · 증거 3건</small></button>
+                  <button class="flight-choice" type="button" data-flight-select="1" aria-pressed="false"><span class="flight-choice-top"><strong>SIM-FLT-023</strong><span>선택</span></span><span>종료 · 로컬</span><small>사건 2건 · 증거 수 미확인</small></button>
+                  <button class="flight-choice" type="button" data-flight-select="2" aria-pressed="false"><span class="flight-choice-top"><strong>SIM-FLT-022</strong><span>선택</span></span><span>종료 · 로컬</span><small>사건 0건 · 증거 수 미확인</small></button>
               </div>
-            </section>
+              <p class="flight-list-note">실제 비행 목록과 동기화되지 않은 시뮬레이션 데이터입니다.</p>
+            </aside>
 
-            <section class="panel" aria-labelledby="event-detail-title" data-od-id="event-review">
-              <div class="panel-heading"><div><h3 id="event-detail-title" data-od-id="heading-event-detail-title">사건 상세</h3><span class="subline">[DETECT] / [SHADOW] · 경고 판정 아님</span></div><span class="state-label" id="review-event-index">1 / 2</span></div>
-              <div class="content-pad">
-                <div class="review-controls">
-                  <button type="button" data-action="previous-event" data-od-id="previous-event">이전 사건</button>
-                  <button type="button" data-action="next-event" data-od-id="next-event">다음 사건</button>
-                </div>
-                <div class="event-view" aria-live="polite">
-                  <strong id="review-event-title">[DETECT] 객체 탐지 · 예시 이벤트</strong>
-                  <small id="review-event-time">Edge +00:14.228 · RC 수신시각(근사)</small>
-                </div>
-                <p class="annotation-example"><span class="state-label">표시 예시</span> [DETECT] 객체 탐지 · 오탐 의심 (조종사 이름) · [SIMULATED]</p>
-                <button class="button-primary" type="button" id="false-positive-button" data-action="toggle-false-positive" aria-pressed="false" data-od-id="false-positive-toggle">오탐 의심 표시</button>
-                <p class="footnote" style="margin-block-start:0.55rem">표시 / 해제 모두 새 의견으로 추가됩니다. 기존 항목은 삭제되지 않습니다.</p>
-                <div class="append-log" id="append-log" aria-live="polite"><p data-empty>기록된 의견 없음 · [SIMULATED]</p></div>
+            <div class="postflight-content">
+              <div class="postflight-tabs" role="tablist" aria-label="비행 후 검토 패널">
+                <button type="button" role="tab" id="postflight-tab-detail" aria-controls="postflight-panel-detail" aria-selected="true" tabindex="0" data-postflight-tab="detail">비행 · 사건 상세</button>
+                <button type="button" role="tab" id="postflight-tab-evidence" aria-controls="postflight-panel-evidence" aria-selected="false" tabindex="-1" data-postflight-tab="evidence">증거</button>
+                <button type="button" role="tab" id="postflight-tab-sync" aria-controls="postflight-panel-sync" aria-selected="false" tabindex="-1" data-postflight-tab="sync">동기화</button>
               </div>
-            </section>
-          </div>
 
-          <div class="two-column" style="margin-block-start:0.85rem">
-            <section class="panel" aria-labelledby="review-evidence-title" data-od-id="review-evidence">
-              <div class="panel-heading"><div><h3 id="review-evidence-title" data-od-id="heading-review-evidence-title">증거 미리보기</h3><span class="subline">로컬 우선 · 실제 증거 파일 없음</span></div><span class="simulated-tag">[SIMULATED]</span></div>
-              <div class="content-pad">
-                <div class="preview-frame" role="img" aria-label="실제 증거 이미지가 연결되지 않은 시뮬레이션 미리보기">
-                  <div class="preview-inner"><strong>증거 프레임 미연결</strong><small>이 시연에는 실제 증거 이미지가 없습니다.<br>영상-관측 매핑 검증 전 오버레이 없음</small></div>
+              <section class="postflight-panel" id="postflight-panel-detail" data-postflight-panel="detail" role="tabpanel" aria-labelledby="postflight-tab-detail">
+                <div class="two-column">
+                  <section class="panel" aria-labelledby="flight-detail-title" data-od-id="flight-detail">
+                    <div class="panel-heading"><div><h3 id="flight-detail-title" data-od-id="heading-flight-detail-title">비행 상세</h3><span class="subline">선택한 로컬 기록</span></div><span class="state-label" id="review-flight-index">1 / 2</span></div>
+                    <div class="content-pad">
+                      <div class="review-controls"><button type="button" data-action="previous-flight" data-od-id="previous-flight">이전 비행</button><button type="button" data-action="next-flight" data-od-id="next-flight">다음 비행</button></div>
+                      <div class="divider"></div>
+                      <dl class="detail-list">
+                        <div class="detail-row"><dt>비행 ID</dt><dd class="mono" id="review-flight-id">SIM-FLT-024</dd></div>
+                        <div class="detail-row"><dt>기록 상태</dt><dd id="review-flight-state">검토 가능 · 로컬</dd></div>
+                        <div class="detail-row"><dt>사건 수</dt><dd id="review-event-count">2건 · SIMULATED</dd></div>
+                        <div class="detail-row"><dt>증거 수</dt><dd id="review-evidence-count">3건 · 로컬 카운트 예시</dd></div>
+                        <div class="detail-row"><dt>시작 시각</dt><dd>알 수 없음 · RC 수신시각(근사) 기준</dd></div>
+                      </dl>
+                    </div>
+                  </section>
+                  <section class="panel" aria-labelledby="event-detail-title" data-od-id="event-review">
+                    <div class="panel-heading"><div><h3 id="event-detail-title" data-od-id="heading-event-detail-title">사건 상세</h3><span class="subline">DETECTED_ONLY / SHADOW · 경고 판정 아님</span></div><span class="state-label" id="review-event-index">1 / 2</span></div>
+                    <div class="content-pad">
+                      <div class="review-controls"><button type="button" id="review-event-prev" data-action="previous-event" data-od-id="previous-event">이전 사건</button><button type="button" id="review-event-next" data-action="next-event" data-od-id="next-event">다음 사건</button></div>
+                      <div class="event-view" aria-live="polite"><strong id="review-event-title">[DETECTED_ONLY] 객체 탐지 · 예시 이벤트</strong><small id="review-event-time">Edge 원시 +00:14.228 · RC 시각으로 변환하지 않음</small></div>
+                      <p class="annotation-example"><span class="state-label">표시 예시</span> 객체 탐지 · 오탐 의심 (조종사 이름) · [SIMULATED]</p>
+                      <button class="button-primary" type="button" id="false-positive-button" data-action="toggle-false-positive" aria-pressed="false" data-od-id="false-positive-toggle">오탐 의심 표시</button>
+                      <p class="footnote" style="margin-block-start:0.55rem">표시 / 해제 모두 새 의견으로 추가됩니다. 기존 항목은 삭제되지 않습니다.</p>
+                      <div class="append-log" id="append-log" aria-live="polite"><p data-empty>기록된 의견 없음 · [SIMULATED]</p></div>
+                    </div>
+                  </section>
                 </div>
-              </div>
-              <div class="action-group">
-                <div class="action-row">
-                  <button class="button-primary" type="button" data-action="view-local-evidence" data-od-id="view-local-evidence">증거 보기(로컬)</button>
-                  <button type="button" data-action="fetch-server-evidence" data-od-id="fetch-server-evidence">서버에서 가져오기</button>
+                <div class="postflight-honesty-grid">
+                  <p class="notice"><strong>사건 0건 ≠ 안전 확인</strong><br>정상 기록일 수 있음 / 안전 확인 아님</p>
+                  <p class="notice">시간은 RC 수신시각(근사). Edge 모노토닉 시각은 변환하지 않습니다.</p>
                 </div>
-              </div>
-            </section>
-            <section class="panel" aria-labelledby="review-honesty-title" data-od-id="review-honesty">
-              <div class="panel-heading"><h3 id="review-honesty-title" data-od-id="heading-review-honesty-title">검토 시 표시 기준</h3></div>
-              <div class="content-pad stack">
-                <p class="notice"><strong>사건 0건 ≠ 안전 확인</strong><br>정상 기록일 수 있음 / 안전 확인 아님</p>
-                <p class="notice">시간은 RC 수신시각(근사). Edge 모노토닉 시각은 보존되며 변환되지 않습니다.</p>
-                <p class="notice">서버에서 가져오기는 동작 예시입니다. 서버 데이터는 알 수 없습니다.</p>
-              </div>
-            </section>
+              </section>
+
+              <section class="postflight-panel" id="postflight-panel-evidence" data-postflight-panel="evidence" role="tabpanel" aria-labelledby="postflight-tab-evidence" hidden>
+                <div class="two-column postflight-evidence-grid">
+                  <section class="panel" aria-labelledby="review-evidence-title" data-od-id="review-evidence">
+                    <div class="panel-heading"><div><h3 id="review-evidence-title" data-od-id="heading-review-evidence-title">선택 비행의 증거</h3><span class="subline" id="postflight-evidence-subline">로컬 카운트 예시 · 3건 미동기화</span></div><span class="simulated-tag">[SIMULATED]</span></div>
+                    <div class="content-pad"><div class="preview-frame" role="img" aria-label="실제 증거 이미지가 연결되지 않은 시뮬레이션 미리보기"><div class="preview-inner"><strong>증거 프레임 미연결</strong><small>실제 증거 이미지가 없습니다.<br>프레임 매핑 미검증 · 오버레이 없음</small></div></div></div>
+                    <div class="action-group"><div class="action-row"><button class="button-primary" type="button" data-action="view-local-evidence" data-od-id="view-local-evidence">증거 보기(로컬)</button><button type="button" data-action="fetch-server-evidence" data-od-id="fetch-server-evidence">서버에서 가져오기</button></div></div>
+                  </section>
+                  <section class="panel" aria-labelledby="postflight-evidence-list-title">
+                    <div class="panel-heading"><div><h3 id="postflight-evidence-list-title">로컬 증거 목록</h3><span class="subline" id="postflight-evidence-list-summary">로컬 카운트 예시 · 3건 미동기화</span></div><button type="button" data-action="refresh-local">새로고침(로컬)</button></div>
+                    <div class="table-wrap" id="postflight-evidence-table"><table><thead><tr><th scope="col">로컬 ID</th><th scope="col">자료</th><th scope="col">상태</th></tr></thead><tbody><tr><td class="mono">SIM-EVD-024-001</td><td>관측 요약</td><td>미동기화</td></tr><tr><td class="mono">SIM-EVD-024-002</td><td>레코더 항목</td><td>미동기화</td></tr><tr><td class="mono">SIM-EVD-024-003</td><td>이벤트 메타데이터</td><td>미동기화</td></tr></tbody></table></div>
+                    <p class="info-strip" id="postflight-evidence-unknown" hidden>선택 비행의 로컬 증거 목록은 알 수 없습니다.</p>
+                    <p class="info-strip"><span aria-hidden="true">·</span><span>로컬 완전성 알 수 없음 · 서버 상태 알 수 없음</span></p>
+                  </section>
+                </div>
+              </section>
+
+              <section class="postflight-panel" id="postflight-panel-sync" data-postflight-panel="sync" role="tabpanel" aria-labelledby="postflight-tab-sync" hidden>
+                <div class="two-column postflight-sync-grid">
+                  <section class="panel" aria-labelledby="postflight-sync-title">
+                    <div class="panel-heading"><div><h3 id="postflight-sync-title">선택 비행 동기화</h3><span class="subline">Core 설정 상태와 서버 응답을 분리</span></div></div>
+                    <div class="sync-facts"><div class="sync-fact"><span>로컬 미동기화 증거</span><strong id="postflight-unsynced-count">3건 · SIMULATED</strong></div><div class="sync-fact"><span>Core 설정</span><strong>미설정</strong></div><div class="sync-fact"><span>서버 상태</span><strong>알 수 없음</strong></div><div class="sync-fact"><span>다음 자동 동기화</span><strong>알 수 없음</strong></div></div>
+                    <div class="action-group"><div class="action-row"><button class="button-primary" type="button" data-action="server-state">서버 상태</button><button type="button" data-page-link="evidence">동기화 설정 보기</button></div></div>
+                    <p class="inline-state" id="postflight-server-state-note">서버에 연결되지 않았습니다. 상태는 알 수 없습니다.</p>
+                  </section>
+                  <section class="panel" aria-labelledby="postflight-sync-note-title"><div class="panel-heading"><h3 id="postflight-sync-note-title">기록 기준</h3></div><div class="content-pad stack"><p class="notice"><strong>미동기화 수를 계속 표시합니다.</strong> 업로드 결과나 서버 측 상태를 추측하지 않습니다.</p><p class="notice">현재 화면의 모든 값은 [SIMULATED]. 실제 업로드 요청은 보내지 않습니다.</p></div></section>
+                </div>
+              </section>
+            </div>
           </div>
-          <p class="page-footer">오탐 의심 표시는 추가 기록형 의견 흐름을 보여주는 로컬 시연입니다. 삭제 동작은 없습니다.</p>
+          <p class="page-footer">사건 의견은 추가 기록형 예시입니다. 기존 기록 삭제나 실제 서버 호출은 없습니다.</p>
         </section>
 
         <section class="page" id="evidence-page" data-page-panel="evidence" aria-labelledby="evidence-title" data-od-id="page-evidence" hidden>
@@ -864,10 +1376,50 @@ tbody tr:last-child td { border-block-end: 0; }
           <p class="page-footer">수동 업로드와 서버 상태 조회는 접근 가능한 시연 버튼입니다. 실제 서버 호출은 하지 않습니다.</p>
         </section>
 
+        <section class="page" id="diagnostics-page" data-page-panel="diagnostics" aria-labelledby="diagnostics-title" hidden>
+          <div class="page-heading">
+            <div><p class="eyebrow">TOOLS / DIAGNOSTICS</p><h2 id="diagnostics-title" tabindex="-1">진단 · 상태 출처</h2></div>
+            <span class="simulated-tag">[SIMULATED]</span>
+          </div>
+          <section class="panel diagnostics-scenario-panel" aria-labelledby="scenario-title">
+            <div class="panel-heading"><div><h3 id="scenario-title">상태 예시 전환</h3><span class="subline">계약된 표시 상태 비교 · 실제 기체 / 링크 변경 없음</span></div><span class="dev-only">DEMO</span></div>
+            <div class="content-pad">
+              <div class="scenario-switch" role="group" aria-label="상태 예시 전환">
+                <span class="scenario-label">상태 예시</span>
+                <div class="segmented">
+                  <button type="button" class="scenario-button" data-scenario="normal" aria-pressed="true" data-od-id="scenario-normal">정상</button>
+                  <button type="button" class="scenario-button" data-scenario="no-flight" aria-pressed="false" data-od-id="scenario-no-flight">기록 없음</button>
+                  <button type="button" class="scenario-button" data-scenario="observation-late" aria-pressed="false">관측 지연</button>
+                  <button type="button" class="scenario-button" data-scenario="problem" aria-pressed="false" data-od-id="scenario-problem">문제</button>
+                  <button type="button" class="scenario-button" data-scenario="unknown" aria-pressed="false">미확인</button>
+                </div>
+              </div>
+              <p class="field-hint" style="margin-block-start:0.65rem">예시는 시뮬레이션입니다. 사건 0건은 안전 확인을 의미하지 않습니다.</p>
+            </div>
+          </section>
+          <section class="panel diagnostics-status-panel" aria-labelledby="diagnostics-status-title">
+            <div class="panel-heading"><div><h3 id="diagnostics-status-title">출처별 상태</h3><span class="subline">기체 · MOP 링크 · 인터넷 · 영상 · 레코더는 독립 정보</span></div><span class="state-label">UTC 11:42:18 · RC 수신시각(근사)</span></div>
+            <div class="diagnostic-grid">
+              <article class="status-item" data-diagnostic-index="0" data-severity="info"><div class="status-topline"><span class="status-label">기록 상태</span><span class="severity"><span class="severity-symbol">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">로컬 기록 중</strong><span class="status-detail">활성 로컬 기록 · SIM-FLT-024</span><span class="status-action">사건 0건 ≠ 안전 확인</span></article>
+              <article class="status-item" data-diagnostic-index="1" data-severity="info"><div class="status-topline"><span class="status-label">MOP 링크</span><span class="severity"><span class="severity-symbol">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">정상</strong><span class="status-detail">하트비트 3.4초 전 · SIMULATED</span><span class="status-action">마지막 수신시각 근사</span></article>
+              <article class="status-item" data-diagnostic-index="2" data-severity="info"><div class="status-topline"><span class="status-label">기체 연결</span><span class="severity"><span class="severity-symbol">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">연결</strong><span class="status-detail">링크 보고값 · 미보고면 알 수 없음</span><span class="status-action">MOP 상태와 별도</span></article>
+              <article class="status-item" data-diagnostic-index="3" data-severity="info"><div class="status-topline"><span class="status-label">인터넷</span><span class="severity"><span class="severity-symbol">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">없음</strong><span class="status-detail">ConnectivityManager · 미검증 시 알 수 없음</span><span class="status-action">오프라인 기록 유지</span></article>
+              <article class="status-item" data-diagnostic-index="4" data-severity="info"><div class="status-topline"><span class="status-label">레코더</span><span class="severity"><span class="severity-symbol">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">저장 샘플 0</strong><span class="status-detail">녹화 요청 예시 · writer 수락 샘플 0 · [SIMULATED]</span><span class="status-action">저장 샘플 확인 전 실제 쓰기로 표시하지 않음</span></article>
+              <article class="status-item" data-diagnostic-index="5" data-severity="info"><div class="status-topline"><span class="status-label">로컬 증거</span><span class="severity"><span class="severity-symbol">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">미동기화 3건</strong><span class="status-detail">로컬 스토어 카운트</span><span class="status-action">서버 상태 알 수 없음</span></article>
+              <article class="status-item" data-diagnostic-index="6" data-severity="info"><div class="status-topline"><span class="status-label">AI 관측</span><span class="severity"><span class="severity-symbol">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">최근 관측 2.1초</strong><span class="status-detail">관측 나이(실측) · 참고 기준 5초</span><span class="status-action">안전 임계값이 아님</span></article>
+              <article class="status-item" data-diagnostic-index="7" data-severity="info"><div class="status-topline"><span class="status-label">최근 요약</span><span class="severity"><span class="severity-symbol">·</span><span class="severity-word">정보</span></span></div><strong class="status-value">사건 2건 · 공백 0프레임</strong><span class="status-detail">직전 요약 · SIM-FLT-024</span><span class="status-action">사건 0건 ≠ 안전 확인</span></article>
+            </div>
+          </section>
+          <div class="two-column diagnostics-lower-grid">
+              <section class="panel" aria-labelledby="diagnostics-video-title"><div class="panel-heading"><div><h3 id="diagnostics-video-title">영상 입력 예시</h3><span class="subline">인코딩 입력과 화면 표시를 분리 · [SIMULATED]</span></div></div><div class="content-pad stack"><p class="notice"><strong>DJI 라이브 뷰</strong> · 인코딩 입력 예시는 화면 디코딩/표시를 증명하지 않습니다.</p><p class="notice"><strong>AI 관측</strong> · Edge / PSDK 별도 피드 · [SIMULATED]</p><p class="notice">DJI 프레임과 Edge 관측의 대응 관계는 검증되지 않았습니다. 영상 위 표식을 표시하지 않습니다.</p><div class="video-demo-states" role="group" aria-label="영상 입력 상태 예시"><button type="button" data-action="video-no-signal">신호 없음 예시</button><button type="button" data-action="video-recent">입력 최근 예시</button><button type="button" data-action="video-stale">입력 지연 예시</button><button type="button" data-action="video-unknown">시각 미확인 예시</button></div></div></section>
+            <section class="panel" aria-labelledby="diagnostics-link-title"><div class="panel-heading"><div><h3 id="diagnostics-link-title">MOP 전송 요약</h3><span class="subline">내부 카운터 · [SIMULATED]</span></div></div><div class="link-metrics"><div class="metric"><span class="metric-label">수신 · 저장</span><strong class="metric-value">24</strong></div><div class="metric"><span class="metric-label">수신 · 중복</span><strong class="metric-value">1</strong></div><div class="metric"><span class="metric-label">수신 · 실패</span><strong class="metric-value">0</strong></div><div class="metric"><span class="metric-label">송신 · pending / acked</span><strong class="metric-value">2 / 18</strong></div></div></section>
+          </div>
+        </section>
+
         <section class="page" id="settings-page" data-page-panel="settings" aria-labelledby="settings-title" data-od-id="page-settings" hidden>
           <div class="page-heading">
             <div><p class="eyebrow">05 / 설정·개발</p><h2 id="settings-title" data-od-id="heading-settings" tabindex="-1">설정·개발</h2></div>
-            <p class="page-summary">앱 정보 · 시각 기준 · 조종사 및 Core 설정</p>
+            <div class="page-summary"><span>앱 정보 · 시각 기준 · 조종사 및 Core 설정</span><button class="settings-system-link" type="button" data-page-link="diagnostics">시스템 진단</button></div>
           </div>
           <div class="two-column">
             <section class="panel" aria-labelledby="time-contract-title" data-od-id="time-contract">
@@ -896,12 +1448,12 @@ tbody tr:last-child td { border-block-end: 0; }
 
           <div class="two-column" style="margin-block-start:0.85rem">
             <section class="panel" aria-labelledby="operator-config-title" data-od-id="operator-config">
-              <div class="panel-heading"><div><h3 id="operator-config-title">조종사(운영자) 식별</h3><span class="subline">오탐 의견의 조종사 식별에 사용</span></div><span class="simulated-tag">[SIMULATED]</span></div>
+              <div class="panel-heading"><div><h3 id="operator-config-title">기록자 표시 정보</h3><span class="subline">의견에 표시할 이름 · 로그인/신원 검증 아님</span></div><span class="simulated-tag">[SIMULATED]</span></div>
               <form class="content-pad form-grid" id="operator-config-form">
                 <p class="field-hint">목업입니다. 예시 이름만 사용하세요. 입력값은 저장하지 않습니다.</p>
-                <div class="field"><label for="operator-name">조종사 이름 <span class="field-required">(필수)</span></label><input id="operator-name" name="operator-name" type="text" autocomplete="off" placeholder="예시 이름" required aria-describedby="operator-name-hint"><span class="field-hint" id="operator-name-hint">조종사 이름 — 의견 기록에 사용</span></div>
+                <div class="field"><label for="operator-name">기록자 이름 <span class="field-required">(필수)</span></label><input id="operator-name" name="operator-name" type="text" autocomplete="off" placeholder="예시 이름" required aria-describedby="operator-name-hint"><span class="field-hint" id="operator-name-hint">의견에 표시할 이름 · 신원 인증에는 사용하지 않음</span></div>
                 <div class="field"><label for="operator-org">소속 <span class="field-required">(선택)</span></label><input id="operator-org" name="operator-org" type="text" autocomplete="off" placeholder="예: 테스트 소속" aria-describedby="operator-org-hint"><span class="field-hint" id="operator-org-hint">소속 (선택)</span></div>
-                <button class="button-primary" type="submit">조종사 저장</button>
+                <button class="button-primary" type="submit">기록자 정보 저장</button>
                 <p class="operator-state" id="operator-registered-state" data-registered="false" role="status" aria-live="polite" aria-atomic="true">미등록 — 비행 후 오탐 표시/해제에 필요합니다</p>
               </form>
             </section>
@@ -909,7 +1461,7 @@ tbody tr:last-child td { border-block-end: 0; }
             <section class="panel" aria-labelledby="core-save-state-title" data-od-id="core-save-state">
               <div class="panel-heading"><div><h3 id="core-save-state-title">Core 저장 상태</h3><span class="subline">실제 앱 동작 예시 · 이 목업은 저장하지 않습니다</span></div><span class="simulated-tag">[SIMULATED]</span></div>
               <div class="content-pad stack">
-                <div class="settings-state-grid" aria-label="Core 저장 상태 예시">
+                <div class="settings-state-grid" role="group" aria-label="Core 저장 상태 예시">
                   <article class="status-item settings-state-item" data-severity="info"><span class="status-label">저장 결과 예시</span><strong class="status-value">Core 설정 저장</strong><span class="status-detail">앱의 저장 성공 안내</span></article>
                   <article class="status-item settings-state-item" data-severity="info"><span class="status-label">토큰 저장 위치</span><strong class="status-value">기기 보안 저장소</strong><span class="status-detail">실제 앱에서 Core 토큰을 보관</span></article>
                   <article class="status-item settings-state-item" data-severity="attention"><span class="status-label">업로드 조건</span><strong class="status-value">비활성</strong><span class="status-detail">Core URL과 토큰 모두 필요</span></article>
@@ -924,11 +1476,11 @@ tbody tr:last-child td { border-block-end: 0; }
             <div><strong>권한 안내 · 첫 실행</strong>DJI SDK가 선언한 위치·전화 상태·저장소 권한을 첫 실행 때 요청합니다. 권한을 거부하면 일부 SDK 기능이 제한될 수 있습니다.</div>
           </aside>
 
-          <section class="panel" aria-labelledby="demo-bench-title" data-od-id="demo-bench" style="margin-block-start:0.85rem">
-            <div class="panel-heading">
+          <details class="panel demo-bench" aria-labelledby="demo-bench-title" data-od-id="demo-bench" style="margin-block-start:0.85rem">
+            <summary class="panel-heading">
               <div><h3 id="demo-bench-title" data-od-id="heading-demo-bench-title">데모 벤치</h3><span class="subline">격리 · SIMULATED · 업로드 불가</span></div>
               <span class="state-label">로컬 예시 전용</span>
-            </div>
+            </summary>
             <div class="content-pad two-column">
               <div class="stack">
                 <p class="notice"><strong>데모 벤치는 격리되어 있습니다.</strong> 생성한 예시 값은 동기화·업로드할 수 없습니다.</p>
@@ -942,7 +1494,7 @@ tbody tr:last-child td { border-block-end: 0; }
                 <p class="inline-state" id="demo-state" aria-live="polite">틱 0 · SIM-FLT-024 · 격리 상태</p>
               </div>
             </div>
-          </section>
+          </details>
           <p class="page-footer">상태 시나리오 전환은 계약의 문제·주의 상태를 비교하기 위한 화면 예시입니다. 실제 시스템 상태를 뜻하지 않습니다.</p>
         </section>
 
@@ -955,59 +1507,125 @@ tbody tr:last-child td { border-block-end: 0; }
     (function () {
       "use strict";
       const severityText = { info: "정보", attention: "주의", problem: "문제" };
+      const videoDemoStates = {
+        disconnected: {
+          label: "미연결", severity: "info", kicker: "DJI 영상 · 미연결 · [SIMULATED]",
+          title: "영상 입력 미연결",
+          copy: "실제 프레임 입력·표시 상태는 확인할 수 없습니다. 비행 조종은 DJI Pilot 2, KSI는 관측·기록 보조입니다. [SIMULATED]"
+        },
+        connecting: {
+          label: "연결 중 · 프레임 대기", severity: "info", kicker: "연결 요청 예시 · 프레임 미수신 · [SIMULATED]",
+          title: "영상 연결 요청 예시",
+          copy: "실제 스트림이나 프레임은 연결되지 않았습니다. 화면 표시 상태도 확인되지 않습니다. [SIMULATED]"
+        },
+        noSignal: {
+          label: "신호 없음", severity: "info", kicker: "영상 신호 없음 · [SIMULATED]",
+          title: "영상 입력 신호 없음",
+          copy: "인코딩 입력 프레임이 없는 예시 상태입니다. 비행 안전 경고가 아니며, 비행 조종은 DJI Pilot 2를 기준으로 하세요. [SIMULATED]"
+        },
+        recent: {
+          label: "입력 최근 수신", severity: "info", kicker: "인코딩 입력 최근 수신 예시 · [SIMULATED]",
+          title: "인코딩 입력 최근 수신 예시",
+          copy: "입력 수신은 디코딩·화면 표시를 증명하지 않습니다. 레코더 쓰기 수와도 별도이며, 실제 프레임/측정값이 아닙니다. [SIMULATED]"
+        },
+        stale: {
+          label: "입력 수신 지연", severity: "attention", kicker: "인코딩 입력 수신 지연 예시 · [SIMULATED]",
+          title: "인코딩 입력 지연 예시",
+          copy: "마지막 입력 프레임이 오래된 예시입니다. 이는 비행 안전 경고나 조종 안내가 아닙니다. [SIMULATED]"
+        },
+        unknown: {
+          label: "수신 시각 미확인", severity: "info", kicker: "인코딩 입력 시각 미확인 · [SIMULATED]",
+          title: "입력 신선도 미확인",
+          copy: "수신 시각을 알 수 없습니다. 이를 지연·실패·화면 표시 성공으로 추측하지 않습니다. [SIMULATED]"
+        }
+      };
       const scenarios = {
         normal: [
-          ["info", "비행 진행 중", "활성 비행 · SIM-FLT-024", "조치: 추가 안내 없음"],
-          ["info", "정상", "하트비트 3.4초 전 · [SIMULATED]", "조치: 조치 안내 없음"],
-          ["info", "연결", "링크 보고값 · 미보고면 알 수 없음", "조치: 조치 안내 없음"],
-          ["info", "없음", "ConnectivityManager · 미검증이면 인터넷 미검증", "조치: 오프라인 기록 유지"],
-          ["info", "녹화 중", "VideoRecorder 상태", "조치: 상태 유지"],
-          ["info", "미동기화 3건", "로컬 스토어 카운트", "조치: 자동 동기화 처리 · 서버 상태 추측 금지"],
-          ["info", "최근 관측 2.1초", "관측 나이(실측) · 참고 기준 5초", "조치: 지연 시 MOP 링크·기체 상태 확인"],
-          ["info", "사건 2건 · 공백 0프레임", "직전 요약 · SIM-FLT-024", "사건 0건 — 정상 기록일 수 있음 / 안전 확인 아님"]
+          ["info", "KSI 로컬 기록 중", "활성 기록 예시 · SIM-FLT-024 · [SIMULATED]", "조치 안내 없음 · 비행 조종은 DJI Pilot 2"],
+          ["info", "정상", "하트비트 3.4초 전 · [SIMULATED]", "조치 안내 없음"],
+          ["info", "연결", "링크 보고값 · 미보고면 알 수 없음", "조치 안내 없음"],
+          ["info", "없음", "인터넷 없음 · 미검증과 구분", "오프라인 기록 유지"],
+          ["info", "저장 샘플 0", "녹화 요청 예시 · writer 수락 샘플 0 · [SIMULATED]", "저장 샘플 확인 전 실제 쓰기로 표시하지 않음"],
+          ["info", "미동기화 3건", "로컬 스토어 카운트 예시 · [SIMULATED]", "서버 상태는 알 수 없음"],
+          ["info", "최근 수신 2.1초 전", "관측 수신 나이 예시 · [SIMULATED] · 화면 지표", "지연은 안전 판정이나 비행 경고가 아님"],
+          ["info", "사건 2건 · 공백 0프레임", "직전 요약 예시 · SIM-FLT-024 · [SIMULATED]", "사건 0건은 안전 확인이 아닙니다"]
         ],
         "no-flight": [
-          ["info", "비행 없음", "활성 비행 없음", "임무 동기화 → 번들 → 시작 안내"],
-          ["info", "정상", "하트비트 3.4초 전 · [SIMULATED]", "조치: 조치 안내 없음"],
-          ["info", "연결", "링크 보고값 · 미보고면 알 수 없음", "조치: 조치 안내 없음"],
-          ["info", "없음", "ConnectivityManager · 미검증이면 인터넷 미검증", "조치: 오프라인 기록 유지"],
-          ["info", "없음", "VideoRecorder 상태", "조치: 조치 안내 없음"],
-          ["info", "미동기화 3건", "로컬 스토어 카운트", "조치: 자동 동기화 처리 · 서버 상태 추측 금지"],
-          ["info", "최근 관측 2.1초", "관측 나이(실측) · 참고 기준 5초", "조치: 지연 시 MOP 링크·기체 상태 확인"],
-          ["info", "사건 2건 · 공백 0프레임", "직전 요약 · SIM-FLT-023", "사건 0건 — 정상 기록일 수 있음 / 안전 확인 아님"]
+          ["info", "기록 없음", "활성 로컬 기록 없음", "임무 동기화 → 번들 → KSI 기록 세션 시작 안내"],
+          ["info", "정상", "하트비트 3.4초 전 · [SIMULATED]", "조치 안내 없음"],
+          ["info", "연결", "링크 보고값 · 미보고면 알 수 없음", "조치 안내 없음"],
+          ["info", "없음", "인터넷 없음 · 미검증과 구분", "오프라인 기록 유지"],
+          ["info", "대기", "활성 기록 없음 · 레코더 요청/쓰기 상태 없음 · [SIMULATED]", "조치 안내 없음"],
+          ["info", "미동기화 3건", "전체 로컬 스토어 카운트 예시 · [SIMULATED]", "서버 상태는 알 수 없음"],
+          ["info", "미수신", "활성 기록 없음", "기록 세션 시작 후 관측 대기"],
+          ["info", "최근 기록 · 사건 2건", "이전 비행 SIM-FLT-023 · [SIMULATED]", "현재 기록 세션과 무관한 과거 요약"]
+        ],
+        "observation-late": [
+          ["info", "KSI 로컬 기록 중", "활성 기록 예시 · SIM-FLT-024 · [SIMULATED]", "비행 조종은 DJI Pilot 2"],
+          ["info", "정상", "하트비트 3.4초 전 · [SIMULATED]", "조치 안내 없음"],
+          ["info", "연결", "링크 보고값 · 미보고면 알 수 없음", "조치 안내 없음"],
+          ["info", "없음", "인터넷 없음 · 미검증과 구분", "오프라인 기록 유지"],
+          ["info", "저장 샘플 0", "녹화 요청 예시 · writer 수락 샘플 0 · [SIMULATED]", "저장 샘플 확인 전 실제 쓰기로 표시하지 않음"],
+          ["info", "미동기화 3건", "로컬 스토어 카운트 예시 · [SIMULATED]", "서버 상태는 알 수 없음"],
+          ["attention", "지연 6.2초", "관측 수신 나이 예시 · [SIMULATED] · 참고 표시", "데이터 지연이며 안전 판정이나 비행 경고가 아닙니다"],
+          ["info", "사건 2건 · 공백 0프레임", "직전 요약 예시 · SIM-FLT-024 · [SIMULATED]", "사건 0건은 안전 확인이 아닙니다"]
         ],
         problem: [
-          ["info", "비행 진행 중", "활성 비행 · SIM-FLT-024", "조치: 추가 안내 없음"],
-          ["problem", "끊김", "마지막 하트비트 18.4초 전", "링크 연결 후 재전송 확인"],
-          ["info", "연결", "링크 보고값 · 미보고면 알 수 없음", "조치: 조치 안내 없음"],
-          ["info", "없음", "ConnectivityManager · 미검증이면 인터넷 미검증", "조치: 오프라인 기록 유지"],
-          ["problem", "녹화 오류", "VideoRecorder 상태", "로그 확인 · .tmp는 증거 아님"],
-          ["info", "미동기화 3건", "로컬 스토어 카운트", "자동 동기화 처리 · 서버 상태 추측 금지"],
-          ["attention", "지연 6.2초", "관측 나이(실측) · 참고 기준 5초", "MOP 링크·기체 상태 확인"],
-          ["info", "사건 2건 · 공백 0프레임", "직전 요약 · SIM-FLT-024", "사건 0건 — 정상 기록일 수 있음 / 안전 확인 아님"]
+          ["info", "KSI 로컬 기록 중", "활성 기록 예시 · SIM-FLT-024 · [SIMULATED]", "비행 조종은 DJI Pilot 2"],
+          ["problem", "끊김", "마지막 하트비트 18.4초 전 · [SIMULATED]", "링크 연결 후 재전송 확인"],
+          ["info", "연결", "링크 보고값 · 미보고면 알 수 없음", "조치 안내 없음"],
+          ["info", "없음", "인터넷 없음 · 미검증과 구분", "오프라인 기록 유지"],
+          ["problem", "과거 저장 구간 실패", "이전/확정 구간 실패 보고 · 현재 영상 입력/레코더 쓰기 상태와 독립 · [SIMULATED]", "로그 확인 · 불완전 .tmp는 증거가 아닙니다"],
+          ["info", "미동기화 3건", "로컬 스토어 카운트 예시 · [SIMULATED]", "서버 상태는 알 수 없음"],
+          ["attention", "지연 6.2초", "관측 수신 나이 예시 · [SIMULATED] · 참고 표시", "데이터 지연이며 안전 판정이나 비행 경고가 아닙니다"],
+          ["info", "사건 2건 · 공백 0프레임", "직전 요약 예시 · SIM-FLT-024 · [SIMULATED]", "사건 0건은 안전 확인이 아닙니다"]
+        ],
+        unknown: [
+          ["info", "KSI 로컬 기록 중", "활성 기록 예시 · SIM-FLT-024 · [SIMULATED]", "비행 조종은 DJI Pilot 2"],
+          ["info", "연결 · 하트비트 미수신", "MOP 연결은 보고됨 · heartbeat age 알 수 없음", "미수신을 정상으로 간주하지 않음"],
+          ["info", "알 수 없음", "기체 연결 보고값 없음", "기체 상태를 추측하지 않음"],
+          ["info", "미검증", "네트워크 연결만 확인 · 인터넷 도달성 미확인", "동기화 성공으로 표시하지 않음"],
+          ["info", "저장 상태 미확인", "레코더 진행 수치 보고 없음 · [SIMULATED]", "저장 성공을 추측하지 않음"],
+          ["info", "알 수 없음", "선택 기록의 로컬 증거 목록 미확인", "서버 상태를 추측하지 않음"],
+          ["info", "미수신", "관측 수신 시각을 확인할 수 없음", "지연/실패와 구분 · 안전 판정 아님"],
+          ["info", "요약 미확인", "최근 관측 요약을 받지 못함", "사건 0건/안전 확인으로 바꾸지 않음"]
         ]
       };
       const statusCards = Array.from(document.querySelectorAll("[data-status-index]"));
+      const diagnosticCards = Array.from(document.querySelectorAll("[data-diagnostic-index]"));
+      const quickStatusItems = Array.from(document.querySelectorAll("[data-quick-index]"));
       const scenarioButtons = Array.from(document.querySelectorAll("[data-scenario]"));
       const feedback = document.getElementById("action-feedback");
+      const navRail = document.getElementById("primary-navigation");
+      const navReveal = document.getElementById("nav-reveal");
+      const navBackdrop = document.querySelector(".nav-backdrop");
+      const navClose = document.querySelector(".nav-close");
+      const cockpitAttention = document.getElementById("cockpit-attention");
+      const cockpitAttentionTitle = document.getElementById("cockpit-attention-title");
+      const cockpitAttentionCopy = document.getElementById("cockpit-attention-copy");
       let currentScenario = "normal";
+      let currentVideoDemoState = "disconnected";
       let mopOverride = null;
       let toastTimer = null;
       let mopTimer = null;
+      let navFocusTimer = null;
       let reviewFlightIndex = 0;
       let reviewEventIndex = 0;
       let registeredOperatorName = "";
-      const falsePositiveMarks = [false, false];
+      const falsePositiveMarks = new Set();
+      const opinionHistory = new Map();
       let demoTick = 0;
       let demoFlightNumber = 24;
       const flights = [
-        { id: "SIM-FLT-024", state: "검토 가능 · 로컬", events: "2건 · SIMULATED" },
-        { id: "SIM-FLT-023", state: "종료 · 로컬", events: "2건 · SIMULATED" }
+        { id: "SIM-FLT-024", state: "검토 가능 · 로컬", events: "2건 · SIMULATED", evidence: "3건 · 로컬 카운트 예시", evidenceSummary: "로컬 카운트 예시 · 3건 미동기화", unsynced: "3건 · SIMULATED", hasEvidence: true },
+        { id: "SIM-FLT-023", state: "종료 · 로컬", events: "2건 · SIMULATED", evidence: "알 수 없음 · 로컬 목록 미확인", evidenceSummary: "선택 비행의 로컬 카운트 알 수 없음", unsynced: "알 수 없음", hasEvidence: false },
+        { id: "SIM-FLT-022", state: "종료 · 로컬", events: "0건 · SIMULATED", evidence: "알 수 없음 · 로컬 목록 미확인", evidenceSummary: "선택 비행의 로컬 카운트 알 수 없음", unsynced: "알 수 없음", hasEvidence: false }
       ];
       const events = [
-        { title: "[DETECT] 객체 탐지 · 예시 이벤트", time: "Edge +00:14.228 · RC 수신시각(근사)" },
-        { title: "[SHADOW] 위험 후보 · 경고 아님", time: "Edge +00:16.804 · RC 수신시각(근사)" }
+        { kind: "DETECTED_ONLY", title: "[DETECTED_ONLY] 객체 탐지 · 예시 이벤트", observationTitle: "객체 탐지 · 예시 이벤트", time: "Edge +00:14.228", receiptTime: "Edge 원시 +00:14.228 · RC 시각으로 변환하지 않음" },
+        { kind: "SHADOW", title: "[SHADOW] 위험 후보 · 경고 아님", observationTitle: "위험 후보 · 경고 아님", time: "Edge +00:16.804", receiptTime: "Edge 원시 +00:16.804 · RC 시각으로 변환하지 않음" }
       ];
+      const flightEvents = [events, events, []];
 
       function announce(message) {
         feedback.textContent = message;
@@ -1020,7 +1638,7 @@ tbody tr:last-child td { border-block-end: 0; }
 
       function renderStatus(mode) {
         const data = scenarios[mode];
-        statusCards.forEach(function (card, index) {
+        function renderCard(card, index) {
           let item = data[index];
           if (index === 1 && mopOverride) item = mopOverride;
           const severity = item[0];
@@ -1030,36 +1648,149 @@ tbody tr:last-child td { border-block-end: 0; }
           card.querySelector(".status-value").textContent = item[1];
           card.querySelector(".status-detail").textContent = item[2];
           card.querySelector(".status-action").textContent = item[3];
+        }
+        statusCards.forEach(renderCard);
+        diagnosticCards.forEach(function (card) { renderCard(card, Number(card.dataset.diagnosticIndex)); });
+        quickStatusItems.forEach(function (item) {
+          const statusIndex = Number(item.dataset.quickIndex);
+          const source = statusCards.find(function (card) { return Number(card.dataset.statusIndex) === statusIndex; });
+          if (!source) return;
+          item.dataset.severity = source.dataset.severity;
+          item.querySelector(".quick-status-mark").textContent = source.querySelector(".severity-symbol").textContent;
+          item.querySelector("strong").textContent = source.querySelector(".status-value").textContent;
         });
+        const videoState = videoDemoStates[currentVideoDemoState];
+        syncVideoQuickStatus(videoState.label, videoState.severity);
         scenarioButtons.forEach(function (button) {
           button.setAttribute("aria-pressed", button.dataset.scenario === mode ? "true" : "false");
         });
         currentScenario = mode;
         syncMissionOverview(mode);
+        syncCockpitAttention(mode);
       }
 
       function syncMissionOverview(mode) {
         const noFlight = mode === "no-flight";
+        document.getElementById("observe-flight-id").textContent = noFlight ? "기록 없음" : "SIM-FLT-024";
         document.getElementById("mission-flight-id").textContent = noFlight ? "없음" : "SIM-FLT-024";
-        document.getElementById("mission-flight-state").textContent = noFlight ? "비행 없음" : "비행 진행 중";
-        document.getElementById("mission-status-label").textContent = noFlight ? "비행 없음" : "비행 진행 중";
-        document.getElementById("mission-status-copy").textContent = noFlight ? "현장 동기화 → 번들 내려받기 → 비행 시작 순서로 진행합니다." : "활성 비행 SIM-FLT-024가 있습니다.";
-        document.getElementById("mission-action-state").textContent = noFlight ? "비행 없음" : "비행 진행 중";
+        document.getElementById("mission-flight-state").textContent = noFlight ? "KSI 기록 없음" : "KSI 로컬 기록 중";
+        document.getElementById("mission-status-label").textContent = noFlight ? "KSI 기록 없음" : "KSI 로컬 기록 중";
+        document.getElementById("mission-status-copy").textContent = noFlight ? "현장 동기화 → 번들 내려받기 → KSI 로컬 기록 세션 시작 순서로 진행합니다." : "활성 KSI 로컬 기록 SIM-FLT-024가 있습니다. 비행 조종은 DJI Pilot 2에서 하세요.";
+        document.getElementById("mission-action-state").textContent = noFlight ? "기록 없음" : "로컬 기록 중";
+      }
+
+      function syncCockpitAttention(mode) {
+        const noFlight = mode === "no-flight";
+        const data = scenarios[mode].slice();
+        if (mopOverride) data[1] = mopOverride;
+        const priorityIndex = noFlight ? -1 : ([4, 1, 2, 5, 6].find(function (index) { return data[index][0] === "problem"; }) ?? [1, 2, 4, 5, 6].find(function (index) { return data[index][0] === "attention"; }) ?? -1);
+        const visible = priorityIndex >= 0;
+        cockpitAttention.hidden = !visible;
+        if (!visible) {
+          cockpitAttention.removeAttribute("data-severity");
+          cockpitAttentionTitle.textContent = "";
+          cockpitAttentionCopy.textContent = "";
+          return;
+        }
+        const item = data[priorityIndex];
+        const severity = item[0];
+        cockpitAttention.dataset.severity = severity;
+        const titles = { 1: "MOP 링크", 2: "기체 연결", 4: "레코더", 5: "로컬 증거", 6: "관측 수신" };
+        cockpitAttentionTitle.textContent = titles[priorityIndex] || "상태 확인";
+        const detail = item[2] ? " · " + item[2] : "";
+        const action = item[3] && item[3].indexOf("조치 없음") < 0 ? " · " + item[3].replace(/^조치:\s*/, "") : "";
+        const safetyNote = priorityIndex === 6 ? " · 안전 판정이나 비행 경고가 아닙니다" : "";
+        const recorderNote = priorityIndex === 4 && severity === "problem" ? " · 로컬 증거가 저장되지 않을 수 있습니다" : "";
+        cockpitAttentionCopy.textContent = item[1] + detail + action + safetyNote + recorderNote;
+      }
+
+      function syncVideoQuickStatus(label, severity) {
+        const quick = document.querySelector("[data-video-quick]");
+        const value = document.getElementById("quick-video-state");
+        if (!quick || !value) return;
+        value.textContent = label;
+        quick.dataset.severity = severity || "info";
+        quick.querySelector(".quick-status-mark").textContent = severity === "attention" ? "▲" : severity === "problem" ? "■" : "·";
+      }
+
+      function setVideoDemoState(stateName) {
+        const state = videoDemoStates[stateName];
+        if (!state) return;
+        currentVideoDemoState = stateName;
+        document.getElementById("video-state").textContent = state.label;
+        document.getElementById("video-kicker").textContent = state.kicker;
+        document.getElementById("video-center-title").textContent = state.title;
+        document.getElementById("video-center-copy").textContent = state.copy;
+        syncVideoQuickStatus(state.label, state.severity);
       }
 
       function setPage(pageName) {
+        const previousPage = document.body.dataset.activePage;
         document.querySelectorAll("[data-page-panel]").forEach(function (page) {
           const active = page.dataset.pagePanel === pageName;
           page.classList.toggle("is-active", active);
           page.hidden = !active;
         });
+        document.body.dataset.activePage = pageName;
+        document.body.classList.remove("nav-open");
+        closeMopActions(false);
+        navBackdrop.hidden = true;
+        navReveal.setAttribute("aria-expanded", "false");
+        navReveal.setAttribute("aria-label", "주 메뉴 열기");
+        navReveal.tabIndex = 0;
+        navRail.inert = pageName === "inflight";
         document.querySelectorAll("[data-page-target]").forEach(function (button) {
-          const active = button.dataset.pageTarget === pageName;
+          const active = button.dataset.pageTarget === (pageName === "diagnostics" ? "settings" : pageName);
           button.classList.toggle("is-active", active);
           button.setAttribute("aria-current", active ? "page" : "false");
         });
+        const pageNames = { preflight: "임무 · 계획 및 준비", inflight: "조종 · 라이브 뷰", postflight: "기록 · 비행 검토", evidence: "증거 · 로컬 및 동기화", diagnostics: "설정 · 시스템 진단", settings: "설정 · 조종사 및 앱" };
+        document.getElementById("active-page-name").textContent = pageNames[pageName] || "현장 조종";
         const activeHeading = document.querySelector('[data-page-panel="' + pageName + '"] h2');
-        if (activeHeading) activeHeading.focus({ preventScroll: true });
+        if (activeHeading && pageName !== "inflight") activeHeading.focus({ preventScroll: true });
+        if (previousPage !== pageName) document.getElementById("main-content").scrollTop = 0;
+      }
+
+      function setNavigationOpen(open, returnFocus) {
+        const canOpen = document.body.dataset.activePage === "inflight";
+        const nextOpen = Boolean(open && canOpen);
+        window.clearTimeout(navFocusTimer);
+        document.body.classList.toggle("nav-open", nextOpen);
+        navBackdrop.hidden = !nextOpen;
+        navRail.inert = canOpen && !nextOpen;
+        navReveal.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+        navReveal.setAttribute("aria-label", nextOpen ? "주 메뉴 닫기" : "주 메뉴 열기");
+        navReveal.tabIndex = nextOpen ? -1 : 0;
+        if (nextOpen) {
+          window.requestAnimationFrame(function () {
+            if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+              navClose.focus({ preventScroll: true });
+            } else {
+              navFocusTimer = window.setTimeout(function () {
+                if (document.body.classList.contains("nav-open")) navClose.focus({ preventScroll: true });
+              }, 200);
+            }
+          });
+        } else if (returnFocus) navReveal.focus({ preventScroll: true });
+      }
+
+      function closeMopActions(returnFocus) {
+        const toggle = document.getElementById("mop-actions-toggle");
+        const dock = document.getElementById("mop-action-dock");
+        if (!dock || !toggle) return;
+        dock.hidden = true;
+        toggle.setAttribute("aria-expanded", "false");
+        toggle.setAttribute("aria-label", "MOP 링크 조작 열기");
+        if (returnFocus) toggle.focus();
+      }
+
+      function openMopActions() {
+        const toggle = document.getElementById("mop-actions-toggle");
+        const dock = document.getElementById("mop-action-dock");
+        dock.hidden = false;
+        toggle.setAttribute("aria-expanded", "true");
+        toggle.setAttribute("aria-label", "MOP 링크 조작 닫기");
+        dock.querySelector("button").focus();
       }
 
       function updateReviewFlight() {
@@ -1068,26 +1799,66 @@ tbody tr:last-child td { border-block-end: 0; }
         document.getElementById("review-flight-id").textContent = flight.id;
         document.getElementById("review-flight-state").textContent = flight.state;
         document.getElementById("review-event-count").textContent = flight.events;
+        document.getElementById("review-evidence-count").textContent = flight.evidence;
+        document.getElementById("postflight-evidence-subline").textContent = flight.evidenceSummary;
+        document.getElementById("postflight-evidence-list-summary").textContent = flight.hasEvidence ? "로컬 카운트 예시 · 3건 미동기화" : "선택 비행의 로컬 카운트 알 수 없음";
+        document.getElementById("postflight-unsynced-count").textContent = flight.unsynced;
+        document.getElementById("postflight-evidence-table").hidden = !flight.hasEvidence;
+        document.getElementById("postflight-evidence-unknown").hidden = flight.hasEvidence;
+        document.querySelectorAll("[data-flight-select]").forEach(function (button) {
+          const selected = Number(button.dataset.flightSelect) === reviewFlightIndex;
+          button.classList.toggle("is-selected", selected);
+          button.setAttribute("aria-pressed", selected ? "true" : "false");
+          button.querySelector(".flight-choice-top span").textContent = selected ? "선택됨" : "선택";
+        });
+        reviewEventIndex = 0;
+        updateReviewEvent();
       }
 
       function updateReviewEvent() {
-        const event = events[reviewEventIndex];
-        document.getElementById("review-event-index").textContent = (reviewEventIndex + 1) + " / " + events.length;
-        document.getElementById("review-event-title").textContent = event.title;
-        document.getElementById("review-event-time").textContent = event.time;
+        const currentEvents = flightEvents[reviewFlightIndex] || [];
+        const event = currentEvents[reviewEventIndex];
+        const hasEvent = Boolean(event);
+        const key = flights[reviewFlightIndex].id + ":" + reviewEventIndex;
+        document.getElementById("review-event-index").textContent = hasEvent ? (reviewEventIndex + 1) + " / " + currentEvents.length : "0 / 0";
+        document.getElementById("review-event-title").textContent = hasEvent ? event.title : "이 비행에는 기록된 사건이 없습니다";
+        document.getElementById("review-event-time").textContent = hasEvent ? event.receiptTime : "관측/사건 데이터 없음 · 안전 확인 아님";
+        document.getElementById("review-event-prev").disabled = !hasEvent;
+        document.getElementById("review-event-next").disabled = !hasEvent;
         const button = document.getElementById("false-positive-button");
-        button.setAttribute("aria-pressed", falsePositiveMarks[reviewEventIndex] ? "true" : "false");
-        button.textContent = falsePositiveMarks[reviewEventIndex] ? "오탐 의심 해제" : "오탐 의심 표시";
+        button.disabled = !hasEvent;
+        button.setAttribute("aria-pressed", hasEvent && falsePositiveMarks.has(key) ? "true" : "false");
+        button.textContent = !hasEvent ? "사건 선택 후 의견 기록" : falsePositiveMarks.has(key) ? "오탐 의심 해제" : "오탐 의심 표시";
+        renderOpinionLog();
       }
 
       function appendOpinion(text, isEffectiveFalsePositive) {
-        const log = document.getElementById("append-log");
-        const empty = log.querySelector("p[data-empty]");
-        if (empty) empty.remove();
-        const entry = document.createElement("p");
         const attribution = isEffectiveFalsePositive && registeredOperatorName ? " · 오탐 의심 (" + registeredOperatorName + ")" : "";
-        entry.textContent = text + attribution + " · [SIMULATED] · 추가 기록형";
-        log.appendChild(entry);
+        const key = flights[reviewFlightIndex].id + ":" + reviewEventIndex;
+        const entries = opinionHistory.get(key) || [];
+        entries.push(text + attribution + " · [SIMULATED] · 추가 기록형");
+        opinionHistory.set(key, entries);
+        renderOpinionLog();
+      }
+
+      function renderOpinionLog() {
+        const log = document.getElementById("append-log");
+        const currentEvents = flightEvents[reviewFlightIndex] || [];
+        const key = flights[reviewFlightIndex].id + ":" + reviewEventIndex;
+        const entries = currentEvents.length ? (opinionHistory.get(key) || []) : [];
+        log.replaceChildren();
+        if (!entries.length) {
+          const empty = document.createElement("p");
+          empty.dataset.empty = "true";
+          empty.textContent = currentEvents.length ? "기록된 의견 없음 · [SIMULATED]" : "이 비행에는 기록된 의견이 없습니다 · [SIMULATED]";
+          log.appendChild(empty);
+          return;
+        }
+        entries.forEach(function (text) {
+          const entry = document.createElement("p");
+          entry.textContent = text;
+          log.appendChild(entry);
+        });
       }
 
       function setMopOverride(state) {
@@ -1096,17 +1867,95 @@ tbody tr:last-child td { border-block-end: 0; }
       }
 
       document.querySelectorAll("[data-page-target]").forEach(function (button) {
-        button.addEventListener("click", function () { setPage(button.dataset.pageTarget); });
+        button.addEventListener("click", function () {
+          const target = button.dataset.pageTarget;
+          setPage(target);
+          if (target === "inflight") navReveal.focus();
+        });
       });
       document.querySelectorAll("[data-page-link]").forEach(function (button) {
         button.addEventListener("click", function () { setPage(button.dataset.pageLink); });
+      });
+      const postflightTabs = Array.from(document.querySelectorAll("[data-postflight-tab]"));
+      function activatePostflightTab(button, moveFocus) {
+        const panelName = button.dataset.postflightTab;
+        postflightTabs.forEach(function (tab) {
+          const selected = tab === button;
+          tab.setAttribute("aria-selected", selected ? "true" : "false");
+          tab.tabIndex = selected ? 0 : -1;
+        });
+        document.querySelectorAll("[data-postflight-panel]").forEach(function (panel) { panel.hidden = panel.dataset.postflightPanel !== panelName; });
+        if (moveFocus) button.focus();
+      }
+      postflightTabs.forEach(function (button, index) {
+        button.addEventListener("click", function () { activatePostflightTab(button, false); });
+        button.addEventListener("keydown", function (event) {
+          let nextIndex = index;
+          if (event.key === "ArrowRight") nextIndex = (index + 1) % postflightTabs.length;
+          else if (event.key === "ArrowLeft") nextIndex = (index + postflightTabs.length - 1) % postflightTabs.length;
+          else if (event.key === "Home") nextIndex = 0;
+          else if (event.key === "End") nextIndex = postflightTabs.length - 1;
+          else return;
+          event.preventDefault();
+          activatePostflightTab(postflightTabs[nextIndex], true);
+        });
+      });
+      document.querySelectorAll("[data-flight-select]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          reviewFlightIndex = Number(button.dataset.flightSelect);
+          updateReviewFlight();
+          announce("선택한 로컬 비행 기록 · 실제 비행 데이터와 동기화되지 않았습니다.");
+        });
+      });
+      navReveal.addEventListener("click", function () { setNavigationOpen(!document.body.classList.contains("nav-open"), false); });
+      navClose.addEventListener("click", function () { setNavigationOpen(false, true); });
+      navBackdrop.addEventListener("click", function () { setNavigationOpen(false, true); });
+      document.getElementById("mop-actions-toggle").addEventListener("click", function () {
+        if (this.getAttribute("aria-expanded") === "true") closeMopActions(true);
+        else openMopActions();
+      });
+      document.addEventListener("click", function (event) {
+        const dock = document.getElementById("mop-action-dock");
+        if (dock && !dock.hidden && !dock.contains(event.target) && !event.target.closest("[data-toggle-mop-actions]")) closeMopActions(false);
+      });
+      document.addEventListener("keydown", function (event) {
+        const mopDock = document.getElementById("mop-action-dock");
+        if (event.key === "Escape" && mopDock && !mopDock.hidden) {
+          event.preventDefault();
+          closeMopActions(true);
+          return;
+        }
+        const navOpen = document.body.classList.contains("nav-open");
+        const focusScope = navOpen ? navRail : null;
+        if (event.key === "Tab" && focusScope) {
+          const focusable = Array.from(focusScope.querySelectorAll("a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex='-1'])")).filter(function (element) { return element.getClientRects().length > 0; });
+          if (focusable.length) {
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            if (event.shiftKey && (document.activeElement === first || !focusScope.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && (document.activeElement === last || !focusScope.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+          }
+          return;
+        }
+        if (event.key !== "Escape") return;
+        if (navOpen) { event.preventDefault(); setNavigationOpen(false, true); }
+      });
+      document.querySelector("[data-toggle-focus]").addEventListener("click", function (event) {
+        const button = event.currentTarget;
+        const focused = document.getElementById("observe-page").classList.toggle("is-focus");
+        button.setAttribute("aria-pressed", focused ? "true" : "false");
+        button.textContent = focused ? "화면 복귀" : "화면 확대";
+      });
+      document.getElementById("system-details").addEventListener("toggle", function (event) {
+        const action = event.currentTarget.querySelector(".details-action");
+        action.textContent = event.currentTarget.open ? "접기" : "펼치기";
       });
       scenarioButtons.forEach(function (button) {
         button.addEventListener("click", function () {
           window.clearTimeout(mopTimer);
           mopOverride = null;
           renderStatus(button.dataset.scenario);
-          const messages = { normal: "정상 상태 예시 표시 · 실제 시스템 상태가 아닙니다.", "no-flight": "비행 없음 예시 표시 · 임무 동기화 → 번들 → 시작 안내.", problem: "문제 상태 예시 표시 · 실제 링크 상태가 아닙니다." };
+          const messages = { normal: "정상 상태 예시 표시 · 실제 시스템 상태가 아닙니다.", "no-flight": "기록 없음 예시 표시 · 임무 동기화 → 번들 → KSI 로컬 기록 세션 시작 안내.", "observation-late": "관측 지연 예시 · 데이터 신선도 표시이며 안전 판정이나 비행 경고가 아닙니다.", problem: "문제 상태 예시 표시 · 실제 링크/녹화 상태가 아닙니다.", unknown: "미확인 예시 표시 · 미수신, 미검증, 끊김을 서로 구분합니다." };
           announce(messages[button.dataset.scenario]);
         });
       });
@@ -1153,11 +2002,23 @@ tbody tr:last-child td { border-block-end: 0; }
         } else if (action === "retry-unacked") {
           announce("미확인 재전송 요청 예시 · 실제 송신 없음 · pending 2건은 유지됩니다.");
         } else if (action === "video-connect") {
-          document.getElementById("video-state").textContent = "연결 예시";
-          announce("영상 연결 예시 · 실제 수신 프레임은 없습니다.");
+          setVideoDemoState("connecting");
+          announce("영상 연결 요청 예시 · 실제 수신/표시 프레임은 없습니다.");
         } else if (action === "video-disconnect") {
-          document.getElementById("video-state").textContent = "연결 대기";
+          setVideoDemoState("disconnected");
           announce("영상 연결 해제 예시 · 실제 스트림은 연결되어 있지 않습니다.");
+        } else if (action === "video-no-signal") {
+          setVideoDemoState("noSignal");
+          announce("영상 신호 없음 예시 · 실제 스트림 상태는 변경하지 않았습니다.");
+        } else if (action === "video-recent") {
+          setVideoDemoState("recent");
+          announce("인코딩 입력 최근 수신 예시 · 실제 프레임 수신·화면 표시는 증명하지 않습니다.");
+        } else if (action === "video-stale") {
+          setVideoDemoState("stale");
+          announce("인코딩 입력 지연 예시 · 비행 안전 경고가 아닙니다.");
+        } else if (action === "video-unknown") {
+          setVideoDemoState("unknown");
+          announce("영상 입력 수신 시각 미확인 예시 · 지연/실패와 구분합니다.");
         } else if (action === "sync-sites") {
           announce("현장 동기화 요청 예시 · 실제 서버 호출 없음.");
         } else if (action === "download-bundle") {
@@ -1166,38 +2027,50 @@ tbody tr:last-child td { border-block-end: 0; }
           const labels = { prepare: "준비", apply: "적용", reconcile: "재조정" };
           announce(labels[action] + " 단계 예시 · 실제 임무 상태는 변경되지 않았습니다.");
         } else if (action === "start-flight") {
-          announce("비행 시작 동작 예시 · 실제 비행 상태는 변경되지 않았습니다.");
+          announce("로컬 기록 시작 예시 · 실제 기체 비행 상태는 변경되지 않았습니다.");
         } else if (action === "mission-start") {
-          announce("시작 동작 예시 · 실제 비행 제어 및 상태 변경 없음.");
+          announce("관측 세션 시작 예시 · 실제 기체 비행 제어 및 상태 변경 없음.");
         } else if (action === "mission-stop") {
-          announce("정지 동작 예시 · 실제 비행 제어 및 상태 변경 없음.");
+          announce("관측 세션 정지 예시 · 실제 기체 비행 제어 및 상태 변경 없음.");
         } else if (action === "end-flight") {
-          announce("비행 종료 동작 예시 · 실제 비행 기록은 변경되지 않았습니다.");
+          announce("로컬 기록 종료 예시 · 실제 비행 기록은 변경되지 않았습니다.");
         } else if (action === "previous-flight" || action === "next-flight") {
           reviewFlightIndex = (reviewFlightIndex + (action === "next-flight" ? 1 : flights.length - 1)) % flights.length;
           updateReviewFlight();
           announce("로컬 비행 목록 예시를 이동했습니다.");
         } else if (action === "previous-event" || action === "next-event") {
-          reviewEventIndex = (reviewEventIndex + (action === "next-event" ? 1 : events.length - 1)) % events.length;
+          const eventCount = (flightEvents[reviewFlightIndex] || []).length;
+          if (eventCount === 0) return;
+          reviewEventIndex = (reviewEventIndex + (action === "next-event" ? 1 : eventCount - 1)) % eventCount;
           updateReviewEvent();
           announce("사건 예시를 이동했습니다.");
         } else if (action === "toggle-false-positive") {
-          falsePositiveMarks[reviewEventIndex] = !falsePositiveMarks[reviewEventIndex];
-          button.setAttribute("aria-pressed", falsePositiveMarks[reviewEventIndex] ? "true" : "false");
-          button.textContent = falsePositiveMarks[reviewEventIndex] ? "오탐 의심 해제" : "오탐 의심 표시";
-          appendOpinion((falsePositiveMarks[reviewEventIndex] ? "오탐 의심 표시 추가" : "오탐 의심 해제 추가") + " · " + events[reviewEventIndex].title, falsePositiveMarks[reviewEventIndex]);
+          const eventList = flightEvents[reviewFlightIndex] || [];
+          const selectedEvent = eventList[reviewEventIndex];
+          if (!selectedEvent) return;
+          const key = flights[reviewFlightIndex].id + ":" + reviewEventIndex;
+          if (falsePositiveMarks.has(key)) falsePositiveMarks.delete(key);
+          else falsePositiveMarks.add(key);
+          button.setAttribute("aria-pressed", falsePositiveMarks.has(key) ? "true" : "false");
+          button.textContent = falsePositiveMarks.has(key) ? "오탐 의심 해제" : "오탐 의심 표시";
+          appendOpinion((falsePositiveMarks.has(key) ? "오탐 의심 표시 추가" : "오탐 의심 해제 추가") + " · " + selectedEvent.title, falsePositiveMarks.has(key));
           announce("새 의견을 추가했습니다. 기존 의견은 삭제되지 않습니다.");
         } else if (action === "view-local-evidence") {
           announce("로컬 증거 미리보기 예시 · 실제 증거 파일은 연결되지 않았습니다.");
         } else if (action === "fetch-server-evidence") {
           announce("서버에서 가져오기 예시 · 서버 상태는 알 수 없습니다.");
         } else if (action === "refresh-local") {
-          announce("로컬 목록 새로 고침 예시 · 저장소 연결 없음 · 미동기화 3건 유지.");
+          if (button.closest("#review-page") && !flights[reviewFlightIndex].hasEvidence) {
+            announce("선택 비행의 로컬 증거 상태는 알 수 없습니다. 목록 값은 변경되지 않았습니다.");
+          } else {
+            announce("로컬 목록 새로 고침 예시 · 저장소 연결 없음 · 미동기화 3건 유지.");
+          }
         } else if (action === "upload-now") {
           document.getElementById("server-state-note").textContent = "업로드 요청: 실행되지 않음 · Core 미설정 · 미동기화 3건 유지";
           announce("Core 미설정 · 실제 업로드는 실행되지 않았습니다.");
         } else if (action === "server-state") {
           document.getElementById("server-state-note").textContent = "서버 상태: 알 수 없음 · 이 프로토타입은 서버에 연결되지 않습니다.";
+          document.getElementById("postflight-server-state-note").textContent = "서버 상태: 알 수 없음 · 요청을 보내지 않았습니다.";
           announce("서버 상태는 알 수 없습니다. 서버에 요청하지 않았습니다.");
         } else if (action === "demo-tick") {
           demoTick += 1;
@@ -1208,8 +2081,10 @@ tbody tr:last-child td { border-block-end: 0; }
           document.getElementById("demo-state").textContent = "틱 " + demoTick + " · SIM-FLT-" + String(demoFlightNumber).padStart(3, "0") + " · 격리 상태";
           announce("새 데모 비행 예시 생성 · 업로드 불가.");
         }
+        if (button.closest("#mop-action-dock")) closeMopActions(true);
       });
 
+      setVideoDemoState("disconnected");
       renderStatus("normal");
       updateReviewFlight();
       updateReviewEvent();

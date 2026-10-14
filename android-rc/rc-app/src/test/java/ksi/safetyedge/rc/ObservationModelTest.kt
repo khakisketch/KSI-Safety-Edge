@@ -196,9 +196,32 @@ class ObservationModelTest {
         )
         assertEquals("NONE", ObservationModel.classifyFreshness(null, 1L))
 
-        assertEquals("관측 공백 — 수신된 관측 없음", ObservationModel.aiVerdict(0, 0))
+        assertEquals("관측 수신 없음", ObservationModel.observationFreshnessLabel(null))
+        assertEquals("최근 수신 · 1초 미만", ObservationModel.observationFreshnessLabel(0L))
+        assertEquals("최근 수신 · 1초 미만", ObservationModel.observationFreshnessLabel(999L))
+        assertEquals("최근 수신 · 1초 전", ObservationModel.observationFreshnessLabel(1_000L))
+        assertEquals("최근 수신 · 4초 전", ObservationModel.observationFreshnessLabel(4_999L))
+        assertEquals("수신 지연 · 마지막 5초 전", ObservationModel.observationFreshnessLabel(5_000L))
+        assertEquals("수신 지연 · 마지막 6초 전", ObservationModel.observationFreshnessLabel(5_001L))
+
+        assertEquals("관측 미수신 — 분석 결과 알 수 없음", ObservationModel.aiVerdict(0, 0))
+        assertEquals(
+            "사건 1건 수신 · 관측 미수신 — 분석 범위 알 수 없음",
+            ObservationModel.aiVerdict(0, 1),
+        )
         assertEquals("분석됨(관측 2) · 사건 0건", ObservationModel.aiVerdict(2, 0))
         assertEquals("사건 1건 수신 (관측 2)", ObservationModel.aiVerdict(2, 1))
+    }
+
+    @Test
+    fun pulse_receipt_is_not_refreshed_by_artifacts_or_heartbeat() {
+        var now = fixedUtc
+        val store = FileRcStore(Files.createTempDirectory("obs-pulse-clock"), wallClock = { now })
+        store.storeObservation(observation("o1", withheld = false, degraded = false), "boot")
+        now = "2026-10-10T02:00:15Z"
+        store.announceArtifact(announce("a-new", ByteArray(4)), "boot")
+        assertEquals(now, store.lastReceivedUtc(flight))
+        assertEquals(fixedUtc, ObservationModel.observationPulse(store, flight).lastReceivedUtc)
     }
 
     @Test

@@ -5,6 +5,7 @@
   - `~/Desktop/KSI-Projects/KSI-Site-Intelligence-Platform` (git, Track A 실기 절차·분석 도구)
   - `~/Desktop/KSI-Projects/KSI-Site-Intelligence-Platform-manifold3-shadow` (비-git 작업공간: PSDK 수집기·Shadow DPK·C++ 런타임)
 - 성격: **후보 식별**이다. 코드 채택 전 별도 감사(라이선스·의존성·품질·계약 충돌)가 필요하다.
+  상태: **2026-10-08 읽기 전용 조사 초안(이력)** — 현행 채택 지시가 아니다.
 
 ## 1. 확인된 자산 (읽기로 확인)
 

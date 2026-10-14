@@ -98,6 +98,24 @@ class FlightHistoryModelTest {
     }
 
     @Test
+    fun postflight_detail_includes_all_events_after_restart() {
+        val root = Files.createTempDirectory("hist-all-events")
+        val store = store(root)
+        store.startFlight(flightRecord(flightA))
+        repeat(27) { index ->
+            store.storeEvent(event(flightA, "e-$index", "DETECTED_ONLY"), "boot")
+        }
+        val restarted = store(root)
+        val detail = FlightHistoryModel.detail(restarted, flightA)!!
+        assertEquals(27, detail.row.eventCount)
+        assertEquals(27, detail.events.size)
+        assertEquals("e-26", detail.events.first().card.eventId)
+        assertEquals("e-0", detail.events.last().card.eventId)
+        // The separately bounded preview contract stays intact.
+        assertEquals(20, ObservationModel.eventCards(restarted, flightA).size)
+    }
+
+    @Test
     fun annotation_chain_is_append_only_with_effective_state() {
         val root = Files.createTempDirectory("hist-ann")
         val store = store(root)

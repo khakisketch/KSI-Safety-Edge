@@ -87,7 +87,7 @@ object ObservationModel {
             degraded = observations.count {
                 it.get("sync_quality")?.asText() == "DEGRADED"
             },
-            lastReceivedUtc = store.lastReceivedUtc(flightId),
+            lastReceivedUtc = store.lastObservationUtc(flightId),
         )
     }
 
@@ -130,13 +130,32 @@ object ObservationModel {
         else -> "OK"
     }
 
+    /** Compact RC-receipt freshness copy for the glanceable cockpit preview.
+     *  This is a display state only, never a safety verdict. */
+    fun observationFreshnessLabel(ageMs: Long?): String {
+        if (ageMs == null) return "관측 수신 없음"
+        val age = ageMs.coerceAtLeast(0L)
+        if (age < 1_000L) return "최근 수신 · 1초 미만"
+        val seconds = age / 1_000L
+        return if (age >= STALE_DATA_MS) {
+            val roundedUpSeconds = seconds + if (age % 1_000L == 0L) 0L else 1L
+            "수신 지연 · 마지막 ${roundedUpSeconds}초 전"
+        } else {
+            "최근 수신 · ${seconds}초 전"
+        }
+    }
+
     /**
      * A8 AI verdict, separating "no events" from "no observation":
      * observations flowing with zero events is a healthy analysis with no
      * detections — NOT an AI failure and NOT a "safe" claim.
      */
     fun aiVerdict(observationCount: Int, eventCount: Int): String = when {
-        observationCount == 0 -> "관측 공백 — 수신된 관측 없음"
+        observationCount == 0 -> if (eventCount > 0) {
+            "사건 ${eventCount}건 수신 · 관측 미수신 — 분석 범위 알 수 없음"
+        } else {
+            "관측 미수신 — 분석 결과 알 수 없음"
+        }
         eventCount == 0 -> "분석됨(관측 ${observationCount}) · 사건 0건"
         else -> "사건 ${eventCount}건 수신 (관측 ${observationCount})"
     }

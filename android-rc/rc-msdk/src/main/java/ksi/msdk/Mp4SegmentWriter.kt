@@ -10,8 +10,8 @@ import java.nio.ByteBuffer
  *
  * Start gating (review C63 #1): the track is created from the frame's own
  * SPS/PPS. Recording can begin mid-GOP, so a frame without CSD does NOT
- * poison the segment — [write] returns false and the writer waits for the
- * first keyframe that carries SPS/PPS; the segment then starts at a
+ * poison the segment — [SegmentRecorderCore] waits before calling [write]
+ * for the first keyframe that carries SPS/PPS; the segment then starts at a
  * keyframe, which is also better for playback. Only a real muxer failure
  * marks the writer failed.
  *

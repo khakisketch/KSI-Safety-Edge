@@ -44,6 +44,10 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
     @Volatile
     private var frameCount = 0L
 
+    override val receivedFrameCount: Long get() = frameCount
+    override val lastFrameReceivedElapsedMs: Long?
+        get() = lastFrameUptimeMs.takeIf { frameCount > 0L }
+
     @Volatile
     var lastFrameUptimeMs: Long = 0L
         private set
@@ -156,6 +160,9 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
 
     override fun connect() {
         if (state != VideoSource.State.DISCONNECTED) return
+        frameCount = 0L
+        lastFrameUptimeMs = 0L
+        lastError = null
         setState(VideoSource.State.CONNECTING)
         try {
             val manager = VideoStreamManager.getInstance()
@@ -220,6 +227,8 @@ class MsdkVideoSource(private val context: Context) : VideoSource {
             decoder = null
         }
         active?.release()
+        frameCount = 0L
+        lastFrameUptimeMs = 0L
         setState(VideoSource.State.DISCONNECTED)
     }
 
