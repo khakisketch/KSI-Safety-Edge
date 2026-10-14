@@ -1,0 +1,126 @@
+{
+  "viewport": [
+    1920,
+    1200
+  ],
+  "defaultRail": 116,
+  "defaultRows": [
+    {
+      "text": "라이브 · 관측",
+      "lines": [
+        "라이브 ·",
+        "관측"
+      ],
+      "lineCount": 2,
+      "width": 65,
+      "scrollWidth": 65,
+      "wordBreak": "keep-all"
+    },
+    {
+      "text": "비행 전 · 준비",
+      "lines": [
+        "비행 전 ·",
+        "준비"
+      ],
+      "lineCount": 2,
+      "width": 59,
+      "scrollWidth": 59,
+      "wordBreak": "keep-all"
+    },
+    {
+      "text": "비행 후 · 검토",
+      "lines": [
+        "비행 후 ·",
+        "검토"
+      ],
+      "lineCount": 2,
+      "width": 59,
+      "scrollWidth": 59,
+      "wordBreak": "keep-all"
+    },
+    {
+      "text": "로컬 · 동기화",
+      "lines": [
+        "로컬 ·",
+        "동기화"
+      ],
+      "lineCount": 2,
+      "width": 59,
+      "scrollWidth": 59,
+      "wordBreak": "keep-all"
+    },
+    {
+      "text": "앱 · 조종사",
+      "lines": [
+        "앱 · 조종사"
+      ],
+      "lineCount": 1,
+      "width": 57,
+      "scrollWidth": 57,
+      "wordBreak": "keep-all"
+    }
+  ],
+  "narrowRail": 98,
+  "narrowRows": [
+    {
+      "text": "라이브 · 관측",
+      "lines": [
+        "라이브 ·",
+        "관측"
+      ],
+      "lineCount": 2,
+      "width": 47,
+      "scrollWidth": 47,
+      "wordBreak": "keep-all"
+    },
+    {
+      "text": "비행 전 · 준비",
+      "lines": [
+        "비행 전",
+        "· 준비"
+      ],
+      "lineCount": 2,
+      "width": 41,
+      "scrollWidth": 41,
+      "wordBreak": "keep-all"
+    },
+    {
+      "text": "비행 후 · 검토",
+      "lines": [
+        "비행 후",
+        "· 검토"
+      ],
+      "lineCount": 2,
+      "width": 41,
+      "scrollWidth": 41,
+      "wordBreak": "keep-all"
+    },
+    {
+      "text": "로컬 · 동기화",
+      "lines": [
+        "로컬 ·",
+        "동기화"
+      ],
+      "lineCount": 2,
+      "width": 41,
+      "scrollWidth": 41,
+      "wordBreak": "keep-all"
+    },
+    {
+      "text": "앱 · 조종사",
+      "lines": [
+        "앱 ·",
+        "조종사"
+      ],
+      "lineCount": 2,
+      "width": 41,
+      "scrollWidth": 41,
+      "wordBreak": "keep-all"
+    }
+  ],
+  "chip": {
+    "width": 200,
+    "scrollWidth": 200,
+    "wordBreak": "normal"
+  }
+}

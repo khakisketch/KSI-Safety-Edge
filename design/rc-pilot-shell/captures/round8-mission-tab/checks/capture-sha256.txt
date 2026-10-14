@@ -1,0 +1,14 @@
+Source HTML SHA-256
+baseline `git show HEAD:design/rc-pilot-shell/field-shell.html`: 2f3c22e100dfd36a45ea13d8cebde0d6aceb341944fa26e335de2e7fde4f602e
+final `design/rc-pilot-shell/field-shell.html`: daa0285eac60de22852d40387d2553d1968b1d3502b2804a89fa6dbad0c49ed0
+
+Before / after / focused PNG SHA-256
+73ef7c2ebc4970f35f46775ea3be452371c3960466b11eb0616eab4eae26ca1e  design/rc-pilot-shell/captures/round8-mission-tab/before/dark-1920-mission.png
+fc20125cabcddab5fbc0c5ba2b4ae24b6db134a52fcbe8aa3a3ab44a8029c7e6  design/rc-pilot-shell/captures/round8-mission-tab/before/light-1920-mission.png
+bbb26cd94abc02fcd343ff9e1f4ac4a6156c7d2450865bd97f171f351b871873  design/rc-pilot-shell/captures/round8-mission-tab/before/light-390-mission.png
+f3136a1f487f662266b5daf7fa250a76594efcce524c614c5a38e1a751f9b399  design/rc-pilot-shell/captures/round8-mission-tab/after/dark-1920-mission.png
+0d2325acbddcb40be772203e08f6d6aa18a30911f4088b402b15886b872cd592  design/rc-pilot-shell/captures/round8-mission-tab/after/light-1920-mission.png
+c04584292aef0dde083da354daf36dbabce8dc72fd419d68795e50b8d9718d95  design/rc-pilot-shell/captures/round8-mission-tab/after/light-390-mission.png
+da65b9a25cc07f1f00615931d1fb20a5447c8a77b1730297c06394fd5a2c4f8d  design/rc-pilot-shell/captures/round8-mission-tab/focused/light-390-mission-actions.png
+6af5853eb54a017b08b528c124da9c5750331b540cd2d5a116d8702615236092  design/rc-pilot-shell/captures/round8-mission-tab/focused/rail-1920-98px.png
+977c7d4e43b9de1d72ed92a8d7f92e368e26c74361e045c19f9033540c268ec1  design/rc-pilot-shell/captures/round8-mission-tab/focused/rail-1920.png

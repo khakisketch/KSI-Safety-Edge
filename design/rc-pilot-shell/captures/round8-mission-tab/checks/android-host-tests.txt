@@ -1,0 +1,6 @@
+Command: bash scripts/android_host_tests.sh :rc-app:testBenchDebugUnitTest :rc-app:testDeviceDebugUnitTest
+Result: BUILD SUCCESSFUL in 20s
+Tasks: 62 actionable; 22 executed; 40 up-to-date
+Verified: compileBenchDebugKotlin + testBenchDebugUnitTest; compileDeviceDebugKotlin + testDeviceDebugUnitTest
+Warnings: Existing DJI SDK merged-resource formatting warnings and MainActivity FLAG_FULLSCREEN deprecations at unrelated lines 1195/1197.
+Scope: targeted app host unit tests only; no full Gradle invocation, Android device render or field acceptance.

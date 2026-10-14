@@ -1,0 +1,50 @@
+{
+  "viewport": [
+    1920,
+    1200
+  ],
+  "document": {
+    "width": 1920,
+    "scrollWidth": 1920,
+    "height": 1200,
+    "scrollHeight": 1200
+  },
+  "body": {
+    "clientWidth": 1920,
+    "scrollWidth": 1920,
+    "clientHeight": 1200,
+    "scrollHeight": 1200
+  },
+  "main": {
+    "clientWidth": 1804,
+    "scrollWidth": 1804,
+    "clientHeight": 1142,
+    "scrollHeight": 1142,
+    "scrollTop": 0,
+    "rect": {
+      "top": 58,
+      "bottom": 1200,
+      "left": 116,
+      "right": 1920,
+      "width": 1804,
+      "height": 1142
+    }
+  },
+  "page": {
+    "top": 69,
+    "bottom": 990,
+    "left": 138,
+    "right": 1898,
+    "width": 1761,
+    "height": 920
+  },
+  "footer": {
+    "top": 959,
+    "bottom": 990,
+    "left": 138,
+    "right": 1898,
+    "width": 1761,
+    "height": 30
+  },
+  "horizontalOverflow": false
+}

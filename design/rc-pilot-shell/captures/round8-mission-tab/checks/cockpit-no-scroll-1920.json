@@ -1,0 +1,22 @@
+{
+  "viewport": [
+    1920,
+    1200
+  ],
+  "active": "inflight",
+  "rail": 272,
+  "body": {
+    "width": 1920,
+    "scrollWidth": 1920,
+    "height": 1200,
+    "scrollHeight": 1200
+  },
+  "main": {
+    "width": 1920,
+    "scrollWidth": 1920,
+    "height": 1200,
+    "scrollHeight": 1200
+  },
+  "noDocumentScroll": true,
+  "noMainScroll": true
+}

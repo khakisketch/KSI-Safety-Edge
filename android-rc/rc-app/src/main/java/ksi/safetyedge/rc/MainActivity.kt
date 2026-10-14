@@ -10,10 +10,12 @@ import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.view.View
+import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -33,6 +35,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var demo: DemoSession
 
     private lateinit var tvMission: TextView
+    private lateinit var tvMissionReadiness: TextView
+    private lateinit var tvMissionSyncResult: TextView
     private lateinit var tvMissionSite: TextView
     private lateinit var tvMissionBundle: TextView
     private lateinit var tvMissionRevision: TextView
@@ -119,6 +123,7 @@ class MainActivity : AppCompatActivity() {
 
     private var shownError: String? = null
     private var hasSyncReport = false
+    private var missionSyncResultResource = R.string.mission_sync_result_unknown
     private var selectedSiteId: String? = null
     private var selectedBundleId: String? = null
     private var siteIds: List<String> = emptyList()
@@ -247,6 +252,7 @@ class MainActivity : AppCompatActivity() {
         tvMopStatus = findViewById(R.id.tvMopStatus)
         tvKsiRecordStatus = findViewById(R.id.tvKsiRecordStatus)
         tvRecorderStatus = findViewById(R.id.tvRecorderStatus)
+        installMissionReadinessUi()
         tvError.setOnClickListener { tvError.visibility = View.GONE }
         bindMissionSelectors()
         bindHistorySelector()
@@ -605,6 +611,102 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun installMissionReadinessUi() {
+        val missionDetails = tvMission.parent as? LinearLayout ?: return
+        tvMissionReadiness = TextView(this).apply {
+            textSize = 13f
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_fg))
+            setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_surface_subtle))
+            setPadding(dp(8), dp(6), dp(8), dp(6))
+        }
+        missionDetails.addView(
+            tvMissionReadiness,
+            missionDetails.indexOfChild(tvMission),
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(8) },
+        )
+
+        val syncSitesButton = findViewById<Button>(R.id.btnSyncSites)
+        val syncButtonsRow = syncSitesButton.parent as? LinearLayout ?: return
+        val actionsPanel = syncButtonsRow.parent as? LinearLayout ?: return
+        tvMissionSyncResult = TextView(this).apply {
+            textSize = 12f
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_fg))
+            setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_surface_subtle))
+            setPadding(dp(7), dp(5), dp(7), dp(5))
+        }
+        updateMissionSyncResultUi()
+        actionsPanel.addView(
+            tvMissionSyncResult,
+            actionsPanel.indexOfChild(syncButtonsRow) + 1,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(5) },
+        )
+
+        val prepareRow = findViewById<Button>(R.id.btnPrepare).parent as? LinearLayout ?: return
+        val reconcileButton = findViewById<Button>(R.id.btnReconcile)
+        prepareRow.removeView(reconcileButton)
+
+        val startFlightButton = findViewById<Button>(R.id.btnStartFlight)
+        val startIndex = actionsPanel.indexOfChild(startFlightButton)
+        val startNote = actionsPanel.getChildAt(startIndex + 1) as? TextView ?: return
+        val startLayoutParams = startFlightButton.layoutParams
+        val noteLayoutParams = startNote.layoutParams
+        actionsPanel.removeView(startFlightButton)
+        actionsPanel.removeView(startNote)
+        val sequenceEndIndex = actionsPanel.indexOfChild(prepareRow) + 1
+        actionsPanel.addView(startFlightButton, sequenceEndIndex, startLayoutParams)
+        actionsPanel.addView(startNote, sequenceEndIndex + 1, noteLayoutParams)
+
+        val additionalRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+        }
+        additionalRow.addView(
+            TextView(this).apply {
+                text = getString(R.string.mission_additional_check)
+                textSize = 12f
+                setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_muted))
+            },
+            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
+        )
+        additionalRow.addView(
+            reconcileButton,
+            LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(48)),
+        )
+        actionsPanel.addView(
+            additionalRow,
+            actionsPanel.indexOfChild(startNote) + 1,
+            LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp(5) },
+        )
+    }
+
+    private fun setMissionSyncResult(resource: Int) {
+        missionSyncResultResource = resource
+        updateMissionSyncResultUi()
+    }
+
+    private fun updateMissionSyncResultUi() {
+        if (!::tvMissionSyncResult.isInitialized) return
+        val result = getString(missionSyncResultResource)
+        tvMissionSyncResult.text = result
+        tvMissionSyncResult.contentDescription = getString(
+            R.string.mission_sync_result_accessibility_format,
+            result,
+            getString(R.string.mission_sync_result_description),
+        )
+    }
+
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
     private fun refresh() {
         cockpitStateDirty = false
         val flight = session.activeFlight
@@ -614,6 +716,32 @@ class MainActivity : AppCompatActivity() {
         refreshConnectEmphasis()
         refreshMissionSelectors()
         val selectedBundle = selectedBundleId?.let { store.missionBundle(it) }
+        val coreReadiness = getString(
+            if (app.config.coreConfigured) {
+                R.string.mission_readiness_sync_configured
+            } else {
+                R.string.mission_readiness_sync_unconfigured
+            },
+        )
+        val bundleReadiness = selectedBundle?.let {
+            getString(
+                R.string.mission_readiness_bundle_format,
+                it.get("bundle_id")?.asText()?.take(8) ?: "알 수 없음",
+            )
+        } ?: getString(R.string.mission_readiness_bundle_none)
+        val recordReadiness = when {
+            flight != null -> getString(R.string.mission_readiness_record_active)
+            selectedBundle == null -> getString(R.string.mission_readiness_record_no_bundle)
+            else -> getString(R.string.mission_readiness_record_ready)
+        }
+        if (::tvMissionReadiness.isInitialized) {
+            tvMissionReadiness.text = listOf(
+                getString(R.string.mission_readiness_sync_format, coreReadiness),
+                bundleReadiness,
+                recordReadiness,
+            ).joinToString("\n")
+        }
+        updateMissionSyncResultUi()
         tvMission.text = if (selectedBundle == null) {
             "이 기기에 선택 가능한 번들이 없습니다. 현장 동기화 후 번들을 내려받으세요."
         } else {
@@ -1537,6 +1665,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun syncSites() {
+        setMissionSyncResult(R.string.mission_sync_result_unknown)
         val sync = session.missionSync() ?: run {
             show("먼저 Core URL과 토큰을 설정하세요")
             return
@@ -1552,16 +1681,21 @@ class MainActivity : AppCompatActivity() {
                 } ?: local.firstOrNull()?.get("site_id")?.asText()
                 runOnUiThread {
                     hasSyncReport = true
-                    tvSync.text = "현장 동기화됨: 로컬=${local.size}"
+                    setMissionSyncResult(R.string.mission_sync_result_success_local)
+                    tvSync.text = "성공(로컬 반영): 현장 ${local.size}건 · 서버 상태 별도"
                     refresh()
                 }
             } catch (exc: Exception) {
-                runOnUiThread { show("현장 동기화 실패: ${exc.message}") }
+                runOnUiThread {
+                    setMissionSyncResult(R.string.mission_sync_result_failure)
+                    show("현장 동기화 실패: ${exc.message}")
+                }
             }
         }
     }
 
     private fun syncBundleLatest() {
+        setMissionSyncResult(R.string.mission_sync_result_unknown)
         val sync = session.missionSync() ?: run {
             show("먼저 Core URL과 토큰을 설정하세요")
             return
@@ -1582,13 +1716,17 @@ class MainActivity : AppCompatActivity() {
                 val localCount = sync.localSiteBundles(siteId).size
                 runOnUiThread {
                     hasSyncReport = true
-                    tvSync.text = "현장 데이터: 구역 리비전 +${newZoneRevisions.size}, " +
+                    setMissionSyncResult(R.string.mission_sync_result_success_local)
+                    tvSync.text = "성공(로컬 반영): 구역 리비전 +${newZoneRevisions.size}, " +
                         "로컬 번들=$localCount, 선택=" +
-                        "${selectedBundleId!!.take(8)} (digest 검증됨)"
+                        "${selectedBundleId!!.take(8)} (digest 검증됨) · 서버 상태 별도"
                     refresh()
                 }
             } catch (exc: Exception) {
-                runOnUiThread { show("번들 동기화 실패: ${exc.message}") }
+                runOnUiThread {
+                    setMissionSyncResult(R.string.mission_sync_result_failure)
+                    show("번들 동기화 실패: ${exc.message}")
+                }
             }
         }
     }

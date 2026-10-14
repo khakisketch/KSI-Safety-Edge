@@ -45,7 +45,7 @@ small { font-size: 0.8rem; }
 .skip-link { position: fixed; z-index: 100; inset-block-start: 0.5rem; inset-inline-start: 0.5rem; transform: translateY(-180%); padding: 0.75rem 1rem; color: var(--on-primary); background: var(--primary); border-radius: 0.35rem; }
 .skip-link:focus { transform: translateY(0); }
 .app-shell { display: grid; grid-template-columns: 6.15rem minmax(0, 1fr); min-height: 100vh; }
-.nav-rail { position: sticky; inset-block-start: 0; height: 100vh; min-height: 36rem; display: flex; flex-direction: column; align-items: stretch; gap: 0.55rem; padding: 1rem 0.55rem; background: var(--surface); border-inline-end: 1px solid var(--border); z-index: 20; }
+.nav-rail { position: sticky; inset-block-start: 0; height: 100vh; min-height: 36rem; display: flex; flex-direction: column; align-items: stretch; gap: 0.55rem; padding: 1rem 0.55rem; background: var(--surface); border-inline-end: 1px solid var(--border); z-index: 20; container: nav-rail / inline-size; }
 .rail-brand { min-height: 4rem; display: grid; place-items: center; margin-block-end: 0.65rem; border-block-end: 1px solid var(--border); }
 .brand-mark { width: 2.65rem; height: 2.65rem; display: grid; place-items: center; border: 2px solid var(--fg); border-radius: 0.7rem; font-family: var(--font-mono); font-weight: 800; font-size: 0.85rem; letter-spacing: -0.08em; }
 .nav-item { min-width: 0; min-height: 4.25rem; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 0.3rem; padding: 0.4rem 0.15rem; border: 1px solid transparent; background: transparent; border-radius: 0.55rem; text-align: center; position: relative; font-size: 0.75rem; line-height: 1.12; }
@@ -55,7 +55,7 @@ small { font-size: 0.8rem; }
 .nav-icon { width: 1.25rem; height: 1.25rem; display: block; }
 .nav-icon path, .nav-icon circle, .nav-icon rect, .nav-icon line { stroke: currentColor; stroke-width: 1.8; fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .nav-name { display: block; font-weight: 800; font-size: 0.78rem; }
-.nav-sub { display: block; margin-block-start: 0.08rem; color: var(--text-quiet); font-size: 0.78rem; font-weight: 600; }
+.nav-sub { display: block; margin-block-start: 0.08rem; color: var(--text-quiet); font-size: 0.78rem; font-weight: 600; word-break: keep-all; }
 .nav-spacer { flex: 1; }
 .rail-note { padding: 0.55rem 0.1rem; color: var(--text-quiet); text-align: center; font-family: var(--font-mono); font-size: 0.63rem; border-block-start: 1px solid var(--border); }
 .workspace { min-width: 0; }
@@ -146,11 +146,32 @@ main { width: 100%; min-width: 0; padding: 1rem clamp(1rem, 2vw, 1.8rem) 2rem; }
 .data-cell span { display: block; color: var(--text-quiet); font-size: 0.78rem; font-weight: 700; }
 .data-cell strong { display: block; margin-block-start: 0.25rem; font-family: var(--font-mono); font-size: 0.86rem; overflow-wrap: anywhere; }
 .data-cell small { display: block; margin-block-start: 0.22rem; color: var(--text-quiet); font-size: 0.73rem; line-height: 1.35; }
+.mission-readiness { margin-block-start: 0.7rem; padding-block-start: 0.6rem; border-block-start: 1px solid var(--border); }
+.mission-readiness h4 { margin-block-end: 0.25rem; font-size: var(--type-caption); line-height: 1.35; font-weight: 800; }
+.mission-readiness-list { margin: 0; padding: 0; }
+.mission-readiness-row { display: grid; grid-template-columns: minmax(6.5rem, 0.65fr) minmax(0, 1.35fr); gap: 0.55rem; padding-block: 0.34rem; border-block-end: 1px solid var(--border); }
+.mission-readiness-row:last-child { border-block-end: 0; }
+.mission-readiness-row dt { color: var(--text-quiet); font-size: var(--type-caption); font-weight: 700; }
+.mission-readiness-row dd { min-width: 0; margin: 0; font-size: var(--type-ui); font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; }
 .action-group { padding: 0.85rem; border-block-start: 1px solid var(--border); }
 .action-group:first-child { border-block-start: 0; }
 .action-group h3 { margin-block-end: 0.6rem; font-size: 0.84rem; }
 .action-row { display: flex; flex-wrap: wrap; gap: 0.45rem; }
 .action-row button { flex: 1 1 9rem; font-size: 0.85rem; }
+.mission-sync-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.45rem 0.7rem; margin-block-end: 0.6rem; }
+.mission-sync-heading h3 { margin: 0; font-size: 0.84rem; }
+.mission-sync-chip { display: inline-flex; align-items: center; min-height: 1.7rem; max-width: 100%; padding: 0.24rem 0.48rem; border: 1px solid var(--border); border-radius: 0.35rem; background: var(--surface-subtle); color: var(--fg); font-size: var(--type-caption); line-height: 1.35; font-weight: 800; }
+.mission-flow-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 0.7rem; margin-block-end: 0.55rem; }
+.mission-flow-heading h3 { margin: 0; font-size: 0.84rem; }
+.mission-flow-heading span { color: var(--text-quiet); font-size: var(--type-caption); }
+.mission-flow { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.45rem; margin: 0; padding: 0; list-style: none; counter-reset: mission-step; }
+.mission-flow li { display: flex; align-items: stretch; min-width: 0; counter-increment: mission-step; }
+.mission-flow li::before { content: counter(mission-step); flex: 0 0 auto; align-self: center; margin-inline-end: 0.4rem; color: var(--text-quiet); font-family: var(--font-mono); font-size: var(--type-caption); font-weight: 800; }
+.mission-flow button { flex: 1 1 auto; min-width: 0; font-size: var(--type-ui); }
+.mission-primary-note { margin-block-start: 0.45rem; color: var(--text-quiet); font-size: var(--type-caption); line-height: 1.45; }
+.mission-additional-action { display: flex; align-items: center; justify-content: space-between; gap: 0.6rem; margin-block-start: 0.65rem; padding-block-start: 0.55rem; border-block-start: 1px solid var(--border); }
+.mission-additional-action span { color: var(--text-quiet); font-size: var(--type-caption); font-weight: 700; }
+.mission-additional-action button { flex: 0 0 auto; font-size: var(--type-ui); }
 .inline-state { padding: 0.7rem 0.85rem; border-block-start: 1px solid var(--border); background: var(--surface-subtle); font-size: 0.82rem; line-height: 1.45; }
 .inline-state strong { font-family: var(--font-mono); }
 .state-label { display: inline-flex; align-items: center; min-height: 1.55rem; padding: 0.18rem 0.42rem; border: 1px solid var(--border); border-radius: 0.25rem; font-size: 0.7rem; font-weight: 800; }
@@ -262,6 +283,7 @@ tbody tr:last-child td { border-block-end: 0; }
   .status-item { min-height: 6.5rem; padding: 0.5rem; }
   .video-plane { min-height: 12rem; aspect-ratio: 16 / 10; }
   .sync-facts { grid-template-columns: 1fr 1fr; }
+  .mission-flow { grid-template-columns: minmax(0, 1fr); gap: 0.35rem; }
 }
 @media (max-width: 420px) {
   .status-grid { grid-template-columns: minmax(0, 1fr); }
@@ -274,6 +296,7 @@ tbody tr:last-child td { border-block-end: 0; }
   .feed-type { min-width: 4.3rem; }
   .detail-row { grid-template-columns: minmax(5.5rem, 0.65fr) minmax(0, 1fr); }
   .sync-count { align-items: flex-start; }
+  .mission-readiness-row { grid-template-columns: minmax(5.6rem, 0.6fr) minmax(0, 1.4fr); gap: 0.45rem; }
 }
 @media (prefers-contrast: more) {
   :root {
@@ -707,6 +730,11 @@ main { height: 100%; min-height: 0; padding: 0.68rem clamp(0.75rem, 1.25vw, 1.35
   .system-details { max-height: 27vh; }
   .system-detail-layout { grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.8fr); }
   .system-evidence-module { grid-column: 1 / -1; }
+}
+@media (min-width: 821px) {
+  @container nav-rail (max-width: 104px) {
+    .nav-item[data-page-target="inflight"] { gap: 0.3rem; padding-inline: 0.25rem; }
+  }
 }
 @media (max-width: 820px) {
   :root { --shell-rail: 4.6rem; --shell-header: 3.3rem; --shell-gap: 0.45rem; }
@@ -1268,22 +1296,38 @@ body[data-active-page="inflight"] .nav-sub { font-size: var(--type-caption); }
                   <div class="data-cell" data-od-id="mission-data-7"><span>시작 시각</span><strong>알 수 없음</strong></div>
                   <div class="data-cell" data-od-id="mission-data-8"><span>시각 기준</span><strong>RC 수신시각(근사)</strong></div>
                 </div>
+                <section class="mission-readiness" aria-labelledby="mission-readiness-title">
+                  <h4 id="mission-readiness-title">KSI 준비 상태 · 예시</h4>
+                  <dl class="mission-readiness-list">
+                    <div class="mission-readiness-row"><dt>동기화 준비</dt><dd>Core 미설정 · 서버 연결 없음</dd></div>
+                    <div class="mission-readiness-row"><dt>번들 준비</dt><dd><span class="mono">SIM-BUNDLE-07</span> 선택됨 · [SIMULATED]</dd></div>
+                    <div class="mission-readiness-row"><dt>기록 가능 여부</dt><dd>알 수 없음 · 실제 저장 미연결</dd></div>
+                  </dl>
+                </section>
               </div>
               <div class="action-group">
-                <h3 data-od-id="heading-extra-3">임무 동기화</h3>
+                <div class="mission-sync-heading">
+                  <h3 data-od-id="heading-extra-3">임무 동기화</h3>
+                  <span class="mission-sync-chip" id="mission-sync-chip">미확인 · 로컬 반영 · [SIMULATED]</span>
+                </div>
                 <div class="action-row">
                   <button class="button-primary" type="button" data-action="sync-sites" data-od-id="sync-sites">현장 동기화</button>
                   <button type="button" data-action="download-bundle" data-od-id="download-bundle">번들 내려받기</button>
                 </div>
-                <p class="inline-state" id="mission-sync-feedback" role="status" aria-live="polite" aria-atomic="true">실행 전 · 동기화 결과는 알 수 없습니다. 이 화면은 서버에 연결되지 않습니다.</p>
+                <p class="inline-state" id="mission-sync-feedback" role="status" aria-live="polite" aria-atomic="true">실행 전 · 로컬 반영 결과는 알 수 없습니다. 이 화면은 서버에 연결되지 않습니다.</p>
               </div>
               <div class="action-group">
-                <h3 data-od-id="heading-extra-4">준비 · 적용 · 재조정</h3>
-                <div class="action-row">
-                  <button type="button" data-action="prepare" data-od-id="mission-prepare">준비</button>
-                  <button type="button" data-action="apply" data-od-id="mission-apply">적용</button>
-                  <button type="button" data-action="reconcile" data-od-id="mission-reconcile">재조정</button>
+                <div class="mission-flow-heading">
+                  <h3 data-od-id="heading-extra-4">준비 → 적용 → 로컬 기록 시작</h3>
+                  <span>각 버튼은 별도 수동 조작 · 자동 진행 없음</span>
                 </div>
+                <ol class="mission-flow" aria-label="KSI 로컬 기록 준비 순서">
+                  <li><button type="button" data-action="prepare" data-od-id="mission-prepare">준비</button></li>
+                  <li><button type="button" data-action="apply" data-od-id="mission-apply">적용</button></li>
+                  <li><button class="button-primary" type="button" data-action="start-flight" data-od-id="start-flight">로컬 기록 시작</button></li>
+                </ol>
+                <p class="mission-primary-note">KSI 로컬 기록만 시작합니다. 비행 조종은 DJI Pilot 2에서 합니다.</p>
+                <div class="mission-additional-action"><span>추가 확인</span><button type="button" data-action="reconcile" data-od-id="mission-reconcile">재조정</button></div>
               </div>
             </section>
 
@@ -1291,7 +1335,6 @@ body[data-active-page="inflight"] .nav-sub { font-size: var(--type-caption); }
               <section class="panel" aria-labelledby="flight-actions-title" data-od-id="flight-actions">
                 <div class="panel-heading"><div><h3 id="flight-actions-title" data-od-id="heading-flight-actions-title">기록 · 관측 세션</h3><span class="subline">예시 동작만 표시 · 실제 기체 비행 제어 없음</span></div></div>
                 <div class="action-group">
-                  <div class="action-row mission-primary-action"><button class="button-primary" type="button" data-action="start-flight" data-od-id="start-flight">로컬 기록 시작</button></div>
                   <div class="action-row mission-secondary-actions">
                     <button type="button" data-action="mission-start" data-od-id="mission-start">관측 세션 시작</button>
                     <button class="button-quiet" type="button" data-action="mission-stop" data-od-id="mission-stop">관측 세션 정지</button>
@@ -2145,11 +2188,11 @@ body[data-active-page="inflight"] .nav-sub { font-size: var(--type-caption); }
           setVideoDemoState("unknown");
           announce("영상 입력 수신 시각 미확인 예시 · 지연/실패와 구분합니다.");
         } else if (action === "sync-sites") {
-          const message = "현장 동기화 요청 예시 · 서버 호출 없음 · 결과는 알 수 없습니다.";
+          const message = "현장 동기화 요청 예시 · 서버 호출 없음 · 로컬 반영 결과는 알 수 없습니다.";
           document.getElementById("mission-sync-feedback").textContent = message;
           announce(message);
         } else if (action === "download-bundle") {
-          const message = "번들 내려받기 예시 · 실제 파일을 받지 않았습니다. 번들 상태는 알 수 없습니다.";
+          const message = "번들 내려받기 예시 · 실제 파일을 받지 않았습니다. 로컬 번들 반영은 알 수 없습니다.";
           document.getElementById("mission-sync-feedback").textContent = message;
           announce(message);
         } else if (action === "prepare" || action === "apply" || action === "reconcile") {

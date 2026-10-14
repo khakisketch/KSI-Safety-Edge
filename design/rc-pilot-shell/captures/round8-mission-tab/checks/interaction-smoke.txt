@@ -1,0 +1,25 @@
+Mission mock interaction smoke
+✓ Done
+✓ Done
+0
+✓ Request log cleared
+--- sync-sites click ---
+✓ Done
+미확인 · 로컬 반영 · [SIMULATED]
+현장 동기화 요청 예시 · 서버 호출 없음 · 로컬 반영 결과는 알 수 없습니다.
+--- download-bundle click ---
+✓ Done
+미확인 · 로컬 반영 · [SIMULATED]
+번들 내려받기 예시 · 실제 파일을 받지 않았습니다. 로컬 번들 반영은 알 수 없습니다.
+--- buttons ---
+"{\"actionButtons\":9,\"actions\":[\"sync-sites\",\"download-bundle\",\"prepare\",\"apply\",\"start-flight\",\"reconcile\",\"mission-start\",\"mission-stop\",\"end-flight\"],\"primary\":[\"sync-sites\",\"start-flight\"]}"
+--- network requests after clicks ---
+No requests captured
+--- keyboard step order ---
+✓ Done
+✓ Done
+"apply"
+✓ Done
+"start-flight"
+--- cockpit no-scroll check ---
+"{\"active\":\"inflight\",\"viewport\":[1920,1200],\"body\":[1920,1920,1200,1200],\"main\":[1920,1920,1200,1200]}"
