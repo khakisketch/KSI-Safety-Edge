@@ -89,6 +89,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvTopContext: TextView
     private lateinit var tvAircraftStatus: TextView
     private lateinit var tvMopStatus: TextView
+    private lateinit var tvKsiRecordStatus: TextView
     private lateinit var tvRecorderStatus: TextView
 
     // MSDK declares dangerous permissions (location/phone/storage); targetSdk
@@ -226,7 +227,7 @@ class MainActivity : AppCompatActivity() {
         etOperatorOrg.setText(app.config.operatorOrganization)
         refreshOperatorState()
         requestMissingDangerousPermissions()
-        tvDeviceInfo.text = android.os.Build.MODEL
+        tvDeviceInfo.text = getString(R.string.app_info_device_format, android.os.Build.MODEL)
         tvAppVersion.text = appVersionName()
 
         tvPageTitle = findViewById(R.id.tvPageTitle)
@@ -235,6 +236,7 @@ class MainActivity : AppCompatActivity() {
         tvTopContext = findViewById(R.id.tvTopContext)
         tvAircraftStatus = findViewById(R.id.tvAircraftStatus)
         tvMopStatus = findViewById(R.id.tvMopStatus)
+        tvKsiRecordStatus = findViewById(R.id.tvKsiRecordStatus)
         tvRecorderStatus = findViewById(R.id.tvRecorderStatus)
         tvError.setOnClickListener { tvError.visibility = View.GONE }
         bindMissionSelectors()
@@ -885,6 +887,23 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshCockpitFacts(items: List<OperatorStatus.Item>) {
+        val activeFlight = session.activeFlight
+        val recordState = if (activeFlight == null) {
+            getString(R.string.cockpit_record_none)
+        } else {
+            getString(R.string.cockpit_record_active)
+        }
+        renderStatusChip(
+            tvKsiRecordStatus,
+            "${getString(R.string.cockpit_ksi_record)} · $recordState",
+            R.color.ksi_info,
+        )
+        tvKsiRecordStatus.contentDescription = if (activeFlight == null) {
+            "KSI 로컬 기록 상태: 기록 없음"
+        } else {
+            "KSI 로컬 기록 상태: 기록 중"
+        }
+
         val mop = items.firstOrNull {
             it.label.startsWith("MOP") || it.label.contains("하트비트")
         }
@@ -1419,8 +1438,8 @@ class MainActivity : AppCompatActivity() {
     private fun refreshEventSelection() {
         val row = selectedEventRows.getOrNull(selectedEventIndex)
         if (row == null) {
-            tvEventDetail.text = "선택된 사건 없음"
-            btnFlagFalsePositive.text = getString(R.string.btn_flag_false_positive)
+            tvEventDetail.text = getString(R.string.postflight_no_event_detail)
+            btnFlagFalsePositive.text = getString(R.string.postflight_no_event_action)
             btnFlagFalsePositive.isEnabled = false
             return
         }

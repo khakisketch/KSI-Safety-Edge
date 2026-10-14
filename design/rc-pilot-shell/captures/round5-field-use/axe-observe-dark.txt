@@ -1,0 +1,17 @@
+url: http://127.0.0.1:8765/field-shell.html
+axe-core: 4.12.1  violations: 0  incomplete: 1  passes: 20
+
+incomplete (needs manual review):
+[serious] color-contrast: Elements must meet minimum color contrast ratio thresholds (35 nodes)
+  https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI
+  - div[data-quick-index="0"] > .quick-status-mark[aria-hidden="true"]
+  - div[data-quick-index="0"] > .quick-label
+  - div[data-quick-index="0"] > strong
+  - div[data-quick-index="1"] > .quick-status-mark[aria-hidden="true"]
+  - div[data-quick-index="1"] > .quick-label
+  - div[data-quick-index="1"] > strong
+  - div[data-quick-index="2"] > .quick-status-mark[aria-hidden="true"]
+  - div[data-quick-index="2"] > .quick-label
+  - div[data-quick-index="2"] > strong
+  - div[data-quick-index="3"] > .quick-status-mark[aria-hidden="true"]
+  … and 25 more nodes

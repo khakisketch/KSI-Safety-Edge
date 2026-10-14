@@ -1,0 +1,30 @@
+[
+ {
+  "label": "1024-light-inflight",
+  "viewport": "1024x768",
+  "scrollHeight": 768,
+  "noScroll": true,
+  "navOpen": false
+ },
+ {
+  "label": "1024-dark-inflight",
+  "viewport": "1024x768",
+  "scrollHeight": 768,
+  "noScroll": true,
+  "navOpen": false
+ },
+ {
+  "label": "390-light-inflight",
+  "viewport": "390x844",
+  "scrollHeight": 844,
+  "noScroll": true,
+  "navOpen": false
+ },
+ {
+  "label": "390-dark-inflight",
+  "viewport": "390x844",
+  "scrollHeight": 844,
+  "noScroll": true,
+  "navOpen": false
+ }
+]

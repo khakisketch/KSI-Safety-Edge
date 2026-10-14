@@ -1,0 +1,7 @@
+url: http://127.0.0.1:8765/field-shell.html
+axe-core: 4.12.1  violations: 0  incomplete: 1  passes: 25
+
+incomplete (needs manual review):
+[serious] color-contrast: Elements must meet minimum color contrast ratio thresholds (1 node)
+  https://dequeuniversity.com/rules/axe/4.12/color-contrast?application=axeAPI
+  - .settings-attention > .severity-symbol[aria-hidden="true"]

@@ -767,6 +767,10 @@ main { height: 100%; min-height: 0; padding: 0.68rem clamp(0.75rem, 1.25vw, 1.35
   .postflight-workspace, .postflight-evidence-grid, .postflight-sync-grid { grid-template-columns: minmax(0, 1fr); }
   .diagnostic-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .video-demo-states { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .scenario-switch { align-items: stretch; flex-direction: column; gap: 0.35rem; }
+  .scenario-label { white-space: nowrap; }
+  .scenario-switch .segmented { width: 100%; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.18rem; }
+  .scenario-switch .segmented button { min-width: 0; min-height: 3rem; padding-inline: 0.12rem; font-size: 0.64rem; white-space: nowrap; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -1218,7 +1222,7 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
                   <p class="notice">인터넷 없음은 정보 상태입니다. 오프라인 기록을 유지하며 서버 측 상태는 추측하지 않습니다.</p>
                   <div class="divider"></div>
                   <dl class="detail-list">
-                    <div class="detail-row"><dt>비행 ID</dt><dd class="mono">SIM-FLT-024</dd></div>
+                    <div class="detail-row"><dt>비행 ID</dt><dd class="mono" id="mission-offline-flight-id">SIM-FLT-024</dd></div>
                     <div class="detail-row"><dt>번들</dt><dd class="mono">SIM-BUNDLE-07 · [SIMULATED]</dd></div>
                     <div class="detail-row"><dt>로컬 기록</dt><dd>기체 연결 상태와 별도 표시</dd></div>
                   </dl>
@@ -1411,7 +1415,7 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
             </div>
           </section>
           <div class="two-column diagnostics-lower-grid">
-              <section class="panel" aria-labelledby="diagnostics-video-title"><div class="panel-heading"><div><h3 id="diagnostics-video-title">영상 입력 예시</h3><span class="subline">인코딩 입력과 화면 표시를 분리 · [SIMULATED]</span></div></div><div class="content-pad stack"><p class="notice"><strong>DJI 라이브 뷰</strong> · 인코딩 입력 예시는 화면 디코딩/표시를 증명하지 않습니다.</p><p class="notice"><strong>AI 관측</strong> · Edge / PSDK 별도 피드 · [SIMULATED]</p><p class="notice">DJI 프레임과 Edge 관측의 대응 관계는 검증되지 않았습니다. 영상 위 표식을 표시하지 않습니다.</p><div class="video-demo-states" role="group" aria-label="영상 입력 상태 예시"><button type="button" data-action="video-no-signal">신호 없음 예시</button><button type="button" data-action="video-recent">입력 최근 예시</button><button type="button" data-action="video-stale">입력 지연 예시</button><button type="button" data-action="video-unknown">시각 미확인 예시</button></div></div></section>
+              <section class="panel" aria-labelledby="diagnostics-video-title"><div class="panel-heading"><div><h3 id="diagnostics-video-title">영상 입력 예시</h3><span class="subline">인코딩 입력과 화면 표시를 분리 · [SIMULATED]</span></div></div><div class="content-pad stack"><p class="notice"><strong>DJI 라이브 뷰</strong> · 인코딩 입력 예시는 화면 디코딩/표시를 증명하지 않습니다.</p><p class="notice"><strong>AI 관측</strong> · Edge / PSDK 별도 피드 · [SIMULATED]</p><p class="notice">DJI 프레임과 Edge 관측의 대응 관계는 검증되지 않았습니다. 영상 위 표식을 표시하지 않습니다.</p><div class="video-demo-states" role="group" aria-label="영상 입력 상태 예시"><button type="button" data-action="video-disconnect">미연결 예시</button><button type="button" data-action="video-connect">연결 중 예시</button><button type="button" data-action="video-no-signal">신호 없음 예시</button><button type="button" data-action="video-no-frames">프레임 미수신 예시</button><button type="button" data-action="video-recent">입력 최근 예시</button><button type="button" data-action="video-stale">입력 지연 예시</button><button type="button" data-action="video-unknown">시각 미확인 예시</button></div></div></section>
             <section class="panel" aria-labelledby="diagnostics-link-title"><div class="panel-heading"><div><h3 id="diagnostics-link-title">MOP 전송 요약</h3><span class="subline">내부 카운터 · [SIMULATED]</span></div></div><div class="link-metrics"><div class="metric"><span class="metric-label">수신 · 저장</span><strong class="metric-value">24</strong></div><div class="metric"><span class="metric-label">수신 · 중복</span><strong class="metric-value">1</strong></div><div class="metric"><span class="metric-label">수신 · 실패</span><strong class="metric-value">0</strong></div><div class="metric"><span class="metric-label">송신 · pending / acked</span><strong class="metric-value">2 / 18</strong></div></div></section>
           </div>
         </section>
@@ -1521,7 +1525,12 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
         noSignal: {
           label: "신호 없음", severity: "info", kicker: "영상 신호 없음 · [SIMULATED]",
           title: "영상 입력 신호 없음",
-          copy: "인코딩 입력 프레임이 없는 예시 상태입니다. 비행 안전 경고가 아니며, 비행 조종은 DJI Pilot 2를 기준으로 하세요. [SIMULATED]"
+          copy: "영상 입력 신호가 없다고 보고된 예시입니다. 비행 안전 경고가 아니며, 비행 조종은 DJI Pilot 2를 기준으로 하세요. [SIMULATED]"
+        },
+        noFrames: {
+          label: "프레임 미수신", severity: "info", kicker: "연결 보고 · 프레임 미수신 · [SIMULATED]",
+          title: "인코딩 입력 프레임 미수신",
+          copy: "연결 상태는 보고됐지만 인코딩 프레임을 아직 받지 못한 예시입니다. 입력 지연·수신 시각 미확인·화면 표시 성공과 구분합니다. [SIMULATED]"
         },
         recent: {
           label: "입력 최근 수신", severity: "info", kicker: "인코딩 입력 최근 수신 예시 · [SIMULATED]",
@@ -1673,6 +1682,7 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
         const noFlight = mode === "no-flight";
         document.getElementById("observe-flight-id").textContent = noFlight ? "기록 없음" : "SIM-FLT-024";
         document.getElementById("mission-flight-id").textContent = noFlight ? "없음" : "SIM-FLT-024";
+        document.getElementById("mission-offline-flight-id").textContent = noFlight ? "없음 · 활성 기록 없음" : "SIM-FLT-024";
         document.getElementById("mission-flight-state").textContent = noFlight ? "KSI 기록 없음" : "KSI 로컬 기록 중";
         document.getElementById("mission-status-label").textContent = noFlight ? "KSI 기록 없음" : "KSI 로컬 기록 중";
         document.getElementById("mission-status-copy").textContent = noFlight ? "현장 동기화 → 번들 내려받기 → KSI 로컬 기록 세션 시작 순서로 진행합니다." : "활성 KSI 로컬 기록 SIM-FLT-024가 있습니다. 비행 조종은 DJI Pilot 2에서 하세요.";
@@ -2010,6 +2020,9 @@ body[data-active-page="inflight"] .video-bottom-hud span:last-child { text-align
         } else if (action === "video-no-signal") {
           setVideoDemoState("noSignal");
           announce("영상 신호 없음 예시 · 실제 스트림 상태는 변경하지 않았습니다.");
+        } else if (action === "video-no-frames") {
+          setVideoDemoState("noFrames");
+          announce("연결 상태 예시 · 입력 프레임 미수신 · 지연/표시 성공과 구분합니다.");
         } else if (action === "video-recent") {
           setVideoDemoState("recent");
           announce("인코딩 입력 최근 수신 예시 · 실제 프레임 수신·화면 표시는 증명하지 않습니다.");

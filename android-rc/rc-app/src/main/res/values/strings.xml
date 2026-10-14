@@ -49,6 +49,7 @@
     <string name="app_info_product_label">제품</string>
     <string name="app_info_product_value">KSI Safety Edge</string>
     <string name="app_info_device_label">기기</string>
+    <string name="app_info_device_format">%1$s · Android</string>
     <string name="app_info_orientation_label">표시 방향</string>
     <string name="app_info_orientation_value">가로 우선</string>
     <string name="app_info_version_label">앱 버전</string>
@@ -108,6 +109,9 @@
     <string name="mission_session_boundary">세션 시작은 Edge 관측을 시작하는 동작입니다. 기체 이륙·비행 조종은 DJI Pilot 2 권한이며 MOP 응답은 별도로 확인하세요.</string>
     <string name="flight_record_start_note">KSI 로컬 기록과 녹화를 시작합니다. 기체 비행 조종은 DJI Pilot 2에서 합니다.</string>
     <string name="top_no_active_flight">활성 KSI 기록 없음</string>
+    <string name="cockpit_ksi_record">KSI 기록</string>
+    <string name="cockpit_record_active">로컬 기록 중</string>
+    <string name="cockpit_record_none">기록 없음</string>
     <string name="label_next_action">우선 확인</string>
     <string name="no_urgent_action">현재 조치 안내 없음 · 비행 조종 상태는 DJI Pilot 2에서 확인</string>
     <string name="title_ai_observations">AI 관측</string>
@@ -134,4 +138,6 @@
     <string name="btn_close_ops_panel">상태 닫기</string>
     <string name="btn_toggle_diagnostics">상태 상세</string>
     <string name="btn_toggle_ai_observations">AI 관측</string>
+    <string name="postflight_no_event_detail">이 비행에는 기록된 사건이 없습니다.</string>
+    <string name="postflight_no_event_action">사건 선택 후 의견 기록</string>
 </resources>
