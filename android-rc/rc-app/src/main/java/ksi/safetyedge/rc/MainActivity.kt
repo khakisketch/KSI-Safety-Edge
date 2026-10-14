@@ -1038,7 +1038,6 @@ class MainActivity : AppCompatActivity() {
             mop.label.contains("지연") -> "MOP · 하트비트 지연"
             mop.label.contains("끊김") -> "MOP · 끊김"
             mop.label.contains("연결 중") -> "MOP · 연결 중"
-            mop.detail.contains("미수신") -> "MOP · 하트비트 미수신"
             else -> "MOP · 연결"
         }
         renderStatusChip(
@@ -1064,7 +1063,7 @@ class MainActivity : AppCompatActivity() {
 
         val internet = internetStatus()
         val (internetValue, internetMarker) = when (internet) {
-            "validated" -> "검증됨" to "·"
+            "validated" -> "연결됨" to "·"
             "connected (unvalidated)" -> "미검증" to "?"
             "no internet", "none" -> "없음" to "·"
             else -> "알 수 없음" to "?"
@@ -1074,14 +1073,15 @@ class MainActivity : AppCompatActivity() {
         val recorder = app.videoRecorder
         val writeFailure = recorder?.hasWriteFailure == true || recorder?.state == VideoRecorder.State.ERROR
         val written = recorder?.writtenFrameCount
+        val recorderIdleSeverity =
+            if (session.activeFlight != null) OperatorStatus.Severity.ATTENTION else OperatorStatus.Severity.INFO
         val (recorderLabel, recorderSeverity) = when {
-            recorder == null -> "REC · 미지원" to OperatorStatus.Severity.INFO
-            writeFailure -> "REC · 일부 저장 오류" to OperatorStatus.Severity.PROBLEM
-            recorder.state == VideoRecorder.State.RECORDING && written == 0L -> "REC · 입력 대기" to OperatorStatus.Severity.INFO
-            recorder.state == VideoRecorder.State.RECORDING && written == null -> "REC · 입력 미확인" to OperatorStatus.Severity.INFO
-            recorder.state == VideoRecorder.State.RECORDING -> "REC · 저장 $written" to OperatorStatus.Severity.INFO
-            recorder.state == VideoRecorder.State.ERROR -> "REC · 오류" to OperatorStatus.Severity.PROBLEM
-            else -> "REC · 대기" to OperatorStatus.Severity.INFO
+            recorder == null -> "레코더 · 없음" to OperatorStatus.Severity.INFO
+            writeFailure -> "레코더 · 녹화 오류" to OperatorStatus.Severity.PROBLEM
+            recorder.state == VideoRecorder.State.RECORDING && written == 0L -> "레코더 · 녹화 입력 대기" to OperatorStatus.Severity.INFO
+            recorder.state == VideoRecorder.State.RECORDING -> "레코더 · 녹화 중" to OperatorStatus.Severity.INFO
+            recorder.state == VideoRecorder.State.ERROR -> "레코더 · 녹화 오류" to OperatorStatus.Severity.PROBLEM
+            else -> "레코더 · 녹화 대기" to recorderIdleSeverity
         }
         renderStatusChip(tvRecorderStatus, recorderLabel, statusColor(recorderSeverity), statusMarker(recorderSeverity))
 
@@ -1091,10 +1091,10 @@ class MainActivity : AppCompatActivity() {
             !session.store.isArtifactSynced(artifact.get("artifact_id").asText())
         }
         val evidenceLabel = when {
-            activeFlightId == null -> "증거 · 기록 없음"
-            activeArtifacts.isEmpty() -> "증거 · 완료 구간 없음"
-            pending > 0 -> "증거 · 미동기화 $pending"
-            else -> "증거 · 동기화 ${activeArtifacts.size}"
+            activeFlightId == null -> "로컬 증거 · 없음"
+            activeArtifacts.isEmpty() -> "로컬 증거 · 없음"
+            pending > 0 -> "로컬 증거 · 미동기화 $pending"
+            else -> "로컬 증거 · 동기화 완료"
         }
         renderStatusChip(tvEvidenceStatus, evidenceLabel, R.color.ksi_info)
     }
@@ -1634,10 +1634,10 @@ class MainActivity : AppCompatActivity() {
 
     /** Display-only Korean label for the internal internet vocabulary. */
     private fun internetLabel(): String = when (val status = internetStatus()) {
-        "validated" -> "검증됨"
-        "connected (unvalidated)" -> "연결됨(미검증)"
+        "validated" -> "연결됨"
+        "connected (unvalidated)" -> "미검증"
         "no internet" -> "인터넷 없음"
-        "none" -> "없음"
+        "none" -> "인터넷 없음"
         else -> "알 수 없음($status)"
     }
 

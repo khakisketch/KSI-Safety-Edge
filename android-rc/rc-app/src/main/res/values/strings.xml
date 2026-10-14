@@ -106,7 +106,7 @@
     <string name="mission_readiness_record_active">기록 가능 여부 · 현재 기록 중 · 새 기록 시작 불가</string>
     <string name="mission_readiness_record_no_bundle">기록 가능 여부 · 선택 번들 없음 · 시작 버튼 비활성</string>
     <string name="mission_readiness_record_ready">기록 가능 여부 · 시작 버튼 활성 · 실제 저장 결과는 별도 확인</string>
-    <string name="mission_sync_result_unknown">미확인 · 로컬 반영 여부 알 수 없음</string>
+    <string name="mission_sync_result_unknown">미확인 · 로컬 반영</string>
     <string name="mission_sync_result_success_local">성공(로컬 반영) · 서버 상태 별도</string>
     <string name="mission_sync_result_failure">실패 · 로컬 반영은 알 수 없음</string>
     <string name="mission_sync_result_description">동기화 칩은 로컬 반영 상태만 표시하며 서버 상태를 판단하지 않습니다.</string>

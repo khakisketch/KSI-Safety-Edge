@@ -59,3 +59,15 @@ Captured from `http://127.0.0.1:8765/field-shell.html`, served by the existing l
 - This is still a self-contained local HTML prototype. It cannot demonstrate actual Core/server connectivity, local persistence, recording, file download, upload/sync result or physical flight state. Zero incidents remains distinct from safety; server state is not inferred.
 - Browser mouse and keyboard input were exercised. Touch/swipe, gloves, sunlight, live-video contrast, RC Plus 2/device rendering and field acceptance remain untested and belong to A9-4. No Android build/device validation was run because this round changed no Android files.
 - No commit was made; the unrelated working-tree state was preserved.
+
+## Addendum — coordinator contract alignment (committed separately after round9)
+
+- Recorder value wording in 5 places (status strip, ops detail, diagnostics, `normal` /
+  `observation-late` scenario rows): `저장 샘플 0` → `녹화 입력 대기`, matching B-1 item 5 and
+  `OperatorStatus` `녹화 입력 대기`. The sample-count fact stays in detail/action copy.
+- Sync chip gained `aria-label="미확인 · 로컬 반영 · 시뮬레이션 예시"`.
+- Re-verified: all 5 scenario values switch correctly, console 0 errors, no document overflow,
+  strip item fits, chip visible with label on the mission route. Colors/sizes/structure
+  unchanged, so contrast/axe results stand.
+- Final `field-shell.html` SHA-256 after alignment:
+  `daa5aaeac5c543138ed7760289fd74794775c8b448748dc1e23a4b37ddf10b6f`.
