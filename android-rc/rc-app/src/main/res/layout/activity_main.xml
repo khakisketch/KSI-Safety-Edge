@@ -432,6 +432,15 @@
                         android:textColor="@color/ksi_fg"
                         android:textSize="14sp" />
 
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="12dp"
+                        android:text="@string/mission_group_sync"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -453,13 +462,6 @@
                             android:layout_weight="1"
                             android:text="@string/btn_sync_bundle" />
 
-                        <Button
-                            android:id="@+id/btnStartFlight"
-                            android:layout_width="0dp"
-                            android:layout_height="48dp"
-                            android:layout_marginStart="6dp"
-                            android:layout_weight="1"
-                            android:text="@string/btn_start_flight" />
                     </LinearLayout>
 
                     <TextView
@@ -470,6 +472,15 @@
                         android:text="-"
                         android:textColor="@color/ksi_fg"
                         android:textSize="14sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="12dp"
+                        android:text="@string/mission_group_exec"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -501,11 +512,27 @@
                             android:text="@string/btn_reconcile" />
                     </LinearLayout>
 
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="12dp"
+                        android:text="@string/mission_group_flight"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:paddingTop="4dp">
+
+                        <Button
+                            android:id="@+id/btnStartFlight"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_start_flight" />
 
                         <Button
                             android:id="@+id/btnStart"
@@ -644,13 +671,6 @@
                             android:layout_weight="1"
                             android:text="@string/btn_event_next" />
 
-                        <Button
-                            android:id="@+id/btnFlagFalsePositive"
-                            android:layout_width="0dp"
-                            android:layout_height="48dp"
-                            android:layout_marginStart="6dp"
-                            android:layout_weight="1"
-                            android:text="@string/btn_flag_false_positive" />
                     </LinearLayout>
 
                     <TextView
@@ -661,6 +681,13 @@
                         android:text="-"
                         android:textColor="@color/ksi_fg"
                         android:textSize="13sp" />
+
+                    <Button
+                        android:id="@+id/btnFlagFalsePositive"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/btn_flag_false_positive" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -699,6 +726,14 @@
                         android:text="-"
                         android:textColor="@color/ksi_fg"
                         android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="12dp"
+                        android:text="@string/review_criteria_note"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="12sp" />
                 </LinearLayout>
             </ScrollView>
 
@@ -779,6 +814,14 @@
                             android:layout_weight="1"
                             android:text="@string/btn_server_state" />
                     </LinearLayout>
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="4dp"
+                        android:text="@string/sync_gate_note"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="12sp" />
                 </LinearLayout>
             </ScrollView>
 
