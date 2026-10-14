@@ -126,6 +126,11 @@ C67의 당시 구현/검증 기록은 위와 같이 보존한다. 이 절은 현
   전체 Gradle lint/build는 동시에 실행하지 않았으며, 부모가 추가한 API 26/27 권한 protectionLevel fallback과
   Android XML의 `\?` 이스케이프를 보존했다. 최종 통합 Android lint/APK/unit run은 coordinator 게이트로 남긴다.
 
+### 커밋·CI (2026-10-14)
+
+- 커밋 `259697d`(main 병합·푸시): main CI **3/3 green**(run `38545627802`) — x86_64 Android 잡에서
+  **WM 6건 실실행 포함** unit/lint/APK 통과, Python·Edge 잡도 green. Pages 배포도 green.
+
 ### Coordinator 통합 게이트 (2026-10-14)
 
 - 위 기록 뒤 조정 에이전트가 최종 통합을 실행했다: rc-ports **6/6** · rc-core **67/67** · rc-msdk **28/28** ·
