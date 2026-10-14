@@ -25,7 +25,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var demo: DemoSession
 
     private lateinit var tvMission: TextView
-    private lateinit var tvFlight: TextView
+    private lateinit var tvMissionSite: TextView
+    private lateinit var tvMissionBundle: TextView
+    private lateinit var tvMissionRevision: TextView
+    private lateinit var tvMissionZone: TextView
+    private lateinit var tvMissionFlightId: TextView
+    private lateinit var tvMissionFlightState: TextView
+    private lateinit var tvMissionStarted: TextView
     private lateinit var tvOpsStatus: TextView
     private lateinit var tvLink: TextView
     private lateinit var tvStatus: TextView
@@ -102,7 +108,13 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         tvMission = findViewById(R.id.tvMission)
-        tvFlight = findViewById(R.id.tvFlight)
+        tvMissionSite = findViewById(R.id.tvMissionSite)
+        tvMissionBundle = findViewById(R.id.tvMissionBundle)
+        tvMissionRevision = findViewById(R.id.tvMissionRevision)
+        tvMissionZone = findViewById(R.id.tvMissionZone)
+        tvMissionFlightId = findViewById(R.id.tvMissionFlightId)
+        tvMissionFlightState = findViewById(R.id.tvMissionFlightState)
+        tvMissionStarted = findViewById(R.id.tvMissionStarted)
         tvOpsStatus = findViewById(R.id.tvOpsStatus)
         tvLink = findViewById(R.id.tvLink)
         tvStatus = findViewById(R.id.tvStatus)
@@ -371,23 +383,25 @@ class MainActivity : AppCompatActivity() {
         refreshTopBar()
         refreshConnectEmphasis()
         val selectedBundle = selectedBundleId?.let { store.missionBundle(it) }
-        tvMission.text = "컨트롤러: ${session.missionSummary()}\n" +
+        val missionCache = "컨트롤러: ${session.missionSummary()}\n" +
             "미션 캐시: 현장=${store.sites().size} " +
             "구역rev=${selectedSiteId?.let { store.zoneRevisions(it).size } ?: 0} " +
-            "번들=${store.missionBundles().size}\n" +
-            "선택 현장=${selectedSiteId?.take(8) ?: "-"} " +
-            "번들=${selectedBundle?.get("bundle_id")?.asText()?.take(8) ?: "-"} " +
-            "sha=${selectedBundle?.get("bundle_sha256")?.asText()?.take(12) ?: "-"} (다운로드 시 검증)"
-        tvFlight.text = if (flight == null) {
-            "비행: 진행 중 없음 — 현장 동기화 → 번들 내려받기 → 비행 시작"
+            "번들=${store.missionBundles().size} " +
+            "sha=${selectedBundle?.get("bundle_sha256")?.asText()?.take(12) ?: "-"}"
+        tvMission.text = if (flight == null) {
+            "$missionCache\n비행이 없습니다 — 현장 동기화 → 번들 내려받기 → 비행 시작"
         } else {
-            "비행=${flight.get("flight_id").asText().take(8)} " +
-                "상태=${flight.get("state").asText()} " +
-                "미션rev=${flight.get("mission_revision_id").asText().take(8)} " +
-                "번들=${flight.get("bundle_sha256").asText().take(8)} " +
-                "구역=${flight.get("zone_revision_ids").size()}\n" +
-                "시작(수신)=${flight.get("started_at_utc").asText()}"
+            missionCache
         }
+        tvMissionSite.text = selectedSiteId?.take(8) ?: "-"
+        tvMissionBundle.text = selectedBundle?.get("bundle_id")?.asText()?.take(8) ?: "-"
+        tvMissionRevision.text =
+            flight?.get("mission_revision_id")?.asText()?.take(8) ?: "-"
+        tvMissionZone.text =
+            flight?.get("zone_revision_ids")?.size()?.let { "${it}개" } ?: "0개"
+        tvMissionFlightId.text = flight?.get("flight_id")?.asText()?.take(8) ?: "-"
+        tvMissionFlightState.text = flight?.get("state")?.asText() ?: "비행 없음"
+        tvMissionStarted.text = flight?.get("started_at_utc")?.asText() ?: "알 수 없음"
 
         val endpoint = session.controller?.endpoint
         val simulatedTag = if (session.link.isSimulated) " SIMULATED" else ""

@@ -60,6 +60,15 @@
     <string name="mission_group_flight">비행 제어</string>
     <string name="sync_gate_note">업로드 비활성 조건: Core URL과 토큰이 모두 설정되어야 합니다.</string>
     <string name="review_criteria_note">검토 시 표시 기준 — 사건 0건 ≠ 안전 확인 · 시간은 RC 수신시각(근사) · 서버에서 가져오기는 동작 예시(서버 데이터는 알 수 없음)</string>
+    <string name="mission_cell_site">사이트</string>
+    <string name="mission_cell_bundle">선택 번들</string>
+    <string name="mission_cell_revision">미션 리비전</string>
+    <string name="mission_cell_zones">구역</string>
+    <string name="mission_cell_flight_id">비행 ID</string>
+    <string name="mission_cell_flight_state">비행 상태</string>
+    <string name="mission_cell_started">시작 시각</string>
+    <string name="mission_cell_time_basis">시각 기준</string>
+    <string name="mission_time_basis_value">RC 수신시각(근사)</string>
     <string name="btn_upload">지금 업로드</string>
     <string name="btn_server_state">서버 상태</string>
 

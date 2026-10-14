@@ -386,7 +386,7 @@
                             android:paddingTop="4dp"
                             android:text="@string/label_events"
                             android:textColor="@color/ksi_muted"
-                            android:textSize="10sp" />
+                            android:textSize="11sp" />
 
                         <TextView
                             android:id="@+id/tvEvents"
@@ -432,6 +432,189 @@
                         android:textColor="@color/ksi_fg"
                         android:textSize="14sp" />
 
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="6dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/mission_cell_site"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvMissionSite"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/mission_cell_bundle"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvMissionBundle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/mission_cell_revision"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvMissionRevision"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/mission_cell_zones"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvMissionZone"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/mission_cell_flight_id"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvMissionFlightId"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/mission_cell_flight_state"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvMissionFlightState"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/mission_cell_started"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:id="@+id/tvMissionStarted"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:paddingTop="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/mission_cell_time_basis"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="13sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/mission_time_basis_value"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="14sp" />
+                    </LinearLayout>
+
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -463,15 +646,6 @@
                             android:text="@string/btn_sync_bundle" />
 
                     </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/tvFlight"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingTop="8dp"
-                        android:text="-"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="14sp" />
 
                     <TextView
                         android:layout_width="match_parent"
@@ -538,6 +712,7 @@
                             android:id="@+id/btnStart"
                             android:layout_width="0dp"
                             android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
                             android:layout_weight="1"
                             android:text="@string/btn_start" />
 
