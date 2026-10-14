@@ -808,6 +808,20 @@
                         </LinearLayout>
 
                         <TextView
+                            android:id="@+id/tvMissionReadiness"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:background="@color/ksi_surface_subtle"
+                            android:paddingStart="8dp"
+                            android:paddingTop="6dp"
+                            android:paddingEnd="8dp"
+                            android:paddingBottom="6dp"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="13sp" />
+
+                        <TextView
                             android:id="@+id/tvMission"
                             android:layout_width="match_parent"
                             android:layout_height="0dp"
@@ -848,6 +862,7 @@
                             android:textStyle="bold" />
 
                         <LinearLayout
+                            android:id="@+id/rowSyncButtons"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginTop="6dp"
@@ -875,23 +890,20 @@
                                 android:textSize="12sp" />
                         </LinearLayout>
 
-                        <Button
-                            android:id="@+id/btnStartFlight"
-                            android:layout_width="match_parent"
-                            android:layout_height="56dp"
-                            android:minWidth="0dp"
-                            android:text="@string/btn_start_flight_recording"
-                            android:textAllCaps="false"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
                         <TextView
+                            android:id="@+id/tvMissionSyncResult"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:text="@string/flight_record_start_note"
-                            android:textColor="@color/ksi_muted"
-                            android:textSize="13sp" />
+                            android:layout_marginTop="5dp"
+                            android:background="@color/ksi_surface_subtle"
+                            android:gravity="center_vertical"
+                            android:paddingStart="7dp"
+                            android:paddingTop="5dp"
+                            android:paddingEnd="7dp"
+                            android:paddingBottom="5dp"
+                            android:text="@string/mission_sync_result_unknown"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="12sp" />
 
                         <TextView
                             android:layout_width="match_parent"
@@ -903,6 +915,7 @@
                             android:textStyle="bold" />
 
                         <LinearLayout
+                            android:id="@+id/rowPrepare"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal">
@@ -927,13 +940,47 @@
                                 android:text="@string/btn_apply"
                                 android:textAllCaps="false"
                                 android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <Button
+                            android:id="@+id/btnStartFlight"
+                            android:layout_width="match_parent"
+                            android:layout_height="56dp"
+                            android:minWidth="0dp"
+                            android:text="@string/btn_start_flight_recording"
+                            android:textAllCaps="false"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvStartFlightNote"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:text="@string/flight_record_start_note"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="13sp" />
+
+                        <LinearLayout
+                            android:id="@+id/rowAdditionalCheck"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="5dp"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/mission_additional_check"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="12sp" />
 
                             <Button
                                 android:id="@+id/btnReconcile"
-                                android:layout_width="0dp"
+                                android:layout_width="wrap_content"
                                 android:layout_height="48dp"
-                                android:layout_marginStart="5dp"
-                                android:layout_weight="1"
                                 android:minWidth="0dp"
                                 android:text="@string/btn_reconcile"
                                 android:textAllCaps="false"

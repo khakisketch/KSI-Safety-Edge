@@ -9,13 +9,12 @@ import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
+import android.util.Log
 import android.view.View
-import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -87,6 +86,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var appHeader: View
     private lateinit var headerDivider: View
     private lateinit var tvCockpitSim: TextView
+
+    // G18: nav/connect buttons are bound once in onCreate and reused; every
+    // other dynamic lookup goes through buttonOrNull() (log + skip, never
+    // crash) so a missing id cannot take down the shell.
+    private val navButtons = mutableMapOf<Int, Button>()
+    private var btnConnect: Button? = null
 
     // The menu is feature-based; flight phases are expressed within each page.
     private lateinit var tvPageTitle: TextView
@@ -218,20 +223,21 @@ class MainActivity : AppCompatActivity() {
         appHeader = findViewById(R.id.appHeader)
         headerDivider = findViewById(R.id.headerDivider)
         tvCockpitSim = findViewById(R.id.tvCockpitSim)
-        findViewById<Button>(R.id.btnStartFlight).apply {
+        bindStaticButtons()
+        findViewById<Button>(R.id.btnStartFlight)?.apply {
             backgroundTintList = ContextCompat.getColorStateList(
                 this@MainActivity,
                 R.color.ksi_primary,
             )
             setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_on_primary))
-        }
-        findViewById<Button>(R.id.btnEndFlight).apply {
+        } ?: Log.w(TAG, "bindStaticButtons: missing btnStartFlight")
+        findViewById<Button>(R.id.btnEndFlight)?.apply {
             backgroundTintList = ContextCompat.getColorStateList(
                 this@MainActivity,
                 R.color.ksi_surface,
             )
             setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_fg))
-        }
+        } ?: Log.w(TAG, "bindStaticButtons: missing btnEndFlight")
         etCoreUrl.setText(app.config.coreUrl)
         etCoreToken.setText(app.config.coreToken)
         app.config.coreTokenStorageError?.let {
@@ -431,7 +437,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun on(id: Int, action: () -> Unit) {
-        findViewById<Button>(id).setOnClickListener {
+        val button = buttonOrNull(id) ?: return
+        button.setOnClickListener {
             session.clearError()
             shownError = null
             try {
@@ -442,6 +449,33 @@ class MainActivity : AppCompatActivity() {
             session.syncFlightState()
             refresh()
         }
+    }
+
+    /** G18: bind-once cache for nav + connect buttons; missing ids log and skip. */
+    private fun bindStaticButtons() {
+        navTargets.forEach { (navId, _) ->
+            val button: Button? = findViewById(navId)
+            if (button == null) {
+                Log.w(TAG, "bindStaticButtons: missing nav button id=$navId")
+            } else {
+                navButtons[navId] = button
+            }
+        }
+        val connect: Button? = findViewById(R.id.btnConnect)
+        if (connect == null) {
+            Log.w(TAG, "bindStaticButtons: missing btnConnect")
+        } else {
+            btnConnect = connect
+        }
+    }
+
+    /** G18: guarded lookup — log + null instead of crashing on a missing id. */
+    private fun buttonOrNull(id: Int): Button? {
+        navButtons[id]?.let { return it }
+        if (id == R.id.btnConnect) btnConnect?.let { return it }
+        val button: Button? = findViewById(id)
+        if (button == null) Log.w(TAG, "buttonOrNull: missing button id=$id")
+        return button
     }
 
     private fun bindMissionSelectors() {
@@ -611,82 +645,28 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * G17: the mission order is declared statically in activity_main.xml
+     * (sync row → sync chip → prepare/apply row → local-record start →
+     * start note → additional-check/reconcile row → observe session row).
+     * This only binds the two static views and sets the initial chip text;
+     * no runtime remove/add reordering (no parent-cast / sibling-order
+     * assumptions, no silent early return).
+     */
     private fun installMissionReadinessUi() {
-        val missionDetails = tvMission.parent as? LinearLayout ?: return
-        tvMissionReadiness = TextView(this).apply {
-            textSize = 13f
-            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_fg))
-            setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_surface_subtle))
-            setPadding(dp(8), dp(6), dp(8), dp(6))
+        val readiness: TextView? = findViewById(R.id.tvMissionReadiness)
+        if (readiness == null) {
+            Log.w(TAG, "installMissionReadinessUi: missing tvMissionReadiness")
+            return
         }
-        missionDetails.addView(
-            tvMissionReadiness,
-            missionDetails.indexOfChild(tvMission),
-            LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dp(8) },
-        )
-
-        val syncSitesButton = findViewById<Button>(R.id.btnSyncSites)
-        val syncButtonsRow = syncSitesButton.parent as? LinearLayout ?: return
-        val actionsPanel = syncButtonsRow.parent as? LinearLayout ?: return
-        tvMissionSyncResult = TextView(this).apply {
-            textSize = 12f
-            gravity = android.view.Gravity.CENTER_VERTICAL
-            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_fg))
-            setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_surface_subtle))
-            setPadding(dp(7), dp(5), dp(7), dp(5))
+        tvMissionReadiness = readiness
+        val syncResult: TextView? = findViewById(R.id.tvMissionSyncResult)
+        if (syncResult == null) {
+            Log.w(TAG, "installMissionReadinessUi: missing tvMissionSyncResult")
+            return
         }
+        tvMissionSyncResult = syncResult
         updateMissionSyncResultUi()
-        actionsPanel.addView(
-            tvMissionSyncResult,
-            actionsPanel.indexOfChild(syncButtonsRow) + 1,
-            LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dp(5) },
-        )
-
-        val prepareRow = findViewById<Button>(R.id.btnPrepare).parent as? LinearLayout ?: return
-        val reconcileButton = findViewById<Button>(R.id.btnReconcile)
-        prepareRow.removeView(reconcileButton)
-
-        val startFlightButton = findViewById<Button>(R.id.btnStartFlight)
-        val startIndex = actionsPanel.indexOfChild(startFlightButton)
-        val startNote = actionsPanel.getChildAt(startIndex + 1) as? TextView ?: return
-        val startLayoutParams = startFlightButton.layoutParams
-        val noteLayoutParams = startNote.layoutParams
-        actionsPanel.removeView(startFlightButton)
-        actionsPanel.removeView(startNote)
-        val sequenceEndIndex = actionsPanel.indexOfChild(prepareRow) + 1
-        actionsPanel.addView(startFlightButton, sequenceEndIndex, startLayoutParams)
-        actionsPanel.addView(startNote, sequenceEndIndex + 1, noteLayoutParams)
-
-        val additionalRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
-        }
-        additionalRow.addView(
-            TextView(this).apply {
-                text = getString(R.string.mission_additional_check)
-                textSize = 12f
-                setTextColor(ContextCompat.getColor(this@MainActivity, R.color.ksi_muted))
-            },
-            LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f),
-        )
-        additionalRow.addView(
-            reconcileButton,
-            LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(48)),
-        )
-        actionsPanel.addView(
-            additionalRow,
-            actionsPanel.indexOfChild(startNote) + 1,
-            LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dp(5) },
-        )
     }
 
     private fun setMissionSyncResult(resource: Int) {
@@ -704,8 +684,6 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.mission_sync_result_description),
         )
     }
-
-    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun refresh() {
         cockpitStateDirty = false
@@ -767,18 +745,22 @@ class MainActivity : AppCompatActivity() {
         tvMissionFlightId.text = "기록 ID · ${flight?.get("flight_id")?.asText()?.take(8) ?: "없음"}"
         tvMissionFlightState.text = "기록 상태 · ${flight?.get("state")?.asText() ?: "미시작"}"
         tvMissionStarted.text = "시작 수신 · ${flight?.get("started_at_utc")?.asText()?.take(19) ?: "-"}"
-        findViewById<Button>(R.id.btnSyncSites).isEnabled = app.config.coreConfigured
-        findViewById<Button>(R.id.btnSyncBundle).isEnabled =
-            app.config.coreConfigured && selectedSiteId != null
-        findViewById<Button>(R.id.btnStartFlight).isEnabled =
-            selectedBundle != null && flight == null
+        setButtonEnabled(R.id.btnSyncSites, app.config.coreConfigured)
+        setButtonEnabled(
+            R.id.btnSyncBundle,
+            app.config.coreConfigured && selectedSiteId != null,
+        )
+        setButtonEnabled(
+            R.id.btnStartFlight,
+            selectedBundle != null && flight == null,
+        )
         val hasController = session.controller != null
-        findViewById<Button>(R.id.btnPrepare).isEnabled = hasController
-        findViewById<Button>(R.id.btnApply).isEnabled = hasController
-        findViewById<Button>(R.id.btnReconcile).isEnabled = hasController
-        findViewById<Button>(R.id.btnStart).isEnabled = hasController
-        findViewById<Button>(R.id.btnStop).isEnabled = hasController
-        findViewById<Button>(R.id.btnEndFlight).isEnabled = flight != null
+        setButtonEnabled(R.id.btnPrepare, hasController)
+        setButtonEnabled(R.id.btnApply, hasController)
+        setButtonEnabled(R.id.btnReconcile, hasController)
+        setButtonEnabled(R.id.btnStart, hasController)
+        setButtonEnabled(R.id.btnStop, hasController)
+        setButtonEnabled(R.id.btnEndFlight, flight != null)
 
         val endpoint = session.controller?.endpoint
         val simulatedTag = if (session.link.isSimulated) " SIMULATED" else ""
@@ -1155,9 +1137,15 @@ class MainActivity : AppCompatActivity() {
      * C67 (design round 3): the MOP Connect CTA is neutral by default and
      * takes the problem treatment only while the link state is DISCONNECTED.
      */
+    /** G18: guarded enable — log + skip instead of crashing on a missing id. */
+    private fun setButtonEnabled(id: Int, enabled: Boolean) {
+        val button = buttonOrNull(id) ?: return
+        button.isEnabled = enabled
+    }
+
     private fun refreshConnectEmphasis() {
         val problem = session.link.state == DroneLink.State.DISCONNECTED
-        val connect = findViewById<Button>(R.id.btnConnect)
+        val connect = btnConnect ?: buttonOrNull(R.id.btnConnect) ?: return
         connect.backgroundTintList = ContextCompat.getColorStateList(
             this,
             if (problem) R.color.ksi_problem_bg else R.color.ksi_surface,
@@ -1172,8 +1160,13 @@ class MainActivity : AppCompatActivity() {
         val cockpit = navId == R.id.btnNavObserve
         flightChromeCollapsed = cockpit
         navTargets.forEach { (nav, page) ->
-            findViewById<View>(page).visibility = if (nav == navId) View.VISIBLE else View.GONE
-            val button = findViewById<Button>(nav)
+            val pageView: View? = findViewById(page)
+            if (pageView == null) {
+                Log.w(TAG, "showPage: missing page id=$page")
+            } else {
+                pageView.visibility = if (nav == navId) View.VISIBLE else View.GONE
+            }
+            val button = navButtons[nav] ?: buttonOrNull(nav) ?: return@forEach
             val selected = nav == navId
             button.backgroundTintList = ContextCompat.getColorStateList(
                 this,
@@ -1253,9 +1246,11 @@ class MainActivity : AppCompatActivity() {
                 it.get("flight_id")?.asText() == row.flightId
             }
         } == true
-        findViewById<Button>(R.id.btnUpload).isEnabled =
-            hasSelection && canReachCore && selectedHasPending
-        findViewById<Button>(R.id.btnServerState).isEnabled = hasSelection && canReachCore
+        setButtonEnabled(
+            R.id.btnUpload,
+            hasSelection && canReachCore && selectedHasPending,
+        )
+        setButtonEnabled(R.id.btnServerState, hasSelection && canReachCore)
     }
 
     private fun updateAiPeekFreshness() {
@@ -2053,5 +2048,6 @@ class MainActivity : AppCompatActivity() {
 
     private companion object {
         const val COCKPIT_REFRESH_MS = 1_000L
+        const val TAG = "MainActivity"
     }
 }
