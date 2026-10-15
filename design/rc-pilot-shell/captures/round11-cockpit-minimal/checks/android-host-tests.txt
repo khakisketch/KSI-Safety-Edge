@@ -1,0 +1,8 @@
+Command: bash scripts/android_host_tests.sh
+Result: BUILD SUCCESSFUL (2026-10-15; final Android source after XML correction)
+
+Host modules: rc-ports, rc-core, rc-msdk, rc-app bench, rc-app device.
+JUnit XML summary on this aarch64 host: 214 test executions across 48 suite files; 0 failures; 0 errors; 12 skipped executions (the same 6 WorkManager/Robolectric cases in each app variant). The x86_64 CI workflow remains authoritative for those skips.
+
+The first build attempt caught an Android resource parse error because a leading '?' in a literal aircraft status was interpreted as a theme-attribute reference. The placeholder was changed to plain "기체 · 알 수 없음" and the full host suite was rerun successfully.
+Warnings from the third-party DJI resource bundle and existing deprecated FLAG_FULLSCREEN usages remain non-blocking.

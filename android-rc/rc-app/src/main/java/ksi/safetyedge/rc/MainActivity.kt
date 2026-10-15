@@ -102,6 +102,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvMopStatus: TextView
     private lateinit var tvKsiRecordStatus: TextView
     private lateinit var tvRecorderStatus: TextView
+    private lateinit var tvRecordEndNote: TextView
 
     // MSDK declares dangerous permissions (location/phone/storage); targetSdk
     // 34 requires a runtime grant — request the declared set once per launch
@@ -223,6 +224,7 @@ class MainActivity : AppCompatActivity() {
         appHeader = findViewById(R.id.appHeader)
         headerDivider = findViewById(R.id.headerDivider)
         tvCockpitSim = findViewById(R.id.tvCockpitSim)
+        tvRecordEndNote = findViewById(R.id.tvRecordEndNote)
         bindStaticButtons()
         findViewById<Button>(R.id.btnStartFlight)?.apply {
             backgroundTintList = ContextCompat.getColorStateList(
@@ -308,7 +310,7 @@ class MainActivity : AppCompatActivity() {
             }
         })
         on(R.id.btnVideoConnect) { app.videoSource.connect(); refresh() }
-        on(R.id.btnVideoDisconnect) { app.videoSource.disconnect(); refresh() }
+        on(R.id.btnVideoDisconnect) { confirmVideoDisconnectInput() }
 
         // A9-3: live surface lifecycle -> display decoder (device flavor
         // only; bench is a no-op). Recording is NOT tied to this surface.
@@ -925,17 +927,17 @@ class MainActivity : AppCompatActivity() {
         } else {
             priorityRow.visibility = View.VISIBLE
             val marker = if (priority.severity == OperatorStatus.Severity.PROBLEM) "■" else "▲"
-            val alertCopy = buildString {
-                append("$marker KSI · ${priority.label}")
+            val faultPill = "$marker ${priority.label}"
+            tvPrimaryAlert.text = faultPill
+            tvPrimaryAlert.contentDescription = buildString {
+                append(faultPill)
                 if (priority.detail.isNotBlank()) append(" · ${priority.detail}")
                 priority.action?.let { append(" · 다음 조치: $it") }
                 if (priority.label == "AI 관측 지연") append(" · 안전 판정 아님")
                 if (priority.label == "녹화 오류") append(" · 로컬 증거가 저장되지 않을 수 있음")
                 if (priority.label == "녹화 입력 대기") append(" · 실제 저장 프레임이 아직 확인되지 않음")
+                append(". 자세한 출처별 상태는 운용 상태 상세에서 확인하세요.")
             }
-            tvPrimaryAlert.text = alertCopy
-            tvPrimaryAlert.contentDescription =
-                "$alertCopy. 자세한 출처별 상태는 운용 상태 상세에서 확인하세요."
             val color = if (priority.severity == OperatorStatus.Severity.PROBLEM) {
                 R.color.ksi_problem_video
             } else {
@@ -952,10 +954,7 @@ class MainActivity : AppCompatActivity() {
         tvTopSim.visibility = if (simulated) View.VISIBLE else View.GONE
         tvCockpitSim.visibility = if (simulated) View.VISIBLE else View.GONE
         tvTopUtc.text = getString(R.string.top_receipt_note)
-        val flight = session.activeFlight
-        tvTopContext.text = flight?.let {
-            "기록 세션 · ${it.get("flight_id")?.asText()?.take(8) ?: "-"}"
-        } ?: getString(R.string.top_no_active_flight)
+        tvTopContext.setText(R.string.cockpit_live_view)
     }
 
     private fun refreshVideo() {
@@ -1039,6 +1038,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshCockpitFacts(items: List<OperatorStatus.Item>) {
         val activeFlight = session.activeFlight
+        val endRecordButton = buttonOrNull(R.id.btnEndFlight)
+        if (activeFlight == null) {
+            endRecordButton?.visibility = View.GONE
+            tvRecordEndNote.setText(R.string.cockpit_record_end_note_none)
+        } else {
+            endRecordButton?.visibility = View.VISIBLE
+            tvRecordEndNote.setText(R.string.cockpit_record_end_note_active)
+        }
         val recordState = if (activeFlight == null) {
             getString(R.string.cockpit_record_none)
         } else {
@@ -1284,7 +1291,7 @@ class MainActivity : AppCompatActivity() {
         val flightId = session.activeFlight?.get("flight_id")?.asText()
         if (flightId == null) {
             tvAiPeek.text = "AI 관측 · 기록 없음"
-            tvAiPeek.setTextColor(ContextCompat.getColor(this, R.color.ksi_video_fg))
+            tvAiPeek.setTextColor(ContextCompat.getColor(this, R.color.ksi_fg))
             tvAiPeek.contentDescription =
                 "AI 관측 수신 상태. 활성 기록이 없어 관측 수신을 기다리는 중입니다."
             return
@@ -1305,7 +1312,7 @@ class MainActivity : AppCompatActivity() {
         tvAiPeek.setTextColor(
             ContextCompat.getColor(
                 this,
-                if (stale) R.color.ksi_attention_video else R.color.ksi_video_fg,
+                if (stale) R.color.ksi_attention else R.color.ksi_fg,
             ),
         )
         tvAiPeek.contentDescription =
@@ -1781,16 +1788,33 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun confirmVideoDisconnectInput() {
+        val disconnect = {
+            app.videoSource.disconnect()
+            refresh()
+        }
+        if (session.activeFlight == null) {
+            disconnect()
+            return
+        }
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle(R.string.video_disconnect_confirm_title)
+            .setMessage(R.string.video_disconnect_confirm_message)
+            .setNegativeButton("취소", null)
+            .setPositiveButton(R.string.btn_video_disconnect) { _, _ -> disconnect() }
+            .show()
+    }
+
     private fun confirmEndFlight() {
         if (session.activeFlight == null) {
-            show("종료할 비행 기록이 없습니다")
+            show("종료할 KSI 로컬 기록 세션이 없습니다")
             return
         }
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("KSI 기록 세션 종료")
             .setMessage("KSI 로컬 관측·녹화 기록을 종료하고 녹화 구간을 마무리합니다. 기체 비행 조종은 DJI Pilot 2에서 계속 확인하세요.")
             .setNegativeButton("계속 기록", null)
-            .setPositiveButton("KSI 기록 종료") { _, _ -> finishFlight() }
+            .setPositiveButton(R.string.btn_end_flight) { _, _ -> finishFlight() }
             .show()
     }
 

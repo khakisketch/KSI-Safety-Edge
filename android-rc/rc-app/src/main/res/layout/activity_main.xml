@@ -191,164 +191,11 @@
                         android:layout_weight="1"
                         android:ellipsize="middle"
                         android:maxLines="1"
-                        android:text="@string/top_no_active_flight"
+                        android:text="@string/cockpit_live_view"
                         android:textColor="@color/ksi_video_fg"
                         android:textSize="14sp"
                         android:textStyle="bold" />
 
-                    <TextView
-                        android:id="@+id/tvCockpitSim"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:background="@color/ksi_attention_bg"
-                        android:paddingStart="7dp"
-                        android:paddingTop="4dp"
-                        android:paddingEnd="7dp"
-                        android:paddingBottom="4dp"
-                        android:text="[SIMULATED]"
-                        android:textColor="@color/ksi_attention"
-                        android:textSize="12sp"
-                        android:textStyle="bold"
-                        android:visibility="gone" />
-
-                    <Button
-                        android:id="@+id/btnTogglePanel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="48dp"
-                        android:layout_marginStart="8dp"
-                        android:minWidth="0dp"
-                        android:text="@string/btn_open_ops_panel"
-                        android:textAllCaps="false"
-                        android:textSize="13sp" />
-                </LinearLayout>
-
-                <!-- Unboxed, independent state strip; symbols and labels carry meaning without color. -->
-                <LinearLayout
-                    android:id="@+id/cockpitStatusStrip"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginStart="12dp"
-                    android:layout_marginEnd="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="4dp"
-                    android:paddingEnd="4dp">
-
-                    <!-- Zone 1 follows B-1: local record, then the MOP link. -->
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:gravity="center_vertical"
-                        android:layout_weight="2"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:id="@+id/tvKsiRecordStatus"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_weight="1"
-                            android:gravity="center_vertical"
-                            android:paddingStart="4dp"
-                            android:paddingEnd="4dp"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:text="· 기록 · 없음"
-                            android:textColor="@color/ksi_info"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvMopStatus"
-                            android:layout_width="0dp"
-                            android:layout_height="match_parent"
-                            android:layout_weight="1"
-                            android:gravity="center_vertical"
-                            android:paddingStart="4dp"
-                            android:paddingEnd="4dp"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:text="· MOP · 미연결"
-                            android:textColor="@color/ksi_info"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="28dp"
-                        android:background="@color/ksi_border" />
-
-                    <!-- Zone 2: aircraft connection, independently reported by the link. -->
-                    <TextView
-                        android:id="@+id/tvAircraftStatus"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:gravity="center_vertical"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="\? 기체 · 알 수 없음"
-                        android:textColor="@color/ksi_info"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <View
-                        android:layout_width="1dp"
-                        android:layout_height="28dp"
-                        android:background="@color/ksi_border" />
-
-                    <!-- Zone 3: video input is separate from record and flight state. -->
-                    <TextView
-                        android:id="@+id/tvVideoStatus"
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
-                        android:gravity="center_vertical"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="· 영상 · 미연결"
-                        android:textColor="@color/ksi_info"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
-
-                <LinearLayout
-                    android:id="@+id/cockpitPriorityRow"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:minHeight="40dp"
-                    android:layout_marginStart="12dp"
-                    android:layout_marginEnd="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:visibility="gone">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:text="@string/label_next_action"
-                        android:textColor="@color/ksi_video_fg"
-                        android:textSize="12sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvPrimaryAlert"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:paddingTop="4dp"
-                        android:paddingBottom="4dp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="@string/no_urgent_action"
-                        android:textColor="@color/ksi_video_fg"
-                        android:textSize="13sp" />
                 </LinearLayout>
 
                 <FrameLayout
@@ -399,84 +246,59 @@
                                 android:textStyle="bold" />
 
                             <TextView
+                                android:id="@+id/tvCockpitSim"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:background="@color/ksi_attention_bg"
+                                android:paddingStart="7dp"
+                                android:paddingTop="4dp"
+                                android:paddingEnd="7dp"
+                                android:paddingBottom="4dp"
+                                android:text="[SIMULATED]"
+                                android:textColor="@color/ksi_attention"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:visibility="gone" />
+
+                            <TextView
                                 android:id="@+id/tvFlightBoundary"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
+                                android:layout_marginStart="4dp"
                                 android:padding="4dp"
                                 android:maxLines="1"
                                 android:text="@string/cockpit_flight_boundary"
                                 android:textColor="@color/ksi_video_fg"
                                 android:textSize="11sp" />
-
-                            <TextView
-                                android:id="@+id/tvVideo"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_marginStart="6dp"
-                                android:layout_weight="1"
-                                android:padding="4dp"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="-"
-                                android:textColor="@color/ksi_video_fg"
-                                android:textSize="12sp" />
-
-                            <Button
-                                android:id="@+id/btnVideoConnect"
-                                android:layout_width="wrap_content"
-                                android:layout_height="48dp"
-                                android:layout_marginStart="6dp"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_video_connect"
-                                android:textAllCaps="false"
-                                android:maxLines="1"
-                                android:textSize="13sp" />
-
-                            <Button
-                                android:id="@+id/btnVideoDisconnect"
-                                android:layout_width="wrap_content"
-                                android:layout_height="48dp"
-                                android:layout_marginStart="4dp"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_video_disconnect"
-                                android:textAllCaps="false"
-                                android:maxLines="1"
-                                android:textSize="13sp" />
                         </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_gravity="bottom"
+                            android:layout_gravity="top"
+                            android:layout_marginStart="14dp"
+                            android:layout_marginTop="54dp"
+                            android:layout_marginEnd="14dp"
                             android:gravity="center_vertical"
                             android:orientation="horizontal"
-                            android:padding="8dp">
+                            android:padding="3dp"
+                            android:visibility="gone"
+                            android:id="@+id/cockpitPriorityRow">
 
                             <TextView
-                                android:id="@+id/tvAiPeek"
-                                android:layout_width="0dp"
+                                android:id="@+id/tvPrimaryAlert"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
+                                android:background="@color/ksi_video_bg"
                                 android:ellipsize="end"
                                 android:maxLines="1"
-                                android:padding="4dp"
-                                android:text="@string/video_overlay_honesty"
+                                android:paddingStart="7dp"
+                                android:paddingTop="5dp"
+                                android:paddingEnd="7dp"
+                                android:paddingBottom="5dp"
+                                android:text="@string/no_urgent_action"
                                 android:textColor="@color/ksi_video_fg"
-                                android:textSize="13sp"
-                                android:contentDescription="@string/cockpit_ai_status" />
-
-                            <Button
-                                android:id="@+id/btnEndFlight"
-                                android:layout_width="wrap_content"
-                                android:layout_height="52dp"
-                                android:minWidth="176dp"
-                                android:paddingStart="12dp"
-                                android:paddingEnd="12dp"
-                                android:maxLines="1"
-                                android:ellipsize="end"
-                                android:contentDescription="@string/cockpit_end_record_accessibility"
-                                android:text="@string/btn_end_flight"
-                                android:textAllCaps="false"
                                 android:textSize="12sp" />
                         </LinearLayout>
                     </FrameLayout>
@@ -517,14 +339,77 @@
                                 android:fillViewport="false"
                                 android:overScrollMode="ifContentScrolls">
 
-                                <TextView
-                                    android:id="@+id/tvOpsStatus"
+                                <LinearLayout
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
-                                    android:lineSpacingExtra="3dp"
-                                    android:text="-"
-                                    android:textColor="@color/ksi_fg"
-                                    android:textSize="13sp" />
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:id="@+id/tvOpsStatus"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:lineSpacingExtra="3dp"
+                                        android:text="-"
+                                        android:textColor="@color/ksi_fg"
+                                        android:textSize="13sp" />
+
+                                    <TextView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="8dp"
+                                        android:text="@string/video_input_actions_heading"
+                                        android:textColor="@color/ksi_fg"
+                                        android:textSize="13sp"
+                                        android:textStyle="bold" />
+
+                                    <TextView
+                                        android:id="@+id/tvVideo"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:background="@color/ksi_surface_subtle"
+                                        android:ellipsize="end"
+                                        android:maxLines="3"
+                                        android:padding="6dp"
+                                        android:text="-"
+                                        android:textColor="@color/ksi_fg"
+                                        android:textSize="12sp" />
+
+                                    <TextView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="4dp"
+                                        android:text="@string/video_input_actions_note"
+                                        android:textColor="@color/ksi_muted"
+                                        android:textSize="12sp" />
+
+                                    <LinearLayout
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="4dp"
+                                        android:orientation="horizontal">
+
+                                        <Button
+                                            android:id="@+id/btnVideoConnect"
+                                            android:layout_width="0dp"
+                                            android:layout_height="48dp"
+                                            android:layout_weight="1"
+                                            android:minWidth="0dp"
+                                            android:text="@string/btn_video_connect"
+                                            android:textAllCaps="false"
+                                            android:textSize="12sp" />
+
+                                        <Button
+                                            android:id="@+id/btnVideoDisconnect"
+                                            android:layout_width="0dp"
+                                            android:layout_height="48dp"
+                                            android:layout_marginStart="4dp"
+                                            android:layout_weight="1"
+                                            android:minWidth="0dp"
+                                            android:text="@string/btn_video_disconnect"
+                                            android:textAllCaps="false"
+                                            android:textSize="12sp" />
+                                    </LinearLayout>
+                                </LinearLayout>
                             </ScrollView>
 
                             <TextView
@@ -597,6 +482,166 @@
 
                     </FrameLayout>
                 </FrameLayout>
+
+                <!-- Read-only operational facts live below the live image, not over it. -->
+                <LinearLayout
+                    android:id="@+id/cockpitStatusStrip"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@color/ksi_surface"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="4dp"
+                    android:paddingEnd="4dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="2"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/tvKsiRecordStatus"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:gravity="center_vertical"
+                            android:maxLines="1"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
+                            android:text="· 기록 · 없음"
+                            android:textColor="@color/ksi_info"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvMopStatus"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:gravity="center_vertical"
+                            android:maxLines="1"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp"
+                            android:text="· MOP · 미연결"
+                            android:textColor="@color/ksi_info"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="28dp"
+                        android:background="@color/ksi_border" />
+
+                    <TextView
+                        android:id="@+id/tvAircraftStatus"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:gravity="center_vertical"
+                        android:maxLines="1"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:text="기체 · 알 수 없음"
+                        android:textColor="@color/ksi_info"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="28dp"
+                        android:background="@color/ksi_border" />
+
+                    <TextView
+                        android:id="@+id/tvVideoStatus"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:gravity="center_vertical"
+                        android:maxLines="1"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:text="· 영상 · 미연결"
+                        android:textColor="@color/ksi_info"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="28dp"
+                        android:background="@color/ksi_border" />
+
+                    <TextView
+                        android:id="@+id/tvAiPeek"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1.2"
+                        android:ellipsize="end"
+                        android:gravity="center_vertical"
+                        android:maxLines="1"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="4dp"
+                        android:text="AI 관측 · 기록 없음"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:contentDescription="@string/cockpit_ai_status" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/cockpitRecordActionRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="52dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@color/ksi_surface"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="4dp">
+
+                    <TextView
+                        android:id="@+id/tvRecordEndNote"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:paddingEnd="8dp"
+                        android:text="@string/cockpit_record_end_note_none"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="12sp" />
+
+                    <Button
+                        android:id="@+id/btnTogglePanel"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="4dp"
+                        android:minWidth="0dp"
+                        android:text="@string/btn_open_ops_panel"
+                        android:textAllCaps="false"
+                        android:textSize="12sp" />
+
+                    <Button
+                        android:id="@+id/btnEndFlight"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:minWidth="176dp"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp"
+                        android:contentDescription="@string/cockpit_end_record_accessibility"
+                        android:text="@string/btn_end_flight"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- PRE-FLIGHT: explicit local site/bundle selection and ordered preparation. -->

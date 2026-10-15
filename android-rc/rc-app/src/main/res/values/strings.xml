@@ -12,7 +12,7 @@
     <string name="btn_reconcile">재조정</string>
     <string name="btn_start">시작</string>
     <string name="btn_stop">정지</string>
-    <string name="btn_end_flight">KSI 로컬 기록 종료</string>
+    <string name="btn_end_flight">KSI 로컬 기록 세션 종료</string>
     <string name="btn_sync_sites">현장 동기화</string>
     <string name="btn_sync_bundle">번들 내려받기</string>
     <string name="btn_start_flight">비행 시작</string>
@@ -20,7 +20,7 @@
     <string name="btn_disconnect">MOP 해제</string>
     <string name="btn_retry">미확인 재전송</string>
     <string name="btn_video_connect">영상 입력 연결</string>
-    <string name="btn_video_disconnect">입력 해제</string>
+    <string name="btn_video_disconnect">영상 입력 해제</string>
     <string name="label_events">사건 — [DETECT] 객체 관측 vs [SHADOW] 위험 후보(경고 아님). 시각은 Edge 모노토닉(기기 도메인), 신선도는 RC 수신시각 기준.</string>
     <string name="btn_demo_tick">데모 틱</string>
     <string name="btn_demo_new_flight">새 데모 비행</string>
@@ -150,8 +150,14 @@
     <string name="btn_close_ai_list">AI 닫기</string>
     <string name="btn_open_ops_panel">상태 상세</string>
     <string name="btn_close_ops_panel">상태 닫기</string>
-    <string name="cockpit_flight_boundary">DJI Pilot 2 · 비행 조종</string>
+    <string name="cockpit_flight_boundary">DJI Pilot 2 · 조종</string>
     <string name="cockpit_end_record_accessibility">KSI 로컬 관측·녹화 기록을 종료하고 녹화 구간을 마무리합니다. 기체 비행 조종을 종료하지 않습니다. 비행 조종은 DJI Pilot 2에서 확인하세요.</string>
+    <string name="cockpit_record_end_note_active">KSI 로컬 기록만 종료합니다. 기체 비행은 DJI Pilot 2에서 계속합니다.</string>
+    <string name="cockpit_record_end_note_none">KSI 기록 없음 · 종료할 로컬 기록 세션이 없습니다.</string>
+    <string name="video_input_actions_heading">영상 입력 진단 조치</string>
+    <string name="video_input_actions_note">입력 해제는 영상 수신을 멈출 수 있습니다. KSI 기록과 기체 비행 조종은 별도이며, 기록 중에는 영향 확인 후 해제하세요.</string>
+    <string name="video_disconnect_confirm_title">영상 입력 해제</string>
+    <string name="video_disconnect_confirm_message">영상 입력을 해제하면 이후 영상 프레임을 받지 못해 영상 자료가 불완전할 수 있습니다. KSI 로컬 기록 세션은 계속되며, 기체 비행 조종은 종료되지 않습니다. 영상 입력만 해제할까요?</string>
     <string name="btn_toggle_diagnostics">상태 상세</string>
     <string name="btn_toggle_ai_observations">AI 관측</string>
     <string name="postflight_no_event_detail">이 비행에는 기록된 사건이 없습니다.</string>

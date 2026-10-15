@@ -1,0 +1,412 @@
+{
+  "xmlFilesParsed": 8,
+  "xmlParseErrors": [],
+  "activityMainControls": 44,
+  "controlsBelow48dp": [],
+  "clickableErrorBanner": {
+    "id": "@+id/tvError",
+    "layoutHeight": "wrap_content",
+    "minHeight": "48dp",
+    "meets48dp": true
+  },
+  "allControlsMeet48dp": true,
+  "controls": [
+    {
+      "tag": "Button",
+      "id": "@+id/btnNavObserve",
+      "layoutHeight": "56dp",
+      "minHeight": "",
+      "explicitHeightDp": 56.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnNavMission",
+      "layoutHeight": "56dp",
+      "minHeight": "",
+      "explicitHeightDp": 56.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnNavReview",
+      "layoutHeight": "56dp",
+      "minHeight": "",
+      "explicitHeightDp": 56.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnNavEvidence",
+      "layoutHeight": "56dp",
+      "minHeight": "",
+      "explicitHeightDp": 56.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnNavSettings",
+      "layoutHeight": "56dp",
+      "minHeight": "",
+      "explicitHeightDp": 56.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnFocusMode",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnVideoConnect",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnVideoDisconnect",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnConnect",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnDisconnect",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnRetry",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnTogglePanel",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnEndFlight",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Spinner",
+      "id": "@+id/spSite",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Spinner",
+      "id": "@+id/spBundle",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnSyncSites",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnSyncBundle",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnPrepare",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnApply",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnStartFlight",
+      "layoutHeight": "56dp",
+      "minHeight": "",
+      "explicitHeightDp": 56.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnReconcile",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnStart",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnStop",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnOpenEvidence",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Spinner",
+      "id": "@+id/spHistoryFlight",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnFlightPrev",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnFlightNext",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnEventPrev",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnEventNext",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnFlagFalsePositive",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnViewEvidence",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnFetchEvidence",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnRefreshEvidence",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnUpload",
+      "layoutHeight": "52dp",
+      "minHeight": "",
+      "explicitHeightDp": 52.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnServerState",
+      "layoutHeight": "52dp",
+      "minHeight": "",
+      "explicitHeightDp": 52.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "EditText",
+      "id": "@+id/etOperatorName",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "EditText",
+      "id": "@+id/etOperatorOrg",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnSaveOperator",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "EditText",
+      "id": "@+id/etCoreUrl",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "EditText",
+      "id": "@+id/etCoreToken",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnSaveCore",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnToggleDeveloper",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnDemoTick",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    },
+    {
+      "tag": "Button",
+      "id": "@+id/btnDemoNewFlight",
+      "layoutHeight": "48dp",
+      "minHeight": "",
+      "explicitHeightDp": 48.0,
+      "minHeightDp": null,
+      "meets48dp": true
+    }
+  ],
+  "scopeNote": "XML structure only; no Android device rendering or physical touch verification."
+}
