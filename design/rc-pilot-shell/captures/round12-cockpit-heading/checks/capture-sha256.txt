@@ -1,0 +1,11 @@
+237e044ac40de56c2e6891fd8ccb3e1d797148e4eb851f96f48a55e354fe0ac7  design/rc-pilot-shell/field-shell.html
+ea78fba96d919f9049f8a59970c304eda65c10ff36355675b3f3d82657ff2deb  design/rc-pilot-shell/captures/round12-cockpit-heading/screens/1920x1200-disconnected.png
+6c8869582be8c833b03a0c89108b93102324620605cb08b0bf44db5780cf99ba  design/rc-pilot-shell/captures/round12-cockpit-heading/screens/1920x1200-normal-recent.png
+14c7627cade0abbc192099889fcd9a11ddf0592814d1bf5d7de7973985787dc9  design/rc-pilot-shell/captures/round12-cockpit-heading/screens/1920x1200-problem-recent.png
+3f49b29535913027b1df89e667de56cd455dd4e1984cd15a9dbc650e5ccf6581  design/rc-pilot-shell/captures/round12-cockpit-heading/screens/390x844-disconnected.png
+b112e00f56fb3046fbdd93ef0c6e72fa4765a963c27fbf6d80175b779ba772d4  design/rc-pilot-shell/captures/round12-cockpit-heading/screens/390x844-normal-recent.png
+ecb1f30e7a2b3ed8ea994e2a6a7e5884e599971fccd23cb64421ff843ac17ca5  design/rc-pilot-shell/captures/round12-cockpit-heading/screens/390x844-problem-alert-fullwidth.png
+f4c6a3307f4f41148901059512886d6ffd2e20ef90c8cdff7f3dc059570b4b55  design/rc-pilot-shell/captures/round12-cockpit-heading/screens/390x844-problem-recent.png
+dd70f59fd45d23e3c7f8800a5c798bcec8bd8229a8fe4a049f6f926da50d79e9  design/rc-pilot-shell/captures/round12-cockpit-heading/screens/960x600-disconnected.png
+8049d82c1c21affc4702bbe89381f23f98f763b082a4351694722e8b110755e5  design/rc-pilot-shell/captures/round12-cockpit-heading/screens/960x600-normal-recent.png
+67822a0ba4a9b7faa7b8c3f2161a8d82bc025f66d6e961e5e80a07ddaf4bda7c  design/rc-pilot-shell/captures/round12-cockpit-heading/screens/960x600-problem-recent.png

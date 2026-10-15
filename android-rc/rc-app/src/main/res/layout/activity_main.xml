@@ -236,20 +236,39 @@
                             android:orientation="horizontal"
                             android:padding="8dp">
 
-                            <TextView
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:padding="4dp"
-                                android:text="@string/cockpit_live_view"
-                                android:textColor="@color/ksi_video_fg"
-                                android:textSize="12sp"
-                                android:textStyle="bold" />
+                                android:orientation="vertical"
+                                android:paddingEnd="8dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/cockpit_video_source_label"
+                                    android:textColor="@color/ksi_muted"
+                                    android:textSize="11sp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="1dp"
+                                    android:text="@string/cockpit_live_view"
+                                    android:textColor="@color/ksi_video_fg"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
+
+                            <View
+                                android:layout_width="1dp"
+                                android:layout_height="32dp"
+                                android:background="@color/ksi_border" />
 
                             <TextView
                                 android:id="@+id/tvCockpitSim"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="6dp"
+                                android:layout_marginStart="8dp"
                                 android:background="@color/ksi_attention_bg"
                                 android:paddingStart="7dp"
                                 android:paddingTop="4dp"
@@ -261,16 +280,36 @@
                                 android:textStyle="bold"
                                 android:visibility="gone" />
 
-                            <TextView
-                                android:id="@+id/tvFlightBoundary"
+                            <View
+                                android:layout_width="1dp"
+                                android:layout_height="32dp"
+                                android:layout_marginStart="8dp"
+                                android:background="@color/ksi_border" />
+
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_marginStart="4dp"
-                                android:padding="4dp"
-                                android:maxLines="1"
-                                android:text="@string/cockpit_flight_boundary"
-                                android:textColor="@color/ksi_video_fg"
-                                android:textSize="11sp" />
+                                android:layout_marginStart="8dp"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/cockpit_flight_authority_label"
+                                    android:textColor="@color/ksi_muted"
+                                    android:textSize="11sp" />
+
+                                <TextView
+                                    android:id="@+id/tvFlightBoundary"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="1dp"
+                                    android:maxLines="1"
+                                    android:text="@string/cockpit_flight_boundary"
+                                    android:textColor="@color/ksi_video_fg"
+                                    android:textSize="12sp"
+                                    android:textStyle="bold" />
+                            </LinearLayout>
                         </LinearLayout>
 
                         <LinearLayout

@@ -2,9 +2,9 @@
 
 앱(`android-rc`)의 시각 기준이 되는 단일 HTML 프로토타입. 브라우저로 열어 확인한다.
 
-- **현재 정본(작업본)**: `field-shell.html` — 2026-10-15 round11 조종석 최소화
-  (영상 아래 B-1 3그룹, 진단으로 영상 조작 이동, 활성 KSI 로컬 기록에만 종료 제공). sha256
-  `ed38418c460bf80df235bf680b92ec11832662ec8d2da3e4a47fdc9f17176390` (**미커밋 작업본**).
+- **현재 정본(작업본)**: `field-shell.html` — 2026-10-15 round12 조종석 헤더 위계
+  (KSI 관측·기록 보조, 영상 입력 상태·`[SIMULATED]`·DJI Pilot 2 비행 조종 권한을 분리). sha256
+  `4b632f563e24592aa854892092fdc5269049b1c558493ac37f2e94ba6a04cc90` (**미커밋 작업본**).
 - **직전 커밋 기준선**: `783ec0b`(10-14 디자인, main) · `c5f41ee`(round 4) · `ff4b5b4`(round 3, `cdb72c9b…`).
 - **렌더(필수 경로)**:
 
@@ -27,7 +27,9 @@
   `captures/round10-cockpit-readability/`(기존 960×600·1920×830 before/after 보존, 최종 `verified-final-20261015/`에
   390×844·960×600·1024×768·1280×800 destination matrix, 5 B-1 시나리오·7 영상 입력 상태, details-open·axe·geometry·Android XML/48dp 검사·해시, **RECEIPT.md**),
   `captures/round11-cockpit-minimal/`(동일 4 viewport의 20 destination + B-1 5상태 × 4 + 영상 입력 7상태,
-  기록/해제 확인, details scroll·keyboard·axe·geometry·console·Android XML/48dp·해시·contact sheet, **RECEIPT.md**)
+  기록/해제 확인, details scroll·keyboard·axe·geometry·console·Android XML/48dp·해시·contact sheet, **RECEIPT.md**),
+  `captures/round12-cockpit-heading/`(960×600·1920×1200 기본, 390×844 보조 · 입력 최근/미연결/B-1 문제,
+  heading geometry·console·detector·Android XML/48dp·host tests, **RECEIPT.md**)
 
 ## 라운드 이력
 
@@ -46,6 +48,7 @@
 | round9 셸 연속성·짧은 landscape 임무 UX | 조종석 몰입은 유지하고 모든 destination에서 같은 drawer를 사용; non-cockpit dark header와 cockpit SE mark; 1366×768/1536×864/1920×830 CTA above-fold, 390px 임무 2열 데이터 | 작업본 `8d8ce077…` (미커밋) |
 | round10 조종석 가독성·상태 위계 | 기존 영상 중심 레이아웃 유지, 8개 B-1 사실의 3그룹 요약, 문제/주의의 기존 심각도 마커, 상태 상세 on demand, DJI Pilot 2 경계·로컬 기록 종료 명확화 | 작업본 `328898da…` (미커밋) |
 | round11 조종석 최소화 | B-1 strip을 영상 아래로, 영상 조작을 진단으로 이동, 기록 중 영상 해제 확인, 활성 로컬 기록에 한정한 종료 | 작업본 `ed38418c…` (미커밋) |
+| round12 조종석 헤더 위계 | KSI 관측·기록 보조, 영상 입력 상태, 시뮬레이션 표기, DJI Pilot 2 조종 권한을 별도 그룹으로 분리 | 작업본 `4b632f56…` (미커밋) |
 
 상세 기록: `history/2026-10-13-round1-review-findings.md`,
 `history/2026-10-13-round2-redesign-change-note.md`,
@@ -55,7 +58,8 @@
 `history/2026-10-14-round8-mission-tab.md`,
 `history/2026-10-15-round9-usability.md`,
 `history/2026-10-15-round10-cockpit-readability.md`,
-`history/2026-10-15-round11-cockpit-minimal.md`
+`history/2026-10-15-round11-cockpit-minimal.md`,
+`history/2026-10-15-round12-cockpit-heading.md`
 
 ## 보존 제약 (디자인 변경 시 불변)
 
@@ -87,6 +91,11 @@
   가능성을 확인한다. KSI 기록 종료는 로컬 기록만 대상으로 한다. 브라우저 검증은 destination 20장,
   B-1 20상태, 영상 7상태, axe 0 violation, console/page error 0, 수평 overflow 0이다. Android는 XML/48dp와
   host suite만 확인했으며 기기 화면·물리 터치·햇빛 판독성은 확인하지 않았다(A9-4 필요).
+- 2026-10-15 round12: `captures/round12-cockpit-heading/RECEIPT.md` 참조. 영상 상단 제목을 `KSI 관측 · 현장 기록 보조`로
+  읽고, `영상 입력` 상태·`[SIMULATED]`·`기체 비행 조종 / DJI Pilot 2`를 나뉜 그룹으로 확인한다. 960×600·1920×1200에서
+  정상 최근 수신·미연결·B-1 문제, 390×844에서 최근·미연결·문제를 캡처했다. HTML 시연의 상태 예시이며 실제 영상이 아니다.
+  Android host suite와 XML/48dp 구조 검사는 통과했지만 lint/assemble은 SDK의 `android-34` 부재로 막혔다. Native/RC Plus 2
+  렌더·실제 터치·장갑·햇빛 판독성은 A9-4에서 확인해야 한다.
 - 2026-10-14 round6: `captures/round6-full-sweep/RECEIPT.md` 참조. 화면 매트릭스 18장 after와
   추가 상태 3장, axe 21개(위반 0), desktop/mobile 대비 보조 측정 18개. Detector의 타이포그래피
   warning/advisory는 영수증에 남겼으며, 실제 기기 판독성은 A9-4에서 확인해야 한다.

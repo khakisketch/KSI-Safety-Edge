@@ -1,0 +1,14 @@
+{
+  "layout_xml_parses": true,
+  "strings_xml_parses": true,
+  "new_header_ids_present": {
+    "tvCockpitSim": true,
+    "tvFlightBoundary": true
+  },
+  "string_references_missing": [],
+  "button_spinner_edittext_count": 44,
+  "controls_below_48dp": 0,
+  "page_title_inflight": "KSI 관측 · 기록 보조",
+  "authority_label": "기체 비행 조종",
+  "authority_value": "DJI Pilot 2"
+}

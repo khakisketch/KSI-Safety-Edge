@@ -1732,11 +1732,56 @@ body[data-active-page="inflight"] .video-heading-group .cockpit-shell-mark {
   }
   body[data-active-page="inflight"] .video-heading-group {
     min-width: 0;
-    flex: 1 1 auto;
+    max-width: min(100%, 43rem);
+    flex: 0 1 auto;
+    display: grid;
+    grid-template-columns: repeat(4, max-content);
+    align-items: stretch;
+    gap: 0;
+    padding: 0.15rem;
+    border: 1px solid oklch(76% 0.01 240 / 0.34);
+    border-radius: 0.48rem;
+    background: oklch(16% 0.018 240 / 0.9);
+    box-shadow: 0 0.25rem 0.75rem oklch(0% 0 0 / 0.2);
+  }
+  body[data-active-page="inflight"] .video-title-block {
+    min-width: 0;
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 0.42rem;
+    gap: 0.5rem;
+    padding: 0.22rem 0.62rem;
+  }
+  body[data-active-page="inflight"] .video-title-copy { min-width: 0; }
+  body[data-active-page="inflight"] .video-title-copy h2 {
+    color: var(--video-fg);
+    font-size: 0.9rem;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+  body[data-active-page="inflight"] .cockpit-product-note {
+    display: block;
+    margin-block-start: 0.12rem;
+    color: oklch(82% 0.01 240);
+    font-size: 0.72rem;
+    line-height: 1.15;
+    white-space: nowrap;
+  }
+  body[data-active-page="inflight"] .video-heading-unit {
+    min-width: 0;
+    min-height: 2.85rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.12rem;
+    padding: 0.28rem 0.58rem;
+    border-inline-start: 1px solid oklch(76% 0.01 240 / 0.28);
+  }
+  body[data-active-page="inflight"] .video-heading-label {
+    color: oklch(78% 0.01 240);
+    font-size: 0.72rem;
+    line-height: 1.15;
+    white-space: nowrap;
   }
   body[data-active-page="inflight"] .video-heading-group h2 {
     color: var(--video-fg);
@@ -1754,12 +1799,23 @@ body[data-active-page="inflight"] .video-heading-group .cockpit-shell-mark {
     color: oklch(89% 0.07 82);
   }
   body[data-active-page="inflight"] .video-heading-group .simulated-tag {
-    min-height: 1.5rem;
-    padding: 0.18rem 0.38rem;
+    min-height: 1.45rem;
+    padding: 0.16rem 0.38rem;
     border-color: oklch(84% 0.008 240 / 0.72);
-    background: oklch(16% 0.018 240 / 0.88);
+    background: oklch(20% 0.018 240 / 0.92);
     color: var(--video-fg);
-    font-size: var(--type-caption);
+    font-size: 0.72rem;
+  }
+  body[data-active-page="inflight"] .video-heading-group .flight-boundary {
+    color: oklch(88% 0.01 240);
+    font-size: 0.72rem;
+    white-space: normal;
+  }
+  body[data-active-page="inflight"] .video-heading-group .flight-boundary strong {
+    color: var(--video-fg);
+    font-size: 0.78rem;
+    line-height: 1.15;
+    white-space: nowrap;
   }
   body[data-active-page="inflight"] .video-heading-group .flight-boundary {
     color: oklch(88% 0.01 240);
@@ -1959,14 +2015,57 @@ body[data-active-page="inflight"] .video-heading-group .cockpit-shell-mark {
       grid-template-rows: minmax(0, 1fr);
       gap: 0.35rem;
     }
-    body[data-active-page="inflight"] .video-top-overlay { inset: 0.55rem 0.5rem auto 3.9rem; gap: 0.35rem; }
-    body[data-active-page="inflight"] .video-heading-group { gap: 0.28rem; }
+    body[data-active-page="inflight"] .video-top-overlay {
+      inset: 0.55rem 0.5rem auto 3.9rem;
+      gap: 0.35rem;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    body[data-active-page="inflight"] .video-heading-group {
+      width: 100%;
+      max-width: 100%;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    }
+    body[data-active-page="inflight"] .video-title-block {
+      grid-column: 1 / -1;
+      padding: 0.28rem 0.45rem;
+      border-block-end: 1px solid oklch(76% 0.01 240 / 0.28);
+    }
+    body[data-active-page="inflight"] .video-heading-unit {
+      min-height: 2.8rem;
+      padding: 0.28rem 0.45rem;
+      border-block-start: 1px solid oklch(76% 0.01 240 / 0.28);
+    }
+    body[data-active-page="inflight"] .video-heading-unit.video-provenance { border-inline-start: 1px solid oklch(76% 0.01 240 / 0.28); }
+    body[data-active-page="inflight"] .video-heading-unit.flight-boundary {
+      grid-column: 1 / -1;
+      min-height: 2.4rem;
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      border-inline-start: 0;
+    }
     body[data-active-page="inflight"] .video-heading-group .cockpit-shell-mark { display: none; }
-     body[data-active-page="inflight"] .video-heading-group h2 { font-size: 0.78rem; }
-     body[data-active-page="inflight"] .video-heading-group .video-live-state,
-     body[data-active-page="inflight"] .video-heading-group .simulated-tag { min-height: 1.35rem; font-size: 0.7rem; }
-     body[data-active-page="inflight"] .video-heading-group .flight-boundary { font-size: 0.7rem; }
-    body[data-active-page="inflight"] .cockpit-attention { max-width: 42%; min-height: 1.55rem; padding-inline: 0.28rem; }
+    body[data-active-page="inflight"] .video-heading-group h2 { font-size: 0.88rem; }
+    body[data-active-page="inflight"] .video-heading-label,
+    body[data-active-page="inflight"] .cockpit-product-note { font-size: 0.72rem; }
+    body[data-active-page="inflight"] .video-heading-group .video-live-state,
+    body[data-active-page="inflight"] .video-heading-group .simulated-tag { min-height: 1.35rem; font-size: 0.72rem; }
+    body[data-active-page="inflight"] .video-heading-group .flight-boundary { font-size: 0.72rem; }
+    body[data-active-page="inflight"] .cockpit-attention {
+      align-self: stretch;
+      width: 100%;
+      max-width: 100%;
+    }
+    body[data-active-page="inflight"] .cockpit-attention > span:last-child {
+      overflow: visible;
+      text-overflow: clip;
+      white-space: normal;
+      line-height: 1.3;
+    }
+    body[data-active-page="inflight"] .cockpit-attention strong,
+    body[data-active-page="inflight"] .cockpit-attention small { white-space: normal; }
+    body[data-active-page="inflight"] .cockpit-attention { min-height: 1.55rem; padding-inline: 0.28rem; }
     body[data-active-page="inflight"] .cockpit-attention strong { font-size: 0.58rem; }
     body[data-active-page="inflight"] .cockpit-attention-mark { font-size: 0.65rem; }
     body[data-active-page="inflight"] .quick-status { grid-template-columns: minmax(0, 1fr); }
@@ -2064,11 +2163,26 @@ body[data-active-page="inflight"] .video-heading-group .cockpit-shell-mark {
             <section class="video-stage" aria-labelledby="video-title" data-od-id="live-video-region">
               <div class="video-plane" id="video-plane" aria-hidden="true"></div>
               <div class="video-top-overlay">
-                <div class="video-heading-group">
-                  <h2 id="video-title" data-od-id="heading-video">라이브 뷰</h2>
-                  <span class="state-label video-live-state" id="video-state">미연결</span>
-                  <span class="simulated-tag">[SIMULATED]</span>
-                  <span class="flight-boundary">DJI Pilot 2 · 조종</span>
+                <div class="video-heading-group" role="group" aria-label="KSI 관측, 영상 입력 상태, 시뮬레이션 예시, 기체 비행 조종">
+                  <div class="video-title-block">
+                    <div class="brand-mark cockpit-shell-mark" aria-hidden="true">SE</div>
+                    <div class="video-title-copy">
+                      <h2 id="video-title" data-od-id="heading-video">KSI 관측</h2>
+                      <span class="cockpit-product-note">현장 기록 보조</span>
+                    </div>
+                  </div>
+                  <div class="video-heading-unit video-source-state" role="group" aria-label="영상 입력 상태">
+                    <span class="video-heading-label">영상 입력</span>
+                    <span class="state-label video-live-state" id="video-state">미연결</span>
+                  </div>
+                  <div class="video-heading-unit video-provenance" role="group" aria-label="시연 화면 · SIMULATED">
+                    <span class="video-heading-label">시연 화면</span>
+                    <span class="simulated-tag">[SIMULATED]</span>
+                  </div>
+                  <div class="video-heading-unit flight-boundary" role="group" aria-label="기체 비행 조종은 DJI Pilot 2에서 합니다">
+                    <span class="video-heading-label">기체 비행 조종</span>
+                    <strong>DJI Pilot 2</strong>
+                  </div>
                 </div>
                 <div class="cockpit-attention" id="cockpit-attention" role="status" aria-live="polite" hidden>
                   <span class="cockpit-attention-mark" aria-hidden="true">·</span>

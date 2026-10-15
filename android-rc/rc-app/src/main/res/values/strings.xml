@@ -94,7 +94,7 @@
     <string name="settings_time_header">시간 · 수신시각(근사) 고지</string>
     <string name="app_mark">SE</string>
     <string name="rail_note">RC / 7″</string>
-    <string name="page_title_inflight">관측 · 라이브 뷰</string>
+    <string name="page_title_inflight">KSI 관측 · 기록 보조</string>
     <string name="mission_prep_title">비행 전 준비</string>
     <string name="mission_prep_hint">동기화 → 번들 선택 → 준비 → 적용 → 로컬 기록 시작</string>
     <string name="mission_readiness_note">KSI 임무·기록 준비만 표시합니다. 비행 안전 상태는 DJI Pilot 2에서 확인하세요.</string>
@@ -150,7 +150,9 @@
     <string name="btn_close_ai_list">AI 닫기</string>
     <string name="btn_open_ops_panel">상태 상세</string>
     <string name="btn_close_ops_panel">상태 닫기</string>
-    <string name="cockpit_flight_boundary">DJI Pilot 2 · 조종</string>
+    <string name="cockpit_video_source_label">영상 입력</string>
+    <string name="cockpit_flight_authority_label">기체 비행 조종</string>
+    <string name="cockpit_flight_boundary">DJI Pilot 2</string>
     <string name="cockpit_end_record_accessibility">KSI 로컬 관측·녹화 기록을 종료하고 녹화 구간을 마무리합니다. 기체 비행 조종을 종료하지 않습니다. 비행 조종은 DJI Pilot 2에서 확인하세요.</string>
     <string name="cockpit_record_end_note_active">KSI 로컬 기록만 종료합니다. 기체 비행은 DJI Pilot 2에서 계속합니다.</string>
     <string name="cockpit_record_end_note_none">KSI 기록 없음 · 종료할 로컬 기록 세션이 없습니다.</string>

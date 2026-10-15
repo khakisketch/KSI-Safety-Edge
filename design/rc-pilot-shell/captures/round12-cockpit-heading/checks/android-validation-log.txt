@@ -1,0 +1,421 @@
+> Task :rc-ports:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :rc-ports:compileKotlin UP-TO-DATE
+> Task :rc-ports:compileJava NO-SOURCE
+> Task :rc-ports:processResources NO-SOURCE
+> Task :rc-ports:classes UP-TO-DATE
+> Task :rc-ports:jar UP-TO-DATE
+> Task :rc-ports:compileTestKotlin UP-TO-DATE
+> Task :rc-ports:compileTestJava NO-SOURCE
+> Task :rc-ports:processTestResources NO-SOURCE
+> Task :rc-ports:testClasses UP-TO-DATE
+> Task :rc-ports:test UP-TO-DATE
+> Task :rc-core:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :rc-core:compileKotlin UP-TO-DATE
+> Task :rc-core:compileJava NO-SOURCE
+> Task :rc-core:processResources NO-SOURCE
+> Task :rc-core:classes UP-TO-DATE
+> Task :rc-core:jar UP-TO-DATE
+> Task :rc-core:compileTestKotlin UP-TO-DATE
+> Task :rc-core:compileTestJava NO-SOURCE
+> Task :rc-core:processTestResources NO-SOURCE
+> Task :rc-core:testClasses UP-TO-DATE
+> Task :rc-core:test UP-TO-DATE
+> Task :rc-msdk:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :rc-msdk:preBuild UP-TO-DATE
+> Task :rc-msdk:preDebugBuild UP-TO-DATE
+> Task :rc-msdk:generateDebugResValues UP-TO-DATE
+> Task :rc-msdk:generateDebugResources UP-TO-DATE
+> Task :rc-msdk:packageDebugResources UP-TO-DATE
+> Task :rc-msdk:parseDebugLocalResources UP-TO-DATE
+> Task :rc-msdk:generateDebugRFile UP-TO-DATE
+> Task :rc-msdk:compileDebugKotlin UP-TO-DATE
+> Task :rc-msdk:javaPreCompileDebug UP-TO-DATE
+> Task :rc-msdk:compileDebugJavaWithJavac NO-SOURCE
+> Task :rc-msdk:bundleLibRuntimeToJarDebug UP-TO-DATE
+> Task :rc-msdk:bundleLibCompileToJarDebug UP-TO-DATE
+> Task :rc-msdk:preDebugUnitTestBuild UP-TO-DATE
+> Task :rc-msdk:generateDebugUnitTestStubRFile UP-TO-DATE
+> Task :rc-msdk:compileDebugUnitTestKotlin UP-TO-DATE
+> Task :rc-msdk:javaPreCompileDebugUnitTest UP-TO-DATE
+> Task :rc-msdk:compileDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :rc-msdk:processDebugJavaRes UP-TO-DATE
+> Task :rc-msdk:processDebugUnitTestJavaRes UP-TO-DATE
+> Task :rc-msdk:testDebugUnitTest UP-TO-DATE
+> Task :rc-app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :rc-app:preBuild UP-TO-DATE
+> Task :rc-app:preBenchDebugBuild UP-TO-DATE
+> Task :rc-app:checkBenchDebugAarMetadata UP-TO-DATE
+> Task :rc-app:generateBenchDebugResValues UP-TO-DATE
+> Task :rc-app:mapBenchDebugSourceSetPaths
+> Task :rc-app:generateBenchDebugResources
+> Task :rc-app:packageBenchDebugResources
+> Task :rc-app:createBenchDebugCompatibleScreenManifests UP-TO-DATE
+> Task :rc-app:extractDeepLinksBenchDebug UP-TO-DATE
+> Task :rc-app:processBenchDebugMainManifest UP-TO-DATE
+> Task :rc-app:processBenchDebugManifest UP-TO-DATE
+> Task :rc-app:parseBenchDebugLocalResources
+> Task :rc-app:processBenchDebugManifestForPackage UP-TO-DATE
+> Task :rc-app:javaPreCompileBenchDebug UP-TO-DATE
+> Task :rc-app:preBenchDebugUnitTestBuild UP-TO-DATE
+> Task :rc-app:javaPreCompileBenchDebugUnitTest UP-TO-DATE
+> Task :rc-app:preDeviceDebugBuild UP-TO-DATE
+> Task :rc-msdk:writeDebugAarMetadata UP-TO-DATE
+> Task :rc-app:checkDeviceDebugAarMetadata UP-TO-DATE
+> Task :rc-app:generateDeviceDebugResValues UP-TO-DATE
+> Task :rc-app:mapDeviceDebugSourceSetPaths
+> Task :rc-app:generateDeviceDebugResources
+> Task :rc-app:mergeBenchDebugResources
+> Task :rc-app:packageDeviceDebugResources
+> Task :rc-app:createDeviceDebugCompatibleScreenManifests UP-TO-DATE
+> Task :rc-app:extractDeepLinksDeviceDebug UP-TO-DATE
+> Task :rc-msdk:extractDeepLinksDebug UP-TO-DATE
+> Task :rc-msdk:processDebugManifest UP-TO-DATE
+> Task :rc-app:processDeviceDebugMainManifest UP-TO-DATE
+> Task :rc-app:processDeviceDebugManifest UP-TO-DATE
+> Task :rc-app:processDeviceDebugManifestForPackage UP-TO-DATE
+> Task :rc-msdk:compileDebugLibraryResources UP-TO-DATE
+> Task :rc-app:javaPreCompileDeviceDebug UP-TO-DATE
+> Task :rc-app:preDeviceDebugUnitTestBuild UP-TO-DATE
+> Task :rc-app:javaPreCompileDeviceDebugUnitTest UP-TO-DATE
+> Task :rc-app:parseDeviceDebugLocalResources
+
+> Task :rc-app:mergeDeviceDebugResources
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/dji_msdk_error_perception_braking_distance_illegal. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/dji_msdk_error_perception_warining_distance_illegal. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/dji_msdk_error_uas_area_code_not_same_hip. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/dji_msdk_error_uas_area_not_same. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/dock_drone_low_battery_content. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x16080077. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x16080078. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x16080079. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x1608007A. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x1608007B. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x1608007C. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x1608007D. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x1608007E. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x1608007F. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x16080080. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x16090062. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x16090075. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x16090077. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x16090078. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x16090079. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x1609007A. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x1609007B. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x1609007C. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x1609007F. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x16090080. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x16090081. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x1609009B. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x1609009C. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/fpv_tip_0x160900BF. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x110B001E. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14020000. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14020002. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14020004. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14020007. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14020008. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x140200FF. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030000. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030001. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030004. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030005. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030006. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030008. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1403000C. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1403000D. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1403000E. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1403000F. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030010. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030011. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030012. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030013. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030014. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030015. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030016. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030017. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030018. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14030019. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1403001B. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1403001C. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1403001D. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14040000. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14040001. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14040002. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14040003. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14040004. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14050000. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14050001. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14050003. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14050005. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x14050006. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1466001. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16080055. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1608005E. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090050. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090051. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090052. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090061. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090062. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090063. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090064. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090065. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090066. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090067. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090068. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090069. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609006A. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609006B. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609006C. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609006D. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609006F. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090070. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090072. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090073. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090074. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090075. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090076. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090077. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090078. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090079. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609007A. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609007B. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609007C. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609007F. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090080. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090081. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090082. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090083. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090084. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090085. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090093. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090094. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090096. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090097. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16090099. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609009B. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609009C. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609009E. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1609009F. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900A6. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900B0. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900B1. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900B3. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900B4. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900B5. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900B6. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900B7. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900B8. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900B9. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900BA. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900BB. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900BD. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900BE. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900BF. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900C0. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900C4. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x160900D2. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16100008. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x16100096. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x19000800. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1E000005. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1F0B004A. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1F0B004B. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1F0B004C. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/hms_content_0x1F0B004D. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/mission_mapping_hint_content. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/mission_strip_hint_content. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/setting_ui_battery_discharge_pic_content_wa345. Did you mean to add the formatted="false" attribute?
+/home/ksi/.gradle/caches/8.10.2/transforms/4c7fada266fd326d2ebb9ad85bb05845/transformed/dji-sdk-v5-aircraft-5.18.0/res/values/values.xml: Multiple substitutions specified in non-positional format of string resource string/setting_ui_battery_discharge_pic_content_wm265. Did you mean to add the formatted="false" attribute?
+
+> Task :rc-app:processBenchDebugResources
+
+> Task :rc-app:compileBenchDebugKotlin
+w: file:///home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/android-rc/rc-app/src/main/java/ksi/safetyedge/rc/MainActivity.kt:1223:69 'static field FLAG_FULLSCREEN: Int' is deprecated. Deprecated in Java.
+w: file:///home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/android-rc/rc-app/src/main/java/ksi/safetyedge/rc/MainActivity.kt:1225:71 'static field FLAG_FULLSCREEN: Int' is deprecated. Deprecated in Java.
+
+> Task :rc-app:compileBenchDebugJavaWithJavac NO-SOURCE
+> Task :rc-app:processBenchDebugJavaRes UP-TO-DATE
+> Task :rc-app:bundleBenchDebugClassesToRuntimeJar
+> Task :rc-app:bundleBenchDebugClassesToCompileJar
+> Task :rc-app:compileBenchDebugUnitTestKotlin
+> Task :rc-app:compileBenchDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :rc-app:processBenchDebugUnitTestJavaRes UP-TO-DATE
+> Task :rc-app:testBenchDebugUnitTest
+warn: removing resource ksi.safetyedge.rc:dimen/dialog_multi_rc_gimbal_source_change_width without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_forbid_warn_alert_txt without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_forbid_warn_edge_alert_txt without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_frb_new_around_frb without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_frb_new_around_limit without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_frb_new_around_limit_height without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_frb_new_around_to_open_license without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_frb_new_around_to_unlock without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_frb_new_below_limit_height without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_frb_new_enhance_warning without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_frb_new_in_auth_no_license without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_frb_new_in_auth_with_license without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_frb_new_limit_height_lose_gps without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_frb_new_seem_in_auth_no_license without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flight_frb_new_touch_to_open_license without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flyfrb_map_click_pop_end_at without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flyfrb_map_click_pop_in_auth_zone without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flyfrb_map_click_pop_in_enhance_warning_zone without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flyfrb_map_click_pop_in_height_zone without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flyfrb_map_click_pop_in_limit_zone without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flyfrb_map_click_pop_in_warning_zone without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flyfrb_map_click_pop_start_at without required default value.
+warn: removing resource ksi.safetyedge.rc:string/flyfrb_map_click_pop_title without required default value.
+warn: removing resource ksi.safetyedge.rc:string/geo_zones without required default value.
+warn: removing resource ksi.safetyedge.rc:string/limit_tips_touch without required default value.
+warn: removing resource ksi.safetyedge.rc:string/limit_tips_touch_auth without required default value.
+warn: removing resource ksi.safetyedge.rc:string/limit_tips_touch_limit_height without required default value.
+warn: removing resource ksi.safetyedge.rc:string/limit_tips_touch_special_unlock without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_apply_description without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_fly_zone_class_e0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_fly_zone_parcels without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_fly_zone_power_plants without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_fly_zone_prisons without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_fly_zone_schools without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_fly_zone_stadiums without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_fly_zone_sua_prhobited without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_fly_zone_warning without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_http_request_area_cannot_unlock_error_prompt without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_http_request_error_common_prompt without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_http_request_token_error_prompt without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_http_request_too_more_license_error_prompt without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_http_request_too_more_unlock_error_prompt without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_http_request_verify_error_prompt without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_license_apply_qr_description without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_license_apply_title without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_map_title without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_server_error_account_format without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_server_error_format without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_server_error_not_allow_unlimit without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_server_error_not_login without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_server_error_parameter without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_server_error_signature without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_server_error_sn_empty without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_server_error_system_busy without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_server_error_too_frequent without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_server_error_too_more_unlimit without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_server_error_user_not_verify without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlimit_fail_toast_txt without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_desc_radius without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_new_unlock_type_country without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_new_unlock_type_geo without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_new_unlock_type_height without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_new_unlock_type_polygon without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_new_unlock_type_whitelist without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_special_polygon_desc without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_v3_app_license_too_old without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_v3_app_license_too_old_dynamic without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_v3_error_code without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_v3_error_keyversion_not_got without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_v3_error_keyversion_not_got_importing without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_v3_license_open_fail_user_not_match without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_v3_uav_license_too_old without required default value.
+warn: removing resource ksi.safetyedge.rc:string/nfz_unlock_view_map without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_10_0_0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_10_0_6 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_10_0_7 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_10_1_0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_10_1_1 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_10_1_8 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_11_0_0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_11_1_0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_1 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_2 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_3 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_4 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_5 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_6 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_6_1 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_7 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_7_2 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_8_0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_9_0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_1_9_2 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_2_4_1 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_3_0_1 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_4_0_1 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_4_1_1 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_5_0_1 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_5_0_2 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_5_1_1 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_5_2_1 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_6_0_1 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_6_0_1_6 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_6_1_1 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_6_1_2 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_7_0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_7_1_0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_8_0_0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_9_0_5 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_9_1_0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/release_note_9_2_0 without required default value.
+warn: removing resource ksi.safetyedge.rc:string/setting_ui_flyfrb_unlock_refresh_empty without required default value.
+warn: removing resource ksi.safetyedge.rc:string/setting_ui_flyfrb_unlock_refresh_fail without required default value.
+warn: removing resource ksi.safetyedge.rc:string/setting_ui_flyfrb_unlock_refresh_success without required default value.
+warn: removing resource ksi.safetyedge.rc:string/v2_nfz_unlock_geo_type without required default value.
+warn: removing resource ksi.safetyedge.rc:string/v2_nfz_unlock_white_list_type without required default value.
+
+> Task :rc-app:processDeviceDebugResources
+
+> Task :rc-app:compileDeviceDebugKotlin
+w: file:///home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/android-rc/rc-app/src/main/java/ksi/safetyedge/rc/MainActivity.kt:1223:69 'static field FLAG_FULLSCREEN: Int' is deprecated. Deprecated in Java.
+w: file:///home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/android-rc/rc-app/src/main/java/ksi/safetyedge/rc/MainActivity.kt:1225:71 'static field FLAG_FULLSCREEN: Int' is deprecated. Deprecated in Java.
+
+> Task :rc-app:compileDeviceDebugJavaWithJavac NO-SOURCE
+> Task :rc-app:processDeviceDebugJavaRes UP-TO-DATE
+> Task :rc-app:bundleDeviceDebugClassesToCompileJar
+> Task :rc-app:bundleDeviceDebugClassesToRuntimeJar
+> Task :rc-app:compileDeviceDebugUnitTestKotlin
+> Task :rc-app:compileDeviceDebugUnitTestJavaWithJavac NO-SOURCE
+> Task :rc-app:processDeviceDebugUnitTestJavaRes UP-TO-DATE
+> Task :rc-app:testDeviceDebugUnitTest
+
+BUILD SUCCESSFUL in 20s
+71 actionable tasks: 22 executed, 49 up-to-date
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not determine the dependencies of task ':rc-app:lintReportBenchDebug'.
+> SDK location not found. Define a valid SDK location with an ANDROID_HOME environment variable or by setting the sdk.dir path in your project's local properties file at '/home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/android-rc/local.properties'.
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 451ms
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not determine the dependencies of task ':rc-app:lintReportBenchDebug'.
+> Failed to find target with hash string 'android-34' in: /usr/lib/android-sdk
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 492ms
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Could not determine the dependencies of task ':rc-app:compileBenchDebugJavaWithJavac'.
+> Failed to find target with hash string 'android-34' in: /usr/lib/android-sdk
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 464ms

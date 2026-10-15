@@ -1,0 +1,97 @@
+{
+  "target": "http://127.0.0.1:8765/field-shell.html",
+  "runner": "Playwright CLI",
+  "session": "heading-ux-correction",
+  "nativeBrowserConnected": false,
+  "viewportChecks": [
+    {
+      "viewport": [960, 600],
+      "scenario": "normal",
+      "videoState": "입력 최근 수신",
+      "screenshot": "screens/960x600-normal-recent.png",
+      "horizontalOverflow": false,
+      "headingRect": [65, 11.39, 449.2, 56]
+    },
+    {
+      "viewport": [960, 600],
+      "scenario": "normal",
+      "videoState": "미연결",
+      "screenshot": "screens/960x600-disconnected.png",
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": [960, 600],
+      "scenario": "B-1 problem",
+      "videoState": "입력 최근 수신",
+      "alert": "■ 레코더 · 과거 저장 구간 실패",
+      "screenshot": "screens/960x600-problem-recent.png",
+      "horizontalOverflow": false,
+      "headingRect": [65, 11.39, 449.2, 56],
+      "alertRect": [771.78, 11.39, 175.22, 28.25],
+      "overlap": false
+    },
+    {
+      "viewport": [1920, 1200],
+      "scenario": "normal",
+      "videoState": "입력 최근 수신",
+      "screenshot": "screens/1920x1200-normal-recent.png",
+      "horizontalOverflow": false,
+      "headingRect": [65, 11.39, 449.2, 56]
+    },
+    {
+      "viewport": [1920, 1200],
+      "scenario": "normal",
+      "videoState": "미연결",
+      "screenshot": "screens/1920x1200-disconnected.png",
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": [1920, 1200],
+      "scenario": "B-1 problem",
+      "videoState": "입력 최근 수신",
+      "alert": "■ 레코더 · 과거 저장 구간 실패",
+      "screenshot": "screens/1920x1200-problem-recent.png",
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": [390, 844],
+      "scenario": "normal",
+      "videoState": "입력 최근 수신",
+      "screenshot": "screens/390x844-normal-recent.png",
+      "horizontalOverflow": false,
+      "headingRect": [63.39, 9.8, 317.61, 135.95]
+    },
+    {
+      "viewport": [390, 844],
+      "scenario": "normal",
+      "videoState": "미연결",
+      "screenshot": "screens/390x844-disconnected.png",
+      "horizontalOverflow": false
+    },
+    {
+      "viewport": [390, 844],
+      "scenario": "B-1 problem",
+      "videoState": "입력 최근 수신",
+      "alert": "■ 레코더 · 과거 저장 구간 실패",
+      "screenshot": "screens/390x844-problem-recent.png",
+      "horizontalOverflow": false,
+      "headingRect": [63.39, 9.8, 317.61, 135.95],
+      "alertRect": [63.39, 151.34, 133.39, 43.16],
+      "overlap": false
+    }
+  ],
+  "simulatedDisclosureVisible": true,
+  "flightAuthority": "기체 비행 조종 · DJI Pilot 2",
+  "focusModeSpotCheck": {
+    "viewports": [[390, 844], [1920, 1200]],
+    "headingVisible": true,
+    "horizontalOverflow": false
+  },
+  "console": {
+    "messages": 0,
+    "errors": 0,
+    "warnings": 0
+  },
+  "inputMethod": "Existing page demo/scenario handlers were triggered programmatically; physical touch was not exercised.",
+  "liveVideoOrDeviceEvidence": false
+}
