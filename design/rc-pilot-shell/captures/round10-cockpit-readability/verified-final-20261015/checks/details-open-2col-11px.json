@@ -1,0 +1,94 @@
+[
+  {
+    "viewport": [
+      960,
+      600
+    ],
+    "open": true,
+    "focused": true,
+    "details": {
+      "x": 499.203125,
+      "y": 184.796875,
+      "right": 947.203125,
+      "bottom": 526.390625,
+      "width": 448,
+      "height": 341.59375
+    },
+    "endButton": {
+      "x": 153.03125,
+      "y": 541.609375,
+      "right": 939.203125,
+      "bottom": 589.609375,
+      "width": 786.171875,
+      "height": 48
+    },
+    "overlapEnd": false,
+    "groupHeadingFontSize": "11.52px",
+    "groups": [
+      {
+        "name": "session",
+        "grid": "202.969px 202.969px",
+        "items": 3
+      },
+      {
+        "name": "network",
+        "grid": "202.969px 202.969px",
+        "items": 2
+      },
+      {
+        "name": "observation",
+        "grid": "202.969px 202.969px",
+        "items": 3
+      }
+    ],
+    "horizontalOverflow": false,
+    "axeViolations": [],
+    "axeIncomplete": 1
+  },
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "open": true,
+    "focused": true,
+    "details": {
+      "x": 7.1875,
+      "y": 368,
+      "right": 382.8125,
+      "bottom": 748,
+      "width": 375.625,
+      "height": 380
+    },
+    "endButton": {
+      "x": 198.328125,
+      "y": 789.609375,
+      "right": 382.328125,
+      "bottom": 837.609375,
+      "width": 184,
+      "height": 48
+    },
+    "overlapEnd": false,
+    "groupHeadingFontSize": "11.52px",
+    "groups": [
+      {
+        "name": "session",
+        "grid": "166.781px 166.781px",
+        "items": 3
+      },
+      {
+        "name": "network",
+        "grid": "166.781px 166.781px",
+        "items": 2
+      },
+      {
+        "name": "observation",
+        "grid": "166.781px 166.781px",
+        "items": 3
+      }
+    ],
+    "horizontalOverflow": false,
+    "axeViolations": [],
+    "axeIncomplete": 1
+  }
+]

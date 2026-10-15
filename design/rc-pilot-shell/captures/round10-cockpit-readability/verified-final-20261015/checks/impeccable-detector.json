@@ -1,0 +1,65 @@
+[
+  {
+    "antipattern": "undersized-ui-text",
+    "name": "Undersized functional text",
+    "description": "Interactive and content-bearing UI text (links, buttons, nav items, labels, table cells, meta rows, timecodes) below 11px is a legibility failure, not a style choice. WCAG sets no absolute pixel floor, but functional text under 11px is a defensible quality bar: it fails on high-DPI and small viewports and it degrades tap and read targets. The 11px floor holds even inside a footer; only non-interactive legal smallprint gets the softer 10px floor. Being ON the DESIGN.md size ramp does not exempt a value here: adding 8px to the ramp launders the token but not the legibility problem, and that is exactly the escape hatch this rule closes. Exempts sup/sub, visually-hidden (sr-only) text, and code/terminal contexts. Decorative letterspaced micro-labels are still functional and stay in scope.",
+    "severity": "warning",
+    "category": "quality",
+    "file": "/home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/design/rc-pilot-shell/field-shell.html",
+    "line": 0,
+    "snippet": "10.56px functional text \"기록 · 연결\" (below 11px floor)"
+  },
+  {
+    "antipattern": "undersized-ui-text",
+    "name": "Undersized functional text",
+    "description": "Interactive and content-bearing UI text (links, buttons, nav items, labels, table cells, meta rows, timecodes) below 11px is a legibility failure, not a style choice. WCAG sets no absolute pixel floor, but functional text under 11px is a defensible quality bar: it fails on high-DPI and small viewports and it degrades tap and read targets. The 11px floor holds even inside a footer; only non-interactive legal smallprint gets the softer 10px floor. Being ON the DESIGN.md size ramp does not exempt a value here: adding 8px to the ramp launders the token but not the legibility problem, and that is exactly the escape hatch this rule closes. Exempts sup/sub, visually-hidden (sr-only) text, and code/terminal contexts. Decorative letterspaced micro-labels are still functional and stay in scope.",
+    "severity": "warning",
+    "category": "quality",
+    "file": "/home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/design/rc-pilot-shell/field-shell.html",
+    "line": 0,
+    "snippet": "10.56px functional text \"인터넷 · 레코더\" (below 11px floor)"
+  },
+  {
+    "antipattern": "undersized-ui-text",
+    "name": "Undersized functional text",
+    "description": "Interactive and content-bearing UI text (links, buttons, nav items, labels, table cells, meta rows, timecodes) below 11px is a legibility failure, not a style choice. WCAG sets no absolute pixel floor, but functional text under 11px is a defensible quality bar: it fails on high-DPI and small viewports and it degrades tap and read targets. The 11px floor holds even inside a footer; only non-interactive legal smallprint gets the softer 10px floor. Being ON the DESIGN.md size ramp does not exempt a value here: adding 8px to the ramp launders the token but not the legibility problem, and that is exactly the escape hatch this rule closes. Exempts sup/sub, visually-hidden (sr-only) text, and code/terminal contexts. Decorative letterspaced micro-labels are still functional and stay in scope.",
+    "severity": "warning",
+    "category": "quality",
+    "file": "/home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/design/rc-pilot-shell/field-shell.html",
+    "line": 0,
+    "snippet": "10.56px functional text \"로컬 증거 · 관측 요약\" (below 11px floor)"
+  },
+  {
+    "antipattern": "numbered-section-labels",
+    "name": "Tiny numbered section labels",
+    "description": "Small numeric index labels riding next to section headings, repeated section after section, are AI editorial scaffolding — a page numbering its own chapters instead of earning structure. Let hierarchy, content, and rhythm carry the sequence.",
+    "severity": "advisory",
+    "category": "slop",
+    "file": "/home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/design/rc-pilot-shell/field-shell.html",
+    "line": 0,
+    "snippet": "tiny numbered label \"01 / 비행 전\" beside h2 \"비행 전 준비\" (3 on page)",
+    "advisory": true
+  },
+  {
+    "antipattern": "numbered-section-labels",
+    "name": "Tiny numbered section labels",
+    "description": "Small numeric index labels riding next to section headings, repeated section after section, are AI editorial scaffolding — a page numbering its own chapters instead of earning structure. Let hierarchy, content, and rhythm carry the sequence.",
+    "severity": "advisory",
+    "category": "slop",
+    "file": "/home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/design/rc-pilot-shell/field-shell.html",
+    "line": 0,
+    "snippet": "tiny numbered label \"03 / 비행 후\" beside h2 \"비행 후 검토\" (3 on page)",
+    "advisory": true
+  },
+  {
+    "antipattern": "numbered-section-labels",
+    "name": "Tiny numbered section labels",
+    "description": "Small numeric index labels riding next to section headings, repeated section after section, are AI editorial scaffolding — a page numbering its own chapters instead of earning structure. Let hierarchy, content, and rhythm carry the sequence.",
+    "severity": "advisory",
+    "category": "slop",
+    "file": "/home/ksi/Desktop/KSI-Projects/KSI-Safety-Edge/design/rc-pilot-shell/field-shell.html",
+    "line": 0,
+    "snippet": "tiny numbered label \"04 / 로컬 증거\" beside h2 \"증거·동기화\" (3 on page)",
+    "advisory": true
+  }
+]

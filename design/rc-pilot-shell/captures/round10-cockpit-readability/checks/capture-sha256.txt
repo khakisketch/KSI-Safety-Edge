@@ -1,0 +1,12 @@
+0c670ef440679384c5c142dc7a3256443e64a1b4286454a737c0503496733e0a  design/rc-pilot-shell/field-shell.html
+d8b5bb207dbb89c46fa186c3547e74e1ecb56dd5d20418dffea0038f1e4659b9  design/rc-pilot-shell/captures/round10-cockpit-readability/after/cockpit-attention-1920x830.png
+e99c0152c0c075d3a3ffdf6dabe67e17422618680b6b0d94abc4aadc15e81900  design/rc-pilot-shell/captures/round10-cockpit-readability/after/cockpit-details-problem-960x600.png
+66eee0a99345fa313e2840f32428ce469b4654b864d370f0633f4e30d01bd932  design/rc-pilot-shell/captures/round10-cockpit-readability/after/cockpit-no-flight-960x600.png
+1a50afee76f756af859feca9e74f1dc7ad220fe6e5a0cfb79d9fb34196a30f82  design/rc-pilot-shell/captures/round10-cockpit-readability/after/cockpit-normal-1920x830.png
+6a9e75c96db37803ea473ab4d383472e626aea18f22fb3e567e61445d6f36bb6  design/rc-pilot-shell/captures/round10-cockpit-readability/after/cockpit-normal-960x600.png
+3b1921dfac811b0157270b67485c950ecbc90c2b48f399b773377aa43cbafc98  design/rc-pilot-shell/captures/round10-cockpit-readability/after/cockpit-problem-1920x830.png
+2e46ad9136eea4a17487557a71492f8a545047b29e76c65f4ad232c34b60fdb2  design/rc-pilot-shell/captures/round10-cockpit-readability/after/cockpit-problem-960x600.png
+8203863ec25da93fb4e693a708308ad7327bc544fa53737b70a728309e06a7e0  design/rc-pilot-shell/captures/round10-cockpit-readability/before/cockpit-normal-1920x830.png
+26588d1efc1cbd4c0c2a5ac5872d5a6aa94930f1090e12f74472f4a337911174  design/rc-pilot-shell/captures/round10-cockpit-readability/before/cockpit-normal-960x600.png
+c249c85ab43df71759ebf865fb6e233e7e1435badbb631690f8b1bf27542f353  design/rc-pilot-shell/captures/round10-cockpit-readability/before/cockpit-problem-1920x830.png
+55ae82f7996cd8791079047f7d87586360ba2309048d5a710b81129a2bf8453c  design/rc-pilot-shell/captures/round10-cockpit-readability/before/cockpit-problem-960x600.png

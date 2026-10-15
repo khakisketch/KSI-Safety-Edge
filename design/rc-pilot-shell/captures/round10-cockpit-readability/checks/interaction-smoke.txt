@@ -1,0 +1,14 @@
+Target: http://127.0.0.1:8765/field-shell.html · agent-browser session round10 · 960×600 and 1920×830
+
+- normal: no priority banner; KSI local-record state and available link/video states visible.
+- no-flight: priority banner hidden; KSI state is “기록 없음”.
+- problem: MOP and recorder facts keep square/problem severity; priority line uses ■ and recorder problem copy.
+- observation-late: priority line uses ▲; copy explicitly says data delay is not a safety judgment or flight warning.
+- unknown: aircraft remains “알 수 없음”; no priority banner is fabricated.
+- details button: opens and closes the detail panel; Escape closes and returns focus to the button.
+- MOP dock: opens independently and Escape closes it with focus restoration.
+- video input demo: connect -> “연결 중 · 프레임 대기”; disconnect -> “미연결”.
+- KSI end demo: feedback says no device recording or aircraft state changed; the local-record status remains “로컬 기록 중”.
+- focus mode: toggles on/off; glanceable status facts remain available.
+- Browser console and page errors: empty.
+- Input evidence: browser mouse click and keyboard Escape/Enter-capable controls; no hardware touch, swipe or glove testing.

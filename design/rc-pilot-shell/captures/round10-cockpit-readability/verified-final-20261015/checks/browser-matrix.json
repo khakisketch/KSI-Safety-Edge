@@ -1,0 +1,1138 @@
+{
+  "target": "http://127.0.0.1:8765/field-shell.html",
+  "viewports": [
+    {
+      "name": "390x844",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "name": "960x600",
+      "width": 960,
+      "height": 600
+    },
+    {
+      "name": "1024x768",
+      "width": 1024,
+      "height": 768
+    },
+    {
+      "name": "1280x800",
+      "width": 1280,
+      "height": 800
+    }
+  ],
+  "destinationMatrix": [
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "destination": "inflight",
+      "active": "inflight",
+      "documentWidth": 390,
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "documentHeight": 844,
+      "activeHeading": "관측",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/390x844/cockpit.png"
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "destination": "preflight",
+      "active": "preflight",
+      "documentWidth": 390,
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "documentHeight": 844,
+      "activeHeading": "비행 전 준비",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/390x844/mission.png"
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "destination": "postflight",
+      "active": "postflight",
+      "documentWidth": 390,
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "documentHeight": 844,
+      "activeHeading": "비행 후 검토",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/390x844/review.png"
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "destination": "evidence",
+      "active": "evidence",
+      "documentWidth": 390,
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "documentHeight": 844,
+      "activeHeading": "증거·동기화",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/390x844/evidence.png"
+    },
+    {
+      "viewport": [
+        390,
+        844
+      ],
+      "destination": "settings",
+      "active": "settings",
+      "documentWidth": 390,
+      "bodyWidth": 390,
+      "horizontalOverflow": false,
+      "documentHeight": 844,
+      "activeHeading": "설정",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/390x844/settings.png"
+    },
+    {
+      "viewport": [
+        960,
+        600
+      ],
+      "destination": "inflight",
+      "active": "inflight",
+      "documentWidth": 960,
+      "bodyWidth": 960,
+      "horizontalOverflow": false,
+      "documentHeight": 600,
+      "activeHeading": "관측",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/960x600/cockpit.png"
+    },
+    {
+      "viewport": [
+        960,
+        600
+      ],
+      "destination": "preflight",
+      "active": "preflight",
+      "documentWidth": 960,
+      "bodyWidth": 960,
+      "horizontalOverflow": false,
+      "documentHeight": 600,
+      "activeHeading": "비행 전 준비",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/960x600/mission.png"
+    },
+    {
+      "viewport": [
+        960,
+        600
+      ],
+      "destination": "postflight",
+      "active": "postflight",
+      "documentWidth": 960,
+      "bodyWidth": 960,
+      "horizontalOverflow": false,
+      "documentHeight": 600,
+      "activeHeading": "비행 후 검토",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/960x600/review.png"
+    },
+    {
+      "viewport": [
+        960,
+        600
+      ],
+      "destination": "evidence",
+      "active": "evidence",
+      "documentWidth": 960,
+      "bodyWidth": 960,
+      "horizontalOverflow": false,
+      "documentHeight": 600,
+      "activeHeading": "증거·동기화",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/960x600/evidence.png"
+    },
+    {
+      "viewport": [
+        960,
+        600
+      ],
+      "destination": "settings",
+      "active": "settings",
+      "documentWidth": 960,
+      "bodyWidth": 960,
+      "horizontalOverflow": false,
+      "documentHeight": 600,
+      "activeHeading": "설정",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/960x600/settings.png"
+    },
+    {
+      "viewport": [
+        1024,
+        768
+      ],
+      "destination": "inflight",
+      "active": "inflight",
+      "documentWidth": 1024,
+      "bodyWidth": 1024,
+      "horizontalOverflow": false,
+      "documentHeight": 768,
+      "activeHeading": "관측",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/1024x768/cockpit.png"
+    },
+    {
+      "viewport": [
+        1024,
+        768
+      ],
+      "destination": "preflight",
+      "active": "preflight",
+      "documentWidth": 1024,
+      "bodyWidth": 1024,
+      "horizontalOverflow": false,
+      "documentHeight": 768,
+      "activeHeading": "비행 전 준비",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/1024x768/mission.png"
+    },
+    {
+      "viewport": [
+        1024,
+        768
+      ],
+      "destination": "postflight",
+      "active": "postflight",
+      "documentWidth": 1024,
+      "bodyWidth": 1024,
+      "horizontalOverflow": false,
+      "documentHeight": 768,
+      "activeHeading": "비행 후 검토",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/1024x768/review.png"
+    },
+    {
+      "viewport": [
+        1024,
+        768
+      ],
+      "destination": "evidence",
+      "active": "evidence",
+      "documentWidth": 1024,
+      "bodyWidth": 1024,
+      "horizontalOverflow": false,
+      "documentHeight": 768,
+      "activeHeading": "증거·동기화",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/1024x768/evidence.png"
+    },
+    {
+      "viewport": [
+        1024,
+        768
+      ],
+      "destination": "settings",
+      "active": "settings",
+      "documentWidth": 1024,
+      "bodyWidth": 1024,
+      "horizontalOverflow": false,
+      "documentHeight": 768,
+      "activeHeading": "설정",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/1024x768/settings.png"
+    },
+    {
+      "viewport": [
+        1280,
+        800
+      ],
+      "destination": "inflight",
+      "active": "inflight",
+      "documentWidth": 1280,
+      "bodyWidth": 1280,
+      "horizontalOverflow": false,
+      "documentHeight": 800,
+      "activeHeading": "관측",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/1280x800/cockpit.png"
+    },
+    {
+      "viewport": [
+        1280,
+        800
+      ],
+      "destination": "preflight",
+      "active": "preflight",
+      "documentWidth": 1280,
+      "bodyWidth": 1280,
+      "horizontalOverflow": false,
+      "documentHeight": 800,
+      "activeHeading": "비행 전 준비",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/1280x800/mission.png"
+    },
+    {
+      "viewport": [
+        1280,
+        800
+      ],
+      "destination": "postflight",
+      "active": "postflight",
+      "documentWidth": 1280,
+      "bodyWidth": 1280,
+      "horizontalOverflow": false,
+      "documentHeight": 800,
+      "activeHeading": "비행 후 검토",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/1280x800/review.png"
+    },
+    {
+      "viewport": [
+        1280,
+        800
+      ],
+      "destination": "evidence",
+      "active": "evidence",
+      "documentWidth": 1280,
+      "bodyWidth": 1280,
+      "horizontalOverflow": false,
+      "documentHeight": 800,
+      "activeHeading": "증거·동기화",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/1280x800/evidence.png"
+    },
+    {
+      "viewport": [
+        1280,
+        800
+      ],
+      "destination": "settings",
+      "active": "settings",
+      "documentWidth": 1280,
+      "bodyWidth": 1280,
+      "horizontalOverflow": false,
+      "documentHeight": 800,
+      "activeHeading": "설정",
+      "visiblePanelCount": 1,
+      "screenshot": "screens/1280x800/settings.png"
+    }
+  ],
+  "axe": [
+    {
+      "viewport": "390x844",
+      "destination": "inflight",
+      "violations": [],
+      "passes": 31,
+      "incomplete": 1
+    },
+    {
+      "viewport": "390x844",
+      "destination": "preflight",
+      "violations": [],
+      "passes": 39,
+      "incomplete": 1
+    },
+    {
+      "viewport": "390x844",
+      "destination": "postflight",
+      "violations": [],
+      "passes": 39,
+      "incomplete": 0
+    },
+    {
+      "viewport": "390x844",
+      "destination": "evidence",
+      "violations": [],
+      "passes": 44,
+      "incomplete": 1
+    },
+    {
+      "viewport": "390x844",
+      "destination": "settings",
+      "violations": [],
+      "passes": 42,
+      "incomplete": 0
+    },
+    {
+      "viewport": "960x600",
+      "destination": "inflight",
+      "violations": [],
+      "passes": 31,
+      "incomplete": 1
+    },
+    {
+      "viewport": "960x600",
+      "destination": "preflight",
+      "violations": [],
+      "passes": 39,
+      "incomplete": 1
+    },
+    {
+      "viewport": "960x600",
+      "destination": "postflight",
+      "violations": [],
+      "passes": 39,
+      "incomplete": 0
+    },
+    {
+      "viewport": "960x600",
+      "destination": "evidence",
+      "violations": [],
+      "passes": 45,
+      "incomplete": 0
+    },
+    {
+      "viewport": "960x600",
+      "destination": "settings",
+      "violations": [],
+      "passes": 43,
+      "incomplete": 0
+    },
+    {
+      "viewport": "1024x768",
+      "destination": "inflight",
+      "violations": [],
+      "passes": 31,
+      "incomplete": 1
+    },
+    {
+      "viewport": "1024x768",
+      "destination": "preflight",
+      "violations": [],
+      "passes": 39,
+      "incomplete": 1
+    },
+    {
+      "viewport": "1024x768",
+      "destination": "postflight",
+      "violations": [],
+      "passes": 40,
+      "incomplete": 0
+    },
+    {
+      "viewport": "1024x768",
+      "destination": "evidence",
+      "violations": [],
+      "passes": 45,
+      "incomplete": 0
+    },
+    {
+      "viewport": "1024x768",
+      "destination": "settings",
+      "violations": [],
+      "passes": 43,
+      "incomplete": 0
+    },
+    {
+      "viewport": "1280x800",
+      "destination": "inflight",
+      "violations": [],
+      "passes": 31,
+      "incomplete": 1
+    },
+    {
+      "viewport": "1280x800",
+      "destination": "preflight",
+      "violations": [],
+      "passes": 39,
+      "incomplete": 1
+    },
+    {
+      "viewport": "1280x800",
+      "destination": "postflight",
+      "violations": [],
+      "passes": 40,
+      "incomplete": 0
+    },
+    {
+      "viewport": "1280x800",
+      "destination": "evidence",
+      "violations": [],
+      "passes": 45,
+      "incomplete": 0
+    },
+    {
+      "viewport": "1280x800",
+      "destination": "settings",
+      "violations": [],
+      "passes": 43,
+      "incomplete": 0
+    },
+    {
+      "viewport": "960x600",
+      "destination": "inflight-details-open",
+      "violations": [],
+      "passes": 33,
+      "incomplete": 1
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "normal",
+      "active": "diagnostics",
+      "pressed": "normal",
+      "status": [
+        {
+          "index": 0,
+          "severity": "info",
+          "value": "로컬 기록 중"
+        },
+        {
+          "index": 1,
+          "severity": "info",
+          "value": "정상"
+        },
+        {
+          "index": 2,
+          "severity": "info",
+          "value": "연결"
+        },
+        {
+          "index": 3,
+          "severity": "info",
+          "value": "없음"
+        },
+        {
+          "index": 4,
+          "severity": "info",
+          "value": "녹화 입력 대기"
+        },
+        {
+          "index": 5,
+          "severity": "info",
+          "value": "미동기화 3건"
+        },
+        {
+          "index": 6,
+          "severity": "info",
+          "value": "최근 수신 2.1초 전"
+        },
+        {
+          "index": 7,
+          "severity": "info",
+          "value": "사건 2건 · 공백 0프레임"
+        }
+      ],
+      "ordered": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "quickGroups": [
+        {
+          "group": "session",
+          "severity": "info",
+          "mark": "·",
+          "value": "로컬 기록 중 · 정상 · 연결"
+        },
+        {
+          "group": "network",
+          "severity": "info",
+          "mark": "·",
+          "value": "없음 · 녹화 입력 대기 · 미동기화 3건"
+        },
+        {
+          "group": "observation",
+          "severity": "info",
+          "mark": "·",
+          "value": "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임"
+        }
+      ],
+      "alert": {
+        "hidden": true,
+        "severity": null,
+        "mark": "·",
+        "title": "",
+        "copy": ""
+      },
+      "aircraft": "연결",
+      "cockpitAfterNavigation": {
+        "active": "inflight",
+        "alertHidden": true
+      }
+    },
+    {
+      "name": "no-flight",
+      "active": "diagnostics",
+      "pressed": "no-flight",
+      "status": [
+        {
+          "index": 0,
+          "severity": "info",
+          "value": "기록 없음"
+        },
+        {
+          "index": 1,
+          "severity": "info",
+          "value": "정상"
+        },
+        {
+          "index": 2,
+          "severity": "info",
+          "value": "연결"
+        },
+        {
+          "index": 3,
+          "severity": "info",
+          "value": "없음"
+        },
+        {
+          "index": 4,
+          "severity": "info",
+          "value": "대기"
+        },
+        {
+          "index": 5,
+          "severity": "info",
+          "value": "미동기화 3건"
+        },
+        {
+          "index": 6,
+          "severity": "info",
+          "value": "미수신"
+        },
+        {
+          "index": 7,
+          "severity": "info",
+          "value": "최근 기록 · 사건 2건"
+        }
+      ],
+      "ordered": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "quickGroups": [
+        {
+          "group": "session",
+          "severity": "info",
+          "mark": "·",
+          "value": "기록 없음 · 정상 · 연결"
+        },
+        {
+          "group": "network",
+          "severity": "info",
+          "mark": "·",
+          "value": "없음 · 대기 · 미동기화 3건"
+        },
+        {
+          "group": "observation",
+          "severity": "info",
+          "mark": "·",
+          "value": "미수신 · 최근 기록 · 사건 2건"
+        }
+      ],
+      "alert": {
+        "hidden": true,
+        "severity": null,
+        "mark": "·",
+        "title": "",
+        "copy": ""
+      },
+      "aircraft": "연결",
+      "cockpitAfterNavigation": {
+        "active": "inflight",
+        "alertHidden": true
+      }
+    },
+    {
+      "name": "observation-late",
+      "active": "diagnostics",
+      "pressed": "observation-late",
+      "status": [
+        {
+          "index": 0,
+          "severity": "info",
+          "value": "로컬 기록 중"
+        },
+        {
+          "index": 1,
+          "severity": "info",
+          "value": "정상"
+        },
+        {
+          "index": 2,
+          "severity": "info",
+          "value": "연결"
+        },
+        {
+          "index": 3,
+          "severity": "info",
+          "value": "없음"
+        },
+        {
+          "index": 4,
+          "severity": "info",
+          "value": "녹화 입력 대기"
+        },
+        {
+          "index": 5,
+          "severity": "info",
+          "value": "미동기화 3건"
+        },
+        {
+          "index": 6,
+          "severity": "attention",
+          "value": "지연 6.2초"
+        },
+        {
+          "index": 7,
+          "severity": "info",
+          "value": "사건 2건 · 공백 0프레임"
+        }
+      ],
+      "ordered": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "quickGroups": [
+        {
+          "group": "session",
+          "severity": "info",
+          "mark": "·",
+          "value": "로컬 기록 중 · 정상 · 연결"
+        },
+        {
+          "group": "network",
+          "severity": "info",
+          "mark": "·",
+          "value": "없음 · 녹화 입력 대기 · 미동기화 3건"
+        },
+        {
+          "group": "observation",
+          "severity": "attention",
+          "mark": "▲",
+          "value": "지연 6.2초 · 사건 2건 · 공백 0프레임"
+        }
+      ],
+      "alert": {
+        "hidden": false,
+        "severity": "attention",
+        "mark": "▲",
+        "title": "관측 수신",
+        "copy": " · MOP 링크·기체 상태 확인 · 안전 판정 아님"
+      },
+      "aircraft": "연결",
+      "cockpitAfterNavigation": {
+        "active": "inflight",
+        "alertHidden": false
+      }
+    },
+    {
+      "name": "problem",
+      "active": "diagnostics",
+      "pressed": "problem",
+      "status": [
+        {
+          "index": 0,
+          "severity": "info",
+          "value": "로컬 기록 중"
+        },
+        {
+          "index": 1,
+          "severity": "problem",
+          "value": "끊김"
+        },
+        {
+          "index": 2,
+          "severity": "info",
+          "value": "연결"
+        },
+        {
+          "index": 3,
+          "severity": "info",
+          "value": "없음"
+        },
+        {
+          "index": 4,
+          "severity": "problem",
+          "value": "과거 저장 구간 실패"
+        },
+        {
+          "index": 5,
+          "severity": "info",
+          "value": "미동기화 3건"
+        },
+        {
+          "index": 6,
+          "severity": "attention",
+          "value": "지연 6.2초"
+        },
+        {
+          "index": 7,
+          "severity": "info",
+          "value": "사건 2건 · 공백 0프레임"
+        }
+      ],
+      "ordered": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "quickGroups": [
+        {
+          "group": "session",
+          "severity": "problem",
+          "mark": "■",
+          "value": "로컬 기록 중 · 끊김 · 연결"
+        },
+        {
+          "group": "network",
+          "severity": "problem",
+          "mark": "■",
+          "value": "없음 · 과거 저장 구간 실패 · 미동기화 3건"
+        },
+        {
+          "group": "observation",
+          "severity": "attention",
+          "mark": "▲",
+          "value": "지연 6.2초 · 사건 2건 · 공백 0프레임"
+        }
+      ],
+      "alert": {
+        "hidden": false,
+        "severity": "problem",
+        "mark": "■",
+        "title": "레코더",
+        "copy": " · 로그 확인 · 불완전 .tmp는 증거가 아닙니다 · 로컬 증거가 저장되지 않을 수 있습니다"
+      },
+      "aircraft": "연결",
+      "cockpitAfterNavigation": {
+        "active": "inflight",
+        "alertHidden": false
+      }
+    },
+    {
+      "name": "unknown",
+      "active": "diagnostics",
+      "pressed": "unknown",
+      "status": [
+        {
+          "index": 0,
+          "severity": "info",
+          "value": "로컬 기록 중"
+        },
+        {
+          "index": 1,
+          "severity": "info",
+          "value": "연결 · 하트비트 미수신"
+        },
+        {
+          "index": 2,
+          "severity": "info",
+          "value": "알 수 없음"
+        },
+        {
+          "index": 3,
+          "severity": "info",
+          "value": "미검증"
+        },
+        {
+          "index": 4,
+          "severity": "info",
+          "value": "저장 상태 미확인"
+        },
+        {
+          "index": 5,
+          "severity": "info",
+          "value": "알 수 없음"
+        },
+        {
+          "index": 6,
+          "severity": "info",
+          "value": "미수신"
+        },
+        {
+          "index": 7,
+          "severity": "info",
+          "value": "요약 미확인"
+        }
+      ],
+      "ordered": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "quickGroups": [
+        {
+          "group": "session",
+          "severity": "info",
+          "mark": "·",
+          "value": "로컬 기록 중 · 연결 · 하트비트 미수신 · 알 수 없음"
+        },
+        {
+          "group": "network",
+          "severity": "info",
+          "mark": "·",
+          "value": "미검증 · 저장 상태 미확인 · 알 수 없음"
+        },
+        {
+          "group": "observation",
+          "severity": "info",
+          "mark": "·",
+          "value": "미수신 · 요약 미확인"
+        }
+      ],
+      "alert": {
+        "hidden": true,
+        "severity": null,
+        "mark": "■",
+        "title": "",
+        "copy": ""
+      },
+      "aircraft": "알 수 없음",
+      "cockpitAfterNavigation": {
+        "active": "inflight",
+        "alertHidden": true
+      }
+    }
+  ],
+  "videoStates": [
+    {
+      "state": "disconnected",
+      "beforeCockpit": {
+        "label": "미연결",
+        "title": "영상 입력 미연결",
+        "copy": "화면 표시 여부는 인코딩 프레임 수신과 별도로 확인합니다."
+      },
+      "cockpit": {
+        "active": "inflight",
+        "label": "미연결",
+        "title": "영상 입력 미연결",
+        "groupText": [
+          "로컬 기록 중 · 정상 · 연결",
+          "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임"
+        ]
+      }
+    },
+    {
+      "state": "connecting",
+      "beforeCockpit": {
+        "label": "연결 중 · 프레임 대기",
+        "title": "영상 연결 요청 예시",
+        "copy": "연결 요청 상태의 목업이며 실제 스트림이나 프레임에 연결되지 않았습니다."
+      },
+      "cockpit": {
+        "active": "inflight",
+        "label": "연결 중 · 프레임 대기",
+        "title": "영상 연결 요청 예시",
+        "groupText": [
+          "로컬 기록 중 · 정상 · 연결",
+          "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임"
+        ]
+      }
+    },
+    {
+      "state": "no-signal",
+      "beforeCockpit": {
+        "label": "신호 없음",
+        "title": "영상 입력 신호 없음",
+        "copy": "입력 경로 상태만 나타내며 비행 안전 경고는 아닙니다."
+      },
+      "cockpit": {
+        "active": "inflight",
+        "label": "신호 없음",
+        "title": "영상 입력 신호 없음",
+        "groupText": [
+          "로컬 기록 중 · 정상 · 연결",
+          "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임"
+        ]
+      }
+    },
+    {
+      "state": "no-frames",
+      "beforeCockpit": {
+        "label": "프레임 미수신",
+        "title": "인코딩 입력 프레임 미수신",
+        "copy": "연결은 보고됐지만 프레임을 아직 받지 못했습니다. 지연·수신 시각 미확인과 구분합니다."
+      },
+      "cockpit": {
+        "active": "inflight",
+        "label": "프레임 미수신",
+        "title": "인코딩 입력 프레임 미수신",
+        "groupText": [
+          "로컬 기록 중 · 정상 · 연결",
+          "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임"
+        ]
+      }
+    },
+    {
+      "state": "recent",
+      "beforeCockpit": {
+        "label": "입력 최근 수신",
+        "title": "인코딩 입력 최근 수신",
+        "copy": "수신 사실은 디코딩·화면 표시를 확인하지 않습니다. 레코더 쓰기와도 별도입니다."
+      },
+      "cockpit": {
+        "active": "inflight",
+        "label": "입력 최근 수신",
+        "title": "인코딩 입력 최근 수신",
+        "groupText": [
+          "로컬 기록 중 · 정상 · 연결",
+          "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임"
+        ]
+      }
+    },
+    {
+      "state": "stale",
+      "beforeCockpit": {
+        "label": "입력 수신 지연",
+        "title": "인코딩 입력 수신 지연",
+        "copy": "마지막 입력 이후 경과 상태만 나타내며 실제 화면 표시 여부는 별도 확인이 필요합니다."
+      },
+      "cockpit": {
+        "active": "inflight",
+        "label": "입력 수신 지연",
+        "title": "인코딩 입력 수신 지연",
+        "groupText": [
+          "로컬 기록 중 · 정상 · 연결",
+          "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임"
+        ]
+      }
+    },
+    {
+      "state": "unknown",
+      "beforeCockpit": {
+        "label": "수신 시각 미확인",
+        "title": "입력 신선도 미확인",
+        "copy": "수신 시각을 알 수 없습니다. 지연·실패·화면 표시 성공으로 추측하지 않습니다."
+      },
+      "cockpit": {
+        "active": "inflight",
+        "label": "수신 시각 미확인",
+        "title": "입력 신선도 미확인",
+        "groupText": [
+          "로컬 기록 중 · 정상 · 연결",
+          "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임"
+        ]
+      }
+    }
+  ],
+  "interactions": {
+    "detailsGeometry": {
+      "details": {
+        "x": 499.203125,
+        "y": 184.796875,
+        "right": 947.203125,
+        "bottom": 526.390625,
+        "width": 448,
+        "height": 341.59375
+      },
+      "endButton": {
+        "x": 153.03125,
+        "y": 541.609375,
+        "right": 939.203125,
+        "bottom": 589.609375,
+        "width": 786.171875,
+        "height": 48
+      },
+      "overlapsEndButton": false,
+      "groupOrder": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "groups": [
+        "session",
+        "network",
+        "observation"
+      ]
+    },
+    "detailsEscapeFocusRestored": true,
+    "detailsToggleOpenAndClose": true,
+    "mopDockEscapeFocusRestored": true,
+    "videoClickTransitions": {
+      "before": "미연결",
+      "connected": "연결 중 · 프레임 대기",
+      "disconnected": "미연결"
+    },
+    "focusMode": {
+      "on": {
+        "on": true,
+        "quickDisplay": "grid",
+        "groupCount": 3
+      },
+      "off": {
+        "on": false,
+        "groupCount": 3
+      }
+    },
+    "localRecordEnd": {
+      "before": "로컬 기록 중 · 정상 · 연결",
+      "feedback": "KSI 로컬 기록 종료 예시 · 이 화면에서는 기기 기록·녹화나 기체 비행 상태를 변경하지 않았습니다.",
+      "after": "로컬 기록 중 · 정상 · 연결",
+      "unchanged": true
+    },
+    "quickStatus": {
+      "groups": [
+        {
+          "id": "session",
+          "severity": "info",
+          "mark": "·",
+          "text": "로컬 기록 중 · 정상 · 연결"
+        },
+        {
+          "id": "network",
+          "severity": "info",
+          "mark": "·",
+          "text": "없음 · 녹화 입력 대기 · 미동기화 3건"
+        },
+        {
+          "id": "observation",
+          "severity": "info",
+          "mark": "·",
+          "text": "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임"
+        }
+      ],
+      "active": "inflight"
+    },
+    "navDrawerEscapeFocusRestored": true
+  },
+  "pageErrors": [],
+  "consoleErrors": []
+}

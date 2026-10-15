@@ -1,0 +1,2798 @@
+[
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "scenario": "normal",
+    "active": "inflight",
+    "documentWidth": 390,
+    "bodyWidth": 390,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 6.71875,
+      "y": 156.796875,
+      "right": 383.28125,
+      "bottom": 292.171875,
+      "width": 376.5625,
+      "height": 135.375
+    },
+    "alert": null,
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 6.71875,
+          "y": 159.703125,
+          "right": 383.28125,
+          "bottom": 202.890625,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 27.5,
+            "y": 165.671875,
+            "right": 377.53125,
+            "bottom": 180.0625,
+            "width": 350.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 350,
+          "clientWidth": 350
+        },
+        "value": {
+          "text": "로컬 기록 중 · 정상 · 연결",
+          "box": {
+            "x": 27.5,
+            "y": 181.328125,
+            "right": 377.53125,
+            "bottom": 196.921875,
+            "width": 350.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 350,
+          "clientWidth": 350
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 6.71875,
+          "y": 202.890625,
+          "right": 383.28125,
+          "bottom": 246.078125,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 28.5,
+            "y": 209.359375,
+            "right": 377.53125,
+            "bottom": 223.75,
+            "width": 349.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        },
+        "value": {
+          "text": "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "box": {
+            "x": 28.5,
+            "y": 225.015625,
+            "right": 377.53125,
+            "bottom": 240.609375,
+            "width": 349.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "info",
+        "group": {
+          "x": 6.71875,
+          "y": 246.078125,
+          "right": 383.28125,
+          "bottom": 289.265625,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 28.5,
+            "y": 252.546875,
+            "right": 377.53125,
+            "bottom": 266.9375,
+            "width": 349.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        },
+        "value": {
+          "text": "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임",
+          "box": {
+            "x": 28.5,
+            "y": 268.203125,
+            "right": 377.53125,
+            "bottom": 283.796875,
+            "width": 349.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "scenario": "no-flight",
+    "active": "inflight",
+    "documentWidth": 390,
+    "bodyWidth": 390,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 6.71875,
+      "y": 156.796875,
+      "right": 383.28125,
+      "bottom": 292.171875,
+      "width": 376.5625,
+      "height": 135.375
+    },
+    "alert": null,
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 6.71875,
+          "y": 159.703125,
+          "right": 383.28125,
+          "bottom": 202.890625,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 27.5,
+            "y": 165.671875,
+            "right": 377.53125,
+            "bottom": 180.0625,
+            "width": 350.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 350,
+          "clientWidth": 350
+        },
+        "value": {
+          "text": "기록 없음 · 정상 · 연결",
+          "box": {
+            "x": 27.5,
+            "y": 181.328125,
+            "right": 377.53125,
+            "bottom": 196.921875,
+            "width": 350.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 350,
+          "clientWidth": 350
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 6.71875,
+          "y": 202.890625,
+          "right": 383.28125,
+          "bottom": 246.078125,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 28.5,
+            "y": 209.359375,
+            "right": 377.53125,
+            "bottom": 223.75,
+            "width": 349.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        },
+        "value": {
+          "text": "없음 · 대기 · 미동기화 3건",
+          "box": {
+            "x": 28.5,
+            "y": 225.015625,
+            "right": 377.53125,
+            "bottom": 240.609375,
+            "width": 349.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "info",
+        "group": {
+          "x": 6.71875,
+          "y": 246.078125,
+          "right": 383.28125,
+          "bottom": 289.265625,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 28.5,
+            "y": 252.546875,
+            "right": 377.53125,
+            "bottom": 266.9375,
+            "width": 349.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        },
+        "value": {
+          "text": "미수신 · 최근 기록 · 사건 2건",
+          "box": {
+            "x": 28.5,
+            "y": 268.203125,
+            "right": 377.53125,
+            "bottom": 283.796875,
+            "width": 349.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "scenario": "observation-late",
+    "active": "inflight",
+    "documentWidth": 390,
+    "bodyWidth": 390,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 6.71875,
+      "y": 156.796875,
+      "right": 383.28125,
+      "bottom": 292.171875,
+      "width": 376.5625,
+      "height": 135.375
+    },
+    "alert": {
+      "x": 7.1875,
+      "y": 332.796875,
+      "right": 382.8125,
+      "bottom": 361.59375,
+      "width": 375.625,
+      "height": 28.796875
+    },
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 6.71875,
+          "y": 159.703125,
+          "right": 383.28125,
+          "bottom": 202.890625,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 27.5,
+            "y": 165.671875,
+            "right": 377.53125,
+            "bottom": 180.0625,
+            "width": 350.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 350,
+          "clientWidth": 350
+        },
+        "value": {
+          "text": "로컬 기록 중 · 정상 · 연결",
+          "box": {
+            "x": 27.5,
+            "y": 181.328125,
+            "right": 377.53125,
+            "bottom": 196.921875,
+            "width": 350.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 350,
+          "clientWidth": 350
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 6.71875,
+          "y": 202.890625,
+          "right": 383.28125,
+          "bottom": 246.078125,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 28.5,
+            "y": 209.359375,
+            "right": 377.53125,
+            "bottom": 223.75,
+            "width": 349.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        },
+        "value": {
+          "text": "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "box": {
+            "x": 28.5,
+            "y": 225.015625,
+            "right": 377.53125,
+            "bottom": 240.609375,
+            "width": 349.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "attention",
+        "group": {
+          "x": 6.71875,
+          "y": 246.078125,
+          "right": 383.28125,
+          "bottom": 289.265625,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 28.5,
+            "y": 252.546875,
+            "right": 377.53125,
+            "bottom": 266.9375,
+            "width": 349.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        },
+        "value": {
+          "text": "지연 6.2초 · 사건 2건 · 공백 0프레임",
+          "box": {
+            "x": 28.5,
+            "y": 268.203125,
+            "right": 377.53125,
+            "bottom": 283.796875,
+            "width": 349.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "scenario": "problem",
+    "active": "inflight",
+    "documentWidth": 390,
+    "bodyWidth": 390,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 6.71875,
+      "y": 156.796875,
+      "right": 383.28125,
+      "bottom": 292.171875,
+      "width": 376.5625,
+      "height": 135.375
+    },
+    "alert": {
+      "x": 7.1875,
+      "y": 332.796875,
+      "right": 382.8125,
+      "bottom": 361.59375,
+      "width": 375.625,
+      "height": 28.796875
+    },
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "problem",
+        "group": {
+          "x": 6.71875,
+          "y": 159.703125,
+          "right": 383.28125,
+          "bottom": 202.890625,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 27.5,
+            "y": 165.671875,
+            "right": 377.53125,
+            "bottom": 180.0625,
+            "width": 350.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 350,
+          "clientWidth": 350
+        },
+        "value": {
+          "text": "로컬 기록 중 · 끊김 · 연결",
+          "box": {
+            "x": 27.5,
+            "y": 181.328125,
+            "right": 377.53125,
+            "bottom": 196.921875,
+            "width": 350.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 350,
+          "clientWidth": 350
+        }
+      },
+      {
+        "id": "network",
+        "severity": "problem",
+        "group": {
+          "x": 6.71875,
+          "y": 202.890625,
+          "right": 383.28125,
+          "bottom": 246.078125,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 28.5,
+            "y": 209.359375,
+            "right": 377.53125,
+            "bottom": 223.75,
+            "width": 349.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        },
+        "value": {
+          "text": "없음 · 과거 저장 구간 실패 · 미동기화 3건",
+          "box": {
+            "x": 28.5,
+            "y": 225.015625,
+            "right": 377.53125,
+            "bottom": 240.609375,
+            "width": 349.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "attention",
+        "group": {
+          "x": 6.71875,
+          "y": 246.078125,
+          "right": 383.28125,
+          "bottom": 289.265625,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 28.5,
+            "y": 252.546875,
+            "right": 377.53125,
+            "bottom": 266.9375,
+            "width": 349.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        },
+        "value": {
+          "text": "지연 6.2초 · 사건 2건 · 공백 0프레임",
+          "box": {
+            "x": 28.5,
+            "y": 268.203125,
+            "right": 377.53125,
+            "bottom": 283.796875,
+            "width": 349.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      390,
+      844
+    ],
+    "scenario": "unknown",
+    "active": "inflight",
+    "documentWidth": 390,
+    "bodyWidth": 390,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 6.71875,
+      "y": 156.796875,
+      "right": 383.28125,
+      "bottom": 292.171875,
+      "width": 376.5625,
+      "height": 135.375
+    },
+    "alert": null,
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 6.71875,
+          "y": 159.703125,
+          "right": 383.28125,
+          "bottom": 202.890625,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 27.5,
+            "y": 165.671875,
+            "right": 377.53125,
+            "bottom": 180.0625,
+            "width": 350.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 350,
+          "clientWidth": 350
+        },
+        "value": {
+          "text": "로컬 기록 중 · 연결 · 하트비트 미수신 · 알 수 없음",
+          "box": {
+            "x": 27.5,
+            "y": 181.328125,
+            "right": 377.53125,
+            "bottom": 196.921875,
+            "width": 350.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 350,
+          "clientWidth": 350
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 6.71875,
+          "y": 202.890625,
+          "right": 383.28125,
+          "bottom": 246.078125,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 28.5,
+            "y": 209.359375,
+            "right": 377.53125,
+            "bottom": 223.75,
+            "width": 349.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        },
+        "value": {
+          "text": "미검증 · 저장 상태 미확인 · 알 수 없음",
+          "box": {
+            "x": 28.5,
+            "y": 225.015625,
+            "right": 377.53125,
+            "bottom": 240.609375,
+            "width": 349.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "info",
+        "group": {
+          "x": 6.71875,
+          "y": 246.078125,
+          "right": 383.28125,
+          "bottom": 289.265625,
+          "width": 376.5625,
+          "height": 43.1875
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 28.5,
+            "y": 252.546875,
+            "right": 377.53125,
+            "bottom": 266.9375,
+            "width": 349.03125,
+            "height": 14.390625
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        },
+        "value": {
+          "text": "미수신 · 요약 미확인",
+          "box": {
+            "x": 28.5,
+            "y": 268.203125,
+            "right": 377.53125,
+            "bottom": 283.796875,
+            "width": 349.03125,
+            "height": 15.59375
+          },
+          "scrollWidth": 349,
+          "clientWidth": 349
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      960,
+      600
+    ],
+    "scenario": "normal",
+    "active": "inflight",
+    "documentWidth": 960,
+    "bodyWidth": 960,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 947.203125,
+      "bottom": 114.59375,
+      "width": 880.015625,
+      "height": 52.203125
+    },
+    "alert": null,
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 360.515625,
+          "bottom": 111.6875,
+          "width": 293.328125,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 88.609375,
+            "y": 73.34375,
+            "right": 354.125,
+            "bottom": 86.78125,
+            "width": 265.515625,
+            "height": 13.4375
+          },
+          "scrollWidth": 266,
+          "clientWidth": 266
+        },
+        "value": {
+          "text": "로컬 기록 중 · 정상 · 연결",
+          "box": {
+            "x": 88.609375,
+            "y": 88.046875,
+            "right": 354.125,
+            "bottom": 103.640625,
+            "width": 265.515625,
+            "height": 15.59375
+          },
+          "scrollWidth": 266,
+          "clientWidth": 266
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 360.515625,
+          "y": 65.296875,
+          "right": 653.859375,
+          "bottom": 111.6875,
+          "width": 293.34375,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 382.9375,
+            "y": 73.34375,
+            "right": 647.46875,
+            "bottom": 86.78125,
+            "width": 264.53125,
+            "height": 13.4375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        },
+        "value": {
+          "text": "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "box": {
+            "x": 382.9375,
+            "y": 88.046875,
+            "right": 647.46875,
+            "bottom": 103.640625,
+            "width": 264.53125,
+            "height": 15.59375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "info",
+        "group": {
+          "x": 653.859375,
+          "y": 65.296875,
+          "right": 947.1875,
+          "bottom": 111.6875,
+          "width": 293.328125,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 676.28125,
+            "y": 73.34375,
+            "right": 940.796875,
+            "bottom": 86.78125,
+            "width": 264.515625,
+            "height": 13.4375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        },
+        "value": {
+          "text": "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임",
+          "box": {
+            "x": 676.28125,
+            "y": 88.046875,
+            "right": 940.796875,
+            "bottom": 103.640625,
+            "width": 264.515625,
+            "height": 15.59375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      960,
+      600
+    ],
+    "scenario": "no-flight",
+    "active": "inflight",
+    "documentWidth": 960,
+    "bodyWidth": 960,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 947.203125,
+      "bottom": 114.59375,
+      "width": 880.015625,
+      "height": 52.203125
+    },
+    "alert": null,
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 360.515625,
+          "bottom": 111.6875,
+          "width": 293.328125,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 88.609375,
+            "y": 73.34375,
+            "right": 354.125,
+            "bottom": 86.78125,
+            "width": 265.515625,
+            "height": 13.4375
+          },
+          "scrollWidth": 266,
+          "clientWidth": 266
+        },
+        "value": {
+          "text": "기록 없음 · 정상 · 연결",
+          "box": {
+            "x": 88.609375,
+            "y": 88.046875,
+            "right": 354.125,
+            "bottom": 103.640625,
+            "width": 265.515625,
+            "height": 15.59375
+          },
+          "scrollWidth": 266,
+          "clientWidth": 266
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 360.515625,
+          "y": 65.296875,
+          "right": 653.859375,
+          "bottom": 111.6875,
+          "width": 293.34375,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 382.9375,
+            "y": 73.34375,
+            "right": 647.46875,
+            "bottom": 86.78125,
+            "width": 264.53125,
+            "height": 13.4375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        },
+        "value": {
+          "text": "없음 · 대기 · 미동기화 3건",
+          "box": {
+            "x": 382.9375,
+            "y": 88.046875,
+            "right": 647.46875,
+            "bottom": 103.640625,
+            "width": 264.53125,
+            "height": 15.59375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "info",
+        "group": {
+          "x": 653.859375,
+          "y": 65.296875,
+          "right": 947.1875,
+          "bottom": 111.6875,
+          "width": 293.328125,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 676.28125,
+            "y": 73.34375,
+            "right": 940.796875,
+            "bottom": 86.78125,
+            "width": 264.515625,
+            "height": 13.4375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        },
+        "value": {
+          "text": "미수신 · 최근 기록 · 사건 2건",
+          "box": {
+            "x": 676.28125,
+            "y": 88.046875,
+            "right": 940.796875,
+            "bottom": 103.640625,
+            "width": 264.515625,
+            "height": 15.59375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      960,
+      600
+    ],
+    "scenario": "observation-late",
+    "active": "inflight",
+    "documentWidth": 960,
+    "bodyWidth": 960,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 947.203125,
+      "bottom": 114.59375,
+      "width": 880.015625,
+      "height": 52.203125
+    },
+    "alert": {
+      "x": 67.1875,
+      "y": 129.59375,
+      "right": 947.203125,
+      "bottom": 158.390625,
+      "width": 880.015625,
+      "height": 28.796875
+    },
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 360.515625,
+          "bottom": 111.6875,
+          "width": 293.328125,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 88.609375,
+            "y": 73.34375,
+            "right": 354.125,
+            "bottom": 86.78125,
+            "width": 265.515625,
+            "height": 13.4375
+          },
+          "scrollWidth": 266,
+          "clientWidth": 266
+        },
+        "value": {
+          "text": "로컬 기록 중 · 정상 · 연결",
+          "box": {
+            "x": 88.609375,
+            "y": 88.046875,
+            "right": 354.125,
+            "bottom": 103.640625,
+            "width": 265.515625,
+            "height": 15.59375
+          },
+          "scrollWidth": 266,
+          "clientWidth": 266
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 360.515625,
+          "y": 65.296875,
+          "right": 653.859375,
+          "bottom": 111.6875,
+          "width": 293.34375,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 382.9375,
+            "y": 73.34375,
+            "right": 647.46875,
+            "bottom": 86.78125,
+            "width": 264.53125,
+            "height": 13.4375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        },
+        "value": {
+          "text": "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "box": {
+            "x": 382.9375,
+            "y": 88.046875,
+            "right": 647.46875,
+            "bottom": 103.640625,
+            "width": 264.53125,
+            "height": 15.59375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "attention",
+        "group": {
+          "x": 653.859375,
+          "y": 65.296875,
+          "right": 947.1875,
+          "bottom": 111.6875,
+          "width": 293.328125,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 676.28125,
+            "y": 73.34375,
+            "right": 940.796875,
+            "bottom": 86.78125,
+            "width": 264.515625,
+            "height": 13.4375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        },
+        "value": {
+          "text": "지연 6.2초 · 사건 2건 · 공백 0프레임",
+          "box": {
+            "x": 676.28125,
+            "y": 88.046875,
+            "right": 940.796875,
+            "bottom": 103.640625,
+            "width": 264.515625,
+            "height": 15.59375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      960,
+      600
+    ],
+    "scenario": "problem",
+    "active": "inflight",
+    "documentWidth": 960,
+    "bodyWidth": 960,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 947.203125,
+      "bottom": 114.59375,
+      "width": 880.015625,
+      "height": 52.203125
+    },
+    "alert": {
+      "x": 67.1875,
+      "y": 129.59375,
+      "right": 947.203125,
+      "bottom": 158.390625,
+      "width": 880.015625,
+      "height": 28.796875
+    },
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "problem",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 360.515625,
+          "bottom": 111.6875,
+          "width": 293.328125,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 88.609375,
+            "y": 73.34375,
+            "right": 354.125,
+            "bottom": 86.78125,
+            "width": 265.515625,
+            "height": 13.4375
+          },
+          "scrollWidth": 266,
+          "clientWidth": 266
+        },
+        "value": {
+          "text": "로컬 기록 중 · 끊김 · 연결",
+          "box": {
+            "x": 88.609375,
+            "y": 88.046875,
+            "right": 354.125,
+            "bottom": 103.640625,
+            "width": 265.515625,
+            "height": 15.59375
+          },
+          "scrollWidth": 266,
+          "clientWidth": 266
+        }
+      },
+      {
+        "id": "network",
+        "severity": "problem",
+        "group": {
+          "x": 360.515625,
+          "y": 65.296875,
+          "right": 653.859375,
+          "bottom": 111.6875,
+          "width": 293.34375,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 382.9375,
+            "y": 73.34375,
+            "right": 647.46875,
+            "bottom": 86.78125,
+            "width": 264.53125,
+            "height": 13.4375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        },
+        "value": {
+          "text": "없음 · 과거 저장 구간 실패 · 미동기화 3건",
+          "box": {
+            "x": 382.9375,
+            "y": 88.046875,
+            "right": 647.46875,
+            "bottom": 103.640625,
+            "width": 264.53125,
+            "height": 15.59375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "attention",
+        "group": {
+          "x": 653.859375,
+          "y": 65.296875,
+          "right": 947.1875,
+          "bottom": 111.6875,
+          "width": 293.328125,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 676.28125,
+            "y": 73.34375,
+            "right": 940.796875,
+            "bottom": 86.78125,
+            "width": 264.515625,
+            "height": 13.4375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        },
+        "value": {
+          "text": "지연 6.2초 · 사건 2건 · 공백 0프레임",
+          "box": {
+            "x": 676.28125,
+            "y": 88.046875,
+            "right": 940.796875,
+            "bottom": 103.640625,
+            "width": 264.515625,
+            "height": 15.59375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      960,
+      600
+    ],
+    "scenario": "unknown",
+    "active": "inflight",
+    "documentWidth": 960,
+    "bodyWidth": 960,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 947.203125,
+      "bottom": 114.59375,
+      "width": 880.015625,
+      "height": 52.203125
+    },
+    "alert": null,
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 360.515625,
+          "bottom": 111.6875,
+          "width": 293.328125,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 88.609375,
+            "y": 73.34375,
+            "right": 354.125,
+            "bottom": 86.78125,
+            "width": 265.515625,
+            "height": 13.4375
+          },
+          "scrollWidth": 266,
+          "clientWidth": 266
+        },
+        "value": {
+          "text": "로컬 기록 중 · 연결 · 하트비트 미수신 · 알 수 없음",
+          "box": {
+            "x": 88.609375,
+            "y": 88.046875,
+            "right": 354.125,
+            "bottom": 103.640625,
+            "width": 265.515625,
+            "height": 15.59375
+          },
+          "scrollWidth": 266,
+          "clientWidth": 266
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 360.515625,
+          "y": 65.296875,
+          "right": 653.859375,
+          "bottom": 111.6875,
+          "width": 293.34375,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 382.9375,
+            "y": 73.34375,
+            "right": 647.46875,
+            "bottom": 86.78125,
+            "width": 264.53125,
+            "height": 13.4375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        },
+        "value": {
+          "text": "미검증 · 저장 상태 미확인 · 알 수 없음",
+          "box": {
+            "x": 382.9375,
+            "y": 88.046875,
+            "right": 647.46875,
+            "bottom": 103.640625,
+            "width": 264.53125,
+            "height": 15.59375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "info",
+        "group": {
+          "x": 653.859375,
+          "y": 65.296875,
+          "right": 947.1875,
+          "bottom": 111.6875,
+          "width": 293.328125,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 676.28125,
+            "y": 73.34375,
+            "right": 940.796875,
+            "bottom": 86.78125,
+            "width": 264.515625,
+            "height": 13.4375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        },
+        "value": {
+          "text": "미수신 · 요약 미확인",
+          "box": {
+            "x": 676.28125,
+            "y": 88.046875,
+            "right": 940.796875,
+            "bottom": 103.640625,
+            "width": 264.515625,
+            "height": 15.59375
+          },
+          "scrollWidth": 265,
+          "clientWidth": 265
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      1024,
+      768
+    ],
+    "scenario": "normal",
+    "active": "inflight",
+    "documentWidth": 1024,
+    "bodyWidth": 1024,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 1011.203125,
+      "bottom": 114.59375,
+      "width": 944.015625,
+      "height": 52.203125
+    },
+    "alert": null,
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 381.859375,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 88.609375,
+            "y": 73.34375,
+            "right": 375.46875,
+            "bottom": 86.78125,
+            "width": 286.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 287,
+          "clientWidth": 287
+        },
+        "value": {
+          "text": "로컬 기록 중 · 정상 · 연결",
+          "box": {
+            "x": 88.609375,
+            "y": 88.046875,
+            "right": 375.46875,
+            "bottom": 103.640625,
+            "width": 286.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 287,
+          "clientWidth": 287
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 381.859375,
+          "y": 65.296875,
+          "right": 696.53125,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 404.28125,
+            "y": 73.34375,
+            "right": 690.140625,
+            "bottom": 86.78125,
+            "width": 285.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        },
+        "value": {
+          "text": "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "box": {
+            "x": 404.28125,
+            "y": 88.046875,
+            "right": 690.140625,
+            "bottom": 103.640625,
+            "width": 285.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "info",
+        "group": {
+          "x": 696.53125,
+          "y": 65.296875,
+          "right": 1011.203125,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 718.953125,
+            "y": 73.34375,
+            "right": 1004.8125,
+            "bottom": 86.78125,
+            "width": 285.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        },
+        "value": {
+          "text": "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임",
+          "box": {
+            "x": 718.953125,
+            "y": 88.046875,
+            "right": 1004.8125,
+            "bottom": 103.640625,
+            "width": 285.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      1024,
+      768
+    ],
+    "scenario": "no-flight",
+    "active": "inflight",
+    "documentWidth": 1024,
+    "bodyWidth": 1024,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 1011.203125,
+      "bottom": 114.59375,
+      "width": 944.015625,
+      "height": 52.203125
+    },
+    "alert": null,
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 381.859375,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 88.609375,
+            "y": 73.34375,
+            "right": 375.46875,
+            "bottom": 86.78125,
+            "width": 286.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 287,
+          "clientWidth": 287
+        },
+        "value": {
+          "text": "기록 없음 · 정상 · 연결",
+          "box": {
+            "x": 88.609375,
+            "y": 88.046875,
+            "right": 375.46875,
+            "bottom": 103.640625,
+            "width": 286.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 287,
+          "clientWidth": 287
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 381.859375,
+          "y": 65.296875,
+          "right": 696.53125,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 404.28125,
+            "y": 73.34375,
+            "right": 690.140625,
+            "bottom": 86.78125,
+            "width": 285.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        },
+        "value": {
+          "text": "없음 · 대기 · 미동기화 3건",
+          "box": {
+            "x": 404.28125,
+            "y": 88.046875,
+            "right": 690.140625,
+            "bottom": 103.640625,
+            "width": 285.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "info",
+        "group": {
+          "x": 696.53125,
+          "y": 65.296875,
+          "right": 1011.203125,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 718.953125,
+            "y": 73.34375,
+            "right": 1004.8125,
+            "bottom": 86.78125,
+            "width": 285.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        },
+        "value": {
+          "text": "미수신 · 최근 기록 · 사건 2건",
+          "box": {
+            "x": 718.953125,
+            "y": 88.046875,
+            "right": 1004.8125,
+            "bottom": 103.640625,
+            "width": 285.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      1024,
+      768
+    ],
+    "scenario": "observation-late",
+    "active": "inflight",
+    "documentWidth": 1024,
+    "bodyWidth": 1024,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 1011.203125,
+      "bottom": 114.59375,
+      "width": 944.015625,
+      "height": 52.203125
+    },
+    "alert": {
+      "x": 67.1875,
+      "y": 129.59375,
+      "right": 1011.203125,
+      "bottom": 158.390625,
+      "width": 944.015625,
+      "height": 28.796875
+    },
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 381.859375,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 88.609375,
+            "y": 73.34375,
+            "right": 375.46875,
+            "bottom": 86.78125,
+            "width": 286.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 287,
+          "clientWidth": 287
+        },
+        "value": {
+          "text": "로컬 기록 중 · 정상 · 연결",
+          "box": {
+            "x": 88.609375,
+            "y": 88.046875,
+            "right": 375.46875,
+            "bottom": 103.640625,
+            "width": 286.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 287,
+          "clientWidth": 287
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 381.859375,
+          "y": 65.296875,
+          "right": 696.53125,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 404.28125,
+            "y": 73.34375,
+            "right": 690.140625,
+            "bottom": 86.78125,
+            "width": 285.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        },
+        "value": {
+          "text": "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "box": {
+            "x": 404.28125,
+            "y": 88.046875,
+            "right": 690.140625,
+            "bottom": 103.640625,
+            "width": 285.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "attention",
+        "group": {
+          "x": 696.53125,
+          "y": 65.296875,
+          "right": 1011.203125,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 718.953125,
+            "y": 73.34375,
+            "right": 1004.8125,
+            "bottom": 86.78125,
+            "width": 285.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        },
+        "value": {
+          "text": "지연 6.2초 · 사건 2건 · 공백 0프레임",
+          "box": {
+            "x": 718.953125,
+            "y": 88.046875,
+            "right": 1004.8125,
+            "bottom": 103.640625,
+            "width": 285.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      1024,
+      768
+    ],
+    "scenario": "problem",
+    "active": "inflight",
+    "documentWidth": 1024,
+    "bodyWidth": 1024,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 1011.203125,
+      "bottom": 114.59375,
+      "width": 944.015625,
+      "height": 52.203125
+    },
+    "alert": {
+      "x": 67.1875,
+      "y": 129.59375,
+      "right": 1011.203125,
+      "bottom": 158.390625,
+      "width": 944.015625,
+      "height": 28.796875
+    },
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "problem",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 381.859375,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 88.609375,
+            "y": 73.34375,
+            "right": 375.46875,
+            "bottom": 86.78125,
+            "width": 286.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 287,
+          "clientWidth": 287
+        },
+        "value": {
+          "text": "로컬 기록 중 · 끊김 · 연결",
+          "box": {
+            "x": 88.609375,
+            "y": 88.046875,
+            "right": 375.46875,
+            "bottom": 103.640625,
+            "width": 286.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 287,
+          "clientWidth": 287
+        }
+      },
+      {
+        "id": "network",
+        "severity": "problem",
+        "group": {
+          "x": 381.859375,
+          "y": 65.296875,
+          "right": 696.53125,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 404.28125,
+            "y": 73.34375,
+            "right": 690.140625,
+            "bottom": 86.78125,
+            "width": 285.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        },
+        "value": {
+          "text": "없음 · 과거 저장 구간 실패 · 미동기화 3건",
+          "box": {
+            "x": 404.28125,
+            "y": 88.046875,
+            "right": 690.140625,
+            "bottom": 103.640625,
+            "width": 285.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "attention",
+        "group": {
+          "x": 696.53125,
+          "y": 65.296875,
+          "right": 1011.203125,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 718.953125,
+            "y": 73.34375,
+            "right": 1004.8125,
+            "bottom": 86.78125,
+            "width": 285.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        },
+        "value": {
+          "text": "지연 6.2초 · 사건 2건 · 공백 0프레임",
+          "box": {
+            "x": 718.953125,
+            "y": 88.046875,
+            "right": 1004.8125,
+            "bottom": 103.640625,
+            "width": 285.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      1024,
+      768
+    ],
+    "scenario": "unknown",
+    "active": "inflight",
+    "documentWidth": 1024,
+    "bodyWidth": 1024,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 1011.203125,
+      "bottom": 114.59375,
+      "width": 944.015625,
+      "height": 52.203125
+    },
+    "alert": null,
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 381.859375,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 88.609375,
+            "y": 73.34375,
+            "right": 375.46875,
+            "bottom": 86.78125,
+            "width": 286.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 287,
+          "clientWidth": 287
+        },
+        "value": {
+          "text": "로컬 기록 중 · 연결 · 하트비트 미수신 · 알 수 없음",
+          "box": {
+            "x": 88.609375,
+            "y": 88.046875,
+            "right": 375.46875,
+            "bottom": 103.640625,
+            "width": 286.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 287,
+          "clientWidth": 287
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 381.859375,
+          "y": 65.296875,
+          "right": 696.53125,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 404.28125,
+            "y": 73.34375,
+            "right": 690.140625,
+            "bottom": 86.78125,
+            "width": 285.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        },
+        "value": {
+          "text": "미검증 · 저장 상태 미확인 · 알 수 없음",
+          "box": {
+            "x": 404.28125,
+            "y": 88.046875,
+            "right": 690.140625,
+            "bottom": 103.640625,
+            "width": 285.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "info",
+        "group": {
+          "x": 696.53125,
+          "y": 65.296875,
+          "right": 1011.203125,
+          "bottom": 111.6875,
+          "width": 314.671875,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 718.953125,
+            "y": 73.34375,
+            "right": 1004.8125,
+            "bottom": 86.78125,
+            "width": 285.859375,
+            "height": 13.4375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        },
+        "value": {
+          "text": "미수신 · 요약 미확인",
+          "box": {
+            "x": 718.953125,
+            "y": 88.046875,
+            "right": 1004.8125,
+            "bottom": 103.640625,
+            "width": 285.859375,
+            "height": 15.59375
+          },
+          "scrollWidth": 286,
+          "clientWidth": 286
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      1280,
+      800
+    ],
+    "scenario": "normal",
+    "active": "inflight",
+    "documentWidth": 1280,
+    "bodyWidth": 1280,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 1267.203125,
+      "bottom": 114.59375,
+      "width": 1200.015625,
+      "height": 52.203125
+    },
+    "alert": null,
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 467.1875,
+          "bottom": 111.6875,
+          "width": 400,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 91.8125,
+            "y": 72.53125,
+            "right": 457.59375,
+            "bottom": 86.921875,
+            "width": 365.78125,
+            "height": 14.390625
+          },
+          "scrollWidth": 366,
+          "clientWidth": 366
+        },
+        "value": {
+          "text": "로컬 기록 중 · 정상 · 연결",
+          "box": {
+            "x": 91.8125,
+            "y": 88.1875,
+            "right": 457.59375,
+            "bottom": 104.4375,
+            "width": 365.78125,
+            "height": 16.25
+          },
+          "scrollWidth": 366,
+          "clientWidth": 366
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 467.1875,
+          "y": 65.296875,
+          "right": 867.1875,
+          "bottom": 111.6875,
+          "width": 400,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 492.8125,
+            "y": 72.53125,
+            "right": 857.59375,
+            "bottom": 86.921875,
+            "width": 364.78125,
+            "height": 14.390625
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        },
+        "value": {
+          "text": "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "box": {
+            "x": 492.8125,
+            "y": 88.1875,
+            "right": 857.59375,
+            "bottom": 104.4375,
+            "width": 364.78125,
+            "height": 16.25
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "info",
+        "group": {
+          "x": 867.1875,
+          "y": 65.296875,
+          "right": 1267.203125,
+          "bottom": 111.6875,
+          "width": 400.015625,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 892.8125,
+            "y": 72.53125,
+            "right": 1257.609375,
+            "bottom": 86.921875,
+            "width": 364.796875,
+            "height": 14.390625
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        },
+        "value": {
+          "text": "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임",
+          "box": {
+            "x": 892.8125,
+            "y": 88.1875,
+            "right": 1257.609375,
+            "bottom": 104.4375,
+            "width": 364.796875,
+            "height": 16.25
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      1280,
+      800
+    ],
+    "scenario": "no-flight",
+    "active": "inflight",
+    "documentWidth": 1280,
+    "bodyWidth": 1280,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 1267.203125,
+      "bottom": 114.59375,
+      "width": 1200.015625,
+      "height": 52.203125
+    },
+    "alert": null,
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 467.1875,
+          "bottom": 111.6875,
+          "width": 400,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 91.8125,
+            "y": 72.53125,
+            "right": 457.59375,
+            "bottom": 86.921875,
+            "width": 365.78125,
+            "height": 14.390625
+          },
+          "scrollWidth": 366,
+          "clientWidth": 366
+        },
+        "value": {
+          "text": "기록 없음 · 정상 · 연결",
+          "box": {
+            "x": 91.8125,
+            "y": 88.1875,
+            "right": 457.59375,
+            "bottom": 104.4375,
+            "width": 365.78125,
+            "height": 16.25
+          },
+          "scrollWidth": 366,
+          "clientWidth": 366
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 467.1875,
+          "y": 65.296875,
+          "right": 867.1875,
+          "bottom": 111.6875,
+          "width": 400,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 492.8125,
+            "y": 72.53125,
+            "right": 857.59375,
+            "bottom": 86.921875,
+            "width": 364.78125,
+            "height": 14.390625
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        },
+        "value": {
+          "text": "없음 · 대기 · 미동기화 3건",
+          "box": {
+            "x": 492.8125,
+            "y": 88.1875,
+            "right": 857.59375,
+            "bottom": 104.4375,
+            "width": 364.78125,
+            "height": 16.25
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "info",
+        "group": {
+          "x": 867.1875,
+          "y": 65.296875,
+          "right": 1267.203125,
+          "bottom": 111.6875,
+          "width": 400.015625,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 892.8125,
+            "y": 72.53125,
+            "right": 1257.609375,
+            "bottom": 86.921875,
+            "width": 364.796875,
+            "height": 14.390625
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        },
+        "value": {
+          "text": "미수신 · 최근 기록 · 사건 2건",
+          "box": {
+            "x": 892.8125,
+            "y": 88.1875,
+            "right": 1257.609375,
+            "bottom": 104.4375,
+            "width": 364.796875,
+            "height": 16.25
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      1280,
+      800
+    ],
+    "scenario": "observation-late",
+    "active": "inflight",
+    "documentWidth": 1280,
+    "bodyWidth": 1280,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 1267.203125,
+      "bottom": 114.59375,
+      "width": 1200.015625,
+      "height": 52.203125
+    },
+    "alert": {
+      "x": 67.1875,
+      "y": 129.59375,
+      "right": 1267.203125,
+      "bottom": 158.390625,
+      "width": 1200.015625,
+      "height": 28.796875
+    },
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 467.1875,
+          "bottom": 111.6875,
+          "width": 400,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 91.8125,
+            "y": 72.53125,
+            "right": 457.59375,
+            "bottom": 86.921875,
+            "width": 365.78125,
+            "height": 14.390625
+          },
+          "scrollWidth": 366,
+          "clientWidth": 366
+        },
+        "value": {
+          "text": "로컬 기록 중 · 정상 · 연결",
+          "box": {
+            "x": 91.8125,
+            "y": 88.1875,
+            "right": 457.59375,
+            "bottom": 104.4375,
+            "width": 365.78125,
+            "height": 16.25
+          },
+          "scrollWidth": 366,
+          "clientWidth": 366
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 467.1875,
+          "y": 65.296875,
+          "right": 867.1875,
+          "bottom": 111.6875,
+          "width": 400,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 492.8125,
+            "y": 72.53125,
+            "right": 857.59375,
+            "bottom": 86.921875,
+            "width": 364.78125,
+            "height": 14.390625
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        },
+        "value": {
+          "text": "없음 · 녹화 입력 대기 · 미동기화 3건",
+          "box": {
+            "x": 492.8125,
+            "y": 88.1875,
+            "right": 857.59375,
+            "bottom": 104.4375,
+            "width": 364.78125,
+            "height": 16.25
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "attention",
+        "group": {
+          "x": 867.1875,
+          "y": 65.296875,
+          "right": 1267.203125,
+          "bottom": 111.6875,
+          "width": 400.015625,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 892.8125,
+            "y": 72.53125,
+            "right": 1257.609375,
+            "bottom": 86.921875,
+            "width": 364.796875,
+            "height": 14.390625
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        },
+        "value": {
+          "text": "지연 6.2초 · 사건 2건 · 공백 0프레임",
+          "box": {
+            "x": 892.8125,
+            "y": 88.1875,
+            "right": 1257.609375,
+            "bottom": 104.4375,
+            "width": 364.796875,
+            "height": 16.25
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      1280,
+      800
+    ],
+    "scenario": "problem",
+    "active": "inflight",
+    "documentWidth": 1280,
+    "bodyWidth": 1280,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 1267.203125,
+      "bottom": 114.59375,
+      "width": 1200.015625,
+      "height": 52.203125
+    },
+    "alert": {
+      "x": 67.1875,
+      "y": 129.59375,
+      "right": 1267.203125,
+      "bottom": 158.390625,
+      "width": 1200.015625,
+      "height": 28.796875
+    },
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "problem",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 467.1875,
+          "bottom": 111.6875,
+          "width": 400,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 91.8125,
+            "y": 72.53125,
+            "right": 457.59375,
+            "bottom": 86.921875,
+            "width": 365.78125,
+            "height": 14.390625
+          },
+          "scrollWidth": 366,
+          "clientWidth": 366
+        },
+        "value": {
+          "text": "로컬 기록 중 · 끊김 · 연결",
+          "box": {
+            "x": 91.8125,
+            "y": 88.1875,
+            "right": 457.59375,
+            "bottom": 104.4375,
+            "width": 365.78125,
+            "height": 16.25
+          },
+          "scrollWidth": 366,
+          "clientWidth": 366
+        }
+      },
+      {
+        "id": "network",
+        "severity": "problem",
+        "group": {
+          "x": 467.1875,
+          "y": 65.296875,
+          "right": 867.1875,
+          "bottom": 111.6875,
+          "width": 400,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 492.8125,
+            "y": 72.53125,
+            "right": 857.59375,
+            "bottom": 86.921875,
+            "width": 364.78125,
+            "height": 14.390625
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        },
+        "value": {
+          "text": "없음 · 과거 저장 구간 실패 · 미동기화 3건",
+          "box": {
+            "x": 492.8125,
+            "y": 88.1875,
+            "right": 857.59375,
+            "bottom": 104.4375,
+            "width": 364.78125,
+            "height": 16.25
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "attention",
+        "group": {
+          "x": 867.1875,
+          "y": 65.296875,
+          "right": 1267.203125,
+          "bottom": 111.6875,
+          "width": 400.015625,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 892.8125,
+            "y": 72.53125,
+            "right": 1257.609375,
+            "bottom": 86.921875,
+            "width": 364.796875,
+            "height": 14.390625
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        },
+        "value": {
+          "text": "지연 6.2초 · 사건 2건 · 공백 0프레임",
+          "box": {
+            "x": 892.8125,
+            "y": 88.1875,
+            "right": 1257.609375,
+            "bottom": 104.4375,
+            "width": 364.796875,
+            "height": 16.25
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        }
+      }
+    ]
+  },
+  {
+    "viewport": [
+      1280,
+      800
+    ],
+    "scenario": "unknown",
+    "active": "inflight",
+    "documentWidth": 1280,
+    "bodyWidth": 1280,
+    "horizontalOverflow": false,
+    "quick": {
+      "x": 67.1875,
+      "y": 62.390625,
+      "right": 1267.203125,
+      "bottom": 114.59375,
+      "width": 1200.015625,
+      "height": 52.203125
+    },
+    "alert": null,
+    "alertOverlapsQuick": false,
+    "groups": [
+      {
+        "id": "session",
+        "severity": "info",
+        "group": {
+          "x": 67.1875,
+          "y": 65.296875,
+          "right": 467.1875,
+          "bottom": 111.6875,
+          "width": 400,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "기록 · MOP · 기체",
+          "box": {
+            "x": 91.8125,
+            "y": 72.53125,
+            "right": 457.59375,
+            "bottom": 86.921875,
+            "width": 365.78125,
+            "height": 14.390625
+          },
+          "scrollWidth": 366,
+          "clientWidth": 366
+        },
+        "value": {
+          "text": "로컬 기록 중 · 연결 · 하트비트 미수신 · 알 수 없음",
+          "box": {
+            "x": 91.8125,
+            "y": 88.1875,
+            "right": 457.59375,
+            "bottom": 104.4375,
+            "width": 365.78125,
+            "height": 16.25
+          },
+          "scrollWidth": 366,
+          "clientWidth": 366
+        }
+      },
+      {
+        "id": "network",
+        "severity": "info",
+        "group": {
+          "x": 467.1875,
+          "y": 65.296875,
+          "right": 867.1875,
+          "bottom": 111.6875,
+          "width": 400,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "인터넷 · 레코더 · 증거",
+          "box": {
+            "x": 492.8125,
+            "y": 72.53125,
+            "right": 857.59375,
+            "bottom": 86.921875,
+            "width": 364.78125,
+            "height": 14.390625
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        },
+        "value": {
+          "text": "미검증 · 저장 상태 미확인 · 알 수 없음",
+          "box": {
+            "x": 492.8125,
+            "y": 88.1875,
+            "right": 857.59375,
+            "bottom": 104.4375,
+            "width": 364.78125,
+            "height": 16.25
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        }
+      },
+      {
+        "id": "observation",
+        "severity": "info",
+        "group": {
+          "x": 867.1875,
+          "y": 65.296875,
+          "right": 1267.203125,
+          "bottom": 111.6875,
+          "width": 400.015625,
+          "height": 46.390625
+        },
+        "label": {
+          "text": "관측 · 최근 요약",
+          "box": {
+            "x": 892.8125,
+            "y": 72.53125,
+            "right": 1257.609375,
+            "bottom": 86.921875,
+            "width": 364.796875,
+            "height": 14.390625
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        },
+        "value": {
+          "text": "미수신 · 요약 미확인",
+          "box": {
+            "x": 892.8125,
+            "y": 88.1875,
+            "right": 1257.609375,
+            "bottom": 104.4375,
+            "width": 364.796875,
+            "height": 16.25
+          },
+          "scrollWidth": 365,
+          "clientWidth": 365
+        }
+      }
+    ]
+  }
+]

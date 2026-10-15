@@ -875,8 +875,17 @@ class MainActivity : AppCompatActivity() {
         // ▮ problem (red) / ▲ attention (amber) / · info (blue); label bold.
         val items = OperatorStatus.evaluate(input)
         val styled = SpannableStringBuilder()
+        var previousGroup: Int? = null
         items.forEachIndexed { index, item ->
-            if (index > 0) styled.append("\n")
+            val group = when {
+                item.label.startsWith("비행") || item.label.startsWith("MOP") ||
+                    item.label.startsWith("기체") || item.label.startsWith("인터넷") -> 0
+                item.label.contains("레코더") || item.label.contains("녹화") -> 1
+                item.label.contains("증거") || item.label.contains("Core") ||
+                    item.label.contains("의견") -> 2
+                else -> 3
+            }
+            if (index > 0) styled.append(if (group == previousGroup) "\n" else "\n\n")
             val start = styled.length
             val marker = when (item.severity) {
                 OperatorStatus.Severity.PROBLEM -> "■"
@@ -899,19 +908,24 @@ class MainActivity : AppCompatActivity() {
             )
             if (item.detail.isNotEmpty()) styled.append(" — ${item.detail}")
             item.action?.let { styled.append("  → $it") }
+            previousGroup = group
         }
         tvOpsStatus.text = styled
+        val priorityRow = findViewById<View>(R.id.cockpitPriorityRow)
         // A local recording failure means evidence may be lost; surface it
         // ahead of recoverable link/connectivity issues without changing the
         // underlying independent status facts.
         val priority = items.firstOrNull { it.label == "녹화 오류" }
             ?: items.firstOrNull { it.severity != OperatorStatus.Severity.INFO }
         if (priority == null) {
+            priorityRow.visibility = View.GONE
             tvPrimaryAlert.setText(R.string.no_urgent_action)
             tvPrimaryAlert.setTextColor(ContextCompat.getColor(this, R.color.ksi_video_fg))
+            tvPrimaryAlert.contentDescription = null
         } else {
+            priorityRow.visibility = View.VISIBLE
             val marker = if (priority.severity == OperatorStatus.Severity.PROBLEM) "■" else "▲"
-            tvPrimaryAlert.text = buildString {
+            val alertCopy = buildString {
                 append("$marker KSI · ${priority.label}")
                 if (priority.detail.isNotBlank()) append(" · ${priority.detail}")
                 priority.action?.let { append(" · 다음 조치: $it") }
@@ -919,6 +933,9 @@ class MainActivity : AppCompatActivity() {
                 if (priority.label == "녹화 오류") append(" · 로컬 증거가 저장되지 않을 수 있음")
                 if (priority.label == "녹화 입력 대기") append(" · 실제 저장 프레임이 아직 확인되지 않음")
             }
+            tvPrimaryAlert.text = alertCopy
+            tvPrimaryAlert.contentDescription =
+                "$alertCopy. 자세한 출처별 상태는 운용 상태 상세에서 확인하세요."
             val color = if (priority.severity == OperatorStatus.Severity.PROBLEM) {
                 R.color.ksi_problem_video
             } else {
@@ -951,6 +968,15 @@ class MainActivity : AppCompatActivity() {
         )
         val count = source.receivedFrameCount?.toString() ?: "알 수 없음"
         val encodedState = freshness.label
+        val quickState = when (freshness.status) {
+            VideoFreshnessModel.Status.DISCONNECTED -> "미연결"
+            VideoFreshnessModel.Status.CONNECTING -> "연결 중"
+            VideoFreshnessModel.Status.NO_SIGNAL -> "신호 없음"
+            VideoFreshnessModel.Status.NO_FRAMES -> "프레임 없음"
+            VideoFreshnessModel.Status.UNKNOWN -> "시각 미확인"
+            VideoFreshnessModel.Status.RECENT -> "입력 최근"
+            VideoFreshnessModel.Status.STALE -> "입력 지연"
+        }
         val compact = when (freshness.status) {
             VideoFreshnessModel.Status.DISCONNECTED -> "미연결"
             VideoFreshnessModel.Status.CONNECTING -> "연결 중"
@@ -974,7 +1000,7 @@ class MainActivity : AppCompatActivity() {
         }
         renderStatusChip(
             tvVideoStatus,
-            "영상 · $compact",
+            "영상 · $quickState",
             markerAndColor.second,
             markerAndColor.first,
         )
@@ -989,16 +1015,16 @@ class MainActivity : AppCompatActivity() {
             "프레임 매핑 미검증 · AI 박스 표시 안 함"
         }
         val simulated = if (source.isSimulated) " · [SIMULATED]" else ""
-        tvVideo.text = "인코딩 입력 $count · $encodedState · 화면 표시/디코딩 확인 안 됨 · $mapping$simulated"
+        tvVideo.text = "인코딩 입력 $count · 화면 표시/디코딩 확인 안 됨 · $mapping$simulated"
         tvVideo.contentDescription = "영상 입력 수신 상태: $encodedState, 수신 프레임 수 $count. 입력 수신은 디코딩·화면 표시를 확인하지 않습니다. $mapping$simulated"
         tvVideoPlaceholder.text = when (freshness.status) {
-            VideoFreshnessModel.Status.DISCONNECTED -> "영상 미연결\n비행 조종은 DJI Pilot 2 · KSI는 관측·기록 보조"
-            VideoFreshnessModel.Status.CONNECTING -> "영상 연결 중 · 입력 프레임 대기\n비행 조종은 DJI Pilot 2"
-            VideoFreshnessModel.Status.NO_SIGNAL -> "영상 신호 없음 · 입력 프레임 없음\n이는 비행 안전 경고가 아닙니다"
-            VideoFreshnessModel.Status.NO_FRAMES -> "인코딩 입력 프레임 미수신\n화면 표시 상태는 확인되지 않았습니다"
-            VideoFreshnessModel.Status.UNKNOWN -> "영상 입력 수신 시각 미확인\n프레임 신선도/표시 상태를 추측하지 않습니다"
-            VideoFreshnessModel.Status.RECENT -> "인코딩 입력 최근 수신\n디코딩·화면 표시 상태는 별도 확인"
-            VideoFreshnessModel.Status.STALE -> "인코딩 입력 수신 지연\n${freshness.label} · 비행 안전 경고가 아닙니다"
+            VideoFreshnessModel.Status.DISCONNECTED -> "인코딩 입력과 화면 표시는 별도로 확인합니다"
+            VideoFreshnessModel.Status.CONNECTING -> "연결 요청 상태 · 실제 스트림/프레임은 미확인"
+            VideoFreshnessModel.Status.NO_SIGNAL -> "수신 신호는 보고되지 않았습니다 · 화면 표시 여부 미확인"
+            VideoFreshnessModel.Status.NO_FRAMES -> "연결 보고와 프레임 수신은 별도입니다"
+            VideoFreshnessModel.Status.UNKNOWN -> "지연·실패·화면 표시 성공으로 추측하지 않습니다"
+            VideoFreshnessModel.Status.RECENT -> "수신은 디코딩·화면 표시 성공을 뜻하지 않습니다"
+            VideoFreshnessModel.Status.STALE -> "마지막 입력 이후 경과 표시 · 화면 표시는 별도 확인"
         }
         // Hide the center note while fresh input may be rendering, so it does
         // not obstruct the view. The input-only state and unverified display

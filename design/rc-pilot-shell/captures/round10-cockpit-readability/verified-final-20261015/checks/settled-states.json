@@ -1,0 +1,183 @@
+{
+  "captures": [
+    {
+      "kind": "scenario",
+      "name": "normal",
+      "state": {
+        "alertHidden": true,
+        "groups": [
+          {
+            "group": "session",
+            "severity": "info",
+            "text": "로컬 기록 중 · 정상 · 연결"
+          },
+          {
+            "group": "network",
+            "severity": "info",
+            "text": "없음 · 녹화 입력 대기 · 미동기화 3건"
+          },
+          {
+            "group": "observation",
+            "severity": "info",
+            "text": "최근 수신 2.1초 전 · 사건 2건 · 공백 0프레임"
+          }
+        ]
+      },
+      "file": "scenario-normal-settled.png"
+    },
+    {
+      "kind": "scenario",
+      "name": "no-flight",
+      "state": {
+        "alertHidden": true,
+        "groups": [
+          {
+            "group": "session",
+            "severity": "info",
+            "text": "기록 없음 · 정상 · 연결"
+          },
+          {
+            "group": "network",
+            "severity": "info",
+            "text": "없음 · 대기 · 미동기화 3건"
+          },
+          {
+            "group": "observation",
+            "severity": "info",
+            "text": "미수신 · 최근 기록 · 사건 2건"
+          }
+        ]
+      },
+      "file": "scenario-no-flight-settled.png"
+    },
+    {
+      "kind": "scenario",
+      "name": "observation-late",
+      "state": {
+        "alertHidden": false,
+        "groups": [
+          {
+            "group": "session",
+            "severity": "info",
+            "text": "로컬 기록 중 · 정상 · 연결"
+          },
+          {
+            "group": "network",
+            "severity": "info",
+            "text": "없음 · 녹화 입력 대기 · 미동기화 3건"
+          },
+          {
+            "group": "observation",
+            "severity": "attention",
+            "text": "지연 6.2초 · 사건 2건 · 공백 0프레임"
+          }
+        ]
+      },
+      "file": "scenario-observation-late-settled.png"
+    },
+    {
+      "kind": "scenario",
+      "name": "problem",
+      "state": {
+        "alertHidden": false,
+        "groups": [
+          {
+            "group": "session",
+            "severity": "problem",
+            "text": "로컬 기록 중 · 끊김 · 연결"
+          },
+          {
+            "group": "network",
+            "severity": "problem",
+            "text": "없음 · 과거 저장 구간 실패 · 미동기화 3건"
+          },
+          {
+            "group": "observation",
+            "severity": "attention",
+            "text": "지연 6.2초 · 사건 2건 · 공백 0프레임"
+          }
+        ]
+      },
+      "file": "scenario-problem-settled.png"
+    },
+    {
+      "kind": "scenario",
+      "name": "unknown",
+      "state": {
+        "alertHidden": true,
+        "groups": [
+          {
+            "group": "session",
+            "severity": "info",
+            "text": "로컬 기록 중 · 연결 · 하트비트 미수신 · 알 수 없음"
+          },
+          {
+            "group": "network",
+            "severity": "info",
+            "text": "미검증 · 저장 상태 미확인 · 알 수 없음"
+          },
+          {
+            "group": "observation",
+            "severity": "info",
+            "text": "미수신 · 요약 미확인"
+          }
+        ]
+      },
+      "file": "scenario-unknown-settled.png"
+    },
+    {
+      "kind": "video",
+      "name": "disconnected",
+      "label": "미연결",
+      "title": "영상 입력 미연결",
+      "file": "video-disconnected-settled.png"
+    },
+    {
+      "kind": "video",
+      "name": "connecting",
+      "label": "연결 중 · 프레임 대기",
+      "title": "영상 연결 요청 예시",
+      "file": "video-connecting-settled.png"
+    },
+    {
+      "kind": "video",
+      "name": "no-signal",
+      "label": "신호 없음",
+      "title": "영상 입력 신호 없음",
+      "file": "video-no-signal-settled.png"
+    },
+    {
+      "kind": "video",
+      "name": "no-frames",
+      "label": "프레임 미수신",
+      "title": "인코딩 입력 프레임 미수신",
+      "file": "video-no-frames-settled.png"
+    },
+    {
+      "kind": "video",
+      "name": "recent",
+      "label": "입력 최근 수신",
+      "title": "인코딩 입력 최근 수신",
+      "file": "video-recent-settled.png"
+    },
+    {
+      "kind": "video",
+      "name": "stale",
+      "label": "입력 수신 지연",
+      "title": "인코딩 입력 수신 지연",
+      "file": "video-stale-settled.png"
+    },
+    {
+      "kind": "video",
+      "name": "unknown",
+      "label": "수신 시각 미확인",
+      "title": "입력 신선도 미확인",
+      "file": "video-unknown-settled.png"
+    }
+  ],
+  "errors": {
+    "title": "KSI Safety Edge — 현장 조종",
+    "bodyWidth": 960,
+    "viewport": 960
+  }
+}
