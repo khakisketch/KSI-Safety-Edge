@@ -64,8 +64,17 @@
   `setOnMapClickListener` → `DJIMarker/DJIPolygon` 구성(공식 3rd-party map 문서·V5 샘플 패턴).
 - 오프라인: MapLibre `OfflineManager.createOfflineRegion`(타일 피라미드) 또는 동급 SDK로
   **현장별 자동 캐시**. 수동 "지도 받기" 단계를 기본 여정으로 두지 않는다. 갱신 시각을 기록한다.
-- **결정 필요**: 타일 공급사 선정 — 국내 위성·항공 해상도, 오프라인 저장 허용 범위, 용도 제한
-  (안전 관련 제품 사용 조항), 비용. 공급사 약관·오프라인 팩 만료/갱신 정책 확인 후 확정.
+- **결정 필요 — 공급사 조사 결과(2026-10-16, 공식 약관 기준)**:
+  - 오프라인 저장 제한: OSM 표준 타일 금지 · 카카오/네이버 저장 금지 · VWorld 저장 조항 없음(사실상
+    불가, 군사시설 병용 제한) · MapTiler Cloud는 임시 캐시만 · Stadia는 100MB/기기·구독 유지 조건 ·
+    Mapbox는 SDK 오프라인(TileStore) 지원. Mapbox·HERE·Esri 용도 조항은 미확인(법무 확인 필요).
+  - 안전 용도 조항: **MapTiler는 Cloud·Server/Data 약관 모두 "사망·부상이 발생할 수 있는 제품 운용
+    에 사용 금지"** — 사용하려면 Custom License 예외 협의 필요.
+  - 후보: ① MapTiler On-prem(Server+Data)+용도 예외 협의 ② Stadia(저비용 파일럿 검증, 100MB 캡
+    주의) ③ Mapbox(TileStore)·Esri(Enterprise, .tpkx) — 약관·비용 확인 후. 자체 타일 파이프라인은
+    벡터는 가능하나 국내 고해상 항공의 합법 오프라인 확보가 과제.
+  - 미확정 상태의 동작 원칙: 지도 없음/스타일라이즈드 폴백으로 동작하며 거짓 준비 완료를 만들지
+    않는다(위 표시 계약 유지). 공급사 최종 선정은 현장 파일럿 조건과 함께 확정한다.
 - 참고: `developer.dji.com` import-3rd-party-map · MapLibre Native Android OfflineManager 문서.
 
 ## 검증
