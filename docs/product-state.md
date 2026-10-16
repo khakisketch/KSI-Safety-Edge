@@ -1,6 +1,6 @@
 # Product State — KSI Safety Edge
 
-Updated: 2026-10-14 · Owner: Build (Primary) · Spec: `docs/superpowers/specs/2026-10-08-integrated-design.md` · 문서 지도: `AGENTS.md`
+Updated: 2026-10-14 · Owner: Build (Primary) · Spec: `docs/specs/2026-10-08-integrated-design.md` · 문서 지도: `AGENTS.md`
 
 ## 제품 목표
 
@@ -34,7 +34,7 @@ Updated: 2026-10-14 · Owner: Build (Primary) · Spec: `docs/superpowers/specs/2
 | 실제 인식 | **R1~R5 완료** — corpus/합성 Replay로 탐지·추적·공간·E2E·성능 검증. 실제 현장 대표 영상/중장비 비교는 미실시 | 대표 영상 |
 | 판단·검증 | 합성 경로 완료, L2 실측 평가 대기. **ACTIVE는 비활성** | 기체 연결 세션, 실측 calibration·독립 GT·정책 승인 |
 
-실행 상세·진행·증거: `docs/superpowers/plans/2026-10-08-productization-plan.md`.
+실행 상세·진행·증거: `docs/plans/2026-10-08-productization-plan.md`.
 
 ## 현재 상태와 L1 완료 기준
 

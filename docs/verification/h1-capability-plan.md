@@ -2,7 +2,7 @@
 
 - 작성: 2026-10-08 · 상태: **준비 패키지 완료(계획·수집기·기록 서식·재사용 평가) — 실행은 장비 접속·세션 필요**
 - 목적: 실제 Matrice 4 / Manifold 3 / RC Plus 2에서 **무엇이 가능한지 실측**하고, 그 결과로 M2 범위·설계 가정을 확정한다.
-- 상위 근거: 스펙 `docs/superpowers/specs/2026-10-08-integrated-design.md` §12.3, 원본 `18_SPATIAL_VALIDATION_PLAN.md` G0, 검증 ID `V-CAPABILITY`.
+- 상위 근거: 스펙 `docs/specs/2026-10-08-integrated-design.md` §12.3, 원본 `18_SPATIAL_VALIDATION_PLAN.md` G0, 검증 ID `V-CAPABILITY`.
 - 이 계획은 **능력 측정**이다. ACTIVE 경고·비행 제어·운영 배포를 승인하지 않는다.
 
 ## 0. 실행 원칙

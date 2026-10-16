@@ -1,7 +1,7 @@
 # KSI Safety Edge — 서비스 블루프린트 (개발·검증 중심)
 
 - 작성: 2026-10-13 · 갱신: 2026-10-13 · 상태: **초안 — Core 데이터 점검 여정(S0)만 확정. RC→Core 전송 검증 및 운영 여정은 별도 범위.**
-- 근거: `docs/superpowers/specs/2026-10-08-integrated-design.md`(제품 목표·전체 흐름),
+- 근거: `docs/specs/2026-10-08-integrated-design.md`(제품 목표·전체 흐름),
   `docs/plans/2026-10-12-b1-operator-flow-contract.md`(조종 상태 계약),
   `docs/plans/2026-10-13-a2-reviewer-annotation.md`(A-2 의견 계약).
 - 경계: 이 문서는 **여정·역할·완료 증거·실패 경로**를 정의한다. 시각 설계(레이아웃·색·타이포)는

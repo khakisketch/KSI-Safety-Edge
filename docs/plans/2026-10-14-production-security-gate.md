@@ -2,7 +2,7 @@
 
 - 작성: 2026-10-14 · 상태: **초안(게이트 목록)** — 항목별 통과 전 "운영 배포 완료"를 주장하지 않는다.
 - 근거(기존 기록 통합): `docs/verification/a9-msdk-integration-plan.md` §6(배포 전 보안 게이트),
-  `docs/superpowers/specs/2026-10-13-service-blueprint.md` §7.5, `README.md`(보안 게이트 준비 전),
+  `docs/specs/2026-10-13-service-blueprint.md` §7.5, `README.md`(보안 게이트 준비 전),
   `docs/plans/2026-10-13-a2-reviewer-annotation.md`(dev 토큰 경계).
 - 경계: 이 문서는 **무엇이 통과해야 하는가**의 목록이다. 인증 방식·보존 정책 같은 새 결정은
   "결정 필요"로 남기며, 어떤 게이트도 현재 구현으로 추정 통과 처리하지 않는다.

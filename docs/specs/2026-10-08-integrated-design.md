@@ -6,7 +6,7 @@
 - 원본 패키지: `KSI_Safety_Edge_v1.1_Spatial_Design/` — 이하 `P/`
 - 문서 목적: 기존 요구사항·설계의 근거와 공백을 정리하고, 전체 흐름 우선 개발을 위한 제품 계약·모듈 경계·검증 기준을 제안한다.
 - 이 문서는 제품 구현 완료, 실기 검증, 운영 전환 또는 상세 구현 계획 승인 기록이 아니다.
-- 이 파일은 제품 저장소 `docs/superpowers/specs/`의 기준본이다. 원본 패키지는 출처 snapshot으로 보존하며 수정하지 않는다.
+- 이 파일은 제품 저장소 `docs/specs/`의 기준본이다. 원본 패키지는 출처 snapshot으로 보존하며 수정하지 않는다.
 
 ## 1. 합의한 목적과 현재 상태
 
@@ -421,14 +421,14 @@ Build에서 문서 검토 결과를 반영할 때의 **후보 배치**다. 현�
 
 | 문서 | 역할 |
 |---|---|
-| `docs/superpowers/product-state.md` | 제품 목표·현재 단계·사용자 인수·후속 범위 요약 |
-| `docs/superpowers/specs/...-integrated-design.md` | 승인된 통합 설계와 출처/변경 근거 |
+| `docs/product-state.md` | 제품 목표·현재 단계·사용자 인수·후속 범위 요약 |
+| `docs/specs/...-integrated-design.md` | 승인된 통합 설계와 출처/변경 근거 |
 | `docs/requirements/traceability.md` | FR/REQ→모듈→계약→시험→실측 증거 |
 | `docs/architecture/` | 시스템 경계, 데이터/시간/기하, 적용/전송/저장 상태기계 |
 | `contracts/` | 기계 계약·버전 정책·공용 golden vectors |
 | `docs/verification/` | capability matrix, 실제 장비 절차, 환경별 실측/인수 기준 |
 | `docs/adr/` | 중요한 선택·대안·제약·승인 근거 |
-| `docs/superpowers/plans/...` | 승인 범위의 상세 구현 작업·진행·실제 검사 증거 |
+| `docs/plans/...` | 승인 범위의 상세 구현 작업·진행·실제 검사 증거 |
 
 - 기존 원본 패키지는 출처 snapshot으로 보존하고, 새 문서가 무엇을 대체/보완하는지 링크한다.
 - 동일 PRD 본문을 수동으로 여러 벌 관리하지 않는다. Markdown 기준본에서 Word를 생성하고 FR·표·상태 문구 손실을 검사한다.

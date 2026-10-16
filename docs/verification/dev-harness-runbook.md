@@ -38,7 +38,7 @@
 
 ## Core 데이터 점검(/review) — 개발자용
 
-서비스 블루프린트: `docs/superpowers/specs/2026-10-13-service-blueprint.md`.
+서비스 블루프린트: `docs/specs/2026-10-13-service-blueprint.md`.
 화면은 Core의 목록·상세·증거 조회를 돕는 개발자 진단 도구다. **RC 업로드나 RC→Core 전달을 실행·증명하지 않는다.**
 각 조회 상태는 API 응답을 받은 사실만 뜻한다. 서버 설정 경로가 `core/var/review-demo.db`와
 `core/var/review-demo-objects`의 canonical 쌍과 일치할 때만 `DEMO FIXTURE`로 표시한다.

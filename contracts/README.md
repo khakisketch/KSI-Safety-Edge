@@ -63,6 +63,6 @@
 - Review jobs are a **P1 placeholder** (record only, no execution).
 - Manifest/session model: [ADR-0001](../adr/0001-manifests-and-sessions.md).
 - Design baseline:
-  `docs/superpowers/specs/2026-10-08-integrated-design.md`;
+  `docs/specs/2026-10-08-integrated-design.md`;
   implementation plan:
-  `docs/superpowers/plans/2026-10-08-m0-m1-replay-slice.md` (W1b).
+  `docs/plans/2026-10-08-m0-m1-replay-slice.md` (W1b).

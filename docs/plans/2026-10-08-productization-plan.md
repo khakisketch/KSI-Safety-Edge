@@ -1,8 +1,8 @@
 # KSI Safety Edge — 제품화 실행 계획 (workstream ledger)
 
-- 작성: 2026-10-08 · 갱신: 2026-10-14 · 상태: **L1 소프트웨어·Replay 경로 구현, A9-4 실기 인수 대기**. 아래 날짜별 이력은 당시 상태이며 현재 판단은 `docs/superpowers/product-state.md`를 따른다.
+- 작성: 2026-10-08 · 갱신: 2026-10-14 · 상태: **L1 소프트웨어·Replay 경로 구현, A9-4 실기 인수 대기**. 아래 날짜별 이력은 당시 상태이며 현재 판단은 `docs/product-state.md`를 따른다.
 - 사용자 지시(2026-10-08): "그렇다면 문서 등 반영하고 장기적으로 개발해줘 제품을 완성하기 위해" — 6단계 경로·인수 사다리·개발 줄기를 문서로 반영하고 장기 개발을 진행.
-- 상위 기준: `docs/superpowers/specs/2026-10-08-integrated-design.md`(설계 기준본) · `docs/superpowers/plans/2026-10-08-reuse-audit-and-porting.md` §0(불변 원칙) · `docs/superpowers/product-state.md`(마일스톤).
+- 상위 기준: `docs/specs/2026-10-08-integrated-design.md`(설계 기준본) · `docs/plans/2026-10-08-reuse-audit-and-porting.md` §0(불변 원칙) · `docs/product-state.md`(마일스톤).
 - 본 원장은 제품화 ①~⑥ 진행·증거·게이트를 기록한다. SI 재사용 판정·B0~W4 이력은 기존 원장에 보존.
 
 ## 1. 인수 사다리 (달성 순서)

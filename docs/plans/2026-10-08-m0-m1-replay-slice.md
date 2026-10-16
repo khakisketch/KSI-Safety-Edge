@@ -2,7 +2,7 @@
 
 > **상태: 완료(과거 계획)** — M0/M1(재생 슬라이스)은 완료됐다. 이 문서는 당시 실행·검증 기록이며,
 > 여기의 실행 지시(예: 서브에이전트 구동 방식)는 현재 작업 지시가 아니다. 현행 상태는
-> `docs/superpowers/product-state.md`를 따른다. Steps use checkbox (`- [ ]`) syntax for tracking.
+> `docs/product-state.md`를 따른다. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 계약 기준선(M0)과 재생 기반 전체 흐름(M1: 임무 적용→RC 오프라인 저장→서버 업로드→조회, 장애 복구)을 구현하고 E01~E12를 통과한다.
 
@@ -10,7 +10,7 @@
 
 **Tech Stack:** Python 3.12, uv, FastAPI, SQLAlchemy 2, SQLite(개발; PG 호환 지향), jsonschema+referencing, rfc8785, httpx, pytest, uvicorn.
 
-**Spec:** `docs/superpowers/specs/2026-10-08-integrated-design.md` (통합 설계 기준본). 원본 패키지 `KSI_Safety_Edge_v1.1_Spatial_Design/`를 함께 읽는다.
+**Spec:** `docs/specs/2026-10-08-integrated-design.md` (통합 설계 기준본). 원본 패키지 `KSI_Safety_Edge_v1.1_Spatial_Design/`를 함께 읽는다.
 
 ## Global Constraints
 
