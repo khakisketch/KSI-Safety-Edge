@@ -129,5 +129,9 @@
   ShadowCandidateSelectionTest 3·OperationContractAcceptanceTest(AT-01~06) 7) · rc-core 67·rc-msdk 28·
   rc-app bench 68(6 skip)·device 62 회귀 없음. 순수 모델에는 장치 명령 출력 채널이 없으며, "장치 명령 0"·교차 상태 불변의
   어댑터 단계 재검증은 별도다.
-- 미구현: 화면 반영(round23 시안은 지도·구역 흐름까지), Android/MSDK 어댑터, 기체별 지원 검증, 실기.
-  순수 테스트 통과는 실기 작동 증거가 아니다.
+- **프로토타입 연결(2026-10-17)**: `design/rc-pilot-shell/field-shell.html` round24 후보(sha `a18505ba…`,
+  미커밋). 행동 상태 시연(경고 확인 저장 실패 시 미확인 유지·요청 결과 4종/늦은 응답·제어 주체와 요청 결과
+  분리·보기 전환/오류·유효성 독립 3단계·SHADOW 자료 누락/지연) + 정상 여정 완주(구역 리비전 → 준비 → 적용
+  → 기록 시작 → 관측 → 종료 → 비행 기록 검토 → 다음 기록). 검증: Playwright CLI 캡처 24장·영수증
+  `captures/round24-operation-contract/RECEIPT.md` — axe·실기 미검증, 메모리 시뮬레이션.
+- 미구현: Android/MSDK 어댑터, 기체별 지원 검증, 실기. 순수 테스트·시안 통과는 실기 작동 증거가 아니다.
