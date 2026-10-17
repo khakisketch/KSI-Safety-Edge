@@ -248,10 +248,11 @@ C63 리뷰가 남긴 잔여 항목을 마감했다(리뷰 파생 수정 + 호스
 
 ## 12. 주 운용 앱 텔레메트리 소스 (2026-10-17 추가, DEVICE GATE)
 
-범위: 읽기 전용. 비행 명령·권한 요청 기능 없음. 구현: `android-rc/rc-msdk`
-`MsdkFlightTelemetrySource`·`FlightTelemetryAccumulator`(순수) + 호스트 테스트
-(`FlightTelemetryAccumulatorTest`·`GeoDistanceTest`). 키 이름·리스너 시그니처는 MSDK 5.18.0 문서와
-provided 스텁 jar(`javap`)로 대조했다.
+범위: 읽기 전용. 비행 명령·권한 요청 기능 없음. 구현: `rc-msdk` `MsdkFlightTelemetrySource`(port 구현) +
+`rc-ports` `FlightTelemetryAccumulator`·`FlightTelemetrySource`·`FakeFlightTelemetrySource` + 호스트 테스트
+(`FlightTelemetryAccumulatorTest`·`FakeFlightTelemetrySourceTest`·`GeoDistanceTest`). 배선 시임:
+`PlatformLinks.flightTelemetry(context)`(bench fake/device 실소스). 키 이름·리스너 시그니처는 MSDK 5.18.0
+문서와 provided 스텁 jar(`javap`)로 대조했다.
 
 | 항목 | 키 / 근거 | 상태 |
 |---|---|---|
