@@ -134,4 +134,10 @@
   분리·보기 전환/오류·유효성 독립 3단계·SHADOW 자료 누락/지연) + 정상 여정 완주(구역 리비전 → 준비 → 적용
   → 기록 시작 → 관측 → 종료 → 비행 기록 검토 → 다음 기록). 검증: Playwright CLI 캡처 24장·영수증
   `captures/round24-operation-contract/RECEIPT.md` — axe·실기 미검증, 메모리 시뮬레이션.
-- 미구현: Android/MSDK 어댑터, 기체별 지원 검증, 실기. 순수 테스트·시안 통과는 실기 작동 증거가 아니다.
+- **텔레메트리 읽기 소스(2026-10-17, DEVICE GATE)**: `android-rc/rc-msdk`의 `MsdkFlightTelemetrySource`·
+  `FlightTelemetryAccumulator` — MSDK KeyManager 읽기 전용, 필드별 4상태 신선도(미수신/유효/지연/
+  미지원)·마지막 확인값 보존, 비행 명령·권한 요청 없음. 호스트 검증 rc-msdk 43 tests green(신규 15).
+  키 지원 매트릭스·실기 확인 항목: `docs/verification/a9-msdk-integration-plan.md`
+  §주 운용 앱 텔레메트리 소스.
+- 미구현: Android/MSDK 어댑터의 앱 배선·명령 기능(카메라·감독형 자동·제어권), 기체별 지원 검증, 실기.
+  순수 테스트·시안·호스트 통과는 실기 작동 증거가 아니다.

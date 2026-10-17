@@ -245,3 +245,32 @@ C63 리뷰가 남긴 잔여 항목을 마감했다(리뷰 파생 수정 + 호스
   rc-app bench 20·device 20(+`Mp4ProbeTest` 3) · APK 재빌드. 커밋 `8bba589`(C64).
 - **미검증(실기)**: 실제 재시작 중 녹화 재개, 세그먼트 재생(ftyp/moov 존재 이상의 확인), 디코더 교체
   타이밍 — RC 지상 세션.
+
+## 12. 주 운용 앱 텔레메트리 소스 (2026-10-17 추가, DEVICE GATE)
+
+범위: 읽기 전용. 비행 명령·권한 요청 기능 없음. 구현: `android-rc/rc-msdk`
+`MsdkFlightTelemetrySource`·`FlightTelemetryAccumulator`(순수) + 호스트 테스트
+(`FlightTelemetryAccumulatorTest`·`GeoDistanceTest`). 키 이름·리스너 시그니처는 MSDK 5.18.0 문서와
+provided 스텁 jar(`javap`)로 대조했다.
+
+| 항목 | 키 / 근거 | 상태 |
+|---|---|---|
+| 기체 위치·고도 | `FlightControllerKey.KeyAircraftLocation3D` | 문서·컴파일 확인 — 고도 기준(이륙점/ASL) 실기 확인 |
+| 홈 위치 | `FlightControllerKey.KeyHomeLocation` | 문서·컴파일 확인 |
+| 홈 거리 | 직접 키 없음 → 위치 2키 조합(haversine) 계산 | 계산값 — 실기 대조 필요 |
+| 속도 | `FlightControllerKey.KeyAircraftVelocity`(Velocity3D, NED) | 수평=√(N²+E²), 수직=−D 규약 |
+| 방향 | `FlightControllerKey.KeyCompassHeading` | 문서·컴파일 확인 |
+| 배터리 | `BatteryKey.KeyChargeRemainingInPercent` | 문서·컴파일 확인 |
+| 비행 모드 | `FlightControllerKey.KeyFlightMode` | 원시 모드명 보관 — 표시 문구 매핑 후속 |
+| 비행 중 여부 | `FlightControllerKey.KeyIsFlying` | 증거 채널 |
+| 페일세이프 | `FlightControllerKey.KeyIsFailSafe` | 증거 채널 — `ControlAuthorityModel` 입력 후보 |
+| GPS 레벨·위성수 | `KeyGPSSignalLevel`·`KeyGPSSatelliteCount` | 증거 채널 |
+| 위치 고정(fix) 판정 | — | **결정 필요**: 단정 기준 없음 → `positionFix=null`(추정 금지) |
+| 멀티컨트롤 지원 | `RemoteControllerKey.KeyMultiControlIsSupported` | 증거 채널 |
+| 제어권 소유자 | `RemoteControllerKey.KeyMultiControlFlightControlAuthorityOwner` | 존재 확인 — 값 구조·단일 RC 보고 여부 실기 확인(원시 문자열 보관) |
+| 리스너 해제 | `KeyManager.cancelListen(holder)` | javap 실측(`removeAllListeners` 아님) |
+| 지원 판정 API | `isKeySupported` 계열 | 문서에서 미확인 — 실기 확인, 미지원 표시 경로는 누적기에 준비 |
+
+- 신선도 4상태(미수신/유효/지연/미지원)는 누적기가 **필드별로** 관리하며, 마지막 확인값은 지연 상태로만
+  보존된다(운용 계약 §5 · AT-03 신선도 절반). `Snapshot.timestampMs`는 최신 수신 시각이지 현재 주장이 아니다.
+- A9-4에서 확인할 항목: 위 키 콜백 실수신·주기, 고도 기준, 멀티컨트롤 권한 보고(단일 RC), fix 판정 근거.
