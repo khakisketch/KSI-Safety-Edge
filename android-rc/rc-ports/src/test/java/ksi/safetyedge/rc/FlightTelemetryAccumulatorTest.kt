@@ -1,12 +1,13 @@
-package ksi.msdk
+package ksi.safetyedge.rc
 
-import ksi.msdk.FlightTelemetryAccumulator.Field
-import ksi.msdk.FlightTelemetryAccumulator.FieldState
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
-import org.junit.Test
+import ksi.safetyedge.rc.FlightTelemetryAccumulator.Field
+import ksi.safetyedge.rc.FlightTelemetryAccumulator.FieldState
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /**
  * Host tests for the per-field freshness rules the operations contract
@@ -100,18 +101,24 @@ class FlightTelemetryAccumulatorTest {
         assertEquals(0L, acc.ageMs(Field.ALTITUDE, nowMs = 4_000))
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun numeric_reports_for_the_mode_field_are_rejected() {
-        accumulator().onNumber(Field.FLIGHT_MODE, 1.0, atMs = 0)
+        assertFailsWith<IllegalArgumentException> {
+            accumulator().onNumber(Field.FLIGHT_MODE, 1.0, atMs = 0)
+        }
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun blank_flight_mode_is_rejected() {
-        accumulator().onFlightMode(" ", atMs = 0)
+        assertFailsWith<IllegalArgumentException> {
+            accumulator().onFlightMode(" ", atMs = 0)
+        }
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test
     fun non_positive_staleness_window_is_rejected() {
-        FlightTelemetryAccumulator(staleAfterMs = 0)
+        assertFailsWith<IllegalArgumentException> {
+            FlightTelemetryAccumulator(staleAfterMs = 0)
+        }
     }
 }

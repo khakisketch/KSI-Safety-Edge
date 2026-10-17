@@ -18,6 +18,9 @@ object PlatformLinks {
 
     fun videoSource(context: Context): VideoSource = FakeVideoSource()
 
+    /** Bench telemetry double (no SDK): scripted values for UI development. */
+    fun flightTelemetry(context: Context): FlightTelemetrySource = FakeFlightTelemetrySource()
+
     /** Bench has no recorder: a fake cannot record real video. */
     fun videoRecorder(context: Context): VideoRecorder? = null
 

@@ -1,6 +1,4 @@
-package ksi.msdk
-
-import ksi.safetyedge.rc.Snapshot
+package ksi.safetyedge.rc
 
 /**
  * Per-field flight-telemetry freshness accumulator (pure Kotlin, read-only;
@@ -26,6 +24,9 @@ import ksi.safetyedge.rc.Snapshot
  *   maps to a fix decision without inventing thresholds (결정 필요 — 실기
  *   확인).
  * - All timestamps are RC monotonic receipt times passed in by the caller.
+ *
+ * Lives in rc-ports so the device source (`rc-msdk` `MsdkFlightTelemetrySource`)
+ * and the bench double ([FakeFlightTelemetrySource]) share it.
  */
 class FlightTelemetryAccumulator(
     private val staleAfterMs: Long = DEFAULT_STALE_AFTER_MS,

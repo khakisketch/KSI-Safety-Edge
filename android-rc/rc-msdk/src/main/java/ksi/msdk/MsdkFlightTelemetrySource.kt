@@ -8,15 +8,19 @@ import dji.sdk.keyvalue.key.KeyTools
 import dji.sdk.keyvalue.key.RemoteControllerKey
 import dji.v5.common.callback.CommonCallbacks
 import dji.v5.manager.KeyManager
+import ksi.safetyedge.rc.FlightTelemetryAccumulator
+import ksi.safetyedge.rc.FlightTelemetrySource
 
 /**
- * Read-only MSDK v5 flight telemetry source (DEVICE GATE).
+ * Read-only MSDK v5 flight telemetry source (DEVICE GATE) implementing the
+ * rc-ports [FlightTelemetrySource] seam.
  *
  * Scope (2026-10-17): report conversion only — no flight commands, no
  * authority requests. Key names/types were checked against the official
- * 5.18.0 API docs (`dev-sdk-main/Docs/Android_API/en/Components/IKeyManager`);
- * the support matrix lives in `docs/verification/a9-msdk-integration-plan.md`
- * §주 운용 앱 텔레메트리 소스.
+ * 5.18.0 API docs (`dev-sdk-main/Docs/Android_API/en/Components/IKeyManager`)
+ * and the provided stub jar (`javap`; e.g. listener removal is
+ * `KeyManager.cancelListen(holder)`); the support matrix lives in
+ * `docs/verification/a9-msdk-integration-plan.md` §주 운용 앱 텔레메트리 소스.
  *
  * DEVICE GATE — everything below compiles against the 5.18.0 stubs; real
  * callbacks, the altitude baseline, the multi-control authority value
@@ -30,7 +34,7 @@ import dji.v5.manager.KeyManager
 class MsdkFlightTelemetrySource(
     private val context: Context,
     private val clock: () -> Long = { SystemClock.elapsedRealtime() },
-) {
+) : FlightTelemetrySource {
 
     /**
      * Raw read-only evidence that is NOT part of the frozen telemetry
@@ -54,12 +58,12 @@ class MsdkFlightTelemetrySource(
         val authorityOwnerAtMs: Long? = null,
     )
 
-    val accumulator = FlightTelemetryAccumulator()
+    override val accumulator = FlightTelemetryAccumulator()
 
     private val bridge = DjiSdkBridge(context)
 
     @Volatile
-    private var listener: ((Evidence) -> Unit)? = null
+    private var onUpdate: (() -> Unit)? = null
 
     @Volatile
     private var currentEvidence = Evidence()
@@ -78,9 +82,9 @@ class MsdkFlightTelemetrySource(
     fun evidence(): Evidence = currentEvidence
 
     /** Key gate first; listeners are registered only once REGISTERED. */
-    fun start(onChange: (Evidence) -> Unit) {
+    override fun start(onUpdate: () -> Unit) {
         if (listening) return
-        listener = onChange
+        this.onUpdate = onUpdate
         if (!bridge.appKeyPresent()) {
             lastError = "${DjiSdkBridge.API_KEY_META} missing/blank — SDK not started"
             return
@@ -94,7 +98,7 @@ class MsdkFlightTelemetrySource(
         }
     }
 
-    fun stop() {
+    override fun stop() {
         if (!listening) return
         try {
             KeyManager.getInstance().cancelListen(this)
@@ -276,7 +280,7 @@ class MsdkFlightTelemetrySource(
     private fun updateEvidence(transform: (Evidence) -> Evidence) {
         val next = transform(currentEvidence)
         currentEvidence = next
-        listener?.invoke(next)
+        onUpdate?.invoke()
     }
 
     private fun emit() = updateEvidence { it }

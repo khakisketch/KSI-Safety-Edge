@@ -23,6 +23,10 @@ object PlatformLinks {
     fun videoRecorder(context: Context): VideoRecorder? =
         ksi.msdk.MsdkVideoRecorder(context)
 
+    /** Read-only MSDK telemetry source (DEVICE GATE — key gate + registration). */
+    fun flightTelemetry(context: Context): FlightTelemetrySource =
+        ksi.msdk.MsdkFlightTelemetrySource(context)
+
     /** A9-3: encoded frames flow source -> recorder (display is separate). */
     fun wireVideo(source: VideoSource, recorder: VideoRecorder?) {
         val msdkSource = source as? ksi.msdk.MsdkVideoSource ?: return
