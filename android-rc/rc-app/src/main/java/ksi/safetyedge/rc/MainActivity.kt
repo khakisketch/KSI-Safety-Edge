@@ -45,7 +45,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvMissionStarted: TextView
     private lateinit var tvOpsStatus: TextView
     private lateinit var tvPrimaryAlert: TextView
+    private lateinit var tvPrimaryAction: TextView
     private lateinit var tvAiPeek: TextView
+    private lateinit var tvObservationGapPeek: TextView
     private lateinit var tvLink: TextView
     private lateinit var tvStatus: TextView
     private lateinit var tvVideo: TextView
@@ -183,7 +185,9 @@ class MainActivity : AppCompatActivity() {
         tvMissionStarted = findViewById(R.id.tvMissionStarted)
         tvOpsStatus = findViewById(R.id.tvOpsStatus)
         tvPrimaryAlert = findViewById(R.id.tvPrimaryAlert)
+        tvPrimaryAction = findViewById(R.id.tvPrimaryAction)
         tvAiPeek = findViewById(R.id.tvAiPeek)
+        tvObservationGapPeek = findViewById(R.id.tvObservationGapPeek)
         tvLink = findViewById(R.id.tvLink)
         tvStatus = findViewById(R.id.tvStatus)
         tvVideo = findViewById(R.id.tvVideo)
@@ -267,6 +271,23 @@ class MainActivity : AppCompatActivity() {
         navTargets.forEach { (navId, _) -> on(navId) { showPage(navId) } }
         on(R.id.btnFocusMode) { toggleFocusMode() }
         on(R.id.btnTogglePanel) { toggleFlightPanel() }
+        on(R.id.btnPriorityDetails) { setFlightPanelOpen(true) }
+        on(R.id.btnToggleRecordHelp) {
+            val help = findViewById<View>(R.id.tvRecordingSourceNote)
+            val expanded = help.visibility != View.VISIBLE
+            help.visibility = if (expanded) View.VISIBLE else View.GONE
+            findViewById<Button>(R.id.btnToggleRecordHelp).setText(
+                if (expanded) R.string.btn_hide_recording_help else R.string.btn_show_recording_help,
+            )
+        }
+        on(R.id.btnToggleCockpitDiagnostics) {
+            val diagnostics = findViewById<View>(R.id.cockpitDiagnostics)
+            val expanded = diagnostics.visibility != View.VISIBLE
+            diagnostics.visibility = if (expanded) View.VISIBLE else View.GONE
+            findViewById<Button>(R.id.btnToggleCockpitDiagnostics).setText(
+                if (expanded) R.string.btn_hide_cockpit_diagnostics else R.string.btn_show_cockpit_diagnostics,
+            )
+        }
         on(R.id.btnOpenEvidence) { showEvidencePage() }
         on(R.id.btnToggleDeveloper) {
             val expanded = developerTools.visibility != View.VISIBLE
@@ -603,11 +624,31 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun toggleFlightPanel() {
-        val open = rightStatusPanel.visibility != View.VISIBLE
+        setFlightPanelOpen(rightStatusPanel.visibility != View.VISIBLE)
+    }
+
+    private fun setFlightPanelOpen(open: Boolean) {
         rightStatusPanel.visibility = if (open) View.VISIBLE else View.GONE
+        val videoStage = findViewById<View>(R.id.videoStage)
+        val stageParams = videoStage.layoutParams
+        if (stageParams is android.widget.FrameLayout.LayoutParams) {
+            // Reserve the same 360dp panel + 16dp gutter before showing the
+            // diagnostics panel. The live surface resizes instead of sitting
+            // underneath it, so status inspection never covers the image.
+            val reserve = if (open) {
+                (376f * resources.displayMetrics.density + 0.5f).toInt()
+            } else {
+                0
+            }
+            if (stageParams.rightMargin != reserve) {
+                stageParams.rightMargin = reserve
+                videoStage.layoutParams = stageParams
+            }
+        }
         btnTogglePanel.setText(
             if (open) R.string.btn_close_ops_panel else R.string.btn_open_ops_panel,
         )
+        if (open) findViewById<View>(R.id.tvOpsPanelTitle).requestFocus()
     }
 
     private fun showEvidencePage() {
@@ -887,7 +928,27 @@ class MainActivity : AppCompatActivity() {
                     item.label.contains("의견") -> 2
                 else -> 3
             }
-            if (index > 0) styled.append(if (group == previousGroup) "\n" else "\n\n")
+            if (group != previousGroup) {
+                if (index > 0) styled.append("\n")
+                val headingStart = styled.length
+                val heading = when (group) {
+                    0 -> R.string.cockpit_status_group_connection
+                    1 -> R.string.cockpit_status_group_recording
+                    2 -> R.string.cockpit_status_group_evidence
+                    else -> R.string.cockpit_status_group_observation
+                }
+                styled.append(getString(heading)).append('\n')
+                styled.setSpan(
+                    ForegroundColorSpan(ContextCompat.getColor(this, R.color.ksi_muted)),
+                    headingStart, styled.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                )
+                styled.setSpan(
+                    StyleSpan(Typeface.BOLD),
+                    headingStart, styled.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+                )
+            } else {
+                styled.append("\n")
+            }
             val start = styled.length
             val marker = when (item.severity) {
                 OperatorStatus.Severity.PROBLEM -> "■"
@@ -912,38 +973,16 @@ class MainActivity : AppCompatActivity() {
             item.action?.let { styled.append("  → $it") }
             previousGroup = group
         }
+        val detailsScroll = findViewById<android.widget.ScrollView>(R.id.cockpitDetailsScroll)
+        val savedScrollY = detailsScroll.scrollY
+        val savedFocus = currentFocus?.takeIf { isWithin(it, detailsScroll) }
         tvOpsStatus.text = styled
-        val priorityRow = findViewById<View>(R.id.cockpitPriorityRow)
-        // A local recording failure means evidence may be lost; surface it
-        // ahead of recoverable link/connectivity issues without changing the
-        // underlying independent status facts.
-        val priority = items.firstOrNull { it.label == "녹화 오류" }
-            ?: items.firstOrNull { it.severity != OperatorStatus.Severity.INFO }
-        if (priority == null) {
-            priorityRow.visibility = View.GONE
-            tvPrimaryAlert.setText(R.string.no_urgent_action)
-            tvPrimaryAlert.setTextColor(ContextCompat.getColor(this, R.color.ksi_video_fg))
-            tvPrimaryAlert.contentDescription = null
-        } else {
-            priorityRow.visibility = View.VISIBLE
-            val marker = if (priority.severity == OperatorStatus.Severity.PROBLEM) "■" else "▲"
-            val faultPill = "$marker ${priority.label}"
-            tvPrimaryAlert.text = faultPill
-            tvPrimaryAlert.contentDescription = buildString {
-                append(faultPill)
-                if (priority.detail.isNotBlank()) append(" · ${priority.detail}")
-                priority.action?.let { append(" · 다음 조치: $it") }
-                if (priority.label == "AI 관측 지연") append(" · 안전 판정 아님")
-                if (priority.label == "녹화 오류") append(" · 로컬 증거가 저장되지 않을 수 있음")
-                if (priority.label == "녹화 입력 대기") append(" · 실제 저장 프레임이 아직 확인되지 않음")
-                append(". 자세한 출처별 상태는 운용 상태 상세에서 확인하세요.")
+        if (rightStatusPanel.visibility == View.VISIBLE) {
+            detailsScroll.post {
+                val maxScroll = (detailsScroll.getChildAt(0)?.height ?: 0) - detailsScroll.height
+                detailsScroll.scrollTo(0, savedScrollY.coerceIn(0, maxScroll.coerceAtLeast(0)))
+                if (savedFocus?.isShown == true) savedFocus.requestFocus()
             }
-            val color = if (priority.severity == OperatorStatus.Severity.PROBLEM) {
-                R.color.ksi_problem_video
-            } else {
-                R.color.ksi_attention_video
-            }
-            tvPrimaryAlert.setTextColor(ContextCompat.getColor(this, color))
         }
         return items
     }
@@ -999,7 +1038,7 @@ class MainActivity : AppCompatActivity() {
         }
         renderStatusChip(
             tvVideoStatus,
-            "영상 · $quickState",
+            quickState,
             markerAndColor.second,
             markerAndColor.first,
         )
@@ -1038,6 +1077,17 @@ class MainActivity : AppCompatActivity() {
 
     private fun refreshCockpitFacts(items: List<OperatorStatus.Item>) {
         val activeFlight = session.activeFlight
+        val activeFlightId = activeFlight?.get("flight_id")?.asText()
+        val unsyncedArtifactCount = activeFlightId?.let { flightId ->
+            session.store.artifactsFor(flightId).count { artifact ->
+                !session.store.isArtifactSynced(artifact.get("artifact_id").asText())
+            }
+        } ?: 0
+        val overview = CockpitStatusPresenter.present(
+            items = items,
+            hasActiveFlight = activeFlight != null,
+            unsyncedArtifactCount = unsyncedArtifactCount,
+        )
         val endRecordButton = buttonOrNull(R.id.btnEndFlight)
         if (activeFlight == null) {
             endRecordButton?.visibility = View.GONE
@@ -1046,53 +1096,29 @@ class MainActivity : AppCompatActivity() {
             endRecordButton?.visibility = View.VISIBLE
             tvRecordEndNote.setText(R.string.cockpit_record_end_note_active)
         }
-        val recordState = if (activeFlight == null) {
-            getString(R.string.cockpit_record_none)
-        } else {
-            getString(R.string.cockpit_record_active)
-        }
         renderStatusChip(
             tvKsiRecordStatus,
-            "${getString(R.string.cockpit_ksi_record)} · $recordState",
-            R.color.ksi_info,
+            overview.ksiSession.value,
+            statusColor(overview.ksiSession.severity),
+            statusMarker(overview.ksiSession.severity),
         )
-        tvKsiRecordStatus.contentDescription = if (activeFlight == null) {
-            "KSI 로컬 기록 상태: 기록 없음"
-        } else {
-            "KSI 로컬 기록 상태: 기록 중"
-        }
+        tvKsiRecordStatus.contentDescription = overview.ksiSession.contentDescription
 
-        val mop = items.firstOrNull {
-            it.label.startsWith("MOP") || it.label.contains("하트비트")
-        }
-        val mopCompact = when {
-            mop == null -> "MOP · 상태 미확인"
-            mop.label.contains("정상") -> "MOP · 정상"
-            mop.label.contains("지연") -> "MOP · 하트비트 지연"
-            mop.label.contains("끊김") -> "MOP · 끊김"
-            mop.label.contains("연결 중") -> "MOP · 연결 중"
-            else -> "MOP · 연결"
-        }
         renderStatusChip(
             tvMopStatus,
-            mopCompact,
-            statusColor(mop?.severity ?: OperatorStatus.Severity.INFO),
-            statusMarker(mop?.severity ?: OperatorStatus.Severity.INFO),
+            overview.mop.value,
+            statusColor(overview.mop.severity),
+            statusMarker(overview.mop.severity),
         )
+        tvMopStatus.contentDescription = overview.mop.contentDescription
 
-        val aircraft = items.firstOrNull { it.label.startsWith("기체") }
-        val aircraftCompact = when {
-            aircraft == null -> "기체 · 알 수 없음"
-            aircraft.label.contains("알 수 없음") -> "기체 · 알 수 없음"
-            aircraft.label.contains("미연결") -> "기체 · 미연결"
-            else -> "기체 · 연결"
-        }
         renderStatusChip(
             tvAircraftStatus,
-            aircraftCompact,
-            statusColor(aircraft?.severity ?: OperatorStatus.Severity.INFO),
-            if (aircraft?.label?.contains("알 수 없음") == true) "?" else statusMarker(aircraft?.severity ?: OperatorStatus.Severity.INFO),
+            overview.aircraft.value,
+            statusColor(overview.aircraft.severity),
+            if (overview.aircraft.value.contains("알 수 없음")) "?" else statusMarker(overview.aircraft.severity),
         )
+        tvAircraftStatus.contentDescription = overview.aircraft.contentDescription
 
         val internet = internetStatus()
         val (internetValue, internetMarker) = when (internet) {
@@ -1103,33 +1129,75 @@ class MainActivity : AppCompatActivity() {
         }
         renderStatusChip(tvInternetStatus, "인터넷 · $internetValue", R.color.ksi_info, internetMarker)
 
-        val recorder = app.videoRecorder
-        val writeFailure = recorder?.hasWriteFailure == true || recorder?.state == VideoRecorder.State.ERROR
-        val written = recorder?.writtenFrameCount
-        val recorderIdleSeverity =
-            if (session.activeFlight != null) OperatorStatus.Severity.ATTENTION else OperatorStatus.Severity.INFO
-        val (recorderLabel, recorderSeverity) = when {
-            recorder == null -> "레코더 · 없음" to OperatorStatus.Severity.INFO
-            writeFailure -> "레코더 · 녹화 오류" to OperatorStatus.Severity.PROBLEM
-            recorder.state == VideoRecorder.State.RECORDING && written == 0L -> "레코더 · 녹화 입력 대기" to OperatorStatus.Severity.INFO
-            recorder.state == VideoRecorder.State.RECORDING -> "레코더 · 녹화 중" to OperatorStatus.Severity.INFO
-            recorder.state == VideoRecorder.State.ERROR -> "레코더 · 녹화 오류" to OperatorStatus.Severity.PROBLEM
-            else -> "레코더 · 녹화 대기" to recorderIdleSeverity
-        }
-        renderStatusChip(tvRecorderStatus, recorderLabel, statusColor(recorderSeverity), statusMarker(recorderSeverity))
+        renderStatusChip(
+            tvRecorderStatus,
+            overview.recorder.value,
+            statusColor(overview.recorder.severity),
+            statusMarker(overview.recorder.severity),
+        )
+        tvRecorderStatus.contentDescription = overview.recorder.contentDescription
 
-        val activeFlightId = session.activeFlight?.get("flight_id")?.asText()
-        val activeArtifacts = activeFlightId?.let { session.store.artifactsFor(it) }.orEmpty()
-        val pending = activeArtifacts.count { artifact ->
-            !session.store.isArtifactSynced(artifact.get("artifact_id").asText())
+        renderStatusChip(
+            tvEvidenceStatus,
+            overview.evidence.value,
+            statusColor(overview.evidence.severity),
+            statusMarker(overview.evidence.severity),
+        )
+        tvEvidenceStatus.contentDescription = overview.evidence.contentDescription
+
+        overview.priority?.let { priority ->
+            val marker = statusMarker(priority.severity)
+            val severityColor = if (priority.severity == OperatorStatus.Severity.PROBLEM) {
+                R.color.ksi_problem_video
+            } else {
+                R.color.ksi_attention_video
+            }
+            val prioritySource = when {
+                priority.label.startsWith("MOP") || priority.label.contains("하트비트") -> "MOP 링크"
+                priority.label.startsWith("녹화") || priority.label.startsWith("레코더") ||
+                    priority.label.startsWith("영상 녹화") -> "RC 프록시 기록"
+                priority.label.startsWith("기체") -> "기체 연결"
+                priority.label.startsWith("AI 관측") -> "AI 관측"
+                else -> "상태"
+            }
+            tvPrimaryAlert.text = "$marker $prioritySource · ${priority.label}"
+            tvPrimaryAction.text = priority.action
+                ?.substringBefore(" · ")
+                ?.let { "다음: $it" }
+                .orEmpty()
+            tvPrimaryAction.visibility = if (priority.action == null) View.GONE else View.VISIBLE
+            tvPrimaryAlert.setTextColor(ContextCompat.getColor(this, severityColor))
+            if (priority.action != null) {
+                tvPrimaryAction.setTextColor(ContextCompat.getColor(this, severityColor))
+            }
+            tvPrimaryAlert.contentDescription = buildString {
+                append(prioritySource).append(" · ").append(priority.label)
+                if (priority.detail.isNotBlank()) append(" · ${priority.detail}")
+                priority.action?.let { append(" · 다음 조치: $it") }
+                if (priority.label == "AI 관측 지연") append(" · 안전 판정이나 비행 경고가 아닙니다")
+                if (priority.label == "녹화 오류") append(" · 불완전 .tmp는 확정 증거가 아닙니다")
+            }
+            tvPrimaryAction.contentDescription = priority.action?.let { "다음 조치: $it" }
+            findViewById<View>(R.id.cockpitPriorityRow).visibility = View.VISIBLE
+        } ?: run {
+            findViewById<View>(R.id.cockpitPriorityRow).visibility = View.GONE
+            tvPrimaryAlert.setText(R.string.no_urgent_action)
+            tvPrimaryAlert.setTextColor(ContextCompat.getColor(this, R.color.ksi_video_fg))
+            tvPrimaryAlert.contentDescription = null
+            tvPrimaryAction.text = ""
+            tvPrimaryAction.visibility = View.GONE
+            tvPrimaryAction.contentDescription = null
         }
-        val evidenceLabel = when {
-            activeFlightId == null -> "로컬 증거 · 없음"
-            activeArtifacts.isEmpty() -> "로컬 증거 · 없음"
-            pending > 0 -> "로컬 증거 · 미동기화 $pending"
-            else -> "로컬 증거 · 동기화 완료"
+
+    }
+
+    private fun isWithin(child: View, ancestor: View): Boolean {
+        var current: View? = child
+        while (current != null) {
+            if (current === ancestor) return true
+            current = current.parent as? View
         }
-        renderStatusChip(tvEvidenceStatus, evidenceLabel, R.color.ksi_info)
+        return false
     }
 
     private fun statusColor(severity: OperatorStatus.Severity): Int = when (severity) {
@@ -1216,8 +1284,7 @@ class MainActivity : AppCompatActivity() {
                 else -> R.string.page_title_inflight
             },
         )
-        rightStatusPanel.visibility = View.GONE
-        btnTogglePanel.setText(R.string.btn_open_ops_panel)
+        setFlightPanelOpen(false)
         updateFlightChrome()
         if (cockpit) {
             window.addFlags(android.view.WindowManager.LayoutParams.FLAG_FULLSCREEN)
@@ -1290,8 +1357,11 @@ class MainActivity : AppCompatActivity() {
         if (!::tvAiPeek.isInitialized) return
         val flightId = session.activeFlight?.get("flight_id")?.asText()
         if (flightId == null) {
-            tvAiPeek.text = "AI 관측 · 기록 없음"
+            tvAiPeek.text = "기록 없음"
             tvAiPeek.setTextColor(ContextCompat.getColor(this, R.color.ksi_fg))
+            tvObservationGapPeek.text = ""
+            tvObservationGapPeek.visibility = View.GONE
+            tvObservationGapPeek.contentDescription = null
             tvAiPeek.contentDescription =
                 "AI 관측 수신 상태. 활성 기록이 없어 관측 수신을 기다리는 중입니다."
             return
@@ -1302,21 +1372,44 @@ class MainActivity : AppCompatActivity() {
             ReceiptClock.now(),
         )
         val freshness = ObservationModel.observationFreshnessLabel(ageMs)
-        val stale = ageMs != null && ageMs >= ObservationModel.STALE_DATA_MS
+        val stale = ageMs != null && ageMs >= OperatorStatus.OBSERVATION_STALE_MS
         val state = when {
             ageMs == null -> "미수신"
             stale -> "수신 지연 · $freshness"
             else -> freshness
         }
-        tvAiPeek.text = "AI 관측 · $state"
+        val latestSummary = session.store.summariesFor(flightId).lastOrNull()
+        val skippedFrames = latestSummary?.get("skipped_frames")
+            ?.takeIf { it.isNumber }
+            ?.asLong()
+        val coveredFrames = latestSummary?.get("covered_frames")
+            ?.takeIf { it.isNumber }
+            ?.asLong()
+        val gapDescription = if (skippedFrames != null && skippedFrames > 0) {
+            val covered = coveredFrames?.let { "$it" } ?: "수 미확인"
+            "직전 요약 기준, 심각도 정보, 커버 ${covered}프레임 · 관측 공백 ${skippedFrames}프레임"
+        } else {
+            null
+        }
+        tvObservationGapPeek.text = if (gapDescription != null) {
+            "정보 · 직전 요약 · 공백 ${skippedFrames}프레임"
+        } else {
+            ""
+        }
+        tvObservationGapPeek.visibility = if (gapDescription != null) View.VISIBLE else View.GONE
+        tvObservationGapPeek.contentDescription = gapDescription
+        tvAiPeek.text = state
         tvAiPeek.setTextColor(
             ContextCompat.getColor(
                 this,
                 if (stale) R.color.ksi_attention else R.color.ksi_fg,
             ),
         )
-        tvAiPeek.contentDescription =
-            "AI 관측 수신 상태: $state. 수신 지연은 안전 판정이 아닙니다."
+        tvAiPeek.contentDescription = buildString {
+            append("AI 관측 수신 상태: ").append(state).append(".")
+            gapDescription?.let { append(" ").append(it).append(".") }
+            append(" 수신 지연은 안전 판정이 아닙니다.")
+        }
     }
 
     // -- A7 flight history ------------------------------------------------------
@@ -1810,12 +1903,20 @@ class MainActivity : AppCompatActivity() {
             show("종료할 KSI 로컬 기록 세션이 없습니다")
             return
         }
-        androidx.appcompat.app.AlertDialog.Builder(this)
+        val endButton = findViewById<Button>(R.id.btnEndFlight)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("KSI 기록 세션 종료")
-            .setMessage("KSI 로컬 관측·녹화 기록을 종료하고 녹화 구간을 마무리합니다. 기체 비행 조종은 DJI Pilot 2에서 계속 확인하세요.")
+            .setMessage(R.string.cockpit_end_record_confirm_message)
             .setNegativeButton("계속 기록", null)
             .setPositiveButton(R.string.btn_end_flight) { _, _ -> finishFlight() }
-            .show()
+            .create()
+        dialog.setCanceledOnTouchOutside(false)
+        dialog.setOnDismissListener {
+            if (session.activeFlight != null && endButton.isShown && endButton.isEnabled) {
+                endButton.requestFocus()
+            }
+        }
+        dialog.show()
     }
 
     private fun finishFlight() {
