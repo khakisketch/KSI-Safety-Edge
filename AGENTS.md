@@ -4,7 +4,7 @@
 제품(C++ Edge · Android RC · Python Core). 제품 개요·저장소 구성은 `README.md`.
 
 이 파일은 **문서 지도**다. 내용을 복제하지 않는다. 문서가 서로 어긋나면 아래 "현행 정본"을 따른다.
-기준일: 2026-10-16.
+기준일: 2026-10-17.
 
 ## 현행 정본
 
@@ -14,7 +14,8 @@
 | 통합 설계 기준본 | `docs/specs/2026-10-08-integrated-design.md` | REQ·경계·E01~E12 |
 | 계약 정책(스키마·OpenAPI) | `contracts/README.md` | 스키마 바이트 불변·digest 규칙 |
 | 서비스 여정 | `docs/specs/2026-10-13-service-blueprint.md` | S0 확정 · S1/S2 초안(확정 금지) |
-| 조종 상태 계약(B-1) | `docs/plans/2026-10-12-b1-operator-flow-contract.md` | 항목·심각도·문구·행동 |
+| 조종 상태 계약(B-1) | `docs/plans/2026-10-12-b1-operator-flow-contract.md` | 항목·심각도·문구·행동 · 10-17 주 운용 앱 범위 개정 |
+| RC 운용 화면 행동 계약 v1(주 운용 앱) | `docs/plans/2026-10-17-rc-operations-screen-contract.md` | 운용 책임·행동 계약·상태 전이·AT-01~06 — 실기 미검증 |
 | 현장 위험구역 지정(비행 전) | `docs/plans/2026-10-16-field-zone-designation-contract.md` | RC 지도·점 찍기 — 캐시/저장/적용 분리, SHADOW |
 | 디자인 정본 | `design/rc-pilot-shell/README.md` · `field-shell.html` | 렌더: `bash scripts/design_preview_server.sh` → `:8765` |
 | 실행 원장(작업 기록) | `docs/plans/2026-10-08-productization-plan.md` | 날짜별 이력 — 현재 판단은 product-state |

@@ -1,6 +1,6 @@
 # Product State — KSI Safety Edge
 
-Updated: 2026-10-14 · Owner: Build (Primary) · Spec: `docs/specs/2026-10-08-integrated-design.md` · 문서 지도: `AGENTS.md`
+Updated: 2026-10-17 · Owner: Build (Primary) · Spec: `docs/specs/2026-10-08-integrated-design.md` · 문서 지도: `AGENTS.md`
 
 ## 제품 목표
 
@@ -33,6 +33,12 @@ Updated: 2026-10-14 · Owner: Build (Primary) · Spec: `docs/specs/2026-10-08-in
 | 사용 흐름 | **소프트웨어 구현 완료, 실기 인수 대기** — Android 임무·관측·증거·동기화 여정(A2~A9-3), Cockpit UI(C67), Core E2E 및 빌드/테스트 보유. 다음은 RC Plus 2에서 A9-4 지상 검증 | RC USB/개발자 디버깅, DJI 앱 키, Manifold 접근; 선택: 개발 Core |
 | 실제 인식 | **R1~R5 완료** — corpus/합성 Replay로 탐지·추적·공간·E2E·성능 검증. 실제 현장 대표 영상/중장비 비교는 미실시 | 대표 영상 |
 | 판단·검증 | 합성 경로 완료, L2 실측 평가 대기. **ACTIVE는 비활성** | 기체 연결 세션, 실측 calibration·독립 GT·정책 승인 |
+
+- **목표 개정(2026-10-17 사용자 확정)**: KSI RC는 Pilot 2 보조가 아니라 **현장 주 운용 앱**으로
+  설계한다. 운용 책임·행동 계약·상태 전이·인수 테스트 v1:
+  `docs/plans/2026-10-17-rc-operations-screen-contract.md`. 현재 구현(영상·MOP·기록 중심)과 목표
+  기능(MSDK 비행 상태·카메라·감독형 자동·제어권)은 분리 관리하며, 실제 조종·안전 검증 전까지
+  Pilot 2 대체·자동비행 지원으로 주장하지 않는다. B-1 범위 개정은 부록 참조.
 
 실행 상세·진행·증거: `docs/plans/2026-10-08-productization-plan.md`.
 
