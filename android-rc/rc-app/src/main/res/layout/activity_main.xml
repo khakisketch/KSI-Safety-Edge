@@ -198,6 +198,152 @@
 
                 </LinearLayout>
 
+                <!-- Read-only telemetry strip (round24 topbar; per-field
+                     freshness — a stale sample is never shown as current).
+                     Values come from the shared accumulator (bench fake /
+                     device MSDK, DEVICE GATE). -->
+                <LinearLayout
+                    android:id="@+id/telemetryStrip"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="48dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginEnd="6dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="0.9"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.72"
+                            android:text="@string/telemetry_label_authority"
+                            android:textColor="@color/ksi_video_fg"
+                            android:textSize="11sp" />
+                        <TextView
+                            android:id="@+id/tvTeleAuthorityValue"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/ksi_video_fg"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.25"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.72"
+                            android:text="@string/telemetry_label_flight_mode"
+                            android:textColor="@color/ksi_video_fg"
+                            android:textSize="11sp" />
+                        <TextView
+                            android:id="@+id/tvTeleModeValue"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/ksi_video_fg"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="0.75"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.72"
+                            android:text="@string/telemetry_label_battery"
+                            android:textColor="@color/ksi_video_fg"
+                            android:textSize="11sp" />
+                        <TextView
+                            android:id="@+id/tvTeleBatteryValue"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/ksi_video_fg"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.5"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.72"
+                            android:text="@string/telemetry_label_links"
+                            android:textColor="@color/ksi_video_fg"
+                            android:textSize="11sp" />
+                        <TextView
+                            android:id="@+id/tvTeleLinksValue"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/ksi_video_fg"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1.1"
+                        android:gravity="center_vertical"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:alpha="0.72"
+                            android:text="@string/telemetry_label_position"
+                            android:textColor="@color/ksi_video_fg"
+                            android:textSize="11sp" />
+                        <TextView
+                            android:id="@+id/tvTelePositionValue"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/ksi_video_fg"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginEnd="6dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="@color/ksi_video_grid" />
+
                 <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="0dp"

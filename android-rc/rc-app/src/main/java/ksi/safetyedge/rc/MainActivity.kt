@@ -106,6 +106,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvRecorderStatus: TextView
     private lateinit var tvRecordEndNote: TextView
 
+    // Read-only telemetry strip (round24 topbar). Per-field freshness comes
+    // from the shared accumulator; a stale sample is never shown as current.
+    private lateinit var tvTeleAuthorityValue: TextView
+    private lateinit var tvTeleModeValue: TextView
+    private lateinit var tvTeleBatteryValue: TextView
+    private lateinit var tvTeleLinksValue: TextView
+    private lateinit var tvTelePositionValue: TextView
+    private lateinit var telemetrySource: FlightTelemetrySource
+    private val telemetryUiHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var telemetryRenderPending = false
+    private var lastOverview: CockpitStatusPresenter.Overview? = null
+
     // MSDK declares dangerous permissions (location/phone/storage); targetSdk
     // 34 requires a runtime grant — request the declared set once per launch
     // and report the outcome honestly (no hidden failure).
@@ -262,6 +274,16 @@ class MainActivity : AppCompatActivity() {
         tvTopContext = findViewById(R.id.tvTopContext)
         tvAircraftStatus = findViewById(R.id.tvAircraftStatus)
         tvMopStatus = findViewById(R.id.tvMopStatus)
+        tvTeleAuthorityValue = findViewById(R.id.tvTeleAuthorityValue)
+        tvTeleModeValue = findViewById(R.id.tvTeleModeValue)
+        tvTeleBatteryValue = findViewById(R.id.tvTeleBatteryValue)
+        tvTeleLinksValue = findViewById(R.id.tvTeleLinksValue)
+        tvTelePositionValue = findViewById(R.id.tvTelePositionValue)
+        // Read-only telemetry source (bench fake / device MSDK, DEVICE GATE):
+        // callbacks arrive off the UI thread — coalesce, then re-read states.
+        telemetrySource = PlatformLinks.flightTelemetry(this)
+        telemetrySource.start { scheduleTelemetryRender() }
+        renderTelemetryStrip()
         tvKsiRecordStatus = findViewById(R.id.tvKsiRecordStatus)
         tvRecorderStatus = findViewById(R.id.tvRecorderStatus)
         installMissionReadinessUi()
@@ -453,6 +475,8 @@ class MainActivity : AppCompatActivity() {
         activityResumed = false
         session.setUiStateListener(null)
         cockpitHandler.removeCallbacks(cockpitTicker)
+        telemetryUiHandler.removeCallbacksAndMessages(null)
+        if (::telemetrySource.isInitialized) telemetrySource.stop()
         // The app-scoped video source must not retain an Activity-bound
         // listener across rotation.
         app.videoSource.setListener(null)
@@ -1075,6 +1099,51 @@ class MainActivity : AppCompatActivity() {
         tvVideoPlaceholder.contentDescription = tvVideoPlaceholder.text
     }
 
+    /**
+     * Coalesces telemetry callbacks (SDK thread on device) into one UI
+     * render. The strip is static text: rapid samples do not each announce,
+     * and TalkBack reads it on demand only.
+     */
+    private fun scheduleTelemetryRender() {
+        if (telemetryRenderPending) return
+        telemetryRenderPending = true
+        telemetryUiHandler.post {
+            telemetryRenderPending = false
+            renderTelemetryStrip()
+        }
+    }
+
+    private fun renderTelemetryStrip() {
+        if (!::tvTeleAuthorityValue.isInitialized || !::telemetrySource.isInitialized) return
+        val strip = TelemetryStripPresenter.present(
+            accumulator = telemetrySource.accumulator,
+            nowMs = android.os.SystemClock.elapsedRealtime(),
+            authorityValue = null, // 제어권 보고 출처 미연결 — 추정하지 않음
+            mop = lastOverview?.mop,
+            aircraft = lastOverview?.aircraft,
+        )
+        bindTelemetryCell(tvTeleAuthorityValue, strip.authority)
+        bindTelemetryCell(tvTeleModeValue, strip.flightMode)
+        bindTelemetryCell(tvTeleBatteryValue, strip.battery)
+        bindTelemetryCell(tvTeleLinksValue, strip.links)
+        bindTelemetryCell(tvTelePositionValue, strip.position)
+    }
+
+    private fun bindTelemetryCell(view: TextView, cell: TelemetryStripPresenter.Cell) {
+        view.text = cell.value
+        view.setTextColor(
+            ContextCompat.getColor(
+                this,
+                when (cell.severity) {
+                    OperatorStatus.Severity.PROBLEM -> R.color.ksi_problem_video
+                    OperatorStatus.Severity.ATTENTION -> R.color.ksi_attention_video
+                    OperatorStatus.Severity.INFO -> R.color.ksi_video_fg
+                },
+            ),
+        )
+        view.contentDescription = cell.contentDescription
+    }
+
     private fun refreshCockpitFacts(items: List<OperatorStatus.Item>) {
         val activeFlight = session.activeFlight
         val activeFlightId = activeFlight?.get("flight_id")?.asText()
@@ -1088,6 +1157,8 @@ class MainActivity : AppCompatActivity() {
             hasActiveFlight = activeFlight != null,
             unsyncedArtifactCount = unsyncedArtifactCount,
         )
+        lastOverview = overview
+        renderTelemetryStrip()
         val endRecordButton = buttonOrNull(R.id.btnEndFlight)
         if (activeFlight == null) {
             endRecordButton?.visibility = View.GONE

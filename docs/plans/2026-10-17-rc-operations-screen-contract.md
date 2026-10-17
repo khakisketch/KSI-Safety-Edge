@@ -141,5 +141,11 @@
   `PlatformLinks.flightTelemetry(context)`. 호스트 검증: rc-ports 61·rc-msdk 33 green.
   키 지원 매트릭스·실기 확인 항목: `docs/verification/a9-msdk-integration-plan.md`
   §주 운용 앱 텔레메트리 소스. (10-16 병행 배선분은 보존 커밋 `e6b74a4`로 편입 — 통합 기반.)
+- **콕핏 텔레메트리 스트립(2026-10-17, DEVICE GATE 값)**: 관측 화면 상단 한 줄(round24 concept):
+  제어 주체(출처 미연결 → `미확인`)·비행 모드·배터리·MOP·기체 링크(B-1 출처 값 재사용)·위치·홈.
+  필드별 4상태 표시(유효/`지연 N초`·미수신/미지원, 초 올림, 색 단독 구분 금지), 접근성 문구는
+  "마지막 확인 …" 형식. 구현: `TelemetryStripPresenter`(+테스트 6) · MainActivity 코알레스 렌더 ·
+  레이아웃 `telemetryStrip`(48dp, bench/device 공용). 실기 렌더·갱신 주기·모드 표시명 매핑은
+  A9-4 확인 항목.
 - 미구현: Android/MSDK 어댑터의 앱 배선·명령 기능(카메라·감독형 자동·제어권), 기체별 지원 검증, 실기.
   순수 테스트·시안·호스트 통과는 실기 작동 증거가 아니다.
