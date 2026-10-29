@@ -286,4 +286,58 @@ class ManifestBuilderTest {
         assertEquals(1000, epochs[0].get("started_at").asInt())
         assertEquals(1500, epochs[1].get("started_at").asInt())
     }
+
+    @Test
+    fun two_unknown_flight_log_required_artifacts_both_ship() {
+        // App-defined FLIGHT_LOG derivations (e.g. a bundle snapshot vs a
+        // closeout log) match neither known lineage: each must be retained
+        // under its own per-artifact lineage — one must never evict the
+        // other. Known lineages still supersede only their own lineage
+        // (covered by SessionResultTest + OperatorActionUploadTest).
+        val root = tempRoot()
+        val store = FileRcStore(root)
+        val spec = uploadSpec()
+        val boot = Fixture.uuid(12)
+        store.storeObservation(
+            observationRecord(
+                spec.flightId, boot, spec.missionRevisionId,
+                Fixture.uuid(1001), 1, 1000,
+            ),
+            boot,
+        )
+        val bytesA = "bundle-snapshot-bytes".toByteArray(Charsets.UTF_8)
+        val idA = Fixture.uuid(21)
+        store.announceArtifact(
+            artifactAnnounceRecord(
+                spec.flightId, boot, idA, bytesA,
+                sourceKind = OperatorActionArtifacts.SOURCE_KIND,
+                mediaType = "application/json",
+                required = true,
+            ),
+            boot,
+        )
+        store.writeChunk(idA, 0, bytesA)
+        val bytesB = "closeout-log-bytes".toByteArray(Charsets.UTF_8)
+        val idB = Fixture.uuid(22)
+        store.announceArtifact(
+            artifactAnnounceRecord(
+                spec.flightId, boot, idB, bytesB,
+                sourceKind = OperatorActionArtifacts.SOURCE_KIND,
+                mediaType = "application/x-ndjson",
+                required = true,
+            ),
+            boot,
+        )
+        store.writeChunk(idB, 0, bytesB)
+
+        val manifest = ManifestBuilder(store).build(spec, boot)
+        val flightLogs = manifest.get("artifacts").mapNotNull { it as? ObjectNode }
+            .filter { it.get("source_kind").asText() == OperatorActionArtifacts.SOURCE_KIND }
+        assertEquals(
+            setOf(idA, idB),
+            flightLogs.map { it.get("artifact_id").asText() }.toSet(),
+            "both unknown required FLIGHT_LOG artifacts must ship: $flightLogs",
+        )
+        assertTrue(flightLogs.all { it.get("required").asBoolean() })
+    }
 }

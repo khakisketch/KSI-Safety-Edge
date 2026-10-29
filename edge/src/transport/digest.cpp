@@ -199,6 +199,124 @@ std::string Sha256Hex(const std::uint8_t* data, std::size_t len) {
     return ToHex(digest, sizeof(digest));
 }
 
+namespace {
+
+// Streaming SHA-256 (same FIPS 180-4 core as Sha256Digest, incremental so
+// multi-MB files hash without full buffering).
+struct Sha256Stream {
+    std::uint32_t h[8] = {0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+                          0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19};
+    std::uint8_t buf[64] = {};
+    std::size_t buffered = 0;
+    std::uint64_t total = 0;
+
+    void Compress(const std::uint8_t* chunk) {
+        std::uint32_t w[64];
+        for (int i = 0; i < 16; ++i) {
+            w[i] = (static_cast<std::uint32_t>(chunk[i * 4]) << 24) |
+                   (static_cast<std::uint32_t>(chunk[i * 4 + 1]) << 16) |
+                   (static_cast<std::uint32_t>(chunk[i * 4 + 2]) << 8) |
+                   static_cast<std::uint32_t>(chunk[i * 4 + 3]);
+        }
+        for (int i = 16; i < 64; ++i) {
+            const std::uint32_t s0 = Rotr(w[i - 15], 7) ^ Rotr(w[i - 15], 18) ^
+                                     (w[i - 15] >> 3);
+            const std::uint32_t s1 = Rotr(w[i - 2], 17) ^ Rotr(w[i - 2], 19) ^
+                                     (w[i - 2] >> 10);
+            w[i] = w[i - 16] + s0 + w[i - 7] + s1;
+        }
+        std::uint32_t a = h[0], b = h[1], c = h[2], d = h[3];
+        std::uint32_t e = h[4], f = h[5], g = h[6], hh = h[7];
+        for (int i = 0; i < 64; ++i) {
+            const std::uint32_t s1 = Rotr(e, 6) ^ Rotr(e, 11) ^ Rotr(e, 25);
+            const std::uint32_t ch = (e & f) ^ (~e & g);
+            const std::uint32_t t1 = hh + s1 + ch + kSha256K[i] + w[i];
+            const std::uint32_t s0 = Rotr(a, 2) ^ Rotr(a, 13) ^ Rotr(a, 22);
+            const std::uint32_t maj = (a & b) ^ (a & c) ^ (b & c);
+            const std::uint32_t t2 = s0 + maj;
+            hh = g; g = f; f = e; e = d + t1;
+            d = c; c = b; b = a; a = t1 + t2;
+        }
+        h[0] += a; h[1] += b; h[2] += c; h[3] += d;
+        h[4] += e; h[5] += f; h[6] += g; h[7] += hh;
+    }
+
+    void Update(const std::uint8_t* data, std::size_t len) {
+        total += len;
+        while (len > 0) {
+            const std::size_t room = 64 - buffered;
+            const std::size_t take = len < room ? len : room;
+            std::memcpy(buf + buffered, data, take);
+            buffered += take;
+            data += take;
+            len -= take;
+            if (buffered == 64) {
+                Compress(buf);
+                buffered = 0;
+            }
+        }
+    }
+
+    void Final(std::uint8_t out[32]) {
+        const std::uint64_t bit_len = total * 8U;
+        std::uint8_t pad = 0x80;
+        Update(&pad, 1);
+        std::uint8_t zero = 0;
+        while (buffered != 56) {
+            Update(&zero, 1);
+        }
+        std::uint8_t len_bytes[8];
+        for (int i = 0; i < 8; ++i) {
+            len_bytes[i] = static_cast<std::uint8_t>(bit_len >> (56 - i * 8));
+        }
+        // Bypass Update: exactly 8 bytes land in a fresh block.
+        std::memcpy(buf + 56, len_bytes, 8);
+        Compress(buf);
+        for (int i = 0; i < 8; ++i) {
+            out[i * 4] = static_cast<std::uint8_t>(h[i] >> 24);
+            out[i * 4 + 1] = static_cast<std::uint8_t>(h[i] >> 16);
+            out[i * 4 + 2] = static_cast<std::uint8_t>(h[i] >> 8);
+            out[i * 4 + 3] = static_cast<std::uint8_t>(h[i]);
+        }
+    }
+};
+
+}  // namespace
+
+std::string Sha256HexOfFile(const char* path, std::string* error) {
+    auto fail = [&](const std::string& message) {
+        if (error != nullptr) *error = message;
+        return std::string();
+    };
+    if (path == nullptr || path[0] == '\0') {
+        return fail("empty file path");
+    }
+    std::FILE* file = std::fopen(path, "rb");
+    if (file == nullptr) {
+        return fail(std::string("cannot open file: ") + path);
+    }
+    Sha256Stream stream;
+    std::uint8_t chunk[65536];
+    for (;;) {
+        const std::size_t n = std::fread(chunk, 1, sizeof(chunk), file);
+        if (n > 0) {
+            stream.Update(chunk, n);
+        }
+        if (n < sizeof(chunk)) {
+            if (std::ferror(file)) {
+                std::fclose(file);
+                return fail(std::string("short read: ") + path);
+            }
+            break;
+        }
+    }
+    std::fclose(file);
+    std::uint8_t digest[32];
+    stream.Final(digest);
+    if (error != nullptr) error->clear();
+    return ToHex(digest, sizeof(digest));
+}
+
 std::string Sha256Hex(const std::string& bytes) {
     return Sha256Hex(reinterpret_cast<const std::uint8_t*>(bytes.data()),
                      bytes.size());

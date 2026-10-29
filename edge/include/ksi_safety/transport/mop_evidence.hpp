@@ -123,6 +123,53 @@ JsonValue MakeArtifactChunkPayload(const std::string& artifact_id,
                                    std::int64_t offset,
                                    const std::uint8_t* data, std::size_t len);
 
+class MopEdgeEndpoint;
+class MopLink;
+
+// Assessment delivery (Unit A closure): one sealed assessment JSON travels
+// over the EXISTING generic artifact plane (ARTIFACT_ANNOUNCE +
+// ARTIFACT_CHUNK on EVIDENCE_TRANSFER) — no new MOP message type, no
+// contract change. The RC ingest/store/manifest/Core-ingest path is fully
+// generic over artifacts, so no receiving-side contract change is needed
+// either: identifier linking (assessment_id tick/flight/boot derivation,
+// window trigger derivation) is documented on the consumer side.
+//
+// required=false: an assessment is a review aid, not L1 preservation.
+// The Core commits COMMITTED without it (optional artifacts never block),
+// and a missing assessment never flips a session to PARTIAL-by-itself.
+constexpr const char* kAssessmentSourceKind = "EDGE_ASSESSMENT";
+constexpr const char* kAssessmentMediaType =
+    "application/vnd.ksi.assessment+json";
+
+// Queues the announce + chunk envelopes for one assessment JSON. Uses the
+// caller-provided flight/boot identity (the live endpoint identity —
+// never a stale configured label); the asset id is the caller's stable
+// derivation (AutonomousProcessor::AssessmentAssetId).
+void EmitAssessmentArtifact(MopEdgeEndpoint* endpoint,
+                            const std::string& asset_id,
+                            const std::string& flight_id,
+                            const std::string& edge_boot_id,
+                            const std::string& assessment_json);
+void EmitAssessmentArtifact(MopLink* link, const std::string& asset_id,
+                            const std::string& flight_id,
+                            const std::string& edge_boot_id,
+                            const std::string& assessment_json);
+
+// Emission gate (Unit A closure): an assessment goes out only with a
+// confirmed flight identity, an installed mission (it cites the mission
+// revisions), and a journal-writable spool. One predicate, one place —
+// the device service and the host tool share it, and the host suite pins
+// the truth table. A denied assessment is gated/dropped and COUNTED by
+// the caller, never folded anywhere and never read as delivered (the
+// sealed store copy is the retention path, not the MOP send).
+struct AssessmentEmitGate {
+    bool flight_confirmed = false;
+    bool mission_installed = false;
+    bool spool_writable = false;
+};
+
+bool AssessmentEmitAllowed(const AssessmentEmitGate& gate);
+
 }  // namespace ksi::safety
 
 #endif  // KSI_SAFETY_TRANSPORT_MOP_EVIDENCE_HPP

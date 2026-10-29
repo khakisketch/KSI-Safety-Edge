@@ -20,10 +20,32 @@ class FakeEdge(
     private val seen = mutableSetOf<String>()
     private var counter = 0
     private var preparedSha: String? = null
+    private var preparedBundle: ObjectNode? = null
     private var appliedSha: String? = null
     private var appliedApplicationId: String? = null
     var running = false
     var effectiveEdgeSeq = 7L
+    /**
+     * Contract §3 runtime fields (Unit B). Null = the Edge build does not
+     * report that field (legacy path: the RC falls back to `running`).
+     * Tests set these to exercise the runtime-state-driven path; a
+     * changed [runtimeEpoch] between reports simulates an Edge restart.
+     */
+    var runtimeState: String? = null
+    var runtimeEpoch: String? = null
+    var configApplied: Boolean? = null
+    /**
+     * Explicit install-hash override (wins). When null, the fake reports
+     * the install hash of the bundle it actually received
+     * ([EffectiveConfigHash] over the PREPARE payload) — like a real Edge
+     * install — or omits the field when the received bundle is not
+     * installable (mirroring a failed install with no hash).
+     */
+    var effectiveConfigHash: String? = null
+    var processedFrameCount: Long? = null
+    var lastProcessedFrameAgeMs: Long? = null
+    var degradedReasons: List<String>? = null
+    var inputState: Map<String, String>? = null
     /** Forces a prepare rejection (digest mismatch path). */
     var corruptPrepare = false
     /** When set, the next message of this type is enqueued twice. */
@@ -79,6 +101,7 @@ class FakeEdge(
                     CanonicalJson.verifyDigest(bundle, "bundle_sha256")
                 if (digestOk && !corruptPrepare) {
                     preparedSha = bundle!!.get("bundle_sha256").asText()
+                    preparedBundle = bundle.deepCopy()
                     val reply = Mop.json.createObjectNode()
                     reply.put("bundle_sha256", preparedSha)
                     reply.put("supported", true)
@@ -125,6 +148,22 @@ class FakeEdge(
                 reply.put("edge_boot_id", bootId)
                 reply.put("running", running)
                 reply.put("effective_edge_seq", effectiveEdgeSeq)
+                runtimeState?.let { reply.put("runtime_state", it) }
+                runtimeEpoch?.let { reply.put("runtime_epoch", it) }
+                configApplied?.let { reply.put("config_applied", it) }
+                val installHash = effectiveConfigHash
+                    ?: preparedBundle?.let { EffectiveConfigHash.expectedFor(it) }
+                installHash?.let { reply.put("effective_config_hash", it) }
+                processedFrameCount?.let { reply.put("processed_frame_count", it) }
+                lastProcessedFrameAgeMs?.let { reply.put("last_processed_frame_age_ms", it) }
+                degradedReasons?.let { reasons ->
+                    val array = reply.putArray("degraded_reasons")
+                    reasons.forEach { array.add(it) }
+                }
+                inputState?.let { inputs ->
+                    val obj = reply.putObject("input_state")
+                    inputs.forEach { (key, value) -> obj.put(key, value) }
+                }
                 send("MISSION_STATUS", reply)
             }
             "SESSION_START" -> running = true

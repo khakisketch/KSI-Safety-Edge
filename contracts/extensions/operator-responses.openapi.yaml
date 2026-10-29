@@ -1,0 +1,179 @@
+openapi: 3.1.0
+info:
+  title: KSI Safety Edge API — operator-responses extension
+  version: 1.0.0
+  description: >-
+    Additive extension to contracts/openapi.yaml (which stays byte-frozen):
+    query path for in-flight operator responses (CONFIRM | HOLD |
+    ESCALATE_REQUEST) and their delivery state. Append-only: rows are never
+    updated or deleted, and Core never infers a session verdict or a safety
+    state from the presence of responses. Auth, error shape, batch
+    idempotency, and query semantics are identical to the frozen baseline:
+    bearer auth (dev static token); cross-org access returns 404 (no
+    existence leak); same-org insufficient scope returns 403; batch
+    idempotency is keyed by client_batch_id plus the canonical payload hash
+    (same id + same content is 200-idempotent, same id + different content
+    is 409). Item payloads validate against
+    ../schemas/operator-response.v1.schema.json with digests checked: a
+    delivery_state above REQUESTED without its matching proof reference is
+    a 422 validation error, never silently accepted. Reference integrity is
+    enforced against the strongest factual references available (flight
+    site, known flight sessions, known detection events / observations);
+    unknown references are accepted, cross-org matches are 404.
+servers:
+  - url: http://127.0.0.1:8000/api/v1/edge
+security:
+  - bearerAuth: []
+tags:
+  - name: responses
+paths:
+  /operator-responses:
+    post:
+      operationId: ingestOperatorResponseBatch
+      tags: [responses]
+      summary: Batch-upload operator responses (idempotent by client_batch_id + payload hash).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResponseBatchRequest'
+      responses:
+        '200':
+          description: Batch accepted durably.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAccepted'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Same client_batch_id with different content, or same response_id with different content.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/Unprocessable'
+  /flights/{flightId}/operator-responses:
+    get:
+      operationId: listOperatorResponses
+      tags: [responses]
+      summary: List a flight's operator responses in insertion order.
+      parameters:
+        - $ref: '#/components/parameters/FlightId'
+      responses:
+        '200':
+          description: Operator response list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '../schemas/operator-response.v1.schema.json'
+                required: [items]
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Development static token (KSI_DEV_TOKENS in W2).
+  parameters:
+    FlightId:
+      name: flightId
+      in: path
+      required: true
+      schema:
+        type: string
+  responses:
+    Unauthorized:
+      description: Missing or invalid bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Same-org caller lacks scope (cross-org access is 404 instead).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found, or not visible to the caller's org.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unprocessable:
+      description: Schema/domain contract violation (see details).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      additionalProperties: false
+      properties:
+        code:
+          type: string
+          minLength: 1
+        message:
+          type: string
+          minLength: 1
+        request_id:
+          type: string
+        details:
+          description: Machine-readable detail (rule codes, field paths).
+      required: [code, message]
+    BatchAccepted:
+      type: object
+      additionalProperties: false
+      properties:
+        accepted_ids:
+          type: array
+          items:
+            type: string
+        duplicate_ids:
+          type: array
+          items:
+            type: string
+        durable:
+          type: boolean
+          const: true
+        server_batch_id:
+          type: string
+      required: [accepted_ids, duplicate_ids, durable, server_batch_id]
+    BatchRequestBase:
+      type: object
+      properties:
+        client_batch_id:
+          type: string
+          minLength: 1
+    ResponseBatchRequest:
+      allOf:
+        - $ref: '#/components/schemas/BatchRequestBase'
+        - type: object
+          additionalProperties: false
+          properties:
+            client_batch_id:
+              type: string
+              minLength: 1
+            items:
+              type: array
+              items:
+                $ref: '../schemas/operator-response.v1.schema.json'
+          required: [client_batch_id, items]

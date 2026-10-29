@@ -46,6 +46,34 @@ object OperatorStatus {
         val coreConfigured: Boolean,
         val recorderWrittenFrames: Long? = null,
         val recorderHasWriteFailure: Boolean? = null,
+        // -- Edge runtime facts (2026-10-21 contract §2/§5) -----------------
+        // All optional (default = never reported): absent means "모름" and
+        // renders "Edge 실행 상태 미확인", never false/0. The state wording
+        // itself comes from [EdgeRuntimePanel.stateLine] (single source).
+        /** True once a MISSION_STATUS with runtime fields arrived. */
+        val edgeRuntimeSeen: Boolean = false,
+        /** EdgeRuntimeState name ("RUNNING", …) or null when unreported. */
+        val edgeRuntimeState: String? = null,
+        val edgeProcessedFrames: Long? = null,
+        val edgeDegradedReasons: List<String> = emptyList(),
+        val edgeInputState: Map<String, String> = emptyMap(),
+        /** False = link down (show link loss); null = unknown, never guessed. */
+        val edgeLinkUp: Boolean? = null,
+        // "준비 미완" 알림 (AT-J1). null = 아직 판정하지 않음(경고하지 않는다).
+        // 세 사실(동기화·번들 검증·Edge 적용)을 합친 "준비 완료"를 추정하지 않는다.
+        val preparationNotice: PreparationReadiness.Notice? = null,
+        /** RC receipt time of the last RUNNING/DEGRADED report. */
+        val edgeLastConfirmedUtc: String? = null,
+        // -- Local-storage availability (fault containment) -----------------
+        // False when the durable KSI store failed to open (corrupt counter,
+        // unusable root): KSI facts are then "상태 미확인", never healthy
+        // and never zero. Physical link/aircraft/video facts below are
+        // independent and still render. Defaults keep existing callers on
+        // the healthy path.
+        /** False when local KSI persistence/observation is unusable. */
+        val storageAvailable: Boolean = true,
+        /** Captured open failure detail (shown with the storage item). */
+        val storageError: String? = null,
     )
 
     /** Heartbeat older than this shows "지연" (indicator only). */
@@ -54,11 +82,45 @@ object OperatorStatus {
     /** Observation older than this shows "지연" (indicator only). */
     const val OBSERVATION_STALE_MS = 5_000L
 
-    fun evaluate(input: Input): List<Item> {
+    /**
+     * Degraded evaluation (fault containment): the durable KSI store is
+     * down, so every KSI-derived section reads "상태 미확인" — never
+     * healthy, never zero. Physical link/aircraft/video facts are
+     * independent and still render from the same helpers as the healthy
+     * path; the storage PROBLEM item leads so the UI surfaces it first.
+     */
+    private fun evaluateDegraded(input: Input): List<Item> {
         val items = mutableListOf<Item>()
+        val detail = buildString {
+            append(StorageHealth.UNAVAILABLE_DETAIL)
+            if (!input.storageError.isNullOrBlank()) append(" · ${input.storageError}")
+        }
+        items += Item(
+            Severity.PROBLEM,
+            StorageHealth.UNAVAILABLE_TITLE,
+            detail,
+            StorageHealth.UNAVAILABLE_ACTION,
+        )
+        flightItem(input.hasActiveFlight)?.let { items += it }
+        linkItem(input)?.let { items += it }
+        aircraftItem(input.aircraftConnected)?.let { items += it }
+        internetItem(input.internet)?.let { items += it }
+        recorderItem(input)?.let { items += it }
+        items += Item(
+            Severity.INFO, "로컬 증거 상태 미확인",
+            "저장소 오류로 확인 불가 — 0건이 아님",
+            null,
+        )
+        items += Item(
+            Severity.INFO, "Edge 실행 상태 미확인",
+            "저장소 오류로 확인 불가 — 부재는 false/0이 아님",
+            StorageHealth.UNAVAILABLE_ACTION,
+        )
+        return items
+    }
 
-        // 1. Flight.
-        items += if (!input.hasActiveFlight) {
+    private fun flightItem(hasActiveFlight: Boolean): Item? =
+        if (!hasActiveFlight) {
             Item(
                 Severity.INFO, "비행 없음",
                 "임무 동기화 → 번들 선택 → 비행 시작 순서",
@@ -68,26 +130,27 @@ object OperatorStatus {
             Item(Severity.INFO, "비행 진행 중", "", null)
         }
 
+    private fun linkItem(input: Input): Item? {
         // 2. MOP link (+ heartbeat freshness only while a flight exists).
         val sim = if (input.linkSimulated) " [SIMULATED]" else ""
-        when (input.linkState) {
+        return when (input.linkState) {
             "CONNECTED" -> {
                 val age = input.mopHeartbeatAgeMs
                 when {
                     !input.hasActiveFlight || age == null ->
-                        items += Item(
+                        Item(
                             Severity.INFO, "MOP 연결$sim",
                             if (input.hasActiveFlight) "하트비트 미수신" else "",
                             null,
                         )
                     age > HEARTBEAT_STALE_MS ->
-                        items += Item(
+                        Item(
                             Severity.ATTENTION, "기체 하트비트 지연$sim",
                             "${age / 1000}s",
                             "Manifold 상태 확인",
                         )
                     else ->
-                        items += Item(
+                        Item(
                             Severity.INFO, "MOP 정상$sim",
                             "하트비트 ${age / 1000}s 전",
                             null,
@@ -95,17 +158,18 @@ object OperatorStatus {
                 }
             }
             "CONNECTING" ->
-                items += Item(Severity.ATTENTION, "MOP 연결 중$sim", "", null)
+                Item(Severity.ATTENTION, "MOP 연결 중$sim", "", null)
             else ->
-                items += Item(
+                Item(
                     Severity.PROBLEM, "MOP 링크 끊김$sim",
                     "",
                     "링크 연결 후 재전송 확인",
                 )
         }
+    }
 
-        // 3. Aircraft connection (independent fact; null = cannot report).
-        items += when (input.aircraftConnected) {
+    private fun aircraftItem(aircraftConnected: Boolean?): Item? =
+        when (aircraftConnected) {
             true -> Item(Severity.INFO, "기체 연결", "", null)
             false -> Item(Severity.ATTENTION, "기체 미연결", "", null)
             null -> Item(
@@ -115,50 +179,83 @@ object OperatorStatus {
             )
         }
 
-        // 4. Internet (offline is NORMAL for this product).
-        when (input.internet) {
+    private fun internetItem(internet: String): Item? =
+        when (internet) {
             "no internet", "none" ->
-                items += Item(Severity.INFO, "인터넷 없음", "오프라인 기록 유지", null)
+                Item(Severity.INFO, "인터넷 없음", "오프라인 기록 유지", null)
             "connected (unvalidated)" ->
-                items += Item(
+                Item(
                     Severity.INFO, "인터넷 미검증",
                     "동기화가 지연될 수 있음",
                     null,
                 )
+            else -> null
         }
 
-        // 5. Recording (bench = no recorder; a fake can never record).
+    private fun recorderItem(input: Input): Item? =
         when (input.recorderState) {
-            null -> items += Item(
+            null -> Item(
                 Severity.INFO, "레코더 없음",
                 "벤치 빌드(가짜 녹화 없음)",
                 null,
             )
             "RECORDING" -> when {
-                input.recorderHasWriteFailure == true -> items += Item(
+                input.recorderHasWriteFailure == true -> Item(
                     Severity.PROBLEM, "녹화 오류",
                     "일부 구간 저장 실패 · 이후 구간 재시도 중",
                     "로그 확인",
                 )
-                input.recorderWrittenFrames == 0L -> items += Item(
+                input.recorderWrittenFrames == 0L -> Item(
                     Severity.INFO, "녹화 입력 대기", "기록 요청됨 · 저장된 영상 프레임 없음", null,
                 )
-                else -> items += Item(Severity.INFO, "영상 녹화 중",
+                else -> Item(Severity.INFO, "영상 녹화 중",
                     if (input.recorderWrittenFrames == null) "영상 저장 진행은 미확인" else "", null)
             }
-            "ERROR" -> items += Item(
+            "ERROR" -> Item(
                 Severity.PROBLEM, "녹화 오류",
                 "불완전 .tmp는 증거가 되지 않음",
                 "로그 확인",
             )
             else -> if (input.hasActiveFlight) {
-                items += Item(
+                Item(
                     Severity.ATTENTION, "녹화 대기",
                     "",
                     "비행 시작 시 자동 시작; 계속 대기면 링크 확인",
                 )
+            } else {
+                null
             }
         }
+
+    fun evaluate(input: Input): List<Item> {
+        if (!input.storageAvailable) return evaluateDegraded(input)
+        val items = mutableListOf<Item>()
+
+        // 1. Flight.
+        flightItem(input.hasActiveFlight)?.let { items += it }
+
+        // 1b. Preparation: an active session whose preparation is not
+        // confirmed says so — by name, never as a merged "완료".
+        input.preparationNotice?.takeIf { it.show }?.let { notice ->
+            items += Item(
+                Severity.ATTENTION,
+                notice.label,
+                notice.detail,
+                notice.action,
+            )
+        }
+
+        // 2. MOP link (+ heartbeat freshness only while a flight exists).
+        linkItem(input)?.let { items += it }
+
+        // 3. Aircraft connection (independent fact; null = cannot report).
+        aircraftItem(input.aircraftConnected)?.let { items += it }
+
+        // 4. Internet (offline is NORMAL for this product).
+        internetItem(input.internet)?.let { items += it }
+
+        // 5. Recording (bench = no recorder; a fake can never record).
+        recorderItem(input)?.let { items += it }
 
         // 6. Evidence / sync (local facts only; server state is never guessed).
         when {
@@ -238,6 +335,70 @@ object OperatorStatus {
                     null,
                 )
             }
+        }
+
+        // 8. Edge runtime facts (2026-10-21 contract §2/§5): reported by
+        // the Edge, never inferred from ACKs or the legacy running bool.
+        // Absent fields render "Edge 실행 상태 미확인" — never 0/없음.
+        if (!input.hasActiveFlight) {
+            items += Item(
+                Severity.INFO, "Edge 실행 상태 미확인",
+                "활성 세션 없음 · Edge 보고 대기",
+                null,
+            )
+        } else if (!input.edgeRuntimeSeen && input.edgeRuntimeState == null) {
+            items += Item(
+                Severity.INFO, "Edge 실행 상태 미확인",
+                "Edge 보고 없음 · 부재는 false/0이 아님",
+                "Edge 보고 후 MISSION_STATUS 확인",
+            )
+        } else {
+            val parsed = runCatching {
+                ksi.rc.EdgeRuntimeState.valueOf(input.edgeRuntimeState ?: "UNKNOWN")
+            }.getOrDefault(ksi.rc.EdgeRuntimeState.UNKNOWN)
+            val label = EdgeRuntimePanel.stateLine(
+                parsed,
+                input.edgeProcessedFrames,
+                input.edgeDegradedReasons,
+            )
+            val severity = when (parsed) {
+                ksi.rc.EdgeRuntimeState.DEGRADED -> Severity.ATTENTION
+                else -> Severity.INFO
+            }
+            val detail = buildString {
+                append(
+                    if (input.edgeProcessedFrames != null) {
+                        "처리 ${input.edgeProcessedFrames}프레임"
+                    } else {
+                        "처리 수 미확인"
+                    },
+                )
+                if (input.edgeDegradedReasons.isNotEmpty()) {
+                    append(" · ${input.edgeDegradedReasons.joinToString(", ")}")
+                }
+                if (input.edgeInputState.isNotEmpty()) {
+                    append(" · 입력 ${input.edgeInputState.entries.joinToString(", ") { "${it.key}=${it.value}" }}")
+                }
+            }
+            items += Item(severity, label, detail, null)
+        }
+        if (input.hasActiveFlight && input.edgeLinkUp == false) {
+            items += Item(
+                Severity.PROBLEM, "Edge 통신 단절",
+                "마지막 확인 실행 시각 ${input.edgeLastConfirmedUtc ?: "미확인"} · " +
+                    "현재 상태를 정상으로 추정하지 않음",
+                "링크 복구 후 MISSION_STATUS 대조",
+            )
+        }
+        if (input.hasActiveFlight && input.edgeDegradedReasons.any {
+                it == "video_input_lost" || it == "video_input_stale"
+            }
+        ) {
+            items += Item(
+                Severity.ATTENTION, "영상 입력 단절 · 관측 저하",
+                input.edgeDegradedReasons.joinToString(", "),
+                "영상 입력·Edge 상태 확인",
+            )
         }
 
         return items

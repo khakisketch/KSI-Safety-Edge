@@ -152,20 +152,50 @@ bool Utf16Less(const std::string& a, const std::string& b) {
 
 // --- ES6 number formatting (RFC 8785 §3.2.2.3) ------------------------------
 
-// std::to_chars yields the shortest round-trip digits (same digit sequence
-// as the ES6 algorithm); this rewrites only the NOTATION to ECMAScript
-// Number::toString rules.
+// Shortest round-trip digits, WITHOUT std::to_chars for floating point.
+//
+// WHY: std::to_chars(double) needs GCC 11+, but the Manifold 3 toolchain is
+// GCC 9.4 / clang 8 — the device could not build this file at all.
+//
+// The algorithm is the ES6 one (RFC 8785 §3.2.2.3), the same rule the Python
+// (rfc8785) and Kotlin (JCS) sides implement: find the smallest number of
+// significant digits k (1..17) whose decimal form reads back as the very same
+// double, and among those the value closest to it (ties to even — which is
+// what printf's "%.*e" does). The digit sequence and exponent are then
+// rewritten to ECMAScript Number::toString notation below.
+//
+// NOTE: GCC's std::to_chars is NOT always shortest (e.g. it prints
+// 1234567890123456768 for 1.2345678901234568e18 where ES6 requires
+// 1234567890123456800). This implementation follows ES6, so the C++ side now
+// agrees with the Python/Kotlin sides on those values instead of diverging.
+std::string ShortestRoundTrip(double value) {
+    for (int digits = 1; digits <= 17; ++digits) {
+        char buffer[64];
+        const int written = std::snprintf(buffer, sizeof(buffer), "%.*e",
+                                          digits - 1, value);
+        if (written <= 0 || static_cast<std::size_t>(written) >= sizeof(buffer)) {
+            continue;
+        }
+        if (std::strtod(buffer, nullptr) == value) {
+            return std::string(buffer, static_cast<std::size_t>(written));
+        }
+    }
+    char buffer[64];
+    const int written = std::snprintf(buffer, sizeof(buffer), "%.17e", value);
+    if (written <= 0 || static_cast<std::size_t>(written) >= sizeof(buffer)) {
+        throw std::invalid_argument("number formatting failed");
+    }
+    return std::string(buffer, static_cast<std::size_t>(written));
+}
+
+// The digits come from the shortest round-trip form; only the NOTATION is
+// rewritten here to ECMAScript Number::toString rules (RFC 8785 §3.2.2.3).
 std::string FormatEs6Double(double value) {
     if (std::isnan(value) || std::isinf(value)) {
         throw std::invalid_argument("non-finite number is not JSON");
     }
     if (value == 0.0) return "0";
-    char buffer[64];
-    const auto result = std::to_chars(buffer, buffer + sizeof(buffer), value);
-    if (result.ec != std::errc()) {
-        throw std::invalid_argument("number formatting failed");
-    }
-    const std::string text(buffer, result.ptr);
+    const std::string text = ShortestRoundTrip(value);
     const bool negative = text[0] == '-';
     const std::size_t start = negative ? 1 : 0;
     std::string digits;

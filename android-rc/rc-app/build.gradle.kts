@@ -26,15 +26,34 @@ android {
         applicationId = "ksi.safetyedge.rc"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.4.0-a4"
+        // G7 version policy: versionCode is monotonic (+1 per release, never
+        // reused or decreased — required for upgrade/rollback ordering);
+        // versionName is semver-ish with a build suffix (e.g. "0.4.0-a4").
+        // Bump both together on every release candidate; the release scrub
+        // (scripts/release_scrub_check.sh) records them in CI logs.
+        versionCode = 16
+        versionName = "0.4.0-a19"
+        // The DJI app key is injected from local.properties at BUILD time
+        // and never committed. Every variant needs a value for the manifest
+        // placeholder (bench = blank => the SDK stays uninitialised and the
+        // runtime says so honestly); the device flavour overrides it.
+        manifestPlaceholders["djiApiKey"] = ""
     }
 
     // A9: bench = dev host with fake ports (no DJI SDK, frozen pipeline);
     // device = RC build with the real DJI MSDK adapters (rc-msdk).
     flavorDimensions += "platform"
     productFlavors {
-        create("bench") { dimension = "platform" }
+        create("bench") {
+            dimension = "platform"
+            // A separate sandbox: render fixtures can never share the RC
+            // operator's settings, flight records or evidence directory.
+            applicationIdSuffix = ".bench"
+            // Opt-in isolated UI trial; preserves an existing bench session too.
+            if (providers.gradleProperty("missionPreview").orNull == "true") {
+                applicationIdSuffix = ".bench.mission"
+            }
+        }
         create("device") {
             dimension = "platform"
             manifestPlaceholders["djiApiKey"] = djiApiKey

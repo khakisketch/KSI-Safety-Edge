@@ -5,6 +5,12 @@
     <!-- Field connectivity: office Wi-Fi sync + on-device status checks. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- D2: GPS 현장 추천(선택 기능).
+         위치 권한은 DJI MSDK AAR이 이미 선언한다(ACCESS_FINE_LOCATION/COARSE_LOCATION).
+         여기서 다시 선언하면 권한 주체가 둘이 되어 "앱이 요청하지 않았는데 부여된" 상태가 된다
+         (실기기에서 확인: pm revoke가 성공해도 granted로 남았다).
+         그래서 앱은 권한을 **요청만** 하지, 선언하지 않는다.
+         거부는 추천만 없는 것이고 비행·AI 관측·기록은 계속 동작한다. -->
 
     <application
         android:name=".RcApp"
@@ -12,14 +18,24 @@
         android:theme="@style/Theme.KsiRc"
         android:supportsRtl="true"
         android:allowBackup="false"
-        android:usesCleartextTraffic="true"
-        android:networkSecurityConfig="@xml/network_security_config"
-        tools:replace="android:usesCleartextTraffic">
-        <!-- cleartext: dev/field-laptop Core over plain HTTP (A4). The DJI
-             AAR declares false, so this explicit override is required for
-             the device flavor too; the production Core endpoint must be
-             https (pre-deployment security gate, recorded in the ledger).
-             tools:replace is scoped to THIS attribute. -->
+        android:networkSecurityConfig="@xml/network_security_config">
+        <!-- Cleartext: the release default is BLOCKED (src/main/res/xml/
+             network_security_config.xml, cleartextTrafficPermitted=false) and
+             the DJI AAR already declares usesCleartextTraffic=false, so this
+             manifest does NOT override it. Dev/field-laptop Core over plain
+             HTTP is allowed only in DEBUG builds, via the src/debug manifest
+             override. The production Core endpoint must be HTTPS
+             (pre-deployment security gate G1, recorded in the ledger). -->
+        <!-- DJI developer app key (A9). Injected at build time from
+             local.properties (`dji.apiKey`); never committed, never typed
+             here. Without this declaration the MSDK cannot initialise and
+             the app reported "앱 키 미설치" on the RC even though the key
+             WAS present in the build. -->
+        <meta-data
+            android:name="com.dji.sdk.API_KEY"
+            android:value="${djiApiKey}"
+            tools:replace="android:value" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

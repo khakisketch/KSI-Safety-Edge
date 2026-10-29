@@ -1,6 +1,8 @@
 package ksi.safetyedge.rc
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import ksi.rc.SyncOutcome
 
@@ -67,6 +69,48 @@ class SyncWorkerDecisionTest {
                 pendingAnnotations = 0,
             ),
         )
+    }
+
+    @Test
+    fun pre_check_keeps_sync_alive_for_pending_structured_responses() {
+        // LATE STRUCTURED RESPONSE regression: artifacts fully synced but a
+        // linked response still lacks its durable receipt -> must PROCEED,
+        // or the artifact-only short-circuit strands it after COMMITTED.
+        assertEquals(
+            SyncWorkerDecision.Pre.PROCEED,
+            SyncWorkerDecision.preCheck(
+                coreConfigured = true, flightExists = true,
+                artifactCount = 3, artifactsAllSynced = true,
+                pendingAnnotations = 0, pendingResponses = 1,
+            ),
+        )
+        assertEquals(
+            SyncWorkerDecision.Pre.ALREADY_SYNCED,
+            SyncWorkerDecision.preCheck(
+                coreConfigured = true, flightExists = true,
+                artifactCount = 3, artifactsAllSynced = true,
+                pendingAnnotations = 0, pendingResponses = 0,
+            ),
+        )
+        // A response receipt pending on an otherwise unknown flight still
+        // succeeds without retrying (nothing representable to sync).
+        assertEquals(
+            SyncWorkerDecision.Pre.NOTHING_TO_DO,
+            SyncWorkerDecision.preCheck(
+                coreConfigured = false, flightExists = true,
+                artifactCount = 3, artifactsAllSynced = true,
+                pendingAnnotations = 0, pendingResponses = 2,
+            ),
+        )
+    }
+
+    @Test
+    fun should_enqueue_covers_late_responses() {
+        assertTrue(SyncWorkerDecision.shouldEnqueue(true, false, false))
+        assertTrue(SyncWorkerDecision.shouldEnqueue(false, true, false))
+        // Late structured response with everything else synced: re-queue.
+        assertTrue(SyncWorkerDecision.shouldEnqueue(false, false, true))
+        assertFalse(SyncWorkerDecision.shouldEnqueue(false, false, false))
     }
 
     @Test

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="workspaceHeaderContext" />
+    <item type="id" name="workspaceHeaderConnection" />
+    <item type="id" name="workspaceHudNumbers" />
+    <item type="id" name="workspaceMissionOpenPreparation" />
+    <item type="id" name="workspaceMissionBack" />
+    <item type="id" name="workspaceMissionSummary" />
+    <item type="id" name="workspaceMissionSteps" />
+    <item type="id" name="workspaceMissionRequestNote" />
+    <item type="id" name="workspaceMissionPending" />
+    <item type="id" name="workspaceMissionBoundPlan" />
+    <item type="id" name="workspaceMissionDetails" />
+    <item type="id" name="workspaceMissionMap" />
+    <item type="id" name="workspaceReviewHeading" />
+    <item type="id" name="workspaceZoomIn" />
+    <item type="id" name="workspaceZoomOut" />
+    <item type="id" name="workspaceZoomReset" />
+    <item type="id" name="workspaceZoomValue" />
+    <item type="id" name="workspaceEvidenceExpand" />
+    <item type="id" name="workspaceCustodyEdge" />
+    <item type="id" name="workspaceCustodyRc" />
+    <item type="id" name="workspaceCustodyCore" />
+    <item type="id" name="workspaceSettingsConnections" />
+    <item type="id" name="workspaceSettingsOperator" />
+    <item type="id" name="workspaceSettingsDisplay" />
+    <item type="id" name="workspaceSettingsDiagnostics" />
+    <item type="id" name="workspaceSettingsContent" />
+    <item type="id" name="workspaceCoreEditorToggle" />
+    <item type="id" name="workspaceImageWrapper" />
+    <item type="id" name="workspaceObservationRecovery" />
+    <item type="id" name="workspaceReviewContext" />
+    <item type="id" name="workspaceMissionManage" />
+    <item type="id" name="workspaceVideoRecover" />
+    <item type="id" name="workspaceFlightTools" />
+    <item type="id" name="workspaceFlightLens" />
+    <item type="id" name="workspaceCameraFeedback" />
+    <item type="id" name="workspaceFlightMap" />
+    <item type="id" name="workspaceFlightHud" />
+    <item type="id" name="workspaceHudStyleBare" />
+    <item type="id" name="workspaceHudStyleScale" />
+    <item type="id" name="workspaceHudStyleReticle" />
+    <item type="id" name="workspaceFlightDetectionInfo" />
+    <item type="id" name="workspaceFlightCameraInfo" />
+    <item type="id" name="workspaceFlightStateInfo" />
+</resources>

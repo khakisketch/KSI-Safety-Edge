@@ -94,4 +94,13 @@ class SyncPolicyTest {
         assertFalse(SyncPolicy.shouldSkipSync(0, false, 0))
         assertFalse(SyncPolicy.shouldSkipSync(0, true, 0))
     }
+
+    @Test
+    fun skip_requires_no_pending_structured_responses() {
+        // A late field response after artifact COMMITTED keeps the sync
+        // alive: upload success must never read as field-request delivery.
+        assertFalse(SyncPolicy.shouldSkipSync(3, true, 0, pendingResponses = 1))
+        assertFalse(SyncPolicy.shouldSkipSync(3, true, 1, pendingResponses = 1))
+        assertTrue(SyncPolicy.shouldSkipSync(3, true, 0, pendingResponses = 0))
+    }
 }

@@ -17,10 +17,13 @@
 // hardcodes none). Exit codes: 0 ok, 1 runtime failure, 2 usage.
 
 #include "ksi_safety/perception/dfine_detector_port.hpp"
+#include "ksi_safety/evidence/recorder.hpp"
+#include "ksi_safety/observation/autonomous_processor.hpp"
 #include "ksi_safety/replay/frame_source.hpp"
 #include "ksi_safety/replay/policy_file.hpp"
 #include "ksi_safety/replay/telemetry_source.hpp"
 #include "ksi_safety/runtime/session_runner.hpp"
+#include "ksi_safety/transport/digest.hpp"
 
 // The header is stub-compatible without TensorRT (Available()==false).
 #include "ksi_safety/perception/tensorrt_runtime.hpp"
@@ -86,12 +89,40 @@ struct Args {
     double zone_envelope_m = 1.0;
     bool null_detector = false;
     bool stage_times = false;
+    // Source-evidence directory: when set, the driver keeps the source frame
+    // of every MATERIAL observation and seals one immutable revision at the
+    // end. Same capture code as the device app.
+    std::string evidence_dir;
+    // Synthetic detector: reports one detection per frame so the EVIDENCE
+    // CHAIN can be exercised without an engine or real imagery. Never a
+    // detection-performance claim.
+    bool stub_detector = false;
+    // Blank (clean negative, kOk + zero detections) every Nth stub frame
+    // (0 = never blank). Lets one host run mix trigger and blank frames.
+    long long stub_blank_every = 0;
+    // Unit A passive autonomy (opt-in, off by default): the SAME shared
+    // wiring the device app uses (ProcessSharedTick), sealing machine
+    // assessments + pre/post source windows as versioned artifacts.
+    // [SIMULATED] when combined with --stub-detector or --null-detector.
+    std::string autonomy_evidence_dir;
+    ksi::safety::SourceAttentionPolicy source_attention;
+    long long autonomy_pre_frames = 0;
+    long long autonomy_post_frames = 1;
+    long long autonomy_window_deadline_ms = 500;
+    long long autonomy_window_min_interval_ms = 1000;
+    long long autonomy_capacity_bytes = 8LL * 1024 * 1024;
+    std::string autonomy_lens_id = "wide";
+    bool camera_manual = false;
+    std::string mission_revision = "replay-mis";
+    std::string policy_revision = "replay-pol";
 };
 
 void PrintUsage() {
     std::fprintf(stderr,
                  "usage: replay_run --manifest PATH [--out PATH] "
-                 "[--null-detector]\n"
+                 "[--null-detector] [--stub-detector] "
+                 "[--stub-blank-every N]\n"
+                 "       [--evidence-dir DIR]\n"
                  "       [--engine PATH] [--model-id ID] [--model-digest D]\n"
                  "       [--policy PATH] [--score-threshold F] [--stage-times]\n"
                  "       [--detect-every N] [--max-receive-gap-ms N] "
@@ -99,7 +130,15 @@ void PrintUsage() {
                  "       [--tracker-iou F] [--tracker-max-age N] "
                  "[--tracker-min-hits N]\n"
                  "       [--session-gap-ms N] [--zone-envelope-m F]\n"
-                 "       [--flight-id ID] [--boot-id ID] [--stream-id ID]\n");
+                 "       [--flight-id ID] [--boot-id ID] [--stream-id ID]\n"
+                 "       [--autonomy-evidence-dir DIR] [--autonomy-pre N] "
+                 "       [--autonomy-post N]\n"
+                 "       [--autonomy-window-deadline-ms N] "
+                 "       [--autonomy-window-min-interval-ms N]\n"
+                 "       [--autonomy-capacity-bytes N]\n"
+                  "       [--source-attention-policy KEY=VALUE,...]\n"
+                  "       [--autonomy-lens-id ID] [--camera-manual] "
+                 "       [--mission-revision ID] [--policy-revision ID]\n");
 }
 
 bool ParseLongLong(const char* text, long long* out) {
@@ -185,6 +224,57 @@ bool ParseArgs(int argc, char** argv, Args* args) {
             args->null_detector = true;
         } else if (key == "--stage-times") {
             args->stage_times = true;
+        } else if (key == "--stub-detector") {
+            args->stub_detector = true;
+        } else if (key == "--stub-blank-every" && has_value) {
+            if (!ParseLongLong(argv[++i], &args->stub_blank_every)) {
+                return false;
+            }
+        } else if (key == "--evidence-dir" && has_value) {
+            args->evidence_dir = argv[++i];
+        } else if (key == "--source-attention-policy" && has_value) {
+            std::string error;
+            if (!ksi::safety::ParseSourceAttentionPolicy(argv[++i], &args->source_attention, &error)) {
+                std::fprintf(stderr, "%s\n", error.c_str());
+                return false;
+            }
+        } else if (key == "--autonomy-evidence-dir" && has_value) {
+            args->autonomy_evidence_dir = argv[++i];
+        } else if (key == "--autonomy-pre" && has_value) {
+            if (!ParseLongLong(argv[++i], &args->autonomy_pre_frames)) {
+                return false;
+            }
+        } else if (key == "--autonomy-post" && has_value) {
+            if (!ParseLongLong(argv[++i], &args->autonomy_post_frames)) {
+                return false;
+            }
+        } else if (key == "--autonomy-window-deadline-ms" && has_value) {
+            if (!ParseLongLong(argv[++i],
+                               &args->autonomy_window_deadline_ms)) {
+                return false;
+            }
+        } else if (key == "--autonomy-window-min-interval-ms" && has_value) {
+            if (!ParseLongLong(argv[++i],
+                               &args->autonomy_window_min_interval_ms) ||
+                args->autonomy_window_min_interval_ms < 0 ||
+                args->autonomy_window_min_interval_ms > 3600000) {
+                std::fprintf(stderr,
+                             "--autonomy-window-min-interval-ms must be "
+                             "0..3600000 (0 = no interval bound)\n");
+                return false;
+            }
+        } else if (key == "--autonomy-capacity-bytes" && has_value) {
+            if (!ParseLongLong(argv[++i], &args->autonomy_capacity_bytes)) {
+                return false;
+            }
+        } else if (key == "--autonomy-lens-id" && has_value) {
+            args->autonomy_lens_id = argv[++i];
+        } else if (key == "--camera-manual") {
+            args->camera_manual = true;
+        } else if (key == "--mission-revision" && has_value) {
+            args->mission_revision = argv[++i];
+        } else if (key == "--policy-revision" && has_value) {
+            args->policy_revision = argv[++i];
         } else {
             std::fprintf(stderr, "unknown or incomplete argument: %s\n",
                          key.c_str());
@@ -397,6 +487,11 @@ int main(int argc, char** argv) {
         PrintUsage();
         return 2;
     }
+    if (args.source_attention.enabled &&
+        (args.autonomy_evidence_dir.empty() || args.autonomy_capacity_bytes <= 0)) {
+        std::fprintf(stderr, "source attention requires non-empty --autonomy-evidence-dir and finite positive capacity\n");
+        return 2;
+    }
 
     ClockRegistry clocks;
     clocks.Verify("host_mono", TimeSourceKind::kHostReceive,
@@ -417,6 +512,43 @@ int main(int argc, char** argv) {
 
     DetectorPort* detector = nullptr;
     std::unique_ptr<DfineDetectorPort> dfine_port;
+    // Synthetic detector: one detection per frame, so the evidence chain
+    // (frame -> observation -> source asset -> revision -> collection ->
+    // receipt) can be exercised with no engine and no real imagery.
+    // [SIMULATED] — never a detection-performance claim.
+    class StubDetector : public DetectorPort {
+     public:
+      explicit StubDetector(long long blank_every)
+          : blank_every_(blank_every) {}
+      ksi::safety::DetectionBatch Detect(const ksi::safety::FramePacket& frame) override {
+        ksi::safety::DetectionBatch batch;
+        batch.status = ksi::safety::DetectionStatus::kOk;
+        ++frames_;
+        // Clean negatives mixed into the synthetic stream: kOk with zero
+        // detections (evidence), never a gap.
+        if (blank_every_ > 0 && frames_ % blank_every_ == 0) return batch;
+        ksi::safety::Detection detection;
+        detection.class_id = 0;  // person
+        detection.score = 0.99f;
+        detection.x_min = 0.25F * frame.metadata.width;
+        detection.y_min = 0.25F * frame.metadata.height;
+        detection.x_max = 0.75F * frame.metadata.width;
+        detection.y_max = 0.75F * frame.metadata.height;
+        batch.detections.push_back(detection);
+        return batch;
+      }
+     private:
+      long long blank_every_ = 0;
+      long long frames_ = 0;
+    };
+    std::unique_ptr<StubDetector> stub_port;
+    if (args.stub_detector) {
+        std::fprintf(stderr,
+                     "[SIMULATED] stub detector: detections are synthetic — "
+                     "not a detection-performance claim\n");
+        stub_port = std::make_unique<StubDetector>(args.stub_blank_every);
+        detector = stub_port.get();
+    }
     TensorRtRuntime::StageTimesMs engine_totals{};
     long long engine_runs = 0;
 #if defined(KSI_SAFETY_EDGE_HAS_TENSORRT)
@@ -463,6 +595,18 @@ int main(int argc, char** argv) {
         detector = nullptr;
     }
 
+    // Source-evidence recorder: the same capture code the device app uses.
+    std::unique_ptr<ksi::safety::SourceEvidenceRecorder> recorder;
+    if (!args.evidence_dir.empty()) {
+        recorder = std::make_unique<ksi::safety::SourceEvidenceRecorder>(
+            args.evidence_dir, 0 /* unbounded: the host has the space */);
+        if (!recorder->ok()) {
+            std::fprintf(stderr, "evidence store failed to open: %s\n",
+                         recorder->last_error().c_str());
+            return 1;
+        }
+    }
+
     ksi::safety::ReplayPolicy policy;
     if (!args.policy_path.empty()) {
         std::string policy_error;
@@ -498,6 +642,78 @@ int main(int argc, char** argv) {
                          policy.zone_rules, policy.zones, profile);
     ReplayTelemetrySource telemetry(frames.manifest(), "host_mono", clocks);
 
+    // Unit A passive autonomy (opt-in only; default off). Explicit
+    // APPLY/START on the shared runner, then every tick goes through the
+    // SAME ProcessSharedTick wiring the device app uses.
+    std::unique_ptr<ksi::safety::AutonomousProcessor> autonomy;
+    if (!args.autonomy_evidence_dir.empty()) {
+        std::string hash_error;
+        std::string config_hash = "no-policy";
+        if (!args.policy_path.empty()) {
+            const std::string hashed =
+                ksi::safety::Sha256HexOfFile(args.policy_path.c_str(),
+                                             &hash_error);
+            if (!hashed.empty()) config_hash = "sha256:" + hashed;
+        }
+        if (!runner.ApplyRuntimeConfig(policy.proximity_rules,
+                                       policy.zone_rules, policy.zones,
+                                       config_hash, {})
+                     .ok) {
+            std::fprintf(stderr, "autonomy install refused\n");
+            return 1;
+        }
+        runner.RequestStart();
+        ksi::safety::AutonomousConfig autonomy_config;
+        autonomy_config.enabled = true;
+        autonomy_config.source_attention = args.source_attention;
+        autonomy_config.ring.max_frames = 64;
+        autonomy_config.ring.max_bytes = 64ULL * 1024 * 1024;
+        autonomy_config.ring.pre_frames =
+            static_cast<std::size_t>(args.autonomy_pre_frames);
+        autonomy_config.ring.post_frames =
+            static_cast<std::size_t>(args.autonomy_post_frames);
+        autonomy_config.ring.window_deadline_ns =
+            args.autonomy_window_deadline_ms * kNsPerMs;
+        autonomy_config.window_min_interval_ns =
+            args.autonomy_window_min_interval_ms * kNsPerMs;
+        autonomy_config.store_capacity_bytes =
+            static_cast<std::uint64_t>(args.autonomy_capacity_bytes);
+        autonomy_config.evidence_dir = args.autonomy_evidence_dir;
+        autonomy_config.flight_id = args.flight_id;
+        autonomy_config.edge_boot_id = args.boot_id;
+        autonomy_config.stream_id = args.stream_id;
+        autonomy_config.mission_revision_id = args.mission_revision;
+        autonomy_config.policy_revision_id = args.policy_revision;
+        autonomy_config.effective_config_hash =
+            runner.effective_config_hash();
+        autonomy_config.config_epoch = runner.config_epoch();
+        autonomy_config.lens_id = args.autonomy_lens_id;
+        autonomy_config.camera_manual_override = args.camera_manual;
+        autonomy_config.simulated_input =
+            args.stub_detector || args.null_detector ||
+            args.engine_path.empty();
+        std::string autonomy_error;
+        if (!IsValidAutonomousConfig(autonomy_config, &autonomy_error)) {
+            std::fprintf(stderr, "bad autonomy config: %s\n",
+                         autonomy_error.c_str());
+            return 2;
+        }
+        autonomy = std::make_unique<ksi::safety::AutonomousProcessor>(
+            autonomy_config);
+        if (!autonomy->valid()) {
+            std::fprintf(stderr, "autonomy failed: %s\n",
+                         autonomy->error().c_str());
+            return 1;
+        }
+        std::fprintf(stderr,
+                     "[SIMULATED] autonomy on: passive assessment only "
+                     "(SHADOW, no incidents/alerts/human/camera/flight "
+                     "outputs)%s\n",
+                     autonomy_config.simulated_input
+                         ? " — synthetic input, not a performance claim"
+                         : "");
+    }
+
     std::FILE* out = std::fopen(args.out_path.c_str(), "w");
     if (out == nullptr) {
         std::fprintf(stderr, "cannot open output: %s\n", args.out_path.c_str());
@@ -505,6 +721,7 @@ int main(int argc, char** argv) {
     }
 
     Stats stats;
+    std::int64_t last_recv_ns = 0;
     for (std::size_t i = 0; i < frames.frame_count(); ++i) {
         FramePacket packet;
         FrameContext ctx;
@@ -513,6 +730,7 @@ int main(int argc, char** argv) {
             std::fclose(out);
             return 1;
         }
+        last_recv_ns = ctx.receive_monotonic_ns;
         const ReplayTelemetrySource::PushResult pushed =
             telemetry.PushDue(ctx.receive_monotonic_ns, runner);
         stats.poses_pushed += pushed.poses_pushed;
@@ -521,12 +739,36 @@ int main(int argc, char** argv) {
         stats.rollbacks += pushed.rollbacks;
 
         const auto start = std::chrono::steady_clock::now();
-        const TickRecord record =
-            runner.ProcessFrame(packet, ctx, detector);
+        TickRecord record;
+        if (autonomy != nullptr) {
+            const ksi::safety::SharedTickResult shared =
+                ksi::safety::ProcessSharedTick(
+                    runner, *autonomy, packet, ctx, detector,
+                    packet.rgb.data(), packet.rgb.size());
+            record = shared.record;
+        } else {
+            record = runner.ProcessFrame(packet, ctx, detector);
+        }
         const auto end = std::chrono::steady_clock::now();
         stats.tick_ms.push_back(
             std::chrono::duration<double, std::milli>(end - start).count());
 
+        if (recorder != nullptr) {
+            ksi::safety::SourceFrame source;
+            source.flight_id = args.flight_id;
+            source.edge_boot_id = args.boot_id;
+            source.frame_id = record.frame_id;
+            source.received_monotonic_ns = record.receive_mono_ns;
+            source.rgb = packet.rgb.data();
+            source.rgb_size = packet.rgb.size();
+            const ksi::safety::EvidenceStatus status =
+                recorder->Capture(record, source);
+            if (status == ksi::safety::EvidenceStatus::kFull) {
+                std::fprintf(stderr,
+                             "evidence store full: the source frame of this "
+                             "observation is NOT retained\n");
+            }
+        }
         ++stats.frames;
         switch (record.detection_status) {
             case DetectionStatus::kOk:
@@ -555,6 +797,82 @@ int main(int argc, char** argv) {
         CountEvents(record.proximity, &stats);
         CountEvents(record.zone, &stats);
         WriteTick(out, record);
+    }
+
+    // Seal the session's source frames into one immutable revision: the
+    // collector exports exactly this (and nothing else).
+    if (recorder != nullptr) {        std::string revision_id;
+        std::string manifest;
+        std::string error;
+        if (recorder->Seal(args.flight_id, args.boot_id, 0, &revision_id, &manifest,
+                           &error)) {
+            std::fprintf(stderr,
+                         "evidence revision sealed: %s (%zu source frames)\n",
+                         revision_id.c_str(), recorder->captured_count());
+        } else if (error.rfind("no source frames", 0) != 0) {
+            std::fprintf(stderr, "evidence revision NOT sealed: %s\n", error.c_str());
+        }
+    }
+
+    // Unit A closeout: stop closes open windows (named incomplete), then one
+    // immutable revision covers every assessment + window-frame artifact.
+    if (autonomy != nullptr) {
+        autonomy->RequestStop(last_recv_ns);
+        const ksi::safety::AutonomousCoverage& coverage =
+            autonomy->coverage();
+        std::fprintf(stderr,
+                     "autonomy: ticks=%llu assessed=%llu undetermined=%llu "
+                     "windows=%llu complete=%llu partial=%llu "
+                     "window_frames=%llu writes_refused=%llu conflicts=%llu "
+                     "duplicates=%llu\n",
+                     static_cast<unsigned long long>(
+                         coverage.processed_ticks),
+                     static_cast<unsigned long long>(
+                         coverage.assessments_assessed),
+                     static_cast<unsigned long long>(
+                         coverage.assessments_undetermined),
+                     static_cast<unsigned long long>(
+                         coverage.windows_opened),
+                     static_cast<unsigned long long>(
+                         coverage.windows_complete),
+                     static_cast<unsigned long long>(
+                         coverage.windows_partial),
+                     static_cast<unsigned long long>(
+                         coverage.window_frames_written),
+                     static_cast<unsigned long long>(
+                         coverage.writes_refused),
+                     static_cast<unsigned long long>(
+                         coverage.digest_conflicts),
+                     static_cast<unsigned long long>(
+                         coverage.idempotent_duplicates));
+        if (!coverage.write_failure.empty()) {
+            std::fprintf(stderr, "autonomy write failure (sticky): %s\n",
+                         coverage.write_failure.c_str());
+        }
+        if (coverage.evidence_saturated) {
+            std::fprintf(stderr,
+                         "autonomy evidence SATURATED (%s): observation "
+                         "continued, %llu artifacts refused\n",
+                         coverage.saturation_reason.c_str(),
+                         static_cast<unsigned long long>(
+                             coverage.evidence_refusals));
+        }
+        if (coverage.windows_merged > 0) {
+            std::fprintf(stderr,
+                         "autonomy windows merged by interval bound: %llu\n",
+                         static_cast<unsigned long long>(
+                             coverage.windows_merged));
+        }
+        std::string revision_id;
+        std::string manifest;
+        std::string error;
+        if (autonomy->Seal(&revision_id, &manifest, &error)) {
+            std::fprintf(stderr, "autonomy revision sealed: %s (%zu artifacts)\n",
+                          revision_id.c_str(), autonomy->artifacts().size());
+        } else {
+            std::fprintf(stderr, "autonomy revision NOT sealed: %s\n",
+                         error.c_str());
+        }
     }
 
     const double tick_mean =

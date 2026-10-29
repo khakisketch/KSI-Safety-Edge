@@ -6,9 +6,16 @@
 # Device build (Manifold 3, PSDK at /open_app/psdk):
 #   cmake -S psdk-app -B psdk-app/build -DKSI_PSDK_ROOT=/open_app/psdk \
 #     -DKSI_PSDK_APP_INFO_HEADER=$PWD/psdk-app/config/dji_sdk_app_info.h \
-#     -DKSI_SAFETY_EDGE_DPK_USER_APP_ID=191589
+#     -DKSI_SAFETY_EDGE_DPK_USER_APP_ID=191589 \
+#     [-DKSI_SAFETY_EDGE_ENGINE_PATH=/open_app/models/dfine.engine \
+#      -DKSI_SAFETY_EDGE_MODEL_ID=<real-model-id>]
 #   cmake --build psdk-app/build -j4
 #   cmake --build psdk-app/build --target ksi_safety_edge_dpk
+#
+# The argvless DPK binary starts the operational MOP service (channel
+# KSI_SAFETY_EDGE_MOP_CHANNEL, unbounded, gate closed until APPLY+START).
+# Engine/model installer options above are optional: empty means the engine
+# is absent (ticks stay NOT_RUN/degraded, never fabricated).
 #
 # cmake range follows the edge/ convention (device cmake 3.16.3, CI 3.28).
 cmake_minimum_required(VERSION 3.16...3.28)
@@ -81,8 +88,42 @@ if(NOT KSI_SAFETY_EDGE_DPK_FIRMWARE_VERSION MATCHES
 endif()
 set(KSI_SAFETY_EDGE_CAMERA_SOURCE "DJI_LIVEVIEW_CAMERA_SOURCE_M4E_VIS" CACHE STRING
   "E_DjiLiveViewCameraSource token for the RGB image stream")
-set(KSI_SAFETY_EDGE_DURATION_SEC 60 CACHE STRING
-  "Default capture duration in seconds (argv --duration-sec overrides)")
+# Operational startup defaults (trusted installer input). The DPK ships
+# `"bin"` with `"userconfig": []`, so the installed app starts argvless:
+# argvless MUST start the persistent MOP service (channel below), with NO
+# deadline and NO automatic processing. The legacy 60 s capture workflow is
+# available only as an explicit diagnostic (--standalone, or --mop-channel
+# -1 with a finite --duration-sec).
+#
+# RETIRED: KSI_SAFETY_EDGE_DURATION_SEC. A stale cache entry with the old
+# 60 s default must NOT force an operational timeout; unset it so old
+# build dirs cannot leak it back.
+unset(KSI_SAFETY_EDGE_DURATION_SEC CACHE)
+set(KSI_SAFETY_EDGE_MOP_CHANNEL 0 CACHE STRING
+  "Default MOP channel for the argvless operational service (RC pipeline 0)")
+if(NOT KSI_SAFETY_EDGE_MOP_CHANNEL MATCHES "^[0-9]+$" OR
+   KSI_SAFETY_EDGE_MOP_CHANNEL GREATER 65535)
+  message(FATAL_ERROR
+    "KSI_SAFETY_EDGE_MOP_CHANNEL must be 0..65535")
+endif()
+set(KSI_SAFETY_EDGE_DIAG_DURATION_SEC 60 CACHE STRING
+  "Default finite duration in seconds for explicit diagnostic runs")
+if(NOT KSI_SAFETY_EDGE_DIAG_DURATION_SEC MATCHES "^[1-9][0-9]*$")
+  message(FATAL_ERROR
+    "KSI_SAFETY_EDGE_DIAG_DURATION_SEC must be a positive integer")
+endif()
+set(KSI_SAFETY_EDGE_ENGINE_PATH "" CACHE STRING "Deploy-default TensorRT engine path (empty = engine absent; CLI --engine overrides).")
+set(KSI_SAFETY_EDGE_MODEL_ID "" CACHE STRING "Deploy-default model id (empty = keep the code default; CLI --model-id overrides).")
+set(KSI_SAFETY_EDGE_AUTONOMY_EVIDENCE_DIR "" CACHE STRING
+  "Deploy-default autonomy evidence directory (empty = passive autonomy off;
+    non-empty enables SHADOW assessment/evidence for the argvless service).")
+set(KSI_SAFETY_EDGE_SOURCE_ATTENTION_POLICY "" CACHE STRING
+  "Opt-in explicit source-ROI budgets/times; empty=off, no camera commands or PPE verification.")
+# These deployment strings become literal C++ strings; reject metacharacters
+# rather than emitting a malformed build or accepting an implicit profile.
+if(NOT KSI_SAFETY_EDGE_SOURCE_ATTENTION_POLICY MATCHES "^[a-z0-9_=,]*$")
+  message(FATAL_ERROR "SOURCE_ATTENTION_POLICY must contain only strict key=value numeric policy pairs")
+endif()
 
 find_package(Threads REQUIRED)
 
@@ -129,7 +170,12 @@ target_include_directories(${KSI_SAFETY_EDGE_BINARY} SYSTEM PRIVATE
 target_compile_options(${KSI_SAFETY_EDGE_BINARY} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_compile_definitions(${KSI_SAFETY_EDGE_BINARY} PRIVATE
   KSI_SAFETY_EDGE_CAMERA_SOURCE=${KSI_SAFETY_EDGE_CAMERA_SOURCE}
-  KSI_SAFETY_EDGE_DURATION_SEC=${KSI_SAFETY_EDGE_DURATION_SEC}
+  KSI_SAFETY_EDGE_MOP_CHANNEL=${KSI_SAFETY_EDGE_MOP_CHANNEL}
+  KSI_SAFETY_EDGE_DIAG_DURATION_SEC=${KSI_SAFETY_EDGE_DIAG_DURATION_SEC}
+  KSI_SAFETY_EDGE_ENGINE_PATH="${KSI_SAFETY_EDGE_ENGINE_PATH}"
+  KSI_SAFETY_EDGE_MODEL_ID="${KSI_SAFETY_EDGE_MODEL_ID}"
+  KSI_SAFETY_EDGE_AUTONOMY_EVIDENCE_DIR="${KSI_SAFETY_EDGE_AUTONOMY_EVIDENCE_DIR}"
+  KSI_SAFETY_EDGE_SOURCE_ATTENTION_POLICY="${KSI_SAFETY_EDGE_SOURCE_ATTENTION_POLICY}"
   KSI_SAFETY_EDGE_FW_VERSION="${KSI_SAFETY_EDGE_DPK_FIRMWARE_VERSION}"
   KSI_SAFETY_EDGE_ALIAS="KSI Safety Edge"
 )

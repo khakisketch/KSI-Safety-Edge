@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from sqlalchemy import JSON, BigInteger, Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import JSON, BigInteger, Boolean, DateTime, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
@@ -26,6 +26,13 @@ class Site(Base):
     org_id: Mapped[str] = mapped_column(String, index=True)
     site_id: Mapped[str] = mapped_column(String, index=True)
     name: Mapped[str] = mapped_column(String)
+    # D2: 현장 식별용 위치(선택 기능). GPS 현장 추천의 재료다.
+    # NULL = 좌표 미등록 → RC는 후보를 만들지 않고 수동 선택으로 넘어간다.
+    # 위험구역 다각형(zones)과 **다른 것**이며, 현장 경계 대신 쓰지 않는다.
+    center_lat: Mapped[float | None] = mapped_column(Float, nullable=True)
+    center_lon: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # 후보로 제시할 최대 반경(m). 좌표가 있어도 이 반경 밖이면 후보가 아니다.
+    radius_m: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     __table_args__ = (UniqueConstraint("org_id", "site_id"), UniqueConstraint("org_id", "name"))
 
@@ -130,6 +137,9 @@ class IngestSession(Base):
     status: Mapped[str] = mapped_column(String, default="OPEN")  # OPEN|PARTIAL|COMMITTED
     durable_commit_id: Mapped[str | None] = mapped_column(String, nullable=True)
     committed_at_utc: Mapped[str | None] = mapped_column(String, nullable=True)
+    # Producer-neutral collection id (collection-manifest.v1). NULL for the
+    # legacy v1 RC uploads — "not a collection", not "collection 0".
+    collection_id: Mapped[str | None] = mapped_column(String, nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     __table_args__ = (UniqueConstraint("org_id", "manifest_sha256"),)
 
@@ -148,6 +158,32 @@ class IngestObject(Base):
     received_bytes: Mapped[int] = mapped_column(BigInteger, default=0)
     content_sha256_hint: Mapped[str | None] = mapped_column(String, nullable=True)
     __table_args__ = (UniqueConstraint("upload_id", "artifact_id"),)
+
+
+class CollectionReceipt(Base):
+    """Custody receipt for one central collection.
+
+    It binds the EXACT required artifact set (ids + digests) the Core holds
+    for that collection. It is not a completion claim for the whole flight and
+    **not a deletion token** (ADR-0002: COMMITTED binds one manifest revision,
+    never the whole store).
+    """
+
+    __tablename__ = "collection_receipts"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    org_id: Mapped[str] = mapped_column(String, index=True)
+    collection_id: Mapped[str] = mapped_column(String, index=True)
+    upload_id: Mapped[str] = mapped_column(String, index=True)
+    flight_id: Mapped[str] = mapped_column(String, index=True)
+    edge_boot_id: Mapped[str] = mapped_column(String)
+    manifest_sha256: Mapped[str] = mapped_column(String)
+    artifact_set_sha256: Mapped[str] = mapped_column(String)
+    sealed_revision_sha256: Mapped[str] = mapped_column(String)
+    producer_type: Mapped[str] = mapped_column(String)
+    producer_id: Mapped[str] = mapped_column(String)
+    receipt: Mapped[dict] = mapped_column(JSON)
+    issued_at_utc: Mapped[str] = mapped_column(String)
+    __table_args__ = (UniqueConstraint("org_id", "collection_id"),)
 
 
 class Batch(Base):
@@ -215,6 +251,24 @@ class Annotation(Base):
     org_id: Mapped[str] = mapped_column(String, index=True)
     event_id: Mapped[str] = mapped_column(String, index=True)
     annotation_id: Mapped[str] = mapped_column(String, unique=True)
+    payload: Mapped[dict] = mapped_column(JSON)
+    canonical_hash: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+
+class OperatorResponse(Base):
+    """In-flight operator responses (CONFIRM/HOLD/ESCALATE_REQUEST).
+
+    Append-only: rows are never updated or deleted. Core stores what the
+    operator did and the claimed delivery state; it MUST NEVER infer a
+    session verdict or a safety state from the presence of responses.
+    """
+
+    __tablename__ = "operator_responses"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    org_id: Mapped[str] = mapped_column(String, index=True)
+    flight_id: Mapped[str] = mapped_column(String, index=True)
+    response_id: Mapped[str] = mapped_column(String, unique=True)
     payload: Mapped[dict] = mapped_column(JSON)
     canonical_hash: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)

@@ -41,8 +41,18 @@ class EvidenceIngest(private val store: EvidenceStore) : ControlHandler {
                 null
             }
             "ARTIFACT_ANNOUNCE" -> {
-                if (payload.get("artifact_id")?.asText().isNullOrEmpty()) {
+                val artifactId = payload.get("artifact_id")?.asText()
+                if (artifactId.isNullOrEmpty()) {
                     return "announce without artifact_id"
+                }
+                // Same id + different bytes is a conflict (the Edge/Core
+                // contract refuses those): never silently keep the first
+                // and ACK the second. Failure leaves the envelope un-ACKed
+                // so the Edge retries the same msg_id; a genuine conflict
+                // stays visible as unacked instead of corrupting the link.
+                val existing = store.announceFor(artifactId)
+                if (existing != null && !sameAnnounce(existing, payload)) {
+                    return "conflicting re-announce for $artifactId"
                 }
                 store.announceArtifact(payload, boot)
                 null
@@ -90,6 +100,21 @@ class EvidenceIngest(private val store: EvidenceStore) : ControlHandler {
                 null
             }
             else -> "unsupported data type $type"
+        }
+    }
+
+    companion object {
+        /**
+         * Byte-identity of two artifact announcements: digest, size, media
+         * and source kind. Anything else (e.g. a re-announce with the same
+         * id but different bytes) is a conflict, never an idempotent retry.
+         */
+        fun sameAnnounce(first: ObjectNode, second: ObjectNode): Boolean {
+            if (first.get("sha256")?.asText() != second.get("sha256")?.asText()) return false
+            if (first.get("size_bytes")?.asLong() != second.get("size_bytes")?.asLong()) return false
+            if (first.get("media_type")?.asText() != second.get("media_type")?.asText()) return false
+            if (first.get("source_kind")?.asText() != second.get("source_kind")?.asText()) return false
+            return true
         }
     }
 }

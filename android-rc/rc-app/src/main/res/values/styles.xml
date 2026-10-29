@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- KSI RC button family: 768x480dp @400dpi field controller.
+     Default (buttonStyle) = secondary outlined; Primary / Ghost / Nav are
+     explicit. Day/night comes from the ksi_* color tokens (values-night);
+     no literal colors here. All minHeight 48dp touch floor. -->
+<resources>
+    <style name="TextAppearance.Ksi" parent="TextAppearance.AppCompat.Body1">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">@color/ksi_fg</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    <style name="TextAppearance.Ksi.Title" parent="TextAppearance.Ksi">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">20sp</item>
+    </style>
+    <style name="TextAppearance.Ksi.Section" parent="TextAppearance.Ksi">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+    <style name="TextAppearance.Ksi.Body" parent="TextAppearance.Ksi" />
+    <style name="TextAppearance.Ksi.Label" parent="TextAppearance.Ksi">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textColor">@color/ksi_muted</item>
+    </style>
+
+    <style name="Widget.Ksi.Button" parent="Widget.AppCompat.Button">
+        <item name="android:minHeight">48dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:paddingLeft">12dp</item>
+        <item name="android:paddingRight">12dp</item>
+        <item name="android:paddingTop">4dp</item>
+        <item name="android:paddingBottom">4dp</item>
+        <item name="android:textSize">13sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:insetTop">0dp</item>
+        <item name="android:insetBottom">0dp</item>
+        <item name="android:insetLeft">0dp</item>
+        <item name="android:insetRight">0dp</item>
+        <item name="android:elevation">0dp</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:background">@drawable/button_secondary</item>
+        <item name="android:backgroundTint">@null</item>
+        <item name="backgroundTint">@null</item>
+        <item name="android:textColor">@color/button_secondary_text</item>
+    </style>
+
+    <style name="Widget.Ksi.Button.Primary" parent="Widget.Ksi.Button">
+        <item name="android:background">@drawable/button_primary</item>
+        <item name="android:textColor">@color/button_primary_text</item>
+    </style>
+
+    <style name="Widget.Ksi.Button.Ghost" parent="Widget.Ksi.Button">
+        <item name="android:background">@drawable/button_ghost</item>
+        <item name="android:textColor">@color/button_ghost_text</item>
+    </style>
+
+    <style name="Widget.Ksi.Button.Nav" parent="Widget.Ksi.Button">
+        <item name="android:background">@drawable/nav_button</item>
+        <item name="android:textColor">@color/nav_button_text</item>
+    </style>
+</resources>

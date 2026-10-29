@@ -80,6 +80,9 @@ class RCSimulator(UploadMixin):
     def send_session_start(self, flight_id: str) -> dict:
         return self._send_control(flight_id, "SESSION_START", {})
 
+    def send_session_stop(self, flight_id: str) -> dict:
+        return self._send_control(flight_id, "SESSION_STOP", {})
+
     def mark_unrecoverable(self) -> None:
         """RC never declares gaps itself; it records the Edge's declarations."""
 

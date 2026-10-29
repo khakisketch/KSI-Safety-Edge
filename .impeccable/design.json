@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-27T00:00:00Z",
+  "title": "Design System: KSI Safety Edge RC Native",
+  "extensions": {
+    "colorMeta": {
+      "ksi-bg": { "role": "neutral", "displayName": "Native ground", "canonical": "#F3F5F6", "dark": "#172128" },
+      "ksi-surface": { "role": "neutral", "displayName": "Native work surface", "canonical": "#FFFFFF", "dark": "#202E36" },
+      "ksi-fg": { "role": "neutral", "displayName": "Native foreground", "canonical": "#17242C", "dark": "#EDF3F5" },
+      "ksi-muted": { "role": "neutral", "displayName": "Native secondary text", "canonical": "#52616B", "dark": "#B3C2CA" },
+      "ksi-border": { "role": "neutral", "displayName": "Native outline", "canonical": "#D2DBE0", "dark": "#4B5F69" },
+      "ksi-primary": { "role": "primary", "displayName": "Native action surface", "canonical": "#1D6154", "dark": "#A0DDC8" },
+      "ksi-on-primary": { "role": "neutral", "displayName": "Native action text", "canonical": "#FFFFFF", "dark": "#10251F" },
+      "ksi-accent": { "role": "primary", "displayName": "Field accent, not a safety verdict", "canonical": "#299236", "dark": "#299236" },
+      "ksi-surface-subtle": { "role": "neutral", "displayName": "Native secondary surface", "canonical": "#EAF0F1", "dark": "#293A43" },
+      "ksi-video-bg": { "role": "neutral", "displayName": "Video chrome background", "canonical": "#0C151B", "dark": "#060E14" },
+      "ksi-video-fg": { "role": "neutral", "displayName": "Video chrome text", "canonical": "#EEF2F5", "dark": "#EEF2F5" },
+      "ksi-video-grid": { "role": "neutral", "displayName": "Video well and ripple role", "canonical": "#39444C", "dark": "#2F3A41" },
+      "ksi-problem": { "role": "neutral", "displayName": "Problem on ordinary surfaces", "canonical": "#AC1B18", "dark": "#FF8F80" },
+      "ksi-problem-bg": { "role": "neutral", "displayName": "Problem surface", "canonical": "#FFEBE8", "dark": "#4E2A25" },
+      "ksi-attention": { "role": "neutral", "displayName": "Attention on ordinary surfaces", "canonical": "#864F00", "dark": "#EBB761" },
+      "ksi-attention-bg": { "role": "neutral", "displayName": "Attention surface", "canonical": "#FEF0D8", "dark": "#463518" },
+      "ksi-problem-video": { "role": "neutral", "displayName": "Problem text on video", "canonical": "#FF9F96", "dark": "#FF8F80" },
+      "ksi-attention-video": { "role": "neutral", "displayName": "Attention text on video", "canonical": "#FFD18A", "dark": "#EBB761" }
+    },
+    "typographyMeta": {
+      "native-system-sans": {
+        "displayName": "Android system sans",
+        "purpose": "Actual sp sizes and selected/medium variants live in native views and Widget.Ksi.Button; no CSS rem/px equivalence is claimed."
+      },
+      "ksi-title": {
+        "displayName": "Ksi Title",
+        "purpose": "TextAppearance.Ksi.Title declares 20sp sans-serif-medium; the mission empty-state heading uses the same 20sp role via text(). Preparation and section headings use the 16sp role."
+      },
+      "ksi-section": {
+        "displayName": "Ksi Section",
+        "purpose": "TextAppearance.Ksi.Section, 16sp sans-serif-medium. Section headings; verified in styles.xml."
+      },
+      "ksi-body": {
+        "displayName": "Ksi Body",
+        "purpose": "TextAppearance.Ksi base, 14sp sans-serif. Default body text; header tabs also use 14sp."
+      },
+      "ksi-label": {
+        "displayName": "Ksi Label",
+        "purpose": "TextAppearance.Ksi.Label, 12sp muted. Status lines, badges, and secondary facts; site rows allow up to 3 lines."
+      },
+      "ksi-button": {
+        "displayName": "Ksi Button",
+        "purpose": "Widget.Ksi.Button, 13sp sans-serif-medium with 48dp minHeight touch floor. Preparation pending indicator also uses 13sp but is disabled display-only text, never a command."
+      }
+    },
+    "shadows": [],
+    "motion": [],
+    "breakpoints": []
+  },
+  "components": [],
+  "narrative": {
+    "northStar": "A clear video-first observation surface that works with the physical controller.",
+    "overview": "이 문서는 현행 Android의 시각 어휘와 적용 범위다. 현재 구현을 전문가 수준으로 인수했다는 문서가 아니다. 제품 의미/사용자 결정은 AGENTS.md의 정본, 제품 맥락은 PRODUCT.md, 전체 화면 검토는 docs/verification/rc-design-review.md를 따른다. 구체 표면 전략은 도구로 연결된 현행 브리프에 둔다.",
+    "keyCharacteristics": [
+      "영상과 실제 과업이 먼저 읽히고, 상태·조작·근거 상세의 무게가 구별된다.",
+      "물리 RC와 앱은 역할을 나눈다. 모든 물리 조작을 상시 버튼 목록으로 복제하지 않는다.",
+      "정상/미확인/지연과 AI·카메라·KSI·보존을 혼동하지 않는다.",
+      "현행 수치·배치는 검증된 범위의 기준선이지, 사용자 피드백보다 우선하는 영구 규칙이 아니다."
+    ],
+    "rules": [],
+    "dos": [
+      "Do judge the whole screen: hierarchy, grouping, density, alignment, action recognition, and the scene left visible.",
+      "Do separate native render evidence, simulated state transitions, adapter wiring, physical operation, and user acceptance.",
+      "Do preserve source-labelled unknown/stale/error states and existing command, data, and permission boundaries.",
+      "Do use actual native resources and the current matched brief; compare them with fresh evidence before extending the UI.",
+      "Do record design-only input and verification provenance in reports or metadata; meet asset licences and distinguish simulated from real data in connected apps."
+    ],
+    "donts": [
+      "Don't treat a reference element's presence, a passed layout test, or a Critic with no findings as professional design acceptance.",
+      "Don't restore historical web recipes, rejected layouts, or fixed round-specific dimensions as permanent design authority.",
+      "Don't invent live video, maps, telemetry, REC, photo success, or preservation receipts to make a screen look complete.",
+      "Don't let a disconnected camera adapter become a claimed complete camera experience through static bench labels.",
+      "Don't add prototype badges, repeated disclaimers, or synonymous replacements to an isolated design-only screen."
+    ]
+  }
+}

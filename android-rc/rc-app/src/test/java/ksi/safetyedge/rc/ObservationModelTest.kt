@@ -84,6 +84,24 @@ class ObservationModelTest {
     }
 
     @Test
+    fun event_without_mode_remains_unknown_through_supervision_and_feed() {
+        val store = store()
+        store.storeEvent(event("missing-mode", "PROXIMITY_CANDIDATE", emptyList()).apply {
+            remove("mode")
+        }, "boot")
+        val cards = ObservationModel.eventCards(store, flight)
+        assertEquals("UNKNOWN", cards.single().mode)
+        val panel = AiObservationPanel.render(AiObservationPanel.Input(
+            hasActiveFlight = true, observationCount = 1, eventCount = 1,
+            observationAgeMs = null, frameMappingVerified = false, cards = cards,
+        ))
+        assertEquals("모드 미확인", panel.candidates.single().kind)
+        assertTrue(panel.headline.contains("모드 미확인"))
+        assertFalse(panel.headline.contains("경고 아님"))
+        assertFalse(AiObservationPanel.shadowOnly(cards))
+    }
+
+    @Test
     fun evidence_states_track_local_completeness_and_sync() {
         val store = store()
         val fullBytes = ByteArray(8) { it.toByte() }

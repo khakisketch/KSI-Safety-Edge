@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 768x480dp density contract (RC 1920x1200 @400dpi): logical-dp fixed
+     minimum controls, never a uniform shrink of a wider design.
+     Shell rail 76dp + header 48dp leave 692dp of content width. -->
+<resources>
+    <dimen name="rc_rail_width">76dp</dimen>
+    <dimen name="rc_header_height">48dp</dimen>
+    <dimen name="rc_mission_padding">8dp</dimen>
+    <dimen name="rc_mission_gap">8dp</dimen>
+    <dimen name="rc_command_dock_width">256dp</dimen>
+    <dimen name="rc_controls_panel_width">280dp</dimen>
+    <dimen name="rc_touch_min">48dp</dimen>
+    <dimen name="rc_record_start_height">56dp</dimen>
+    <dimen name="rc_detail_panel_gutter">16dp</dimen>
+    <!-- Round47 task-first cockpit: compact observation row and bottom task
+         bar minima. New/changed cockpit dimensions live here, never as
+         literals in the layout. -->
+    <dimen name="rc_task_row_min_height">48dp</dimen>
+    <!-- Round50: read-only telemetry strip single-line height (not interactive). -->
+    <dimen name="rc_telemetry_min_height">32dp</dimen>
+    <dimen name="rc_map_preview_width">168dp</dimen>
+    <dimen name="rc_map_preview_height">112dp</dimen>
+    <dimen name="rc_map_preview_inset">8dp</dimen>
+    <dimen name="rc_task_bar_min_height">52dp</dimen>
+    <!-- Adopted flight slimming: the supervision glance row is a 24dp
+         one-line summary (AI / camera / preservation tokens). The
+         48dp touch floor still applies to every control; the operable
+         entries for this summary are the 48dp bar buttons beside it. -->
+    <dimen name="rc_supervision_summary_height">24dp</dimen>
+    <!-- Records: viewer takes the remaining column height; the filmstrip
+         and custody line keep fixed heights outside it. -->
+    <dimen name="rc_filmstrip_height">56dp</dimen>
+    <!-- Round47 task-first compact lines: inner gaps for the task row/bar
+         and the fixed Edge state lines. New/changed cockpit spacing lives
+         here, never as literals in the layout. -->
+    <dimen name="rc_task_inner_gap">4dp</dimen>
+    <dimen name="rc_task_text_gap">2dp</dimen>
+    <!-- Round48 flight/camera section gap inside the ops deck. -->
+    <dimen name="rc_ops_section_gap">8dp</dimen>
+</resources>

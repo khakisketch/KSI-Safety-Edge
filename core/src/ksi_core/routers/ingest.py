@@ -66,6 +66,35 @@ async def open_session(request: Request):
         if existing is not None:
             uploaded, missing = _uploaded_missing(request, db, existing)
             return {"upload_id": existing.upload_id, "missing_artifact_ids": missing, "status": "RESUMING"}
+        # Artifact identity is global, not per session: one artifact id must
+        # always mean one byte stream. The same id carrying a DIFFERENT
+        # digest would make the id point at two different pieces of evidence
+        # (the receipt of one flight would "prove" bytes of another), so it
+        # is refused. The stored evidence is never touched by a refusal.
+        conflicts = []
+        for artifact in body.get("artifacts", []):
+            clash = (
+                db.query(models.IngestObject)
+                .join(
+                    models.IngestSession,
+                    models.IngestSession.upload_id == models.IngestObject.upload_id,
+                )
+                .filter(
+                    models.IngestSession.org_id == principal.org_id,
+                    models.IngestObject.artifact_id == artifact["artifact_id"],
+                    models.IngestObject.sha256 != artifact["sha256"],
+                )
+                .first()
+            )
+            if clash is not None:
+                conflicts.append(artifact["artifact_id"])
+        if conflicts:
+            return error(
+                "CONFLICT",
+                "artifact id reused with a different digest",
+                409,
+                {"reason": "ARTIFACT_ID_DIGEST_CONFLICT", "artifact_ids": conflicts},
+            )
         upload_id = str(uuid.uuid4())
         session = models.IngestSession(
             upload_id=upload_id,

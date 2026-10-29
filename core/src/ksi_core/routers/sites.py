@@ -32,10 +32,46 @@ def list_sites(request: Request):
     db = use_db(request)
     try:
         rows, nxt = paginate(request, db.query(models.Site).filter_by(org_id=principal.org_id))
-        items = [{"site_id": r.site_id, "org_id": r.org_id, "name": r.name} for r in rows]
+        items = [_site_view(r) for r in rows]
         return {"items": items, "next_cursor": nxt}
     finally:
         db.close()
+
+
+def _site_view(r) -> dict:
+    """현장 1건. D2: 위치 필드는 **있을 때만** 실어 보내고, 없으면 null로
+    두어 "좌표 미등록"과 "좌표 0"을 구분한다."""
+    return {
+        "site_id": r.site_id,
+        "org_id": r.org_id,
+        "name": r.name,
+        "center_lat": r.center_lat,
+        "center_lon": r.center_lon,
+        "radius_m": r.radius_m,
+    }
+
+
+def _parse_location(body: dict) -> tuple[float | None, float | None, float | None]:
+    """현장 위치 입력 검증. 셋 중 하나라도 있으면 셋을 모두 요구한다
+    (중심점 2개와 반경은 한 덩어리다). 셋 다 없으면 미등록이다."""
+    raw_lat = body.get("center_lat")
+    raw_lon = body.get("center_lon")
+    raw_radius = body.get("radius_m")
+    if raw_lat is None and raw_lon is None and raw_radius is None:
+        return None, None, None
+    if not isinstance(raw_lat, (int, float)) or isinstance(raw_lat, bool):
+        raise ValueError("center_lat must be a number")
+    if not isinstance(raw_lon, (int, float)) or isinstance(raw_lon, bool):
+        raise ValueError("center_lon must be a number")
+    if not isinstance(raw_radius, (int, float)) or isinstance(raw_radius, bool):
+        raise ValueError("radius_m must be a number")
+    if not (-90.0 <= float(raw_lat) <= 90.0):
+        raise ValueError("center_lat out of range")
+    if not (-180.0 <= float(raw_lon) <= 180.0):
+        raise ValueError("center_lon out of range")
+    if not (0.0 < float(raw_radius) <= 100000.0):
+        raise ValueError("radius_m must be > 0 and <= 100000")
+    return float(raw_lat), float(raw_lon), float(raw_radius)
 
 
 @router.post("/sites")
@@ -55,16 +91,34 @@ async def create_site(request: Request):
         return error("FORBIDDEN", "org_id does not match caller org", 403)
     if not isinstance(name, str) or not name:
         return error("CONTRACT_INVALID", "invalid site body", 422, ["SCHEMA: /name: empty or missing"])
+    try:
+        center_lat, center_lon, radius_m = _parse_location(body)
+    except ValueError as exc:
+        return error("CONTRACT_INVALID", "invalid site location", 422, [f"location: {exc}"])
     db = use_db(request)
     try:
         existing = db.query(models.Site).filter_by(org_id=principal.org_id, name=name).first()
         if existing is not None:
-            return {"site_id": existing.site_id, "org_id": existing.org_id, "name": existing.name}
+            # 같은 이름 = 같은 현장. 위치는 **있으면 갱신**한다(기존 값이 있으면
+            # 그 값을 덮어쓰지 않는다 — 명시적 갱신이 없으면 보존).
+            if center_lat is not None and existing.center_lat is None:
+                existing.center_lat = center_lat
+                existing.center_lon = center_lon
+                existing.radius_m = radius_m
+                db.commit()
+            return _site_view(existing)
         site_id = str(uuid.uuid4())
-        db.add(models.Site(org_id=principal.org_id, site_id=site_id, name=name))
+        db.add(models.Site(
+            org_id=principal.org_id,
+            site_id=site_id,
+            name=name,
+            center_lat=center_lat,
+            center_lon=center_lon,
+            radius_m=radius_m,
+        ))
         audit(db, principal, "create", "site", site_id)
         db.commit()
-        return {"site_id": site_id, "org_id": principal.org_id, "name": name}
+        return _site_view(db.query(models.Site).filter_by(site_id=site_id).first())
     finally:
         db.close()
 

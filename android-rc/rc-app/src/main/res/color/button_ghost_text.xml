@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Ghost text: full-contrast ksi_fg; disabled drops to ksi_muted
+     (background stays transparent in both). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false" android:color="@color/ksi_muted" />
+    <item android:color="@color/ksi_fg" />
+</selector>

@@ -29,12 +29,27 @@ object SyncWorkerDecision {
         artifactCount: Int,
         artifactsAllSynced: Boolean,
         pendingAnnotations: Int,
+        pendingResponses: Int = 0,
     ): Pre = when {
         !coreConfigured || !flightExists -> Pre.NOTHING_TO_DO
+        pendingResponses > 0 -> Pre.PROCEED
         SyncPolicy.shouldSkipSync(artifactCount, artifactsAllSynced, pendingAnnotations) ->
             Pre.ALREADY_SYNCED
         else -> Pre.PROCEED
     }
+
+    /**
+     * Recovery-requeue predicate for [SyncScheduler.enqueuePending]: a
+     * finished flight is re-queued when local bytes are complete-but-unsynced,
+     * an operator opinion is pending, OR a linked structured response still
+     * lacks its durable receipt (late field responses survive artifact
+     * COMMITTED — the artifact-only check must not strand them).
+     */
+    fun shouldEnqueue(
+        hasCompleteUnsynced: Boolean,
+        hasPendingOpinion: Boolean,
+        hasPendingResponses: Boolean = false,
+    ): Boolean = hasCompleteUnsynced || hasPendingOpinion || hasPendingResponses
 
     fun postDecision(state: String, attempt: Int, partialCause: String?): Post =
         when (SyncPolicy.decisionFor(state, attempt, partialCause)) {

@@ -55,7 +55,8 @@ object-store 쌍으로 식별한 경우에만 **DEMO FIXTURE**로 표시하고, 
 **분리된 개발 기능:** A-2 이력 조회/기록/취소는 고급 개발용 write-path 테스트다. 기록·취소는 현재 연결된 Core에 실제 append-only 레코드를 추가하지만 운영자의 안전 검토 경험이나 실제 검토 행위를 뜻하지 않는다. 실제 운영 검토 서비스는 §4 S2와 별개다.
 
 **정직 규칙(불변):** 사건 0건 ≠ 안전 · 수신 시각은 RC 수신 UTC(근사) · 관측 공백은 공백으로 표시 ·
-[SIMULATED] 숨김 금지 · 실패를 성공으로 표시하지 않는다.
+연결된 앱/데이터 점검에서 모의 입력과 실제 보고의 출처를 구분 · 실패를 성공으로 표시하지 않는다.
+실제 기기·운용 서버에 연결하지 않는 독립 디자인 시안의 표기는 화면 계약 D9를 따른다.
 
 ## 4. S1·S2 운영 여정 — 초안 (사용자 검증 전 확정 금지)
 
@@ -88,7 +89,7 @@ object-store 쌍으로 식별한 경우에만 **DEMO FIXTURE**로 표시하고, 
 
 | 산출물 | 정체 | 검증 대상 | 접근 | 주의 |
 |---|---|---|---|---|
-| `design/rc-pilot-shell/field-shell.html` | **목업**(모든 값 [SIMULATED]) | 시각 체계·상태 계약 표현 | `bash scripts/design_preview_server.sh` → `:8765` · tailnet `:8765` | 실제 데이터·제어가 아님 |
+| `design/rc-pilot-shell/field-shell.html` | **독립 디자인 모형**(입력 출처는 작업 기록) | 시각 체계·상태 계약 표현 | `bash scripts/design_preview_server.sh` → `:8765` · tailnet `:8765` | 실제 데이터·제어가 아님; 화면 표기는 D9 참조 |
 | `/review` Core 데이터 점검 | Core의 기존 조회 API 동작 | Core-side 레코드 상태·조회 응답 | 로컬 `:8000` · tailnet `:8800` | canonical demo DB/object-store 경로 쌍만 DEMO FIXTURE로 표시. 개별 레코드 원본 인증은 아님. 이외 출처 미확인. RC→Core 전달 확인 아님. tailnet 전용 |
 | `android-rc` 앱 | 실제 구현(실기 미검증) | 현장 조종 흐름 | 실기/기기 | A9-4 게이트 |
 | 공개 Funnel 포트(`:8443` 등) | 다른 서비스 매핑 | — | — | **검증 콘솔을 Funnel(공개)에 매핑하지 않는다** — dev 쓰기 토큰·데모 DB 노출 |

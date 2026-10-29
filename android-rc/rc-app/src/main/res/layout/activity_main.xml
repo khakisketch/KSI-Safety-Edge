@@ -9,7 +9,7 @@
 
     <LinearLayout
         android:id="@+id/navRail"
-        android:layout_width="76dp"
+        android:layout_width="@dimen/rc_rail_width"
         android:layout_height="match_parent"
         android:background="@color/ksi_surface"
         android:gravity="center_horizontal"
@@ -26,8 +26,25 @@
             android:textSize="16sp"
             android:textStyle="bold" />
 
+        <!-- Three upper destinations scroll internally; settings stays at
+             the bottom. All four remain reachable when text enlarges. -->
+        <ScrollView
+            android:id="@+id/navScroll"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="false"
+            android:overScrollMode="ifContentScrolls">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal"
+                android:orientation="vertical">
+
         <Button
             android:id="@+id/btnNavObserve"
+            style="@style/Widget.Ksi.Button.Nav"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginTop="8dp"
@@ -38,6 +55,7 @@
 
         <Button
             android:id="@+id/btnNavMission"
+            style="@style/Widget.Ksi.Button.Nav"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginTop="4dp"
@@ -48,6 +66,7 @@
 
         <Button
             android:id="@+id/btnNavReview"
+            style="@style/Widget.Ksi.Button.Nav"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:layout_marginTop="4dp"
@@ -55,24 +74,12 @@
             android:text="@string/nav_review"
             android:textAllCaps="false"
             android:textSize="12sp" />
-
-        <Button
-            android:id="@+id/btnNavEvidence"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="4dp"
-            android:minWidth="0dp"
-            android:text="@string/nav_evidence"
-            android:textAllCaps="false"
-            android:textSize="12sp" />
-
-        <Space
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
+            </LinearLayout>
+        </ScrollView>
 
         <Button
             android:id="@+id/btnNavSettings"
+            style="@style/Widget.Ksi.Button.Nav"
             android:layout_width="match_parent"
             android:layout_height="56dp"
             android:minWidth="0dp"
@@ -99,17 +106,32 @@
         <LinearLayout
             android:id="@+id/appHeader"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="@dimen/rc_header_height"
             android:background="@color/ksi_surface"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:paddingStart="12dp"
             android:paddingEnd="8dp">
 
+            <Button
+                android:id="@+id/btnNavMenu"
+                style="@style/Widget.Ksi.Button.Ghost"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="8dp"
+                android:minWidth="48dp"
+                android:text="@string/nav_menu"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                android:visibility="gone" />
+
             <TextView
                 android:id="@+id/tvPageTitle"
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:text="@string/page_title_inflight"
                 android:textColor="@color/ksi_fg"
                 android:textSize="16sp"
@@ -135,10 +157,60 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
                 android:text="@string/top_receipt_note"
                 android:textColor="@color/ksi_muted"
                 android:textSize="12sp" />
 
+            <!-- Flight: a single header owns identity + connection recovery.
+                 Records: the same slot holds detail/custody entries. -->
+            <TextView
+                android:id="@+id/tvTopContext"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/cockpit_live_view"
+                android:textColor="@color/ksi_fg"
+                android:visibility="gone" />
+            <TextView
+                android:id="@+id/tvConnectionHeadline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:maxWidth="260dp"
+                android:textColor="@color/ksi_fg"
+                android:textSize="12sp" />
+            <Button
+                android:id="@+id/btnConnectionDetail"
+                style="@style/Widget.Ksi.Button.Ghost"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:maxWidth="160dp"
+                android:minWidth="0dp"
+                android:text="@string/btn_connection_detail"
+                android:textSize="12sp"
+                android:visibility="gone" />
+            <Button
+                android:id="@+id/btnReviewDetail"
+                style="@style/Widget.Ksi.Button.Ghost"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:minWidth="0dp"
+                android:text="@string/btn_review_detail"
+                android:textSize="12sp"
+                android:visibility="gone" />
+            <Button
+                android:id="@+id/btnOpenEvidence"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_marginStart="6dp"
+                android:minWidth="0dp"
+                android:text="@string/btn_open_evidence"
+                android:textSize="12sp"
+                android:visibility="gone" />
         </LinearLayout>
 
         <View
@@ -162,42 +234,6 @@
                 android:background="@color/ksi_video_bg"
                 android:padding="0dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:minHeight="52dp"
-                    android:layout_marginStart="6dp"
-                    android:layout_marginTop="4dp"
-                    android:layout_marginEnd="6dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="6dp"
-                    android:paddingEnd="6dp">
-
-                    <Button
-                        android:id="@+id/btnFocusMode"
-                        android:layout_width="wrap_content"
-                        android:layout_height="48dp"
-                        android:layout_marginEnd="8dp"
-                        android:minWidth="0dp"
-                        android:text="@string/btn_show_menu"
-                        android:textAllCaps="false"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:id="@+id/tvTopContext"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:ellipsize="middle"
-                        android:maxLines="1"
-                        android:text="@string/cockpit_live_view"
-                        android:textColor="@color/ksi_video_fg"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
-
-                </LinearLayout>
-
                 <!-- Read-only telemetry strip (round24 topbar; per-field
                      freshness — a stale sample is never shown as current).
                      Values come from the shared accumulator (bench fake /
@@ -206,7 +242,7 @@
                     android:id="@+id/telemetryStrip"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="48dp"
+                    android:minHeight="@dimen/rc_telemetry_min_height"
                     android:layout_marginStart="6dp"
                     android:layout_marginEnd="6dp"
                     android:gravity="center_vertical"
@@ -219,14 +255,15 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="0.9"
                         android:gravity="center_vertical"
-                        android:orientation="vertical">
+                        android:orientation="horizontal">
                         <TextView
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:alpha="0.72"
                             android:text="@string/telemetry_label_authority"
                             android:textColor="@color/ksi_video_fg"
-                            android:textSize="11sp" />
+                            android:textSize="12sp"
+                            android:layout_marginEnd="4dp" />
                         <TextView
                             android:id="@+id/tvTeleAuthorityValue"
                             android:layout_width="match_parent"
@@ -243,14 +280,15 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1.25"
                         android:gravity="center_vertical"
-                        android:orientation="vertical">
+                        android:orientation="horizontal">
                         <TextView
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:alpha="0.72"
                             android:text="@string/telemetry_label_flight_mode"
                             android:textColor="@color/ksi_video_fg"
-                            android:textSize="11sp" />
+                            android:textSize="12sp"
+                            android:layout_marginEnd="4dp" />
                         <TextView
                             android:id="@+id/tvTeleModeValue"
                             android:layout_width="match_parent"
@@ -267,14 +305,15 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="0.75"
                         android:gravity="center_vertical"
-                        android:orientation="vertical">
+                        android:orientation="horizontal">
                         <TextView
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:alpha="0.72"
                             android:text="@string/telemetry_label_battery"
                             android:textColor="@color/ksi_video_fg"
-                            android:textSize="11sp" />
+                            android:textSize="12sp"
+                            android:layout_marginEnd="4dp" />
                         <TextView
                             android:id="@+id/tvTeleBatteryValue"
                             android:layout_width="match_parent"
@@ -291,14 +330,15 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1.5"
                         android:gravity="center_vertical"
-                        android:orientation="vertical">
+                        android:orientation="horizontal">
                         <TextView
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:alpha="0.72"
                             android:text="@string/telemetry_label_links"
                             android:textColor="@color/ksi_video_fg"
-                            android:textSize="11sp" />
+                            android:textSize="12sp"
+                            android:layout_marginEnd="4dp" />
                         <TextView
                             android:id="@+id/tvTeleLinksValue"
                             android:layout_width="match_parent"
@@ -315,14 +355,15 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1.1"
                         android:gravity="center_vertical"
-                        android:orientation="vertical">
+                        android:orientation="horizontal">
                         <TextView
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:alpha="0.72"
                             android:text="@string/telemetry_label_position"
                             android:textColor="@color/ksi_video_fg"
-                            android:textSize="11sp" />
+                            android:textSize="12sp"
+                            android:layout_marginEnd="4dp" />
                         <TextView
                             android:id="@+id/tvTelePositionValue"
                             android:layout_width="match_parent"
@@ -344,7 +385,151 @@
                     android:layout_marginBottom="4dp"
                     android:background="@color/ksi_video_grid" />
 
+                <!-- Round51 supervision compact row: single 48dp full-width
+                     glance surface under the header/HUD with the three
+                     required axes (AI observation / camera owner+auto /
+                     Manifold local preservation). Short tokens only — no
+                     counts, hashes, codes or prose; full facts stay in the
+                     detail panel and the deck axes. Read-only: never a tap
+                     target (below the 48dp floor) — the operable detail
+                     entry is the 48dp bar button. -->
+                <LinearLayout
+                    android:id="@+id/supervisionCompactRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="@dimen/rc_supervision_summary_height"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginEnd="6dp"
+                    android:background="@color/ksi_surface"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="@dimen/rc_task_inner_gap"
+                    android:paddingEnd="@dimen/rc_task_inner_gap"
+                    android:contentDescription="@string/supervise_section_title">
+
+                    <TextView
+                        android:id="@+id/tvCompactAi"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/supervise_ai_unknown"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvCompactCamera"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/rc_task_inner_gap"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/supervise_camera_unknown"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tvCompactPreserve"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/rc_task_inner_gap"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/supervise_preserve_unknown"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tvCompactSite"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="@dimen/rc_task_inner_gap"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/site_compact_unknown"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <!-- Problem-only priority row: full width directly below the
+                     telemetry band so an urgent item stays visible. It is a
+                     direct child of the observe page — never an overlay on
+                     the video or the telemetry band. -->
+                <LinearLayout
+                    android:id="@+id/cockpitPriorityRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginEnd="6dp"
+                    android:minHeight="@dimen/rc_touch_min"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:background="@color/ksi_video_bg"
+                    android:padding="5dp"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                        android:id="@+id/tvPrimaryAlert"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/no_urgent_action"
+                        android:textColor="@color/ksi_video_fg"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvPrimaryAction"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:textColor="@color/ksi_video_fg"
+                            android:lineSpacingExtra="2dp"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <Button
+                        android:id="@+id/btnPriorityDetails"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:minWidth="0dp"
+                        android:text="@string/btn_priority_status_details"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"
+                        android:contentDescription="@string/priority_status_details_accessibility" />
+                </LinearLayout>
+
+                <!-- Video owns the default work row. The bounded controls
+                     tray appears only on request; it never reserves width
+                     while closed. Required facts remain in the top strips. -->
+                <LinearLayout
+                    android:id="@+id/observeWorkRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/observeLeftColumn"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
                 <FrameLayout
+                    android:id="@+id/videoFrame"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
@@ -367,12 +552,33 @@
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
                             android:maxWidth="620dp"
+                            android:minWidth="48dp"
+                            android:minHeight="48dp"
                             android:gravity="center"
                             android:padding="16dp"
                             android:text="@string/video_waiting_for_frames"
                             android:textColor="@color/ksi_video_fg"
                             android:textSize="15sp"
                             android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvMapPlaceholder"
+                            android:layout_width="@dimen/rc_map_preview_width"
+                            android:layout_height="@dimen/rc_map_preview_height"
+                            android:layout_gravity="bottom|end"
+                            android:layout_marginEnd="@dimen/rc_map_preview_inset"
+                            android:layout_marginBottom="@dimen/rc_map_preview_inset"
+                            android:gravity="center"
+                            android:padding="@dimen/rc_map_preview_inset"
+                            android:background="@color/ksi_video_bg"
+                            android:foreground="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:text="@string/map_preview_unavailable"
+                            android:textColor="@color/ksi_video_fg"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
 
                         <LinearLayout
                             android:id="@+id/cockpitHeaderAlertStack"
@@ -399,7 +605,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="@string/cockpit_video_source_label"
-                                    android:textColor="@color/ksi_muted"
+                                    android:textColor="@color/ksi_video_fg"
                                     android:textSize="12sp" />
 
                                 <TextView
@@ -452,7 +658,7 @@
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:text="@string/cockpit_flight_authority_label"
-                                    android:textColor="@color/ksi_muted"
+                                    android:textColor="@color/ksi_video_fg"
                                     android:textSize="12sp" />
 
                                 <TextView
@@ -468,66 +674,19 @@
                             </LinearLayout>
                         </LinearLayout>
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="14dp"
-                            android:layout_marginTop="6dp"
-                            android:layout_marginEnd="14dp"
-                            android:gravity="end"
-                            android:orientation="vertical"
-                            android:background="@color/ksi_video_bg"
-                            android:padding="5dp"
-                            android:visibility="gone"
-                            android:id="@+id/cockpitPriorityRow">
-
-                            <LinearLayout
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:orientation="vertical">
-
-                                <TextView
-                                android:id="@+id/tvPrimaryAlert"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="@string/no_urgent_action"
-                                android:textColor="@color/ksi_video_fg"
-                                android:textSize="14sp"
-                                android:textStyle="bold" />
-
-                                <TextView
-                                    android:id="@+id/tvPrimaryAction"
-                                    android:layout_width="match_parent"
-                                    android:layout_height="wrap_content"
-                                    android:layout_marginTop="2dp"
-                                    android:textColor="@color/ksi_video_fg"
-                                    android:lineSpacingExtra="2dp"
-                                    android:textSize="13sp" />
-                            </LinearLayout>
-
-                            <Button
-                                android:id="@+id/btnPriorityDetails"
-                                android:layout_width="wrap_content"
-                                android:layout_height="48dp"
-                                android:layout_marginTop="4dp"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_priority_status_details"
-                                android:textAllCaps="false"
-                                android:textSize="12sp"
-                                android:contentDescription="@string/priority_status_details_accessibility" />
-                        </LinearLayout>
+                        <!-- cockpitPriorityRow moved: full-width direct child of
+                             pageObserve, directly below telemetryStrip (see below).
+                             The video stage keeps no problem overlay. -->
                         </LinearLayout>
                     </FrameLayout>
 
                     <LinearLayout
                         android:id="@+id/rightStatusPanel"
-                        android:layout_width="360dp"
+                        android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:layout_gravity="end"
-                        android:layout_margin="8dp"
-                        android:layout_marginTop="68dp"
-                        android:layout_marginBottom="68dp"
-                        android:background="@drawable/ksi_panel"
+                        android:layout_margin="0dp"
+                        android:background="@color/ksi_video_bg"
                         android:elevation="8dp"
                         android:orientation="vertical"
                         android:padding="10dp"
@@ -588,6 +747,50 @@
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:orientation="vertical">
+
+                                    <!-- Gate reason in FULL (wraps, never truncated):
+                                         G1b authority lock + ACTIVE approval
+                                         lock, Edge RUNNING ≠ flight control. -->
+                                    <TextView
+                                        android:id="@+id/tvControlGateReason"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:background="@color/ksi_surface_subtle"
+                                        android:padding="@dimen/rc_mission_gap"
+                                        android:text="@string/ops_request_detail"
+                                        android:textColor="@color/ksi_fg"
+                                        android:textSize="13sp" />
+
+                                    <!-- Edge technical facts + session/commit
+                                         verdicts: full report, uncapped, in
+                                         the scrolling detail (never growing
+                                         the fixed panel). 조작·상세 진입으로
+                                         연다. -->
+                                    <TextView
+                                        android:id="@+id/tvEdgeRuntimeDetail"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="@dimen/rc_task_inner_gap"
+                                        android:text="-"
+                                        android:textColor="@color/ksi_fg"
+                                        android:textSize="12sp" />
+
+                                    <TextView
+                                        android:id="@+id/tvSessionResult"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="@dimen/rc_task_text_gap"
+                                        android:text="-"
+                                        android:textColor="@color/ksi_fg"
+                                        android:textSize="13sp" />
+
+                                    <TextView
+                                        android:id="@+id/tvCommitState"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="-"
+                                        android:textColor="@color/ksi_fg"
+                                        android:textSize="12sp" />
 
                                     <TextView
                                         android:id="@+id/tvOpsStatus"
@@ -767,225 +970,957 @@
                     </LinearLayout>
                 </FrameLayout>
 
-                <!-- Read-only operational facts live below the live image, not over it. -->
+                <!-- Adopted flight slimming: the concise Edge/support/problem
+                     lines lived here as a third copy of the fixed Edge panel
+                     and the 24dp supervision summary. Removed — problems stay
+                     on the conditional priority row, concise state on the
+                     summary + fixed panel, full facts in the detail panel.
+                     The two operable entries moved to the bottom task bar. -->
+                    </LinearLayout>
+
+                    <!-- On-demand controls tray: runtime context stays fixed
+                         above its scroll. The persistent summary, not this
+                         closed tray, owns the three required glance axes. -->
+                    <LinearLayout
+                        android:id="@+id/opsRightColumn"
+                        android:layout_width="@dimen/rc_controls_panel_width"
+                        android:layout_height="match_parent"
+                        android:visibility="gone"
+                        android:orientation="vertical">
+
+                        <!-- Edge 실행 상태 패널: 스크롤 밖 **고정**이지만 간결
+                             상태 + zero-risk 안전 고지만 둔다. 처리 수·입력
+                             상세·해시·이력(tvEdgeRuntimeDetail)과 세션·보존
+                             판정(tvSessionResult/tvCommitState)은 상세 스크롤
+                             (cockpitDetailsScroll)로 옮겨 고정 패널이 데크를
+                             밀어내지 않게 한다. -->
+                        <LinearLayout
+                            android:id="@+id/edgeRuntimePanel"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@color/ksi_surface"
+                            android:orientation="vertical"
+                            android:paddingStart="6dp"
+                            android:paddingTop="4dp"
+                            android:paddingEnd="6dp"
+                            android:paddingBottom="4dp">
+                            <!-- 간결 실행 상태 줄(초기는 제목 문자열, 실행 중엔
+                                 짧은 상태 토큰 — 수·해시·원시 사유 없음). -->
+                            <TextView
+                                android:id="@+id/tvEdgeRuntimeState"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/rc_task_text_gap"
+                                android:text="@string/edge_runtime_title"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvEdgeRuntimeZeroNote"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/rc_task_text_gap"
+                                android:text="@string/edge_runtime_zero_note"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="12sp"
+                                android:maxLines="2"
+                                android:ellipsize="end"/>
+
+                            </LinearLayout>
+
+                        <!-- Hidden homes for per-request dialog views and the
+                             retained last result. Reopening a request dialog
+                             moves the same result view into it; it is not a
+                             persistent result strip over the live image. -->
+                        <LinearLayout
+                            android:id="@+id/commandDock"
+                            android:layout_width="match_parent"
+                            android:visibility="gone"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:layout_marginEnd="8dp"
+                            android:background="@color/ksi_surface"
+                            android:orientation="vertical"
+                            android:paddingStart="6dp"
+                            android:paddingTop="2dp"
+                            android:paddingEnd="6dp"
+                            android:paddingBottom="4dp">
+
+<TextView
+                        android:id="@+id/tvCommandResult"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/rc_touch_min"
+                        android:layout_marginTop="2dp"
+                        android:minHeight="48dp"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        android:gravity="center_vertical"
+                        android:text="@string/cmd_result_none"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="13sp"
+                        android:contentDescription="@string/cmd_result_accessibility" />
+
+<LinearLayout
+                            android:id="@+id/photoGroup"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone">
+
+<TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/cmd_photo"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+<LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:orientation="horizontal">
+
+<Button
+android:id="@+id/btnPhoto"
+android:layout_width="0dp"
+android:layout_height="48dp"
+android:layout_weight="1"
+android:minWidth="0dp"
+android:text="@string/cmd_photo"
+android:textAllCaps="false"
+android:textSize="12sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                        <LinearLayout
+                        android:id="@+id/flightGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+<TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ops_flight_title"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp"
+android:textStyle="bold" />
+
+<TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ops_flight_note"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="11sp" />
+
+<TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+android:layout_marginTop="2dp"
+                                android:text="@string/ops_request_detail"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="12sp" />
+
+<LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:orientation="horizontal">
+
+<Button
+android:id="@+id/btnTakeoff"
+android:layout_width="0dp"
+android:layout_height="48dp"
+android:layout_weight="1"
+android:minWidth="0dp"
+android:text="@string/cmd_takeoff"
+android:textAllCaps="false"
+android:textSize="12sp" />
+
+    <Button
+android:id="@+id/btnLand"
+android:layout_width="0dp"
+android:layout_height="48dp"
+android:layout_marginStart="4dp"
+android:layout_weight="1"
+android:minWidth="0dp"
+android:text="@string/cmd_land"
+android:textAllCaps="false"
+android:textSize="12sp" />
+                            </LinearLayout>
+
+<LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:orientation="horizontal">
+
+<Button
+android:id="@+id/btnRth"
+android:layout_width="0dp"
+android:layout_height="48dp"
+android:layout_weight="1"
+android:minWidth="0dp"
+android:text="@string/cmd_rth"
+android:textAllCaps="false"
+android:textSize="12sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+<LinearLayout
+                        android:id="@+id/recGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+<TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ops_camera_title"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp"
+android:textStyle="bold" />
+
+<TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ops_camera_note"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="11sp" />
+
+<LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:orientation="horizontal">
+
+<Button
+android:id="@+id/btnRecStart"
+android:layout_width="0dp"
+android:layout_height="48dp"
+android:layout_weight="1"
+android:minWidth="0dp"
+android:text="@string/cmd_rec_start"
+android:textAllCaps="false"
+android:textSize="12sp" />
+
+    <Button
+android:id="@+id/btnRecStop"
+android:layout_width="0dp"
+android:layout_height="48dp"
+android:layout_marginStart="4dp"
+android:layout_weight="1"
+android:minWidth="0dp"
+android:text="@string/cmd_rec_stop"
+android:textAllCaps="false"
+android:textSize="12sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+<LinearLayout
+                        android:id="@+id/gimbalGroup"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+<TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ops_camera_title"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp"
+android:textStyle="bold" />
+
+<TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ops_camera_note"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="11sp" />
+
+<LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:orientation="horizontal">
+
+<Button
+android:id="@+id/btnGimbalUp"
+android:layout_width="0dp"
+android:layout_height="48dp"
+android:layout_weight="1"
+android:minWidth="0dp"
+android:text="@string/cmd_gimbal_up"
+android:textAllCaps="false"
+android:textSize="12sp" />
+
+    <Button
+android:id="@+id/btnGimbalDown"
+android:layout_width="0dp"
+android:layout_height="48dp"
+android:layout_marginStart="4dp"
+android:layout_weight="1"
+android:minWidth="0dp"
+android:text="@string/cmd_gimbal_down"
+android:textAllCaps="false"
+android:textSize="12sp" />
+                            </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/zoomGroup"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone">
+
+<TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ops_camera_title"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp"
+android:textStyle="bold" />
+
+<TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ops_camera_note"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="11sp" />
+
+<LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:orientation="horizontal">
+
+<Button
+android:id="@+id/btnZoomIn"
+android:layout_width="0dp"
+android:layout_height="48dp"
+android:layout_weight="1"
+android:minWidth="0dp"
+android:text="@string/cmd_zoom_in"
+android:textAllCaps="false"
+android:textSize="12sp" />
+
+    <Button
+android:id="@+id/btnZoomOut"
+android:layout_width="0dp"
+android:layout_height="48dp"
+android:layout_marginStart="4dp"
+android:layout_weight="1"
+android:minWidth="0dp"
+android:text="@string/cmd_zoom_out"
+android:textAllCaps="false"
+android:textSize="12sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+
+
+                        <!-- Optional site confirmation stays inside the tray
+                             scroll, after contextual command entries. -->
+
+
+                    <ScrollView
+                        android:id="@+id/opsDeckScroll"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:fillViewport="true"
+                        android:overScrollMode="ifContentScrolls">
+
+                <!-- Integrated ops deck: flight/camera commands + AI safety
+                     observation, BESIDE the live image in the right column.
+                     The flight-facts band (telemetryStrip, above the work row)
+                     is never overlapped by this deck; the priority row stays
+                     problem-only above the row. -->
                 <LinearLayout
-                    android:id="@+id/cockpitStatusStrip"
+                    android:id="@+id/opsDeck"
                     android:layout_width="match_parent"
-                    android:layout_height="84dp"
+                    android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:layout_marginEnd="8dp"
                     android:background="@color/ksi_surface"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="2dp"
-                    android:paddingEnd="2dp">
+                    android:orientation="vertical"
+                    android:paddingStart="6dp"
+                    android:paddingTop="2dp"
+                    android:paddingEnd="6dp"
+                    android:paddingBottom="4dp">
+
+
 
                     <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="48dp"
                         android:gravity="center_vertical"
-                        android:orientation="vertical"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp">
+                        android:orientation="horizontal">
+
                         <TextView
-                            android:layout_width="match_parent"
+                            android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/cockpit_fact_ksi_session"
+                            android:text="@string/ops_deck_view_label"
                             android:textColor="@color/ksi_muted"
                             android:textSize="12sp" />
-                        <TextView
-                            android:id="@+id/tvKsiRecordStatus"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:ellipsize="end"
-                            android:maxLines="2"
-                            android:text="없음"
-                            android:textColor="@color/ksi_info"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
 
-                    <View android:layout_width="1dp" android:layout_height="44dp" android:background="@color/ksi_border" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1.1"
-                        android:gravity="center_vertical"
-                        android:orientation="vertical"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/cockpit_fact_mop"
-                            android:textColor="@color/ksi_muted"
+                        <Button
+                            android:id="@+id/btnViewVideo"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:minWidth="0dp"
+                            android:text="@string/btn_view_video"
+                            android:textAllCaps="false"
                             android:textSize="12sp" />
-                        <TextView
-                            android:id="@+id/tvMopStatus"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:ellipsize="end"
-                            android:maxLines="2"
-                            android:text="미연결"
-                            android:textColor="@color/ksi_info"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
 
-                    <View android:layout_width="1dp" android:layout_height="44dp" android:background="@color/ksi_border" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="0.9"
-                        android:gravity="center_vertical"
-                        android:orientation="vertical"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/cockpit_fact_aircraft"
-                            android:textColor="@color/ksi_muted"
+                        <Button
+                            android:id="@+id/btnViewMap"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_weight="1"
+                            android:minWidth="0dp"
+                            android:text="@string/btn_view_map"
+                            android:textAllCaps="false"
                             android:textSize="12sp" />
-                        <TextView
-                            android:id="@+id/tvAircraftStatus"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:ellipsize="end"
-                            android:maxLines="2"
-                            android:text="알 수 없음"
-                            android:textColor="@color/ksi_info"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
 
-                    <View android:layout_width="1dp" android:layout_height="44dp" android:background="@color/ksi_border" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1.1"
-                        android:gravity="center_vertical"
-                        android:orientation="vertical"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp">
                         <TextView
-                            android:layout_width="match_parent"
+                            android:id="@+id/tvMapStatus"
+                            android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:text="@string/cockpit_fact_recorder"
-                            android:textColor="@color/ksi_muted"
-                            android:textSize="12sp" />
-                        <TextView
-                            android:id="@+id/tvRecorderStatus"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:ellipsize="end"
-                            android:maxLines="2"
-                            android:text="레코더 없음"
-                            android:textColor="@color/ksi_info"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <View android:layout_width="1dp" android:layout_height="44dp" android:background="@color/ksi_border" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1.1"
-                        android:gravity="center_vertical"
-                        android:orientation="vertical"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/cockpit_fact_evidence"
-                            android:textColor="@color/ksi_muted"
-                            android:textSize="12sp" />
-                        <TextView
-                            android:id="@+id/tvEvidenceStatus"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:ellipsize="end"
-                            android:maxLines="2"
-                            android:text="상태 미확인"
-                            android:textColor="@color/ksi_info"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-
-                    <View android:layout_width="1dp" android:layout_height="44dp" android:background="@color/ksi_border" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1.1"
-                        android:gravity="center_vertical"
-                        android:orientation="vertical"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp">
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/cockpit_fact_observation"
-                            android:textColor="@color/ksi_muted"
-                            android:textSize="12sp" />
-                        <TextView
-                            android:id="@+id/tvAiPeek"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:ellipsize="end"
-                            android:maxLines="2"
-                            android:text="기록 없음"
-                            android:textColor="@color/ksi_fg"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:contentDescription="@string/cockpit_ai_status" />
-                        <TextView
-                            android:id="@+id/tvObservationGapPeek"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
+                            android:layout_marginStart="8dp"
+                            android:layout_weight="1"
                             android:ellipsize="end"
                             android:maxLines="1"
-                            android:textColor="@color/ksi_fg"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:visibility="gone" />
+                            android:text="@string/map_video_active"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="12sp" />
                     </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="@color/ksi_border" />
+
+                    <!-- Contextual per-request entries (observation/camera
+                         detail): each opens the existing gate-first dialog
+                         and returns it on dismiss — never a command, never
+                         the nav menu. -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="@string/ops_request_entries_title"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="12sp" />
+
+                    <LinearLayout
+                        android:id="@+id/requestEntryRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:orientation="vertical">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:baselineAligned="false"
+                            android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnReqPhoto"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:minWidth="0dp"
+                            android:text="@string/cmd_photo"
+                            android:textAllCaps="false"
+                            android:textSize="12sp" />
+
+                        <Button
+                            android:id="@+id/btnReqRec"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_weight="1"
+                            android:minWidth="0dp"
+                            android:text="@string/ops_entry_rec"
+                            android:textAllCaps="false"
+                            android:textSize="12sp" />
+
+                        <Button
+                            android:id="@+id/btnReqZoom"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_weight="1"
+                            android:minWidth="0dp"
+                            android:text="@string/ops_entry_zoom"
+                            android:textAllCaps="false"
+                            android:textSize="12sp" />
+
+                        <Button
+                            android:id="@+id/btnReqGimbal"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_weight="1"
+                            android:minWidth="0dp"
+                            android:text="@string/ops_entry_gimbal"
+                            android:textAllCaps="false"
+                            android:textSize="12sp" />
+
+                        </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:baselineAligned="false"
+                            android:orientation="horizontal">
+
+                        <Button
+                            android:id="@+id/btnReqFlight"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="4dp"
+                            android:layout_weight="1"
+                            android:minWidth="0dp"
+                            android:text="@string/ops_entry_flight"
+                            android:textAllCaps="false"
+                            android:textSize="12sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Optional site work follows the requested controls;
+                         it never pushes those controls below a long note. -->
+                    <LinearLayout
+                        android:id="@+id/siteConfirmPanel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@color/ksi_surface"
+                        android:orientation="vertical">
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/site_confirm_title"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+                        <Button
+                            android:id="@+id/btnSiteGnss"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="4dp"
+                            android:minWidth="0dp"
+                            android:text="@string/btn_site_use_gnss"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/tvSiteSuggestion"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/site_confirm_placeholder"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="12sp" />
+                        <Button
+                            android:id="@+id/btnSiteUseSuggested"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="4dp"
+                            android:minWidth="0dp"
+                            android:text="@string/btn_site_use_suggested"
+                            android:textSize="12sp" />
+                        <Button
+                            android:id="@+id/btnSiteChooseOther"
+                            android:layout_width="match_parent"
+                            android:layout_height="48dp"
+                            android:layout_marginTop="4dp"
+                            android:minWidth="0dp"
+                            android:text="@string/btn_site_choose_other"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/tvSiteSuggestionAlt"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="-"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/tvSiteConfirmNote"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/site_confirm_note"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginBottom="4dp"
+                        android:background="@color/ksi_border" />
+
+                    <!-- Deck scroll: view toggle, requests, site card and AI stay
+                         scrollable; flight/camera/result live in the fixed
+                         commandDock above. -->
+
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:layout_marginTop="4dp"
+                            android:layout_marginBottom="4dp"
+                            android:background="@color/ksi_border" />
+
+                        <LinearLayout
+                            android:id="@+id/aiPanel"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:paddingStart="4dp">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/ops_ai_title"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvAiState"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                android:contentDescription="@string/cockpit_ai_status" />
+
+                            <TextView
+                                android:id="@+id/tvAiCandidates"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:ellipsize="end"
+                                android:maxLines="4"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvAiOverlayNote"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="11sp" />
+
+                            <TextView
+                                android:id="@+id/tvAiMapNote"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="11sp"
+                                android:contentDescription="@string/ops_ai_map_accessibility" />
+
+                            <!-- Round51 autonomous supervision: four separate
+                                 axes (AI execution / camera / preservation /
+                                 assessment) plus the intervention need. Each
+                                 axis states only facts the RC actually holds;
+                                 backend assessment and Manifold local
+                                 preservation have no frozen-MOP field, so they
+                                 read UNKNOWN instead of inheriting counters.
+                                 All inside the deck scroll — the fixed panel
+                                 never grows. -->
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/rc_task_text_gap"
+                                android:text="@string/supervise_section_title"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvSuperviseAi"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/rc_task_text_gap"
+                                android:text="@string/supervise_ai_unknown"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvSuperviseCamera"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/rc_task_text_gap"
+                                android:text="@string/supervise_camera_unknown"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvSupervisePreserve"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/rc_task_text_gap"
+                                android:text="@string/supervise_preserve_unknown"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvSuperviseAssess"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/rc_task_text_gap"
+                                android:text="@string/supervise_assess_unknown"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvSuperviseAction"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/rc_task_text_gap"
+                                android:text="@string/supervise_action_none"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="@dimen/rc_task_text_gap"
+                                android:text="@string/supervise_section_note"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="11sp" />
+
+                            <!-- Routine SHADOW never auto-expands a candidate
+                                 bar: the tappable rows stay folded until the
+                                 operator explicitly opens them. Confirm/hold/
+                                 forward stays optional in this detail — never
+                                 auto-response, never a review obligation. -->
+                            <Button
+                                android:id="@+id/btnCandidatesToggle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="@dimen/rc_touch_min"
+                                android:layout_marginTop="@dimen/rc_task_inner_gap"
+                                android:minWidth="@dimen/rc_touch_min"
+                                android:text="@string/btn_candidates_show"
+                                android:textAllCaps="false"
+                                android:textSize="12sp" />
+
+                            <!-- Tappable candidate rows (built in code from the
+                                 same CandidateRows the text list shows). Green
+                                 background ONLY on the selected row. -->
+                            <LinearLayout
+                                android:id="@+id/aiCandidateList"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:orientation="vertical" />
+
+                            <!-- Operator response (확인/보류/전달 요청): inline
+                                 panel inside the AI area — never a full screen,
+                                 never a modal, never over the video or the
+                                 telemetry band. -->
+                            <LinearLayout
+                                android:id="@+id/responsePanel"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:background="@color/ksi_surface_subtle"
+                                android:orientation="vertical"
+                                android:padding="8dp"
+                                android:visibility="gone">
+
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:text="@string/resp_detail_title"
+                                    android:textColor="@color/ksi_fg"
+                                    android:textSize="13sp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/tvResponseCandidate"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:lineSpacingExtra="2dp"
+                                    android:text="-"
+                                    android:textColor="@color/ksi_fg"
+                                    android:textSize="13sp" />
+
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="6dp"
+                                    android:text="@string/resp_action_title"
+                                    android:textColor="@color/ksi_fg"
+                                    android:textSize="13sp"
+                                    android:textStyle="bold" />
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:orientation="horizontal">
+
+                                    <Button
+                                        android:id="@+id/btnRespondConfirm"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_weight="1"
+                                        android:minHeight="48dp"
+                                        android:minWidth="0dp"
+                                        android:ellipsize="end"
+                                        android:maxLines="2"
+                                        android:text="@string/btn_respond_confirm"
+                                        android:textAllCaps="false"
+                                        android:textSize="12sp" />
+
+                                    <Button
+                                        android:id="@+id/btnRespondHold"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="4dp"
+                                        android:layout_weight="1"
+                                        android:minHeight="48dp"
+                                        android:minWidth="0dp"
+                                        android:ellipsize="end"
+                                        android:maxLines="2"
+                                        android:text="@string/btn_respond_hold"
+                                        android:textAllCaps="false"
+                                        android:textSize="12sp" />
+
+                                    <Button
+                                        android:id="@+id/btnRespondEscalate"
+                                        android:layout_width="0dp"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginStart="4dp"
+                                        android:layout_weight="1"
+                                        android:minHeight="48dp"
+                                        android:minWidth="0dp"
+                                        android:ellipsize="end"
+                                        android:maxLines="2"
+                                        android:text="@string/btn_respond_escalate"
+                                        android:textAllCaps="false"
+                                        android:textSize="12sp" />
+                                </LinearLayout>
+
+                                <EditText
+                                    android:id="@+id/etResponseNote"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp"
+                                    android:hint="@string/hint_response_note"
+                                    android:inputType="textMultiLine|textCapSentences"
+                                    android:maxLength="280"
+                                    android:maxLines="3"
+                                    android:minHeight="48dp" />
+
+                                <TextView
+                                    android:id="@+id/tvResponseResult"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="4dp"
+                                    android:minHeight="48dp"
+                                    android:gravity="center_vertical"
+                                    android:text="@string/resp_result_none"
+                                    android:textColor="@color/ksi_fg"
+                                    android:textSize="13sp" />
+
+                                <TextView
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginTop="2dp"
+                                    android:text="@string/resp_invariant_note"
+                                    android:textColor="@color/ksi_muted"
+                                    android:textSize="11sp" />
+                            </LinearLayout>
+                        </LinearLayout>
+
+                </LinearLayout>
+                    </ScrollView>
+
+                    </LinearLayout>
+
                 </LinearLayout>
 
+                <!-- Bottom-fixed task bar: permanent control gate plus scoped
+                     actions. The gate line never scrolls away and never reads
+                     as execution. '준비 열기' goes to the mission page; the
+                     details entry opens the status/session panel. No
+                     misleading manual-request main action. -->
                 <LinearLayout
                     android:id="@+id/cockpitRecordActionRow"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:minHeight="52dp"
-                    android:layout_marginStart="8dp"
-                    android:layout_marginEnd="8dp"
+                    android:minHeight="@dimen/rc_task_bar_min_height"
+                    android:layout_marginStart="@dimen/rc_mission_gap"
+                    android:layout_marginEnd="@dimen/rc_mission_gap"
                     android:background="@color/ksi_surface"
-                    android:gravity="end|center_vertical"
+                    android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingStart="8dp"
+                    android:paddingStart="@dimen/rc_mission_gap"
                     android:paddingEnd="4dp">
 
                     <Button
-                        android:id="@+id/btnTogglePanel"
+                        android:id="@+id/btnTaskPrepare"
                         android:layout_width="wrap_content"
-                        android:layout_height="48dp"
-                        android:layout_marginEnd="4dp"
-                        android:minWidth="0dp"
-                        android:text="@string/btn_open_ops_panel"
+                        android:layout_height="@dimen/rc_touch_min"
+                        android:layout_marginEnd="@dimen/rc_task_inner_gap"
+                        android:minWidth="@dimen/rc_touch_min"
+                        android:text="@string/btn_task_prepare"
                         android:textAllCaps="false"
+                        android:textSize="12sp" />
+
+                    <Button
+                        android:id="@+id/btnTaskVideoRecover"
+                        style="@style/Widget.Ksi.Button.Primary"
+                        android:layout_width="wrap_content"
+                        android:layout_height="@dimen/rc_touch_min"
+                        android:layout_marginEnd="@dimen/rc_task_inner_gap"
+                        android:minWidth="@dimen/rc_touch_min"
+                        android:text="@string/btn_video_recover"
+                        android:textAllCaps="false"
+                        android:textSize="12sp"
+                        android:visibility="gone" />
+
+                    <Button
+                        android:id="@+id/btnTaskDetails"
+                        android:layout_width="wrap_content"
+                        android:layout_height="@dimen/rc_touch_min"
+                        android:minWidth="@dimen/rc_touch_min"
+                        android:text="@string/btn_task_details"
+                        android:textAllCaps="false"
+                        android:textSize="12sp" />
+
+                    <Button
+                        android:id="@+id/btnTaskStatus"
+                        style="@style/Widget.Ksi.Button.Ghost"
+                        android:layout_width="wrap_content"
+                        android:layout_height="@dimen/rc_touch_min"
+                        android:layout_marginStart="@dimen/rc_task_inner_gap"
+                        android:minWidth="@dimen/rc_touch_min"
+                        android:text="@string/btn_task_status"
                         android:textSize="12sp" />
 
                 </LinearLayout>
@@ -997,31 +1932,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical"
-                android:padding="10dp"
+                android:padding="@dimen/rc_mission_padding"
                 android:visibility="gone">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/mission_prep_title"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/mission_prep_hint"
-                        android:textColor="@color/ksi_muted"
-                        android:textSize="12sp" />
-                </LinearLayout>
 
                 <TextView
                     android:layout_width="match_parent"
@@ -1031,382 +1943,593 @@
                     android:textColor="@color/ksi_muted"
                     android:textSize="13sp" />
 
+                <!-- Persistent general flight: reachable without traversing
+                     the site/plan list. No site, no plan claim — spatial
+                     judgment stays limited. -->
                 <LinearLayout
+                    android:id="@+id/generalFlightRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:text="@string/mission_general_flight_note"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="12sp" />
+
+                    <Button
+                        android:id="@+id/btnGeneralFlight"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="8dp"
+                        android:minWidth="0dp"
+                        android:text="@string/mission_general_flight_action"
+                        android:textAllCaps="false"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/missionBodyRow"
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="4dp"
                     android:layout_weight="1"
                     android:orientation="horizontal">
 
+                    <!-- Bounded scroll content: site/bundle data, revisions,
+                         sync + additional actions. The 3 command rows live in
+                         the fixed dock beside it — never inside this scroll. -->
                     <LinearLayout
+                        android:id="@+id/missionContentColumn"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:layout_marginEnd="6dp"
-                        android:layout_weight="1.15"
-                        android:background="@drawable/ksi_panel"
-                        android:orientation="vertical"
-                        android:padding="10dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/title_mission_selection"
-                            android:textColor="@color/ksi_fg"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="@string/label_site"
-                            android:textColor="@color/ksi_muted"
-                            android:textSize="12sp" />
-
-                        <Spinner
-                            android:id="@+id/spSite"
-                            android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:contentDescription="@string/label_site" />
-
-                        <TextView
-                            android:id="@+id/tvMissionSite"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:ellipsize="middle"
-                            android:maxLines="1"
-                            android:text="-"
-                            android:textColor="@color/ksi_muted"
-                            android:textSize="12sp"
-                            android:typeface="monospace" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="@string/label_bundle"
-                            android:textColor="@color/ksi_muted"
-                            android:textSize="12sp" />
-
-                        <Spinner
-                            android:id="@+id/spBundle"
-                            android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:contentDescription="@string/label_bundle" />
-
-                        <TextView
-                            android:id="@+id/tvMissionBundle"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:ellipsize="middle"
-                            android:maxLines="1"
-                            android:text="-"
-                            android:textColor="@color/ksi_muted"
-                            android:textSize="12sp"
-                            android:typeface="monospace" />
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/tvMissionRevision"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="-"
-                                android:textColor="@color/ksi_fg"
-                                android:textSize="13sp" />
-
-                            <TextView
-                                android:id="@+id/tvMissionZone"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="-"
-                                android:textColor="@color/ksi_fg"
-                                android:textSize="13sp" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/tvMissionFlightId"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="-"
-                                android:textColor="@color/ksi_fg"
-                                android:textSize="13sp" />
-
-                            <TextView
-                                android:id="@+id/tvMissionFlightState"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="-"
-                                android:textColor="@color/ksi_fg"
-                                android:textSize="13sp" />
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:orientation="horizontal">
-
-                            <TextView
-                                android:id="@+id/tvMissionStarted"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="-"
-                                android:textColor="@color/ksi_fg"
-                                android:textSize="13sp" />
-
-                            <TextView
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:ellipsize="end"
-                                android:maxLines="1"
-                                android:text="@string/mission_time_basis_value"
-                                android:textColor="@color/ksi_muted"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tvMissionReadiness"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="8dp"
-                            android:background="@color/ksi_surface_subtle"
-                            android:paddingStart="8dp"
-                            android:paddingTop="6dp"
-                            android:paddingEnd="8dp"
-                            android:paddingBottom="6dp"
-                            android:text="-"
-                            android:textColor="@color/ksi_fg"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/tvMission"
-                            android:layout_width="match_parent"
-                            android:layout_height="0dp"
-                            android:layout_marginTop="8dp"
-                            android:layout_weight="1"
-                            android:background="@color/ksi_surface_subtle"
-                            android:ellipsize="end"
-                            android:maxLines="4"
-                            android:padding="8dp"
-                            android:text="-"
-                            android:textColor="@color/ksi_fg"
-                            android:textSize="13sp" />
-
-                        <TextView
-                            android:id="@+id/tvStatus"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="-"
-                            android:textColor="@color/ksi_muted"
-                            android:textSize="13sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
+                        android:layout_marginEnd="@dimen/rc_mission_gap"
                         android:layout_weight="1"
                         android:background="@drawable/ksi_panel"
                         android:orientation="vertical"
                         android:padding="10dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/title_mission_steps"
-                            android:textColor="@color/ksi_fg"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <LinearLayout
-                            android:id="@+id/rowSyncButtons"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:orientation="horizontal">
-
-                            <Button
-                                android:id="@+id/btnSyncSites"
-                                android:layout_width="0dp"
-                                android:layout_height="48dp"
-                                android:layout_weight="1"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_sync_sites"
-                                android:textAllCaps="false"
-                                android:textSize="12sp" />
-
-                            <Button
-                                android:id="@+id/btnSyncBundle"
-                                android:layout_width="0dp"
-                                android:layout_height="48dp"
-                                android:layout_marginStart="6dp"
-                                android:layout_weight="1"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_sync_bundle"
-                                android:textAllCaps="false"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tvMissionSyncResult"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="5dp"
-                            android:background="@color/ksi_surface_subtle"
-                            android:gravity="center_vertical"
-                            android:paddingStart="7dp"
-                            android:paddingTop="5dp"
-                            android:paddingEnd="7dp"
-                            android:paddingBottom="5dp"
-                            android:text="@string/mission_sync_result_unknown"
-                            android:textColor="@color/ksi_fg"
-                            android:textSize="12sp" />
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:text="@string/mission_apply_sequence"
-                            android:textColor="@color/ksi_muted"
-                            android:textSize="12sp"
-                            android:textStyle="bold" />
+                    <ScrollView
+                        android:id="@+id/missionContentScroll"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1"
+                        android:fillViewport="false"
+                        android:overScrollMode="ifContentScrolls">
 
                         <LinearLayout
-                            android:id="@+id/rowPrepare"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal">
+                            android:orientation="vertical">
 
-                            <Button
-                                android:id="@+id/btnPrepare"
-                                android:layout_width="0dp"
-                                android:layout_height="48dp"
-                                android:layout_weight="1"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_prepare"
-                                android:textAllCaps="false"
-                                android:textSize="12sp" />
-
-                            <Button
-                                android:id="@+id/btnApply"
-                                android:layout_width="0dp"
-                                android:layout_height="48dp"
-                                android:layout_marginStart="5dp"
-                                android:layout_weight="1"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_apply"
-                                android:textAllCaps="false"
-                                android:textSize="12sp" />
-                        </LinearLayout>
-
-                        <Button
-                            android:id="@+id/btnStartFlight"
-                            android:layout_width="match_parent"
-                            android:layout_height="56dp"
-                            android:minWidth="0dp"
-                            android:text="@string/btn_start_flight_recording"
-                            android:textAllCaps="false"
-                            android:textSize="14sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvStartFlightNote"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center"
-                            android:text="@string/flight_record_start_note"
-                            android:textColor="@color/ksi_muted"
-                            android:textSize="13sp" />
-
-                        <LinearLayout
-                            android:id="@+id/rowAdditionalCheck"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="5dp"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
 
                             <TextView
-                                android:layout_width="0dp"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:text="@string/mission_additional_check"
+                                android:text="@string/mission_site_section_title"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <!-- Adopted site-first mission: concise cards
+                                 (name + one-line status + suggestion chip),
+                                 built from the real store. Tapping a card
+                                 selects the site and opens its stored-plan
+                                 detail below. No map, no invented geometry. -->
+                            <LinearLayout
+                                android:id="@+id/siteCardList"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:orientation="vertical" />
+
+                            <LinearLayout
+                                android:id="@+id/siteCardDetail"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:orientation="vertical"
+                                android:visibility="gone" />
+
+                            <!-- Offline-first registration (현장 추가):
+                                 name + confirmed location, stored on this
+                                 device with an honest pending badge, synced
+                                 later. No network needed at entry. -->
+                            <Button
+                                android:id="@+id/btnAddPendingSite"
+                                android:layout_width="match_parent"
+                                android:layout_height="48dp"
+                                android:layout_marginTop="4dp"
+                                android:minWidth="0dp"
+                                android:text="@string/btn_add_pending_site"
+                                android:textAllCaps="false"
+                                android:textSize="12sp" />
+
+                            <!-- New polygon-first patrol: the draw UI is
+                                 unavailable (no map tile source), disclosed
+                                 instead of invented. The entry stays
+                                 disabled with its reason. -->
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:text="@string/mission_new_patrol_title"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="@string/mission_new_patrol_note"
                                 android:textColor="@color/ksi_muted"
                                 android:textSize="12sp" />
 
                             <Button
-                                android:id="@+id/btnReconcile"
-                                android:layout_width="wrap_content"
+                                android:id="@+id/btnNewPatrolDraw"
+                                android:layout_width="match_parent"
                                 android:layout_height="48dp"
+                                android:layout_marginTop="4dp"
                                 android:minWidth="0dp"
-                                android:text="@string/btn_reconcile"
+                                android:enabled="false"
+                                android:text="@string/mission_new_patrol_action"
                                 android:textAllCaps="false"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvMissionSite"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="middle"
+                                android:maxLines="1"
+                                android:text="-"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="12sp"
+                                android:typeface="monospace" />
+
+                            <TextView
+                                android:id="@+id/tvMissionBundle"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="middle"
+                                android:maxLines="1"
+                                android:text="-"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="12sp"
+                                android:typeface="monospace" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/tvMissionRevision"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="-"
+                                    android:textColor="@color/ksi_fg"
+                                    android:textSize="13sp" />
+
+                                <TextView
+                                    android:id="@+id/tvMissionZone"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="-"
+                                    android:textColor="@color/ksi_fg"
+                                    android:textSize="13sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvMissionZoneRevisions"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:text="-"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="12sp"
+                                android:typeface="monospace" />
+
+                            <TextView
+                                android:id="@+id/tvMissionMapNote"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="@string/mission_map_note"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="12sp" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/tvMissionFlightId"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="-"
+                                    android:textColor="@color/ksi_fg"
+                                    android:textSize="13sp" />
+
+                                <TextView
+                                    android:id="@+id/tvMissionFlightState"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="-"
+                                    android:textColor="@color/ksi_fg"
+                                    android:textSize="13sp" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:id="@+id/tvMissionStarted"
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="-"
+                                    android:textColor="@color/ksi_fg"
+                                    android:textSize="13sp" />
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:ellipsize="end"
+                                    android:maxLines="1"
+                                    android:text="@string/mission_time_basis_value"
+                                    android:textColor="@color/ksi_muted"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+
+                            <!-- Full readiness facts live here in the bounded
+                                 support scroll — never in the fixed dock, whose
+                                 upper budget cannot fit 6-9 lines. -->
+                            <TextView
+                                android:id="@+id/tvMissionReadiness"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:background="@color/ksi_surface_subtle"
+                                android:paddingStart="8dp"
+                                android:paddingTop="6dp"
+                                android:paddingEnd="8dp"
+                                android:paddingBottom="6dp"
+                                android:text="-"
+                                android:textColor="@color/ksi_fg"
                                 android:textSize="13sp" />
-                        </LinearLayout>
 
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
+                            <!-- Intrinsic height: wrap_content inside scrolling
+                                 content (a 0dp+weight child of a wrap_content
+                                 parent would measure 0 and hide the state). -->
+                            <TextView
+                                android:id="@+id/tvMission"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                android:background="@color/ksi_surface_subtle"
+                                android:ellipsize="end"
+                                android:maxLines="4"
+                                android:padding="8dp"
+                                android:text="-"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp" />
 
-                            <Button
-                                android:id="@+id/btnStart"
-                                android:layout_width="0dp"
-                                android:layout_height="48dp"
-                                android:layout_weight="1"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_mission_start"
-                                android:textAllCaps="false"
+                            <TextView
+                                android:id="@+id/tvMissionApplyState"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:background="@color/ksi_surface_subtle"
+                                android:ellipsize="end"
+                                android:maxLines="3"
+                                android:paddingStart="8dp"
+                                android:paddingTop="6dp"
+                                android:paddingEnd="8dp"
+                                android:paddingBottom="6dp"
+                                android:text="-"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:id="@+id/tvStatus"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:text="-"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="13sp" />
+
+                            <!-- Support actions (moved from the old right
+                                 column): sync + additional checks stay in the
+                                 bounded scroll so the command dock keeps only
+                                 the 3 persistent rows. IDs unchanged. -->
+                            <LinearLayout
+                                android:id="@+id/rowSyncButtons"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="6dp"
+                                android:orientation="horizontal">
+
+                                <Button
+                                    android:id="@+id/btnSyncSites"
+                                    android:layout_width="0dp"
+                                    android:layout_height="48dp"
+                                    android:layout_weight="1"
+                                    android:minWidth="0dp"
+                                    android:text="@string/btn_sync_sites"
+                                    android:textAllCaps="false"
+                                    android:textSize="12sp" />
+
+                                <Button
+                                    android:id="@+id/btnSyncBundle"
+                                    android:layout_width="0dp"
+                                    android:layout_height="48dp"
+                                    android:layout_marginStart="6dp"
+                                    android:layout_weight="1"
+                                    android:minWidth="0dp"
+                                    android:text="@string/btn_sync_bundle"
+                                    android:textAllCaps="false"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvMissionSyncResult"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="5dp"
+                                android:background="@color/ksi_surface_subtle"
+                                android:gravity="center_vertical"
+                                android:paddingStart="7dp"
+                                android:paddingTop="5dp"
+                                android:paddingEnd="7dp"
+                                android:paddingBottom="5dp"
+                                android:text="@string/mission_sync_result_unknown"
+                                android:textColor="@color/ksi_fg"
                                 android:textSize="12sp" />
 
                             <Button
-                                android:id="@+id/btnStop"
-                                android:layout_width="0dp"
+                                android:id="@+id/btnComposeLocal"
+                                android:layout_width="match_parent"
                                 android:layout_height="48dp"
-                                android:layout_marginStart="6dp"
-                                android:layout_weight="1"
+                                android:layout_marginTop="6dp"
                                 android:minWidth="0dp"
-                                android:text="@string/btn_mission_stop"
+                                android:text="@string/btn_compose_local"
                                 android:textAllCaps="false"
                                 android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvLocalBundleResult"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:background="@color/ksi_surface_subtle"
+                                android:ellipsize="end"
+                                android:maxLines="8"
+                                android:padding="6dp"
+                                android:text="@string/local_bundle_none"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="12sp" />
+
+                            <LinearLayout
+                                android:id="@+id/rowAdditionalCheck"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="5dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="0dp"
+                                    android:layout_height="wrap_content"
+                                    android:layout_weight="1"
+                                    android:text="@string/mission_additional_check"
+                                    android:textColor="@color/ksi_muted"
+                                    android:textSize="12sp" />
+
+                                <Button
+                                    android:id="@+id/btnReconcile"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="48dp"
+                                    android:maxWidth="160dp"
+                                    android:minWidth="0dp"
+                                    android:text="@string/btn_reconcile"
+                                    android:textAllCaps="false"
+                                    android:textSize="13sp" />
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal">
+
+                                <Button
+                                    android:id="@+id/btnStart"
+                                    android:layout_width="0dp"
+                                    android:layout_height="48dp"
+                                    android:layout_weight="1"
+                                    android:minWidth="0dp"
+                                    android:text="@string/btn_mission_start"
+                                    android:textAllCaps="false"
+                                    android:textSize="12sp" />
+
+                                <Button
+                                    android:id="@+id/btnStop"
+                                    android:layout_width="0dp"
+                                    android:layout_height="48dp"
+                                    android:layout_marginStart="6dp"
+                                    android:layout_weight="1"
+                                    android:minWidth="0dp"
+                                    android:text="@string/btn_mission_stop"
+                                    android:textAllCaps="false"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
                         </LinearLayout>
 
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="6dp"
-                            android:background="@color/ksi_attention_bg"
-                            android:padding="6dp"
-                            android:text="@string/mission_session_boundary"
-                            android:textColor="@color/ksi_attention"
-                            android:textSize="13sp" />
+                    </ScrollView>
+
+                    </LinearLayout>
+
+                    <!-- Fixed command dock (256dp): the concise next-action line
+                         (max 2) plus the 3 sequential rows stay persistent
+                         outside any scroll. Full readiness facts stay in the
+                         bounded left scroll; the sequence/explanation notes
+                         sit below the rows. Upper persistent budget = dock
+                         pads 16 + title 20 + next margin 4 + next 2 lines 40
+                         + next pads 8 + row margin 4 + buttons 152 +
+                         between-rows gaps 16 = 260. IDs moved, never
+                         duplicated. -->
+                    <LinearLayout
+                        android:id="@+id/missionCommandDock"
+                        android:layout_width="@dimen/rc_command_dock_width"
+                        android:layout_height="match_parent"
+                        android:background="@drawable/ksi_panel"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="@string/title_mission_steps"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvMissionNextAction"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:background="@color/ksi_surface_subtle"
+                                android:ellipsize="end"
+                                android:maxLines="2"
+                                android:paddingStart="8dp"
+                                android:paddingTop="4dp"
+                                android:paddingEnd="8dp"
+                                android:paddingBottom="4dp"
+                                android:text="@string/mission_next_unknown"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+                            <LinearLayout
+                                android:id="@+id/rowPrepare"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:orientation="vertical">
+
+                                <Button
+                                    android:id="@+id/btnPrepare"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="@dimen/rc_touch_min"
+                                    android:minWidth="0dp"
+                                    android:text="@string/btn_prepare"
+                                    android:textAllCaps="false"
+                                    android:textSize="12sp" />
+
+                                <Button
+                                    android:id="@+id/btnApply"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="@dimen/rc_touch_min"
+                                    android:layout_marginTop="@dimen/rc_mission_gap"
+                                    android:minWidth="0dp"
+                                    android:text="@string/btn_apply"
+                                    android:textAllCaps="false"
+                                    android:textSize="12sp" />
+                            </LinearLayout>
+
+                            <Button
+                                android:id="@+id/btnStartFlight"
+                                style="@style/Widget.Ksi.Button.Primary"
+                                android:layout_width="match_parent"
+                                android:layout_height="@dimen/rc_record_start_height"
+                                android:layout_marginTop="@dimen/rc_mission_gap"
+                                android:minWidth="0dp"
+                                android:text="@string/btn_start_flight_recording"
+                                android:textAllCaps="false"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <!-- Font-scale guard: the explanation below the
+                                 rows scrolls internally; the 3 rows above
+                                 never scroll away. -->
+                            <ScrollView
+                                android:id="@+id/missionDockExplainScroll"
+                                android:layout_width="match_parent"
+                                android:layout_height="0dp"
+                                android:layout_marginTop="@dimen/rc_mission_gap"
+                                android:layout_weight="1"
+                                android:fillViewport="false"
+                                android:overScrollMode="ifContentScrolls">
+
+                                <LinearLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:orientation="vertical">
+
+                                    <TextView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:text="@string/mission_apply_sequence"
+                                        android:textColor="@color/ksi_muted"
+                                        android:textSize="12sp"
+                                        android:textStyle="bold" />
+
+                                    <TextView
+                                        android:id="@+id/tvStartFlightNote"
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="4dp"
+                                        android:gravity="center"
+                                        android:text="@string/flight_record_start_note"
+                                        android:textColor="@color/ksi_muted"
+                                        android:textSize="13sp" />
+
+                                    <TextView
+                                        android:layout_width="match_parent"
+                                        android:layout_height="wrap_content"
+                                        android:layout_marginTop="6dp"
+                                        android:background="@color/ksi_attention_bg"
+                                        android:padding="6dp"
+                                        android:text="@string/mission_session_boundary"
+                                        android:textColor="@color/ksi_attention"
+                                        android:textSize="13sp" />
+                                </LinearLayout>
+                            </ScrollView>
+
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -1420,39 +2543,20 @@
                 android:padding="8dp"
                 android:visibility="gone">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="@string/postflight_title"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="17sp"
-                        android:textStyle="bold" />
-
-                    <Button
-                        android:id="@+id/btnOpenEvidence"
-                        android:layout_width="wrap_content"
-                        android:layout_height="48dp"
-                        android:minWidth="0dp"
-                        android:text="@string/btn_open_evidence"
-                        android:textAllCaps="false"
-                        android:textSize="12sp" />
-                </LinearLayout>
-
-                <LinearLayout
+                <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_marginTop="4dp"
-                    android:layout_weight="1"
+                    android:layout_weight="1">
+
+                <LinearLayout
+                    android:id="@+id/reviewContentRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
                     android:orientation="horizontal">
 
                     <LinearLayout
+                        android:id="@+id/reviewSessionsColumn"
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
                         android:layout_marginEnd="6dp"
@@ -1460,26 +2564,6 @@
                         android:background="@drawable/ksi_panel"
                         android:orientation="vertical"
                         android:padding="8dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/title_local_flights"
-                            android:textColor="@color/ksi_fg"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/tvFlights"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:ellipsize="end"
-                            android:maxLines="2"
-                            android:text="-"
-                            android:textColor="@color/ksi_fg"
-                            android:textSize="12sp"
-                            android:typeface="monospace" />
 
                         <Spinner
                             android:id="@+id/spHistoryFlight"
@@ -1490,97 +2574,7 @@
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="horizontal">
-
-                            <Button
-                                android:id="@+id/btnFlightPrev"
-                                android:layout_width="0dp"
-                                android:layout_height="48dp"
-                                android:layout_weight="1"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_flight_prev"
-                                android:textAllCaps="false"
-                                android:textSize="13sp" />
-
-                            <Button
-                                android:id="@+id/btnFlightNext"
-                                android:layout_width="0dp"
-                                android:layout_height="48dp"
-                                android:layout_marginStart="4dp"
-                                android:layout_weight="1"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_flight_next"
-                                android:textAllCaps="false"
-                                android:textSize="13sp" />
-                        </LinearLayout>
-
-                        <ScrollView
-                            android:layout_width="match_parent"
-                            android:layout_height="0dp"
-                            android:layout_marginTop="6dp"
-                            android:layout_weight="1"
-                            android:fillViewport="false"
-                            android:background="@color/ksi_surface_subtle"
-                            android:overScrollMode="ifContentScrolls">
-
-                            <TextView
-                                android:id="@+id/tvFlightDetail"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:padding="7dp"
-                                android:text="-"
-                                android:textColor="@color/ksi_fg"
-                                android:textSize="13sp" />
-                        </ScrollView>
-
-                        <TextView
-                            android:id="@+id/tvFlightArtifacts"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
-                            android:ellipsize="end"
-                            android:maxLines="3"
-                            android:text="-"
-                            android:textColor="@color/ksi_muted"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="match_parent"
-                        android:layout_weight="1.5"
-                        android:background="@drawable/ksi_panel"
-                        android:orientation="vertical"
-                        android:padding="8dp">
-
-                        <TextView
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="@string/title_event_review"
-                            android:textColor="@color/ksi_fg"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-
-                        <ScrollView
-                            android:layout_width="match_parent"
-                            android:layout_height="0dp"
-                            android:layout_marginTop="4dp"
-                            android:layout_weight="0.8"
-                            android:fillViewport="false"
-                            android:overScrollMode="ifContentScrolls">
-
-                            <TextView
-                                android:id="@+id/tvFlightEvents"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:text="-"
-                                android:textColor="@color/ksi_fg"
-                                android:textSize="13sp" />
-                        </ScrollView>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
                             android:orientation="horizontal">
 
                             <Button
@@ -1605,91 +2599,342 @@
                                 android:textSize="13sp" />
                         </LinearLayout>
 
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/title_event_review"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
                         <ScrollView
                             android:layout_width="match_parent"
                             android:layout_height="0dp"
                             android:layout_marginTop="4dp"
-                            android:layout_weight="1"
+                            android:layout_weight="0.8"
                             android:fillViewport="false"
                             android:overScrollMode="ifContentScrolls">
 
-                            <TextView
-                                android:id="@+id/tvEventDetail"
+                            <!-- Adopted event-kind-first records: events are
+                                 grouped by their stored kind (no invented
+                                 sub-area names; zone refs stay short IDs).
+                                 Each row keeps the 48dp glove minimum; the
+                                 detail below stays the single selection
+                                 record. Built in code from the real store. -->
+                            <LinearLayout
+                                android:id="@+id/eventRowList"
                                 android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:padding="5dp"
-                                android:text="-"
-                                android:textColor="@color/ksi_fg"
-                                android:textSize="13sp" />
+                                android:orientation="vertical" />
                         </ScrollView>
+                    </LinearLayout>
 
-                        <LinearLayout
+                    <LinearLayout
+                        android:id="@+id/reviewViewerColumn"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1.5"
+                        android:background="@drawable/ksi_panel"
+                        android:orientation="vertical"
+                        android:padding="8dp">
+
+
+
+
+
+
+
+
+                        <FrameLayout
+                            android:id="@+id/evidenceViewerStage"
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:gravity="center_vertical"
-                            android:orientation="horizontal">
-
-                            <Button
-                                android:id="@+id/btnFlagFalsePositive"
-                                android:layout_width="0dp"
-                                android:layout_height="48dp"
-                                android:layout_weight="1"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_flag_false_positive"
-                                android:textAllCaps="false"
-                                android:textSize="13sp" />
-
-                            <Button
-                                android:id="@+id/btnViewEvidence"
-                                android:layout_width="0dp"
-                                android:layout_height="48dp"
-                                android:layout_marginStart="4dp"
-                                android:layout_weight="1"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_view_evidence"
-                                android:textAllCaps="false"
-                                android:textSize="13sp" />
-
-                            <Button
-                                android:id="@+id/btnFetchEvidence"
-                                android:layout_width="0dp"
-                                android:layout_height="48dp"
-                                android:layout_marginStart="4dp"
-                                android:layout_weight="1"
-                                android:minWidth="0dp"
-                                android:text="@string/btn_fetch_evidence"
-                                android:textAllCaps="false"
-                                android:textSize="13sp" />
-                        </LinearLayout>
-
-                        <ImageView
+                            android:layout_height="0dp"
+                            android:layout_weight="1"
+                            android:background="@color/ksi_video_bg">
+                        <ksi.safetyedge.rc.ZoomEvidenceImageView
                             android:id="@+id/ivEvidence"
                             android:layout_width="match_parent"
-                            android:layout_height="104dp"
-                            android:layout_marginTop="4dp"
+                            android:layout_height="match_parent"
                             android:background="@color/ksi_video_bg"
                             android:contentDescription="@string/label_evidence_image"
                             android:scaleType="fitCenter" />
+                        <LinearLayout
+                            android:id="@+id/evidenceViewerEmpty"
+                            android:layout_width="match_parent"
+                            android:layout_height="match_parent"
+                            android:gravity="center"
+                            android:orientation="vertical"
+                            android:padding="16dp">
+                            <TextView
+                                android:id="@+id/tvEvidenceEmpty"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:text="@string/review_frame_unavailable"
+                                android:textColor="@color/ksi_video_fg"
+                                android:textSize="15sp" />
+                            <Button
+                                android:id="@+id/btnReviewEmptyRecovery"
+                                android:layout_width="wrap_content"
+                                android:layout_height="48dp"
+                                android:layout_marginTop="12dp"
+                                android:text="@string/btn_open_evidence"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+                        </FrameLayout>
+
+                        <!-- Filmstrip: one 48dp entry per preserved frame
+                             linked to the selected event. ONLY genuinely
+                             preserved frames (local bytes complete) are
+                             enabled; missing frames stay disabled with their
+                             reason — never faked, never hidden silently. -->
+                        <HorizontalScrollView
+                            android:id="@+id/filmstripScroll"
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/rc_filmstrip_height"
+                            android:layout_marginTop="4dp"
+                            android:fillViewport="false"
+                            android:overScrollMode="ifContentScrolls">
+
+                            <LinearLayout
+                                android:id="@+id/filmstripList"
+                                android:layout_width="wrap_content"
+                                android:layout_height="match_parent"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal" />
+                        </HorizontalScrollView>
 
                         <TextView
                             android:id="@+id/tvEvidenceMeta"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
                             android:ellipsize="end"
                             android:maxLines="1"
                             android:text="-"
                             android:textColor="@color/ksi_muted"
                             android:textSize="12sp" />
+
                     </LinearLayout>
                 </LinearLayout>
+
+                <!-- Default-closed overlay: 판정·증거 (selection detail,
+                     annotation, fetch) and 운용 기록 (flight facts,
+                     custody, diagnostics). Recovery and actions stay
+                     available on demand here — never auto-opened. -->
+                <LinearLayout
+                    android:id="@+id/reviewOverlay"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:background="@color/ksi_bg"
+                    android:orientation="vertical"
+                    android:padding="8dp"
+                    android:visibility="gone">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="@string/review_overlay_title"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="15sp"
+                            android:textStyle="bold" />
+
+                        <Button
+                            android:id="@+id/btnReviewOverlayClose"
+                            android:layout_width="wrap_content"
+                            android:layout_height="48dp"
+                            android:minWidth="0dp"
+                            android:text="@string/btn_overlay_close"
+                            android:textAllCaps="false"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <ScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_marginTop="4dp"
+                        android:layout_weight="1"
+                        android:fillViewport="false"
+                        android:overScrollMode="ifContentScrolls">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="@string/review_section_assess"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvEventDetail"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="-"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:gravity="center_vertical"
+                                android:orientation="horizontal">
+
+                                <Button
+                                    android:id="@+id/btnFlagFalsePositive"
+                                    android:layout_width="0dp"
+                                    android:layout_height="48dp"
+                                    android:layout_weight="1"
+                                    android:minWidth="0dp"
+                                    android:text="@string/btn_flag_false_positive"
+                                    android:textAllCaps="false"
+                                    android:textSize="13sp" />
+
+                                <Button
+                                    android:id="@+id/btnViewEvidence"
+                                    android:layout_width="0dp"
+                                    android:layout_height="48dp"
+                                    android:layout_marginStart="4dp"
+                                    android:layout_weight="1"
+                                    android:minWidth="0dp"
+                                    android:text="@string/btn_view_evidence"
+                                    android:textAllCaps="false"
+                                    android:textSize="13sp" />
+
+                                <Button
+                                    android:id="@+id/btnFetchEvidence"
+                                    android:layout_width="0dp"
+                                    android:layout_height="48dp"
+                                    android:layout_marginStart="4dp"
+                                    android:layout_weight="1"
+                                    android:minWidth="0dp"
+                                    android:text="@string/btn_fetch_evidence"
+                                    android:textAllCaps="false"
+                                    android:textSize="13sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="12dp"
+                                android:text="@string/review_section_ops"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvFlights"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:ellipsize="end"
+                                android:maxLines="1"
+                                android:text="-"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="12sp"
+                                android:typeface="monospace" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:orientation="horizontal">
+
+                                <Button
+                                    android:id="@+id/btnFlightPrev"
+                                    android:layout_width="0dp"
+                                    android:layout_height="48dp"
+                                    android:layout_weight="1"
+                                    android:minWidth="0dp"
+                                    android:text="@string/btn_flight_prev"
+                                    android:textAllCaps="false"
+                                    android:textSize="13sp" />
+
+                                <Button
+                                    android:id="@+id/btnFlightNext"
+                                    android:layout_width="0dp"
+                                    android:layout_height="48dp"
+                                    android:layout_marginStart="4dp"
+                                    android:layout_weight="1"
+                                    android:minWidth="0dp"
+                                    android:text="@string/btn_flight_next"
+                                    android:textAllCaps="false"
+                                    android:textSize="13sp" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tvFlightDetail"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="-"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="13sp" />
+
+                            <TextView
+                                android:id="@+id/tvFlightArtifacts"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="-"
+                                android:textColor="@color/ksi_muted"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvObservationSummary"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:background="@color/ksi_surface_subtle"
+                                android:padding="5dp"
+                                android:text="@string/observation_summary_placeholder"
+                                android:textColor="@color/ksi_fg"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tvObservationSync"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:background="@color/ksi_surface_subtle"
+                                android:padding="5dp"
+                                android:text="@string/observation_sync_placeholder"
+                                android:textColor="@color/ksi_text_quiet"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+                    </ScrollView>
+                </LinearLayout>
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/tvCustodyLine"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="@string/review_custody_unknown"
+                    android:textColor="@color/ksi_fg"
+                    android:textSize="12sp" />
 
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@color/ksi_attention_bg"
+                    android:background="@color/ksi_surface_subtle"
                     android:padding="5dp"
                     android:text="@string/review_criteria_note"
-                    android:textColor="@color/ksi_attention"
+                    android:textColor="@color/ksi_muted"
                     android:textSize="13sp" />
             </LinearLayout>
 
@@ -1708,6 +2953,16 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
+                    <Button
+                        android:id="@+id/btnEvidenceBack"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:maxWidth="200dp"
+                        android:minWidth="0dp"
+                        android:text="@string/btn_evidence_back"
+                        android:textAllCaps="false"
+                        android:textSize="13sp" />
+
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -1721,6 +2976,7 @@
                         android:id="@+id/btnRefreshEvidence"
                         android:layout_width="wrap_content"
                         android:layout_height="48dp"
+                        android:maxWidth="200dp"
                         android:minWidth="0dp"
                         android:text="@string/btn_refresh_evidence"
                         android:textAllCaps="false"
@@ -1843,11 +3099,11 @@
             </LinearLayout>
 
             <!-- SETTINGS / diagnostics: configuration may scroll; field phases do not. -->
-            <ScrollView
+            <LinearLayout
                 android:id="@+id/pageSettings"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:fillViewport="true"
+                android:orientation="horizontal"
                 android:padding="12dp"
                 android:visibility="gone">
 
@@ -1857,188 +3113,73 @@
                     android:orientation="vertical">
 
                     <TextView
+                        android:id="@+id/settingsConnectionTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:text="@string/page_title_settings"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="18sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/tvClockNote"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:background="@color/ksi_attention_bg"
-                        android:padding="8dp"
-                        android:text="@string/clock_unverified"
-                        android:textColor="@color/ksi_attention"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="@string/section_app_info"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:text="@string/app_info_product_label"
-                        android:textColor="@color/ksi_muted"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp"
-                        android:text="@string/app_info_product_value"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/app_info_device_label"
-                        android:textColor="@color/ksi_muted"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/tvDeviceInfo"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp"
-                        android:text="-"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/app_info_orientation_label"
-                        android:textColor="@color/ksi_muted"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp"
-                        android:text="@string/app_info_orientation_value"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/app_info_version_label"
-                        android:textColor="@color/ksi_muted"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:id="@+id/tvAppVersion"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp"
-                        android:text="-"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/app_info_network_label"
-                        android:textColor="@color/ksi_muted"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:paddingStart="4dp"
-                        android:paddingEnd="4dp"
-                        android:text="@string/app_info_network_value"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="@string/section_operator"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-
-                    <EditText
-                        android:id="@+id/etOperatorName"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:hint="@string/hint_operator_name"
-                        android:inputType="textPersonName" />
-
-                    <EditText
-                        android:id="@+id/etOperatorOrg"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:hint="@string/hint_operator_org"
-                        android:inputType="text" />
-
-                    <Button
-                        android:id="@+id/btnSaveOperator"
-                        android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:text="@string/btn_save_operator"
-                        android:textAllCaps="false" />
-
-                    <TextView
-                        android:id="@+id/tvOperator"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="6dp"
-                        android:text="-"
-                        android:textColor="@color/ksi_fg"
-                        android:textSize="13sp" />
-
-                    <TextView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
                         android:text="@string/section_core_state"
                         android:textColor="@color/ksi_fg"
                         android:textSize="15sp"
                         android:textStyle="bold" />
-
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:labelFor="@id/etCoreUrl"
+                        android:text="@string/label_core_url"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="12sp" />
                     <EditText
                         android:id="@+id/etCoreUrl"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
+                        android:textSize="14sp"
+                        android:singleLine="true"
                         android:hint="@string/hint_core_url"
                         android:inputType="textUri" />
-
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/etCoreToken"
+                        android:text="@string/label_core_token"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="12sp" />
                     <EditText
                         android:id="@+id/etCoreToken"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
+                        android:textSize="14sp"
+                        android:singleLine="true"
                         android:hint="@string/hint_core_token"
                         android:inputType="textPassword" />
-
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:orientation="horizontal">
                     <Button
                         android:id="@+id/btnSaveCore"
-                        android:layout_width="match_parent"
+                        style="@style/Widget.Ksi.Button.Primary"
+                        android:layout_width="0dp"
                         android:layout_height="48dp"
+                        android:layout_weight="1"
                         android:text="@string/btn_save_core"
                         android:textAllCaps="false" />
+                    <Button
+                        android:id="@+id/btnTestEdgeLink"
+                        android:layout_width="0dp"
+                        android:layout_height="48dp"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:text="@string/btn_test_edge_link"
+                        android:textAllCaps="false" />
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/tvTestEdgeLink"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="6dp"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="13sp" />
 
                     <TextView
                         android:layout_width="match_parent"
@@ -2056,6 +3197,121 @@
                         android:text="-"
                         android:textColor="@color/ksi_fg"
                         android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/section_operator"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:labelFor="@id/etOperatorName"
+                        android:text="@string/hint_operator_name"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="12sp" />
+                    <EditText
+                        android:id="@+id/etOperatorName"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:textSize="14sp"
+                        android:singleLine="true"
+                        android:hint="@string/hint_operator_name"
+                        android:inputType="textPersonName" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:labelFor="@id/etOperatorOrg"
+                        android:text="@string/hint_operator_org"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="12sp" />
+                    <EditText
+                        android:id="@+id/etOperatorOrg"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:textSize="14sp"
+                        android:singleLine="true"
+                        android:hint="@string/hint_operator_org"
+                        android:inputType="text" />
+                    <Button
+                        android:id="@+id/btnSaveOperator"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:text="@string/btn_save_operator"
+                        android:textAllCaps="false" />
+                    <TextView
+                        android:id="@+id/tvOperator"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="6dp"
+                        android:text="-"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="13sp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/section_app_info"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="@string/app_info_product_value"
+                        android:textColor="@color/ksi_fg"
+                        android:textSize="14sp" />
+                    <TextView
+                        android:id="@+id/tvDeviceInfo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="-"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="13sp" />
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:orientation="horizontal">
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/app_info_version_label"
+                            android:textColor="@color/ksi_muted"
+                            android:textSize="12sp" />
+                        <TextView
+                            android:id="@+id/tvAppVersion"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="8dp"
+                            android:text="-"
+                            android:textColor="@color/ksi_fg"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                    <TextView
+                        android:id="@+id/tvClockNote"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:background="@color/ksi_surface_subtle"
+                        android:padding="8dp"
+                        android:text="@string/clock_unverified"
+                        android:textColor="@color/ksi_muted"
+                        android:textSize="12sp" />
+                    <Button
+                        android:id="@+id/btnWideVideo"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginTop="8dp"
+                        android:minWidth="0dp"
+                        android:text="@string/btn_wide_video_on"
+                        android:textAllCaps="false" />
 
                     <TextView
                         android:layout_width="match_parent"
@@ -2126,7 +3382,7 @@
                     </LinearLayout>
 
                 </LinearLayout>
-            </ScrollView>
+            </LinearLayout>
         </FrameLayout>
 
         <TextView

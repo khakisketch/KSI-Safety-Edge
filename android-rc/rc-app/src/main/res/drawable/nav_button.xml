@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nav: selected fills ksi_primary; unselected is transparent. Combined
+     selected+pressed/focused items keep the fill and add a stroke so the
+     selected state is never lost under touch or keyboard focus. Disabled
+     (any selection) falls back to surface_subtle. Rounded 6dp, no shadow. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/ksi_surface_subtle" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item android:state_selected="true" android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/ksi_primary" />
+            <stroke android:width="2dp" android:color="@color/ksi_border" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item android:state_selected="true" android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/ksi_primary" />
+            <stroke android:width="2dp" android:color="@color/ksi_muted" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/ksi_primary" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/ksi_surface_subtle" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <stroke android:width="1dp" android:color="@color/ksi_muted" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+</selector>

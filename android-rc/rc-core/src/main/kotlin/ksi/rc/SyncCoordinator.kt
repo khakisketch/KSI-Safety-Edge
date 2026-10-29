@@ -34,6 +34,10 @@ data class SyncOutcome(
          *  missing: pushing again will not fix it — surface for a human. */
         const val SERVER_MISSING = "SERVER_MISSING"
 
+        /** Structured operator responses are still pending although the
+         *  artifacts committed: the next sync must retry them. */
+        const val RESPONSES_PENDING = "RESPONSES_PENDING"
+
         const val UNKNOWN_CAUSE = "UNKNOWN"
     }
 }
@@ -69,7 +73,19 @@ class SyncCoordinator(
         }
         return try {
             val report = uploader.uploadFlight(spec)
-            SyncOutcome(report.uploadState, report, partialCause = classifyPartial(report))
+            if (report.uploadState == SyncOutcome.COMPLETE && report.responsesPending > 0) {
+                // Artifact COMMITTED stays true, but structured responses
+                // are still pending: report PARTIAL so the retry loop does
+                // not short-circuit (a COMPLETE here would stop retries and
+                // strand the responses).
+                SyncOutcome(
+                    SyncOutcome.PARTIAL, report,
+                    "structured operator responses still pending",
+                    partialCause = SyncOutcome.RESPONSES_PENDING,
+                )
+            } else {
+                SyncOutcome(report.uploadState, report, partialCause = classifyPartial(report))
+            }
         } catch (exc: Exception) {
             SyncOutcome(SyncOutcome.FAILED, null, "upload failed: ${exc.message}")
         }

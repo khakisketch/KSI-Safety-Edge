@@ -103,6 +103,7 @@ void MopTickEvidence::SetContext(MopEvidenceContext context) {
     person_max_ = 0;
     equipment_max_ = 0;
     any_sync_degraded_ = false;
+    durable_gap_ = false;
 }
 
 std::string MopTickEvidence::SessionId(const std::string& flight_id,
@@ -130,10 +131,17 @@ std::string MopTickEvidence::GeometryStatus(const TickRecord& record) const {
                : "WITHHELD";
 }
 
-std::string MopTickEvidence::ObservationId(const TickRecord& record) const {
+std::string MopTickEvidence::ObservationIdFor(const std::string& flight_id,
+                                               const std::string& edge_boot_id,
+                                               std::uint64_t tick_index) {
     return Uuid5(MopProtocol::Namespace(),
-                 "obs|" + context_.flight_id + "|" + context_.edge_boot_id +
-                     "|" + std::to_string(record.tick_index));
+                 "obs|" + flight_id + "|" + edge_boot_id + "|" +
+                     std::to_string(tick_index));
+}
+
+std::string MopTickEvidence::ObservationId(const TickRecord& record) const {
+    return ObservationIdFor(context_.flight_id, context_.edge_boot_id,
+                            record.tick_index);
 }
 
 MopTickEvidence::TickPayloads MopTickEvidence::BuildTick(
@@ -340,6 +348,13 @@ bool MopTickEvidence::BuildSummary(const std::string& session_id,
     summary.quality_reasons.emplace_back("UNVERIFIED_FRAME_CAPTURE_TIME");
     if (any_sync_degraded_) {
         summary.quality_reasons.emplace_back("TELEMETRY_SYNC_DEGRADED");
+    }
+    if (durable_gap_) {
+        // Some ticks in this session were refused a durable record (spool
+        // unwritable): the summary must never read clean while the RC is
+        // missing records. Counts above exclude the refused ticks (they
+        // were never folded into the aggregates).
+        summary.quality_reasons.emplace_back("DURABLE_EVIDENCE_GAP");
     }
     summary.created_at_edge_monotonic_ns = last_recv_ns_;
     *out = MakeFlightSummaryPayload(summary);

@@ -40,20 +40,38 @@ extern "C" {
 #include "platform/usb_bulk_glue.h"
 }
 
+#include "ksi_safety/evidence/recorder.hpp"
+#include "ksi_safety/evidence/store.hpp"
+#include "ksi_safety/observation/autonomous_processor.hpp"
 #include "ksi_safety/capture/frame_queue.hpp"
 #include "ksi_safety/perception/dfine_detector_port.hpp"
 #include "ksi_safety/perception/tensorrt_runtime.hpp"
+#include "ksi_safety/runtime/run_control.hpp"
 #include "ksi_safety/runtime/session_runner.hpp"
 #include "ksi_safety/time/interpolation.hpp"
 #include "ksi_safety/time/matching.hpp"
 #include "ksi_safety/time/provenance.hpp"
 #include "ksi_safety/time/topic_ring.hpp"
+#include "ksi_safety/transport/digest.hpp"
+#include "ksi_safety/transport/mop_envelope.hpp"
+#include "ksi_safety/transport/mop_tick_evidence.hpp"
 
+#include "app_config.hpp"
 #include "mop_service.hpp"
+#include "source_context.hpp"
 
 namespace {
 
 using ksi::safety::BoundedFrameQueue;
+using ksi::safety::EvidenceStatus;
+using ksi::safety::EvidenceStore;
+using ksi::safety::EvidenceStatusName;
+using ksi::safety::SourceAsset;
+using ksi::safety::RunControl;
+using ksi::safety::RunControlInputs;
+using ksi::safety::RunControlOutcome;
+using ksi::safety::RuntimeState;
+using ksi::safety::SnapshotToFacts;
 using ksi::safety::ClockRegistry;
 using ksi::safety::DetectorPort;
 using ksi::safety::DfineConfig;
@@ -70,6 +88,7 @@ using ksi::safety::RunnerConfig;
 using ksi::safety::Sample;
 using ksi::safety::SessionConfig;
 using ksi::safety::SessionRunner;
+using ksi::safety::Sha256HexOfFile;
 using ksi::safety::TensorRtRuntime;
 using ksi::safety::TickRecord;
 using ksi::safety::TimeSourceKind;
@@ -88,8 +107,27 @@ constexpr std::int64_t kNsPerSec = 1000000000LL;
 constexpr std::int64_t kNsPerMs = 1000000LL;
 constexpr std::int64_t kPollIntervalNs = 200000000LL;  // 200 ms signal latency
 
-#ifndef KSI_SAFETY_EDGE_DURATION_SEC
-#define KSI_SAFETY_EDGE_DURATION_SEC 60
+// NOTE (retired): KSI_SAFETY_EDGE_DURATION_SEC no longer exists. A stale
+// cache entry with the old 60 s default must NOT force an operational
+// timeout — the argvless service is unbounded by default. Diagnostic runs
+// use KSI_SAFETY_EDGE_DIAG_DURATION_SEC instead (see CMakeLists).
+#ifndef KSI_SAFETY_EDGE_MOP_CHANNEL
+#define KSI_SAFETY_EDGE_MOP_CHANNEL 0
+#endif
+#ifndef KSI_SAFETY_EDGE_DIAG_DURATION_SEC
+#define KSI_SAFETY_EDGE_DIAG_DURATION_SEC 60
+#endif
+#ifndef KSI_SAFETY_EDGE_ENGINE_PATH
+#define KSI_SAFETY_EDGE_ENGINE_PATH ""
+#endif
+#ifndef KSI_SAFETY_EDGE_MODEL_ID
+#define KSI_SAFETY_EDGE_MODEL_ID ""
+#endif
+#ifndef KSI_SAFETY_EDGE_AUTONOMY_EVIDENCE_DIR
+#define KSI_SAFETY_EDGE_AUTONOMY_EVIDENCE_DIR ""
+#endif
+#ifndef KSI_SAFETY_EDGE_SOURCE_ATTENTION_POLICY
+#define KSI_SAFETY_EDGE_SOURCE_ATTENTION_POLICY ""
 #endif
 #ifndef KSI_SAFETY_EDGE_CAMERA_SOURCE
 #define KSI_SAFETY_EDGE_CAMERA_SOURCE DJI_LIVEVIEW_CAMERA_SOURCE_M4E_VIS
@@ -151,6 +189,13 @@ void FormatWallUtc(std::int64_t wall_ms, char* out, std::size_t out_size) {
     std::strftime(out, out_size, "%Y-%m-%dT%H:%M:%SZ", &broken);
 }
 
+std::string ConfiguredRgbStreamId() {
+    // Describes the source actually passed to StartImageStream below, NOT
+    // inferred lens/zoom telemetry. One configured stream in this process.
+    return "psdk-rgb-port1-source-" +
+        std::to_string(static_cast<int>(KSI_SAFETY_EDGE_CAMERA_SOURCE));
+}
+
 struct AppState {
     ClockRegistry clocks;
     BoundedFrameQueue frames{kFrameSlots, kMaxRgbFrameBytes};
@@ -166,6 +211,31 @@ struct AppState {
 
     // A9-2: MOP evidence path (null when --mop-channel is not given).
     MopService* mop = nullptr;
+
+    // Source-evidence recorder: the bytes an observation was computed from.
+    // Separate lifetime from the MOP spool (delivery guarantee): the spool
+    // may be compacted after the RC acked a message, this one is the origin.
+    // The capture policy lives in the shared library (edge/src/evidence),
+    // so the device app, the host Edge and the replay tool produce the same
+    // evidence from the same code.
+    std::unique_ptr<ksi::safety::SourceEvidenceRecorder> evidence;
+
+    // Unit A passive autonomy (opt-in via --autonomy-evidence-dir; null =
+    // off). Same shared wiring as the host tools (ProcessSharedTick).
+    // autonomy_identity is "flight|boot": adoption/reboot recreates the
+    // processor so asset ids never merge lineages across identities.
+    std::unique_ptr<ksi::safety::AutonomousProcessor> autonomy;
+    std::string autonomy_identity;
+    bool autonomy_saturation_logged = false;
+    // Resolved startup config for the worker thread (autonomy opt-in only;
+    // argv memory outlives the process).
+    ksi_safety_edge_app::AppConfig app_args;
+
+    // G9 run control: all edge state (consumed command epoch/revision and
+    // applied generation) is owned by the RunControl below; the service
+    // tracks what it already reported. The worker poll takes one coherent
+    // snapshot per iteration — never two separately sampled counters.
+    RunControl run_control;
 
     std::atomic<std::uint64_t> frame_seq{0};
     std::atomic<std::uint64_t> att_seq{0};
@@ -330,52 +400,625 @@ T_DjiReturnCode OnGpsDetails(const std::uint8_t* data, std::uint16_t data_size,
     return DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS;
 }
 
+// --- G9 run control: RC commands drive the Manifold execution -------------
+// NOTE: the run-control DECISION logic (command snapshot -> runner
+// transitions + runtime facts) lives in ksi::safety::RunControl
+// (edge/include/ksi_safety/runtime/run_control.hpp) and is host-tested in
+// edge/tests/test_run_control.cpp (the endpoint half — revision, order,
+// dedup, epoch — in edge/tests/test_runtime_control.cpp). What follows is
+// a thin DJI-facing adapter only: it takes ONE coherent command snapshot
+// under a single service lock, delegates to RunControl, publishes the
+// resulting facts, and requests the final summary. Sampling the session
+// counters and the bundle generation in separate calls is forbidden here:
+// a command landing between the samples fuses contradictory facts. The
+// adapter itself is verified on device (A9-4), never on the host.
+//
+// The RC owns requests and confirmations; the runner owns execution. The
+// FINAL operator intent wins: START-then-STOP in one poll ends stopped,
+// STOP-then-START ends started, APPLY+START installs then starts.
+//
+// No start means no processing: WorkerMain drops frames while the gate is
+// closed. MOP-link loss never reaches the runner — it only gates EmitTick
+// inside MopService, so local observation continues while disconnected.
+
+void PublishSnapshot(AppState* state) {
+    MopService* mop = state->mop;
+    if (mop == nullptr || state->runner == nullptr) {
+        return;
+    }
+    mop->PublishRuntimeFacts(
+        SnapshotToFacts(state->runner->Snapshot()));
+}
+
+// Bundle identity for the audit journal (empty when absent/unknown).
+std::string BundleIdOf(const ksi::safety::JsonValue* bundle) {
+    if (bundle == nullptr) return "";
+    const ksi::safety::JsonValue* id = bundle->Find("bundle_id");
+    return (id != nullptr && id->IsString()) ? id->strValue() : "";
+}
+
+std::string BundleShaOf(const ksi::safety::JsonValue* bundle) {
+    if (bundle == nullptr) return "";
+    const ksi::safety::JsonValue* sha = bundle->Find("bundle_sha256");
+    return (sha != nullptr && sha->IsString()) ? sha->strValue() : "";
+}
+
+std::string FirstReason(const std::vector<std::string>& reasons) {
+    return reasons.empty() ? "" : reasons[0];
+}
+
+// --- Source evidence (the origin of an observation) ---------------------------
+
+// Bounds the evidence store on the device. The store REFUSES writes past
+// this bound (it never evicts and never silently drops): when the bound is
+// reached the run says so instead of pretending the frames exist.
+constexpr std::uint64_t kEvidenceCapacityBytes = 128ULL * 1024ULL * 1024ULL;
+
+// Keeps the source frame of a material observation.
+//
+// WHY: the MOP envelope carries the judgement (class, box, digest), not the
+// pixels the detector consumed. Without the frame a reviewer can check the
+// number but never the picture behind it, and the RC cannot tell an
+// observation apart from a mis-detection.
+//
+// POLICY (explicit, not incidental):
+//   - only observations that actually saw something (a fresh detection) are
+//     kept: an empty frame carries no review value and would fill the
+//     device in seconds;
+//   - the asset id and the observation id are derived from the SAME flight,
+//     boot and tick, so the link between the stored bytes and the judgement
+//     is a derivation, not a guess;
+//   - a full store refuses the frame and reports it: a missing frame is
+//     visible, a silently missing frame is not.
+void CaptureSourceFrame(AppState* state, const ksi::safety::TickRecord& record,
+                         const FramePacket& packet) {
+    if (state->evidence == nullptr || state->mop == nullptr) return;
+    if (packet.rgb.empty()) return;
+    ksi::safety::SourceFrame frame;
+    frame.flight_id = state->mop->flightId();
+    frame.edge_boot_id = state->mop->edgeBootId();
+    frame.frame_id = packet.metadata.frame_id;
+    frame.received_monotonic_ns = packet.metadata.received_monotonic_ns;
+    frame.rgb = packet.rgb.data();
+    frame.rgb_size = packet.rgb.size();
+    const EvidenceStatus status = state->evidence->Capture(record, frame);
+    if (status == EvidenceStatus::kOk) return;
+    if (status == EvidenceStatus::kDuplicate) return;  // already kept
+    if (status == EvidenceStatus::kInvalid) return;     // nothing material to keep
+    if (status == EvidenceStatus::kFull) {
+        std::fprintf(stderr,
+                     "Evidence store full (%llu bytes): the source frame of "
+                     "this observation is NOT retained\n",
+                     static_cast<unsigned long long>(state->evidence->capacity_bytes()));
+        return;
+    }
+    std::fprintf(stderr, "Evidence store refused a source frame (%s)\n",
+                 EvidenceStatusName(status));
+}
+
+// Seals the session's captured frames into one immutable revision.
+//
+// The revision is what a collector exports: it names the exact asset ids and
+// digests the session covered, so the Core can tell "this frame is the one
+// behind that observation" without guessing. Sealing never deletes: the
+// bytes stay until a retention decision says otherwise.
+void SealEvidenceRevision(AppState* state, std::int64_t now_ns) {
+    if (state->evidence == nullptr || state->mop == nullptr) return;
+    const std::string flight_id = state->mop->flightId();
+    const std::string boot_id = state->mop->edgeBootId();
+    std::string revision_id;
+    std::string manifest;
+    std::string error;
+    if (!state->evidence->Seal(flight_id, boot_id, now_ns, &revision_id, &manifest,
+                               &error)) {
+        if (error.rfind("no source frames", 0) == 0) return;  // nothing to seal
+        std::fprintf(stderr, "Evidence revision NOT sealed: %s\n", error.c_str());
+        return;
+    }
+    std::fprintf(stderr, "Evidence revision sealed: %s (%zu source frames)\n",
+                 revision_id.c_str(), state->evidence->captured_count());
+}
+
+// Unit A passive autonomy, explicit opt-in only (--autonomy-evidence-dir).
+// Identity comes from the live MOP service when present (adoption changes
+// recreate the processor: asset ids never merge lineages), else from the
+// standalone diagnostic labels. Invalid config disables with a reason;
+// never a silent partial run.
+void MaybeInitAutonomy(AppState* state,
+                         const ksi_safety_edge_app::AppConfig& args) {
+    if (args.autonomy_evidence_dir == nullptr) return;
+    std::string flight = "standalone-flight";
+    std::string boot = "standalone-boot";
+    if (state->mop != nullptr) {
+        const auto source_identity = state->mop->SourceIdentitySnapshot();
+        flight = source_identity.flight_id;
+        boot = source_identity.edge_boot_id;
+        if (flight.empty() || boot.empty()) return;  // no identity yet
+    }
+    const std::string identity = flight + "|" + boot;
+    if (state->autonomy != nullptr && state->autonomy_identity == identity) {
+        return;
+    }
+    if (state->autonomy != nullptr) {
+        const std::int64_t now_ns = MonotonicNowNs();
+        state->autonomy->RequestStop(now_ns);
+        std::string revision_id, manifest, error;
+        if (state->autonomy->Seal(&revision_id, &manifest, &error)) {
+            std::fprintf(stderr, "Autonomy revision sealed: %s (%zu)\n",
+                         revision_id.c_str(),
+                         state->autonomy->artifacts().size());
+        }
+        std::fprintf(stderr,
+                     "Autonomy identity moved (%s): processor recreated\n",
+                     identity.c_str());
+    }
+    ksi::safety::AutonomousConfig config;
+    config.enabled = true;
+    config.ring.max_frames = 64;
+    config.ring.max_bytes = 64ULL * 1024 * 1024;
+    config.ring.pre_frames = static_cast<std::size_t>(
+        args.autonomy_pre_frames < 0 ? 0 : args.autonomy_pre_frames);
+    config.ring.post_frames = static_cast<std::size_t>(
+        args.autonomy_post_frames < 0 ? 0 : args.autonomy_post_frames);
+    config.ring.window_deadline_ns =
+        args.autonomy_window_deadline_ms * 1000000LL;
+    config.window_min_interval_ns =
+        args.autonomy_window_min_interval_ms * 1000000LL;
+    config.store_capacity_bytes =
+        static_cast<std::uint64_t>(args.autonomy_capacity_bytes < 0
+                                       ? 0
+                                       : args.autonomy_capacity_bytes);
+    config.evidence_dir = args.autonomy_evidence_dir;
+    config.flight_id = flight;
+    config.edge_boot_id = boot;
+    config.stream_id = ConfiguredRgbStreamId();
+    if (state->runner != nullptr) {
+        config.effective_config_hash = state->runner->effective_config_hash();
+        config.config_epoch = state->runner->config_epoch();
+    }
+    config.camera_manual_override = args.camera_manual;
+    config.source_attention = args.source_attention;
+    config.simulated_input = false;  // device input, never synthetic
+    std::string error;
+    if (!ksi::safety::IsValidAutonomousConfig(config, &error)) {
+        std::fprintf(stderr, "Autonomy disabled (bad config): %s\n",
+                     error.c_str());
+        state->autonomy.reset();
+        state->autonomy_identity.clear();
+        return;
+    }
+    auto processor =
+        std::make_unique<ksi::safety::AutonomousProcessor>(config);
+    if (!processor->valid()) {
+        std::fprintf(stderr, "Autonomy disabled: %s\n",
+                     processor->error().c_str());
+        state->autonomy.reset();
+        state->autonomy_identity.clear();
+        return;
+    }
+    state->autonomy = std::move(processor);
+    state->autonomy_identity = identity;
+    state->autonomy_saturation_logged = false;
+    std::fprintf(stderr, "Autonomy on (SHADOW, passive): %s\n",
+                 identity.c_str());
+}
+
+// Seals the autonomy artifacts (assessments + windows + coverage). Best
+// effort at stop/shutdown: unsealed autonomy bytes are unexportable.
+void SealAutonomyRevision(AppState* state, std::int64_t now_ns) {
+    if (state->autonomy == nullptr) return;
+    state->autonomy->RequestStop(now_ns);
+    std::string revision_id, manifest, error;
+    if (!state->autonomy->Seal(&revision_id, &manifest, &error)) {
+        if (error.rfind("no autonomous artifacts", 0) == 0) return;
+        std::fprintf(stderr, "Autonomy revision NOT sealed: %s\n",
+                     error.c_str());
+        return;
+    }
+    std::fprintf(stderr, "Autonomy revision sealed: %s (%zu artifacts)\n",
+                 revision_id.c_str(), state->autonomy->artifacts().size());
+}
+
+void SyncRunControl(AppState* state) {
+    MopService* mop = state->mop;
+    if (mop == nullptr || state->runner == nullptr) {
+        return;
+    }
+    // Write-ahead audit gate (see ksi::safety::AuditGate): every required
+    // durability outcome is journalled BEFORE the claim that depends on
+    // it — Step (commands), confirm/reject (install receipt), publish
+    // (state), summary/ship (close). The first failure suspends the rest
+    // of the poll: no Step, no confirm, no publish, no clean summary. The
+    // run latches DEGRADED and processing pauses via the in-runner durable
+    // gate; nothing here declares a clean STOPPED and there is no silent
+    // auto-resume (the latch is sticky).
+    const std::int64_t now_ns = MonotonicNowNs();
+    ksi::safety::AuditGate gate;
+    auto suspend_poll = [&]() {
+        if (state->runner->hasDurableFailure()) {
+            return;
+        }
+        std::string why = std::string("durable evidence unavailable [stage: ") +
+                          gate.failedStage() + "]";
+        std::string detail;
+        if (mop->spoolFailed(&detail) && !detail.empty()) {
+            why = detail;
+        } else if (mop->auditFailed(&detail) && !detail.empty()) {
+            why = detail;
+        } else if (std::string(gate.failedStage()) == "commands-overflow") {
+            why = "accepted commands dropped by bounded log";
+        }
+        state->runner->NoteDurableFailure(why);
+        // Announce the suspension with the CURRENT snapshot (never a stale
+        // pre-transition one): the RC must see DEGRADED, not frozen
+        // healthy facts.
+        mop->PublishRuntimeFacts(
+            SnapshotToFacts(state->runner->Snapshot()));
+        std::fprintf(stderr,
+                     "Mop: durable evidence failed, run suspended: %s\n",
+                     why.c_str());
+    };
+    std::string spool_reason;
+    gate.Require(!mop->spoolFailed(&spool_reason), "spool");
+    gate.Require(mop->AuditIdentity(now_ns), "identity");
+    MopService::MopRunCommandSnapshot snap;
+    mop->TakeRunCommandSnapshot(&snap);
+    bool commands_overflow = false;
+    const std::vector<ksi::safety::AcceptedCommand> accepted =
+        mop->TakeAcceptedCommands(&commands_overflow);
+    for (const auto& command : accepted) {
+        gate.Require(mop->AuditCommand(command, snap.session.command_epoch,
+                                       now_ns),
+                     "commands");
+    }
+    if (commands_overflow) {
+        // The bounded log dropped commands: journal the gap marker, then
+        // suspend — acting on a partial command history could invert the
+        // operator's final intent, and the missing commands are a durable
+        // evidence gap the RC must see.
+        mop->AuditCommand(ksi::safety::AcceptedCommand{"", "COMMANDS_OVERFLOW",
+                                                       0},
+                          snap.session.command_epoch, now_ns);
+        gate.Require(false, "commands-overflow");
+    }
+    if (gate.suspended()) {
+        suspend_poll();
+        return;
+    }
+    RunControlInputs in;
+    in.command_epoch = snap.session.command_epoch;
+    in.command_revision = snap.session.command_revision;
+    in.desired_running = snap.session.desired_running;
+    in.start_count = snap.session.start_count;
+    in.stop_count = snap.session.stop_count;
+    in.last_command_was_start = snap.session.last_command_was_start;
+    in.applied_generation = snap.session.applied_generation;
+    in.has_bundle = snap.bundle_changed && snap.session.has_bundle;
+    in.bundle = in.has_bundle ? &snap.bundle : nullptr;
+    in.has_pending_bundle = snap.has_pending_bundle;
+    in.pending_bundle = in.has_pending_bundle ? &snap.pending_bundle : nullptr;
+    RunControlOutcome out = state->run_control.Step(*state->runner, in);
+    // Install receipts are audited write-ahead of every claim below
+    // (confirm / reject / publish / summary / ship): the history carries
+    // the outcome with the bundle identity before the RC can observe it.
+    if (!out.pending_outcome.empty()) {
+        gate.Require(mop->AuditInstall(BundleIdOf(in.pending_bundle),
+                                       BundleShaOf(in.pending_bundle),
+                                       in.applied_generation,
+                                       out.pending_outcome,
+                                       FirstReason(out.pending_reasons),
+                                       now_ns),
+                     "install");
+    } else if (out.bundle_installed || out.bundle_parse_failed ||
+               out.install_refused) {
+        const std::string outcome =
+            out.bundle_installed
+                ? "installed"
+                : (out.bundle_parse_failed ? "parse_failed" : "refused");
+        const std::string reason = FirstReason(
+            out.bundle_parse_failed ? out.bundle_errors : out.install_reasons);
+        gate.Require(mop->AuditInstall(BundleIdOf(in.bundle),
+                                       BundleShaOf(in.bundle),
+                                       in.applied_generation, outcome, reason,
+                                       now_ns),
+                     "install");
+    }
+    if (out.runtime_aborted) {
+        gate.Require(mop->AuditInstall("", "", in.applied_generation,
+                                       "parked", "", now_ns),
+                     "install-parked");
+    }
+    if (gate.suspended()) {
+        // The install receipt (or park record) could not be journalled: an
+        // installed-but-uncommitted config must never run or be claimed.
+        // Report truthfully so the RC is not left hanging (installer
+        // reasons when it ruled, audit failure when it installed), and
+        // leave everything else unclaimed. No AbortRuntime here (the gate
+        // already pauses processing); no clean STOPPED is declared.
+        if (out.pending_outcome == "installed") {
+            mop->RejectPendingApply(
+                std::vector<std::string>{"audit journal failed"});
+            std::fprintf(stderr, "Mop: pending bundle install uncommitted "
+                                 "(audit journal failed); rejected\n");
+        } else if (out.pending_outcome == "refused" ||
+                   out.pending_outcome == "parse_failed") {
+            mop->RejectPendingApply(out.pending_reasons);
+            std::fprintf(stderr, "Mop: pending bundle install refused "
+                                 "(%s); journal failed too\n",
+                         out.pending_reasons.empty()
+                             ? "unknown"
+                             : out.pending_reasons[0].c_str());
+        }
+        suspend_poll();
+        return;
+    }
+    // Deferred install receipt: confirm switches the bundle and answers
+    // MISSION_APPLIED; a refusal/failure answers REJECTED and keeps the old
+    // install and provenance. A failed confirm means the identity changed
+    // mid-install — park instead of running the wrong flight's config, and
+    // publish the CURRENT (post-abort) snapshot, never the stale facts.
+    if (out.pending_outcome == "refused" ||
+        out.pending_outcome == "parse_failed") {
+        mop->RejectPendingApply(out.pending_reasons);
+        std::fprintf(stderr,
+                     "Mop: pending bundle rejected (%s); keeping installed\n",
+                     out.pending_reasons.empty()
+                         ? "unknown"
+                         : out.pending_reasons[0].c_str());
+    }
+    if (out.pending_outcome == "installed" && !mop->ConfirmPendingApply()) {
+        std::fprintf(stderr,
+                     "Mop: install confirmed by runner but identity moved; "
+                     "parking the runtime\n");
+        state->runner->AbortRuntime();
+        out.facts = SnapshotToFacts(state->runner->Snapshot());
+    }
+    // Unit A provenance: machine assessments cite the mission actually
+    // installed (never a requested-but-uninstalled bundle). A failed
+    // confirm parks the runner above, so its gate drops every frame and
+    // autonomy observes nothing unprovenanced.
+    if (state->autonomy != nullptr && out.pending_outcome == "installed" &&
+        in.pending_bundle != nullptr) {
+        ksi::safety::MopEvidenceContext evidence_context;
+        if (ksi::safety::EvidenceContextFromBundle(*in.pending_bundle,
+                                                   &evidence_context,
+                                                   nullptr)) {
+            state->autonomy->SetMissionPolicyRevisions(
+                evidence_context.mission_revision_id,
+                evidence_context.policy_revision_id);
+        }
+    }
+    if (out.bundle_parse_failed && out.pending_outcome.empty()) {
+        std::fprintf(stderr,
+                     "Mop: applied bundle fails semantic parse; keeping the "
+                     "installed config\n");
+        for (const auto& error : out.bundle_errors) {
+            std::fprintf(stderr, "Mop:   bundle error: %s\n", error.c_str());
+        }
+    }
+    if (out.install_refused && out.pending_outcome.empty()) {
+        std::fprintf(stderr,
+                     "Mop: bundle install refused (keeping the installed "
+                     "config): %s\n",
+                     out.install_reasons.empty()
+                         ? "unknown"
+                         : out.install_reasons[0].c_str());
+    }
+    // State transition audit runs write-ahead of the publish claim,
+    // so the facts the RC observes are already in the offline history.
+    gate.Require(mop->AuditState(state->runner->Snapshot(), now_ns),
+                 "state");
+    if (gate.suspended()) {
+        suspend_poll();
+        return;
+    }
+    if (out.facts_dirty) {
+        mop->PublishRuntimeFacts(out.facts);
+    }
+    if (out.summary_requested) {
+        gate.Require(mop->AuditClose(out.summary_close_ts,
+                                    state->runner->processed_frame_count(),
+                                    now_ns),
+                     "close");
+        if (gate.suspended()) {
+            suspend_poll();
+            return;
+        }
+        mop->EmitFinalSummary();  // emits only on new ticks (idempotent)
+        mop->ShipAuditTrail();    // close ships the history as FLIGHT_LOG
+        // Seal what the session actually kept: the revision names the
+        // frames a collector may export and the digests that prove them.
+        SealEvidenceRevision(state, now_ns);
+        // Same for the autonomy artifacts (assessments + windows).
+        SealAutonomyRevision(state, now_ns);
+    }
+    // Backstop: journal or spool failures observed anywhere above already
+    // suspended this poll; a failure racing in afterwards latches here for
+    // the next poll (the in-runner gate already pauses processing).
+    {
+        std::string audit_reason;
+        if ((mop->auditFailed(&audit_reason) ||
+             mop->spoolFailed(&audit_reason)) &&
+            !state->runner->hasDurableFailure()) {
+            state->runner->NoteDurableFailure(
+                audit_reason.empty() ? "audit journal failed" : audit_reason);
+            std::fprintf(stderr,
+                         "Mop: audit journal failed, run degraded: %s\n",
+                         audit_reason.c_str());
+        }
+    }
+    // Unit A backstop: refused autonomy evidence degrades the run the
+    // same way (never a healthy-looking run beside a silent evidence gap).
+    if (state->autonomy != nullptr && state->autonomy->hasWriteFailure() &&
+        !state->runner->hasDurableFailure()) {
+        state->runner->NoteDurableFailure(
+            state->autonomy->coverage().write_failure);
+        std::fprintf(stderr, "Autonomy evidence refused, run degraded: %s\n",
+                     state->autonomy->coverage().write_failure.c_str());
+    }
+    // Capacity is NOT that case: observation continues and the gap is
+    // explicit. Name the concrete cause once so the installer can size the
+    // store instead of reading an opaque code.
+    if (state->autonomy != nullptr &&
+        state->autonomy->hasEvidenceSaturation() &&
+        !state->autonomy_saturation_logged) {
+        state->autonomy_saturation_logged = true;
+        std::fprintf(stderr,
+                     "Autonomy evidence saturated (%s): observation continues, "
+                     "artifacts are NOT being kept\n",
+                     state->autonomy->saturationReason().c_str());
+    }
+    // A stalled outbound write is a link loss, not progress: the peer is not
+    // reading. The run degrades so the RC sees a broken link instead of a
+    // frozen "analysis running" state (measured on the Manifold 3).
+    {
+        std::string stall_reason;
+        if (mop->writeStalled(&stall_reason) &&
+            !state->runner->hasDurableFailure()) {
+            state->runner->NoteDurableFailure(
+                stall_reason.empty() ? "MOP write stalled (peer not reading)"
+                                     : stall_reason);
+            std::fprintf(stderr,
+                         "Mop: outbound link stalled, run degraded: %s\n",
+                         stall_reason.c_str());
+        }
+    }
+}
+
 // --- Worker (non-callback thread: runner + file I/O live here) ----------------
 
 void WorkerMain(AppState* state) {
     FramePacket packet;
     for (;;) {
+        SyncRunControl(state);
+        // P1 stream health, independent of frames: a dead RGB stream must
+        // degrade the reported inputs instead of looking healthy forever.
+        // Caller clock only (the runner never reads a clock itself).
+        const std::int64_t loop_now_ns = MonotonicNowNs();
+        state->runner->HealthTick(loop_now_ns);
+        // Unit A autonomy (opt-in): identity-tracked init + deadline closes
+        // that need no new frames.
+        if (state->app_args.autonomy_evidence_dir != nullptr) {
+            MaybeInitAutonomy(state, state->app_args);
+            if (state->autonomy != nullptr) {
+                state->autonomy->HealthTick(loop_now_ns);
+            }
+        }
         if (!state->frames.TryPop(&packet)) {
             if (state->worker_stop.load(std::memory_order_relaxed)) {
                 return;  // queue drained after stop: exit.
             }
+            // Idle: still publish the health verdict so the RC sees a stream
+            // loss (DEGRADED) without waiting for the next processed frame.
+            // Pre-start the STATUS payload keeps its legacy shape.
+            const RuntimeState gate = state->runner->runtime_state();
+            if (gate == RuntimeState::kStarting ||
+                gate == RuntimeState::kRunning ||
+                gate == RuntimeState::kDegraded ||
+                gate == RuntimeState::kStopped) {
+                PublishSnapshot(state);
+            }
             std::this_thread::sleep_for(std::chrono::milliseconds(5));
             continue;
         }
-        FrameContext ctx;
-        ctx.frame_id = packet.metadata.frame_id;
-        ctx.receive_monotonic_ns = packet.metadata.received_monotonic_ns;
-        ctx.has_exposure = false;  // recv-grade only: no verified exposure time.
-        const TickRecord record =
-            state->runner->ProcessFrame(packet, ctx, state->detector.get());
-        const std::uint64_t i =
-            state->samples_written.fetch_add(1, std::memory_order_relaxed);
-        std::fprintf(
-            state->out,
-            "{\"type\":\"frame\",\"i\":%llu,\"frame_id\":%u,\"w\":%u,"
-            "\"h\":%u,\"recv_mono_ns\":%lld,"
-            "\"detect\":\"%s\",\"dets\":%zu,"
-            "\"att\":{\"q\":\"%s\",\"r\":\"%s\",\"gap_ns\":%lld},"
-            "\"pos\":{\"q\":\"%s\",\"r\":\"%s\",\"gap_ns\":%lld},"
-            "\"spatial_eligible\":%s,\"tracks\":%zu}\n",
-            static_cast<unsigned long long>(i), packet.metadata.frame_id,
-            packet.metadata.width, packet.metadata.height,
-            static_cast<long long>(packet.metadata.received_monotonic_ns),
-            ToString(record.detection_status), record.detections.size(),
-            ToString(record.attitude_quality), ToString(record.attitude_reason),
-            static_cast<long long>(record.attitude_gap_ns),
-            ToString(record.position_quality), ToString(record.position_reason),
-            static_cast<long long>(record.position_gap_ns),
-            record.spatial_eligible ? "true" : "false",
-            record.tracks.size());
-        if ((i & 15U) == 0U) {
-            std::fflush(state->out);
+        if (state->runner->processing_enabled()) {
+            const auto source_identity = state->mop != nullptr
+                ? state->mop->SourceIdentitySnapshot()
+                : ksi_safety_edge_app::SourceIdentity{"standalone-flight", "standalone-boot"};
+            const FrameContext ctx = ksi_safety_edge_app::MakeReceiveOnlySourceContext(
+                packet.metadata, source_identity, ConfiguredRgbStreamId());
+            // Unit A: the SAME shared wiring as the host tools. The gate
+            // still rules: a dropped frame reaches neither the tracker nor
+            // the autonomy processor (no invented ticks).
+            TickRecord record;
+            ksi::safety::SharedTickResult shared;
+            bool has_shared = false;
+            const auto tick_start = std::chrono::steady_clock::now();
+            if (state->autonomy != nullptr && !packet.rgb.empty()) {
+                shared = ksi::safety::ProcessSharedTick(
+                    *state->runner, *state->autonomy, packet, ctx,
+                    state->detector.get(), packet.rgb.data(),
+                    packet.rgb.size());
+                record = shared.record;
+                has_shared = true;
+            } else {
+                record = state->runner->ProcessFrame(packet, ctx,
+                                                     state->detector.get());
+            }
+            const std::uint64_t i =
+                state->samples_written.fetch_add(1, std::memory_order_relaxed);
+            // Wall time of THIS processed tick (detection + tracking + any
+            // synchronous evidence I/O). Diagnostic only: it is not a
+            // Manifold performance claim and not evidence. A device run
+            // compares it with the bounded-queue drop counter to decide the
+            // evidence policy; see docs/verification/2026-10-27-tick-cost-finding.md.
+            const long long tick_us =
+                std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::steady_clock::now() - tick_start)
+                    .count();
+            // Counts-only local diagnostic log (detection counts, match
+            // grades, track sizes): NOT evidence and NOT a reconstruction
+            // source. Real evidence is the MOP journal (spool) + summaries;
+            // this file cannot replay observations, episodes, or digests.
+            std::fprintf(
+                state->out,
+                "{\"type\":\"frame\",\"i\":%llu,\"frame_id\":%u,\"w\":%u,"
+                "\"h\":%u,\"recv_mono_ns\":%lld,"
+                "\"detect\":\"%s\",\"dets\":%zu,"
+                "\"att\":{\"q\":\"%s\",\"r\":\"%s\",\"gap_ns\":%lld},"
+                "\"pos\":{\"q\":\"%s\",\"r\":\"%s\",\"gap_ns\":%lld},"
+                "\"spatial_eligible\":%s,\"tracks\":%zu,\"tick_us\":%lld,"
+                "\"drops\":%llu}\n",
+                static_cast<unsigned long long>(i), packet.metadata.frame_id,
+                packet.metadata.width, packet.metadata.height,
+                static_cast<long long>(packet.metadata.received_monotonic_ns),
+                ToString(record.detection_status), record.detections.size(),
+                ToString(record.attitude_quality), ToString(record.attitude_reason),
+                static_cast<long long>(record.attitude_gap_ns),
+                ToString(record.position_quality), ToString(record.position_reason),
+                static_cast<long long>(record.position_gap_ns),
+                record.spatial_eligible ? "true" : "false",
+                record.tracks.size(), tick_us,
+                static_cast<unsigned long long>(
+                    state->frames_dropped.load(std::memory_order_relaxed)));
+            if ((i & 15U) == 0U) {
+                std::fflush(state->out);
+            }
+            // A9-2: real evidence for this tick goes to the RC over MOP (no-op
+            // when the service is disabled or no mission has been applied yet).
+            if (state->mop != nullptr) {
+                const bool observed = state->mop->EmitTick(record);
+                if (observed) {
+                    CaptureSourceFrame(state, record, packet);
+                }
+                // Unit A closure: the sealed assessment JSON rides the
+                // existing artifact plane (ANNOUNCE + CHUNKs, no new MOP
+                // type). Independent of the observation envelope above:
+                // withheld geometry still ships its assessed/undetermined
+                // fact; the RC viewer shows disposition + reasons, and the
+                // sealed revision stays the Core-receipt path for bytes.
+                // A false return is gated/dropped (counted inside the
+                // service as skipped/dropped_assessments — never
+                // deliverable, never folded into a delivered count); the
+                // sealed store copy is the retention path, so there is
+                // nothing to retry here and no silent loss to report.
+                if (has_shared && shared.autonomy_observed &&
+                    shared.assessment_artifact.write_status ==
+                        ksi::safety::EvidenceStatus::kOk) {
+                    const bool assessment_sent =
+                        state->mop->EmitAssessmentArtifact(
+                            shared.assessment_artifact.asset_id,
+                            shared.assessment.flight_id,
+                            shared.assessment.edge_boot_id,
+                            shared.assessment.ToJson());
+                    (void)assessment_sent;
+                }
+            }
+            PublishSnapshot(state);
         }
-        // A9-2: real evidence for this tick goes to the RC over MOP (no-op
-        // when the service is disabled or no mission has been applied yet).
-        if (state->mop != nullptr) {
-            state->mop->EmitTick(record);
-        }
+        // Gate closed (no SESSION_START yet, or after SESSION_STOP): the
+        // frame is dropped unprocessed — no detection, no tracker/session
+        // step, no counter, no evidence.
     }
 }
 
@@ -411,75 +1054,74 @@ bool FillUserInfo(T_DjiUserInfo* user_info) {
     return true;
 }
 
-struct CliArgs {
-    const char* out_path = kDefaultOutPath;
-    long long duration_sec = KSI_SAFETY_EDGE_DURATION_SEC;
-    const char* engine_path = nullptr;  // optional serialized TRT engine
-    long long detect_every = 1;
-    // A9-2: opt-in MOP channel service (RC <-> Edge transport). Negative
-    // disables it; otherwise it is the MOP channel id (MSDK pipeline id).
-    long long mop_channel = -1;
-    // Empty (review fix F4): the Edge LEARNS the RC's per-flight UUID from
-    // the wire (adoption). Only pass a non-empty id when it is pre-agreed.
-    const char* flight_id = "";
-};
+// Startup configuration lives in the DJI-free helper
+// (app_config.hpp) so host tests exercise the exact argv decision the
+// deployed DPK runs. DeployDefaults come from the CMake deployment cache
+// (trusted installer); CLI flags override them for development.
+using ksi_safety_edge_app::AppConfig;
+using ksi_safety_edge_app::DeployDefaults;
+using ksi_safety_edge_app::ParseStatus;
+using ksi_safety_edge_app::ResolveAppConfig;
 
-bool ParseArgs(int argc, char** argv, CliArgs* args) {
-    for (int i = 1; i < argc; ++i) {
-        if (std::strcmp(argv[i], "--out") == 0 && i + 1 < argc) {
-            args->out_path = argv[++i];
-        } else if (std::strcmp(argv[i], "--duration-sec") == 0 && i + 1 < argc) {
-            args->duration_sec = std::atoll(argv[++i]);
-        } else if (std::strcmp(argv[i], "--engine") == 0 && i + 1 < argc) {
-            args->engine_path = argv[++i];
-        } else if (std::strcmp(argv[i], "--detect-every") == 0 && i + 1 < argc) {
-            args->detect_every = std::atoll(argv[++i]);
-        } else if (std::strcmp(argv[i], "--mop-channel") == 0 && i + 1 < argc) {
-            args->mop_channel = std::atoll(argv[++i]);
-        } else if (std::strcmp(argv[i], "--flight-id") == 0 && i + 1 < argc) {
-            args->flight_id = argv[++i];
-        } else if (std::strcmp(argv[i], "--help") == 0) {
-            std::fprintf(stderr,
-                         "usage: %s [--out PATH] [--duration-sec N] "
-                         "[--engine PATH] [--detect-every N] "
-                         "[--mop-channel N] [--flight-id ID]\n",
-                         argv[0]);
-            std::exit(0);
-        } else {
-            std::fprintf(stderr, "unknown argument: %s\nusage: %s [--out PATH] "
-                                 "[--duration-sec N] [--engine PATH] "
-                                 "[--detect-every N] [--mop-channel N] "
-                                 "[--flight-id ID]\n",
-                         argv[i], argv[0]);
-            return false;
-        }
+DeployDefaults AppDeployDefaults() {
+    DeployDefaults deploy;
+    deploy.mop_channel = KSI_SAFETY_EDGE_MOP_CHANNEL;
+    deploy.diag_duration_sec = KSI_SAFETY_EDGE_DIAG_DURATION_SEC;
+    deploy.engine_path = KSI_SAFETY_EDGE_ENGINE_PATH;
+    deploy.model_id = KSI_SAFETY_EDGE_MODEL_ID;
+    deploy.autonomy_evidence_dir = KSI_SAFETY_EDGE_AUTONOMY_EVIDENCE_DIR;
+    deploy.source_attention_policy = KSI_SAFETY_EDGE_SOURCE_ATTENTION_POLICY;
+    return deploy;
+}
+
+void PrintUsage(const char* prog) {
+    std::fprintf(stderr,
+                 "usage: %s [--out PATH] [--duration-sec N] [--engine PATH] "
+                 "[--model-id ID] [--detect-every N] [--mop-channel N] "
+                 "[--standalone] [--flight-id ID] [--state-dir DIR]\n"
+                 "  argvless (DPK default): MOP service on the deploy "
+                 "channel (0), unbounded, gate closed until APPLY+START\n"
+                 "  --standalone: diagnostic capture (finite, auto-processed, "
+                 "no MOP); --duration-sec 0 is unbounded service only\n"
+                 "  --autonomy-evidence-dir DIR [--autonomy-pre N] "
+                 "[--autonomy-post N]\n"
+                 "  [--autonomy-window-deadline-ms N] "
+                  "[--autonomy-window-min-interval-ms N]\n"
+                  "  [--autonomy-capacity-bytes N] [--camera-manual]\n"
+                  "       [--source-attention-policy KEY=VALUE,...] (source ROI only, no PPE verdict or camera motion)\n"
+                 "  (autonomy: passive SHADOW assessment only, opt-in, never "
+                 "auto-enabled)\n",
+                 prog);
+}
+
+bool ParseArgs(int argc, char** argv, AppConfig* args) {
+    std::string error;
+    const ParseStatus status =
+        ResolveAppConfig(argc, argv, AppDeployDefaults(), args, &error);
+    if (status == ParseStatus::kHelp) {
+        PrintUsage(argv[0]);
+        std::exit(0);
     }
-    if (args->out_path[0] == '\0' || args->duration_sec <= 0) {
-        std::fprintf(stderr, "--out must be non-empty and --duration-sec > 0\n");
-        return false;
-    }
-    if (args->detect_every < 1) {
-        std::fprintf(stderr, "--detect-every must be >= 1\n");
-        return false;
-    }
-    if (args->mop_channel > 65535) {
-        std::fprintf(stderr, "--mop-channel must be 0..65535 (or negative "
-                             "to disable)\n");
+    if (status != ParseStatus::kOk) {
+        std::fprintf(stderr, "%s\n", error.c_str());
+        PrintUsage(argv[0]);
         return false;
     }
     return true;
 }
-
 }  // namespace
 
 int main(int argc, char** argv) {
-    CliArgs args;
+    AppConfig args;
     // Subscription/shutdown flags live at function scope so the fail-closed
     // `goto shutdown` / `goto finish` paths never cross an initialization.
+    // (No initialised declaration may be added between a goto site and its
+    // label — assign, don't initialise, after this block.)
     bool fc_init = false;
     bool sub_hard_sync = false, sub_pos = false, sub_vel = false, sub_gps = false,
          sub_gimbal = false;
     bool liveview_init = false, image_started = false;
+    bool mop_requested = false;
     std::unique_ptr<MopService> mop;
     if (!ParseArgs(argc, argv, &args)) {
         return 2;
@@ -492,12 +1134,40 @@ int main(int argc, char** argv) {
     }
 
     AppState state;
+    state.app_args = args;
     g_state = &state;
 
     // R1: the shared product runner + optional real D-FINE detector. This is
     // the same processing code path as edge/tools/replay_run.cpp; only the
-    // input source differs. Risk rules/zones are empty for now (SHADOW-only,
-    // no spatial observations yet — R4 wires them).
+    // input source differs. Risk rules/zones arrive at runtime: the RC's
+    // MISSION_APPLY bundle is parsed and installed via ApplyRuntimeConfig
+    // in SyncRunControl (G9), so the runner starts empty and gated.
+    //
+    // P1 model digest: the reported model_digest is the SHA-256 of the
+    // ACTUAL loaded engine bytes (never fabricated, never empty on an
+    // inference path). A missing/unreadable engine file stops the app with
+    // a reason instead of stamping observations with an empty digest
+    // (Core422 rejects those). No engine means no observations at all —
+    // every tick stays NOT_RUN and the engine input reports absent.
+    std::string engine_digest;
+#if defined(KSI_SAFETY_EDGE_HAS_TENSORRT)
+    if (args.engine_path != nullptr) {
+        std::string hash_error;
+        engine_digest = Sha256HexOfFile(args.engine_path, &hash_error);
+        if (engine_digest.empty()) {
+            std::fprintf(stderr, "engine hash failed (%s): %s\n",
+                         args.engine_path, hash_error.c_str());
+            return 2;
+        }
+    }
+#else
+    if (args.engine_path != nullptr) {
+        std::fprintf(stderr,
+                     "built without TensorRT; configure with "
+                     "-DKSI_SAFETY_EDGE_ENABLE_TENSORRT=ON to use --engine\n");
+        return 2;
+    }
+#endif
     {
         RunnerConfig runner_config;
         runner_config.match.max_receive_gap_ns = 50LL * kNsPerMs;
@@ -506,13 +1176,27 @@ int main(int argc, char** argv) {
             static_cast<std::uint64_t>(args.detect_every);
         runner_config.attitude_ring_capacity = kAttitudeRingCapacity;
         runner_config.position_ring_capacity = kPositionRingCapacity;
+        // P1 stream health: the worker feeds HealthTick every loop with the
+        // receive clock; a dead RGB stream degrades instead of reporting
+        // healthy inputs forever.
+        runner_config.video_stale_after_ns = 1000000000LL;  // 1 s
+        runner_config.video_lost_after_ns = 5000000000LL;   // 5 s
         SessionConfig session_config;
         session_config.tracker = TrackerConfig{};
         session_config.max_gap_ms = 5000;
         session_config.zone_envelope_m = 1.0;
         ModelProfile profile;
-        profile.model_id = "dfine-s-coco";
+        // Effective model identity: CLI --model-id wins, else the trusted
+        // deploy default, else the existing code default (never invent an
+        // operational model name when none was provided).
+        profile.model_id =
+            (args.model_id != nullptr && args.model_id[0] != '\0')
+                ? args.model_id
+                : "dfine-s-coco";
         profile.backend = "tensorrt";
+        if (!engine_digest.empty()) {
+            profile.model_digest = "sha256:" + engine_digest;
+        }
         state.runner = std::make_unique<SessionRunner>(
             runner_config, session_config, std::vector<RiskRule>(),
             std::vector<RiskRule>(), std::vector<ZoneRevision>(), profile);
@@ -531,13 +1215,6 @@ int main(int argc, char** argv) {
                                             std::vector<float>* boxes) {
                 return runtime->Run(input, logits, boxes);
             });
-    }
-#else
-    if (args.engine_path != nullptr) {
-        std::fprintf(stderr,
-                     "built without TensorRT; configure with "
-                     "-DKSI_SAFETY_EDGE_ENABLE_TENSORRT=ON to use --engine\n");
-        return 2;
     }
 #endif
 
@@ -567,7 +1244,7 @@ int main(int argc, char** argv) {
                  "\"capabilities\":{\"frame_sensor_ts\":false,"
                  "\"telemetry_sensor_ts\":false,"
                  "\"source_time\":{\"verified\":false,\"domain\":\"psdk_fc_local\"}},"
-                 "\"note\":\"recv-grade only; no capture-time claims\"}\n",
+                 "\"note\":\"recv-grade only; no capture-time claims; counts-only diagnostic, not evidence\"}\n",
                  kAppVersion, psdk_version, started_at_utc,
                  static_cast<long long>(anchor_mono_ns), anchor_wall_utc);
     std::fflush(state.out);
@@ -577,7 +1254,11 @@ int main(int argc, char** argv) {
                         "in-process CLOCK_MONOTONIC");
 
     BootStage("glues_begin");
-    const char* stop_reason = "duration_exceeded";
+    // Unbounded operational service stops on signal; a finite run
+    // (standalone default or explicit bound) reports the deadline.
+    const char* stop_reason =
+        (args.has_deadline && args.duration_sec > 0) ? "duration_exceeded"
+                                                   : "signal";
     T_DjiReturnCode rc = KsiOsalGlue_Register();
     if (rc != DJI_ERROR_SYSTEM_MODULE_CODE_SUCCESS) {
         std::fprintf(stderr, "Osal handler registration failed: 0x%08X\n",
@@ -750,22 +1431,58 @@ int main(int argc, char** argv) {
     liveview_init = true;
     BootStage("liveview_init_ok");
 
-    // A9-2: optional MOP channel service (the real RC <-> Edge byte
+    // Operational MOP channel service (the real RC <-> Edge byte
     // transport; message logic is host-tested in edge/tests/test_mop_*).
-    if (args.mop_channel >= 0) {
+    // The argvless DPK default IS this service (no deadline, no automatic
+    // processing): the RC commands the run after MISSION_APPLY. P0 gate
+    // fallback: the decision key is whether MOP was REQUESTED, not whether
+    // the pointer happens to be null. A requested-but-failed MOP service
+    // must stay gated and report the failure — silently falling back to
+    // automatic inference would run an uncommanded session.
+    mop_requested = args.mop_service;
+    if (mop_requested) {
         MopServiceConfig mop_config;
         mop_config.flight_id = args.flight_id;
         mop_config.channel_id = static_cast<std::uint16_t>(args.mop_channel);
+        mop_config.spool_dir = args.state_dir;
         auto service = std::make_unique<MopService>(mop_config);
         if (service->Start()) {
             mop = std::move(service);
             state.mop = mop.get();
+            // Source-evidence store: the bytes an observation was computed
+            // from. Separate lifetime from the MOP spool (a delivery
+            // guarantee that may compact acked envelopes) — this one is the
+            // origin and is only ever removed by a retention decision.
+            state.evidence = std::make_unique<ksi::safety::SourceEvidenceRecorder>(
+                std::string(args.state_dir) + "/evidence",
+                kEvidenceCapacityBytes);
+            if (!state.evidence->ok()) {
+                std::fprintf(stderr,
+                             "Evidence store unavailable (%s): observations keep "
+                             "their ids but no source frame is retained\n",
+                             state.evidence->last_error().c_str());
+                state.evidence.reset();
+            }
             BootStage("mop_started");
         } else {
-            std::fprintf(stderr, "MOP service failed to start (channel %lld)\n",
+            std::fprintf(stderr, "MOP service failed to start (channel %d)\n",
                          args.mop_channel);
         }
     }
+    if (mop_requested && mop == nullptr) {
+        std::fprintf(stderr,
+                     "MOP requested but unavailable: staying gated, no "
+                     "automatic inference (fix the channel and restart)\n");
+        stop_reason = "error";
+        goto shutdown;
+    }
+    // G9: under MOP control nothing processes before SESSION_START (the
+    // gate opens on the start edge in SyncRunControl). Standalone
+    // diagnostic mode keeps the legacy always-process behavior (replay
+    // driver, manual debug runs). The helper guarantees auto_process is
+    // true only when the MOP service is off: never silent auto-analysis in
+    // operational mode.
+    state.runner->SetProcessingEnabled(args.auto_process);
 
     {
         std::thread worker(WorkerMain, &state);
@@ -782,17 +1499,27 @@ int main(int argc, char** argv) {
         }
         image_started = true;
         BootStage("stream_ok");
+        // Operational service runs until a termination signal: SESSION_STOP
+        // ends analysis (the gate closes in the runner) but the service
+        // stays ready for the next session — stopping the process here
+        // would strand the RC. A finite --duration-sec (standalone default,
+        // or an explicit operational bound) stops with diagnostics instead.
+        // The helper bounds duration_sec so deadline_ns cannot overflow.
+        const bool bounded = args.has_deadline && args.duration_sec > 0;
         const std::int64_t deadline_ns =
-            MonotonicNowNs() + args.duration_sec * kNsPerSec;
+            bounded ? MonotonicNowNs() + args.duration_sec * kNsPerSec : 0;
         while (!state.worker_stop.load(std::memory_order_relaxed)) {
             const std::int64_t now_ns = MonotonicNowNs();
-            if (now_ns >= deadline_ns) {
+            if (bounded && now_ns >= deadline_ns) {
                 stop_reason = "duration_exceeded";
                 break;
             }
-            std::int64_t wait_ns = deadline_ns - now_ns;
-            if (wait_ns > kPollIntervalNs) {
-                wait_ns = kPollIntervalNs;
+            std::int64_t wait_ns = kPollIntervalNs;
+            if (bounded) {
+                const std::int64_t remaining_ns = deadline_ns - now_ns;
+                if (remaining_ns < wait_ns) {
+                    wait_ns = remaining_ns > 0 ? remaining_ns : 0;
+                }
             }
             std::this_thread::sleep_for(
                 std::chrono::nanoseconds(wait_ns));
@@ -809,12 +1536,51 @@ shutdown:
     if (mop) {
         // Final session evidence before the channel closes (best effort).
         mop->EmitFinalSummary();
+        // Seal the SOURCE evidence too. Without a sealed revision the
+        // captured frames are bytes on disk that no collector can export —
+        // an abrupt stop would silently produce unexportable evidence.
+        SealEvidenceRevision(&state, MonotonicNowNs());
+        SealAutonomyRevision(&state, MonotonicNowNs());
+        // Shutdown ships the audit history as a FLIGHT_LOG artifact if the
+        // stop edge did not already (spool-journalled; best effort on a
+        // closing channel — the journal file itself retains the history).
+        mop->ShipAuditTrail();
         const std::uint64_t skipped = mop->skipped_evidence_ticks();
         if (skipped > 0) {
+            // Skipped means no flight identity or no applied mission —
+            // disconnection alone never skips (those ticks are recorded and
+            // spool-journalled for replay).
             std::fprintf(stderr,
                          "Mop: %llu ticks had no evidence path "
-                         "(disconnected or no applied mission)\n",
+                         "(no flight identity or no applied mission)\n",
                          static_cast<unsigned long long>(skipped));
+        }
+        const std::uint64_t offline = mop->offline_recorded_ticks();
+        if (offline > 0) {
+            std::fprintf(stderr,
+                         "Mop: %llu ticks recorded while disconnected "
+                         "(aggregates folded, envelopes spooled for replay; "
+                         "journal refusals: %llu)\n",
+                         static_cast<unsigned long long>(offline),
+                         static_cast<unsigned long long>(
+                             mop->spool_refused()));
+        }
+        const std::uint64_t dropped = mop->durable_dropped_ticks();
+        if (dropped > 0 || state.runner->hasDurableFailure()) {
+            // CLOSING FAILURE LOG: ticks refused a durable record are NOT
+            // in the aggregates and never reach the RC — the run's degraded
+            // reasons and the DURABLE_EVIDENCE_GAP summary flag say so, and
+            // this log states the counts. Never a clean close on a gap.
+            std::fprintf(stderr,
+                         "Mop: DURABLE EVIDENCE FAILURE: %llu ticks refused "
+                         "a journal record (%s); spool refusals: %llu; run "
+                         "degraded, no clean summary\n",
+                         static_cast<unsigned long long>(dropped),
+                         state.runner->hasDurableFailure()
+                             ? state.runner->durableFailureReason().c_str()
+                             : "unknown",
+                         static_cast<unsigned long long>(
+                             mop->spool_refused()));
         }
         mop->Stop();
         mop.reset();

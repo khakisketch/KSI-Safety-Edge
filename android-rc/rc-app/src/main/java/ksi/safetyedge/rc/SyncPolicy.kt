@@ -47,11 +47,16 @@ object SyncPolicy {
      * Skip a queued sync only when there is NOTHING left to deliver:
      * artifacts exist, all are synced, AND no pending operator annotations
      * (user review 2026-10-11 — a late "false positive" opinion must still
-     * go out; artifact-only completeness is not evidence completeness).
+     * go out; artifact-only completeness is not evidence completeness) AND
+     * no linked structured responses still without a durable receipt (a late
+     * field response after artifact COMMITTED must still go out — upload
+     * success must never read as field-request delivery).
      */
     fun shouldSkipSync(
         artifactCount: Int,
         artifactsAllSynced: Boolean,
         pendingAnnotations: Int,
-    ): Boolean = artifactCount > 0 && artifactsAllSynced && pendingAnnotations == 0
+        pendingResponses: Int = 0,
+    ): Boolean = artifactCount > 0 && artifactsAllSynced &&
+        pendingAnnotations == 0 && pendingResponses == 0
 }

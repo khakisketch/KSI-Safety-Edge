@@ -17,6 +17,17 @@ from . import mop
 EPOCH_BASE_UTC = datetime(2026, 10, 8, 2, 5, 0, tzinfo=timezone.utc)
 UPLOAD_CHUNK = 1024
 
+# Frozen `flight-upload-manifest.v1` `source_kind` enum (contracts/, byte
+# identical). Adding a kind needs a new `.vN` contract file + approval.
+INGESTIBLE_SOURCE_KINDS = frozenset({
+    "EDGE_SNAPSHOT",
+    "EDGE_CLIP",
+    "RC_PROXY_SEGMENT",
+    "CAMERA_SD_ORIGINAL",
+    "FLIGHT_LOG",
+    "TELEMETRY_LOG",
+})
+
 
 def utc_of(ns: int) -> str:
     return (EPOCH_BASE_UTC + timedelta(microseconds=int(ns) // 1000)).isoformat().replace("+00:00", "Z")
@@ -136,7 +147,16 @@ class UploadMixin:
             received = self.store.received_seqs(boot_id, channel)
             if received:
                 top = max(top, max(received))
-        artifacts = [
+        artifacts = []
+        for a in self.store.artifacts_for(fid, boot_id):
+            # Frozen flight-ingest contract: `source_kind` is a closed enum.
+            # Kinds outside it (e.g. sealed machine assessments) stay
+            # retained locally and reach the Core through the producer-neutral
+            # collection path — never relabelled to fit this manifest, never
+            # allowed to 422 the whole boot.
+            if a["source_kind"] not in INGESTIBLE_SOURCE_KINDS:
+                continue
+            artifacts.append(
             {
                 "artifact_id": a["artifact_id"],
                 "source_kind": a["source_kind"],
@@ -146,8 +166,7 @@ class UploadMixin:
                 "required": bool(a["required"]),
                 "segment_index": a["segment_index"],
             }
-            for a in self.store.artifacts_for(fid, boot_id)
-        ]
+            )
         gaps, run = [], []
         for g in self.store.gaps_for_boot(boot_id) + [None]:
             if g is not None and run and g["channel"] == run[0]["channel"] and g["seq"] == run[-1]["seq"] + 1:

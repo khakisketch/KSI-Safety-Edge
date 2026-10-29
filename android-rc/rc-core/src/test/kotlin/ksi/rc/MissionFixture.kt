@@ -9,6 +9,16 @@ import com.fasterxml.jackson.databind.node.ObjectNode
  * server's validators accept them).
  */
 object MissionFixture {
+
+    /** Installable empty configuration, not the framing-only bundle stub. */
+    fun emptyBundle(): ObjectNode {
+        val snapshot = snapshot("site-1", "mission-1", "rev-1", "flt-1", emptyList())
+        val policy = policy("site-1", emptyList()).apply {
+            putArray("rules")
+            put("content_sha256", CanonicalJson.digestExcluding(this, "content_sha256"))
+        }
+        return bundle("site-1", snapshot, policy, "bundle-1")
+    }
     fun zoneRevision(
         siteId: String,
         zoneId: String,

@@ -72,12 +72,23 @@ class TelemetryStripPresenterTest {
             mop = mopOk,
             aircraft = aircraftAttention,
         )
-        assertEquals("MOP 정상 · 기체 미연결", strip.links.value)
+        assertEquals("정상 · 미연결", strip.links.value)
         assertEquals(OperatorStatus.Severity.ATTENTION, strip.links.severity)
+        assertTrue(
+            "glance value carries no redundant link prefixes: ${strip.links.value}",
+            !strip.links.value.contains("MOP ") && !strip.links.value.contains("기체 "),
+        )
 
         val unknown = TelemetryStripPresenter.present(accumulator(), nowMs = 0)
-        assertEquals("MOP 상태 미확인 · 기체 상태 미확인", unknown.links.value)
+        assertEquals("미확인 · 미확인", unknown.links.value)
         assertEquals(OperatorStatus.Severity.INFO, unknown.links.severity)
+        assertTrue(
+            "full sentence survives in the detail: ${unknown.links.detail}",
+            unknown.links.detail.contains("MOP 상태 미확인 · 기체 상태 미확인"),
+        )
+        assertTrue(
+            unknown.links.contentDescription.contains("MOP 상태 미확인 · 기체 상태 미확인"),
+        )
     }
 
     @Test

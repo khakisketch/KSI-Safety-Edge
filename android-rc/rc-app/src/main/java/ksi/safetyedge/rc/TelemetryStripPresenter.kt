@@ -112,11 +112,29 @@ internal object TelemetryStripPresenter {
     private fun linksCell(
         mop: CockpitStatusPresenter.Fact?,
         aircraft: CockpitStatusPresenter.Fact?,
-    ): Cell = Cell(
-        label = "MOP · 기체 링크",
-        value = "MOP ${mop?.value ?: UNKNOWN_LINK} · 기체 ${aircraft?.value ?: UNKNOWN_LINK}",
-        severity = maxSeverity(mop?.severity, aircraft?.severity),
-    )
+    ): Cell {
+        // Round68 copy-density, residual 1 (device 09-polish-flight):
+        // the 768x480dp strip budget is ~114dp for this value
+        // (744dp content x 1.5/5.5 weight - ~85dp label - 4dp gap), so even
+        // "MOP 연결 · 기체 미확인" (~146dp at 14sp bold) ellipsizes. The
+        // label already names both links in order, so the glance value
+        // drops the redundant prefixes ("연결 · 미확인" ~88dp). The full
+        // sentence stays in the detail (TalkBack) — no meaning removed.
+        val mopShort = shortLinkValue(mop?.value)
+        val aircraftShort = shortLinkValue(aircraft?.value)
+        val full = "MOP ${mop?.value ?: UNKNOWN_LINK} · 기체 ${aircraft?.value ?: UNKNOWN_LINK}"
+        return Cell(
+            label = "MOP · 기체 링크",
+            value = "$mopShort · $aircraftShort",
+            severity = maxSeverity(mop?.severity, aircraft?.severity),
+            detail = "$full — 자세히는 연결 상세",
+        )
+    }
+
+    private fun shortLinkValue(value: String?): String = when (value) {
+        null, UNKNOWN_LINK, "알 수 없음" -> "미확인"
+        else -> value
+    }
 
     private fun maxSeverity(
         a: OperatorStatus.Severity?,

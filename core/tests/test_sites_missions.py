@@ -88,6 +88,64 @@ def test_sites_zone_cas(client):
     assert r.status_code == 200, r.text
 
 
+def test_site_location_is_optional_and_roundtrips(client):
+    """D2: 현장 GPS 추천(선택 기능)의 재료 — 현장 위치는 선택이다.
+
+    - 좌표가 없는 현장은 좌표 없이도 만들어지고, 조회에도 null로 나온다
+      ("좌표 미등록"과 "좌표 0"을 구분한다).
+    - 좌표는 중심점 2개 + 반경이 한 덩어리다. 하나만 주면 422.
+    - 위험구역 다각형(zones)과는 별개다 — 현장 경계 대신 쓰지 않는다.
+    """
+    r = client.post("/sites", token=RC, json={"org_id": "org-a", "name": "좌표없는현장"})
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["center_lat"] is None
+    assert body["center_lon"] is None
+    assert body["radius_m"] is None
+
+    listed = client.get("/sites", token=RC).json()["items"]
+    entry = next(s for s in listed if s["site_id"] == body["site_id"])
+    assert entry["center_lat"] is None
+    assert entry["radius_m"] is None
+
+    loc = {"center_lat": 37.5, "center_lon": 127.0, "radius_m": 300.0}
+    r = client.post("/sites", token=RC, json={"org_id": "org-a", "name": "서부물류센터", **loc})
+    assert r.status_code == 200, r.text
+    assert r.json()["center_lat"] == 37.5
+    assert r.json()["radius_m"] == 300.0
+
+    # 부분 입력(중심점만, 반경 없음)은 422 — 셋이 한 덩어리다.
+    r = client.post(
+        "/sites", token=RC,
+        json={"org_id": "org-a", "name": "반경없는현장", "center_lat": 37.0, "center_lon": 127.0},
+    )
+    assert r.status_code == 422, r.text
+
+    # 범위 밖 좌표는 422.
+    r = client.post(
+        "/sites", token=RC,
+        json={"org_id": "org-a", "name": "잘못된현장", "center_lat": 999.0, "center_lon": 0.0, "radius_m": 10.0},
+    )
+    assert r.status_code == 422, r.text
+
+
+def test_site_location_registration_updates_only_when_absent(client):
+    """같은 이름 재등록은 같은 현장이다. 위치는 "있을 때만" 채운다."""
+    r = client.post(
+        "/sites", token=RC,
+        json={"org_id": "org-a", "name": "갱신현장", "center_lat": 37.0, "center_lon": 127.0, "radius_m": 100.0},
+    )
+    assert r.status_code == 200, r.text
+    first = r.json()
+    assert first["center_lat"] == 37.0
+
+    # 좌표 없이 같은 이름 → 기존 좌표가 보존된다(명시적 갱신 없음).
+    r = client.post("/sites", token=RC, json={"org_id": "org-a", "name": "갱신현장"})
+    assert r.status_code == 200, r.text
+    assert r.json()["site_id"] == first["site_id"]
+    assert r.json()["center_lat"] == 37.0
+
+
 def test_mission_snapshot_roundtrip(client):
     snap = make_snapshot()
     r = client.post("/missions", token=RC, json=snap)

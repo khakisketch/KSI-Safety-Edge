@@ -9,6 +9,8 @@ import dji.v5.manager.mop.Pipeline
 import dji.v5.manager.mop.PipelineConnectionListener
 import dji.v5.manager.mop.PipelineManager
 import ksi.safetyedge.rc.DroneLink
+import ksi.safetyedge.rc.MopFrameWriter
+import ksi.safetyedge.rc.MopReassembler
 
 /**
  * [DroneLink] over the DJI SDK Interconnection (MOP pipeline) to the
@@ -55,11 +57,39 @@ class MsdkDroneLink(
             else -> null // unknown until SDK registration is verified (device)
         }
 
+    /**
+     * D3 — 연결 3단 진단에서 쓰는 DJI SDK 단계의 사실.
+     *
+     * 키 유무와 SDK 초기화는 **앱이 실제로 확인한 사실**만 노출한다:
+     * - [sdkKeyPresent]: 매니페스트에 키가 주입되어 있는가 (앱이 읽은 값).
+     * - [sdkInitialised]: 등록까지 성공했는가. 등록 전은 **확인 불가**다
+     *   (키가 있어도 기기에서 등록이 안 끝났을 수 있다).
+     *
+     * FAILED의 원인은 [sdkError]가 들고 있다.
+     */
+    override val sdkKeyPresent: Boolean get() = bridge.appKeyPresent()
+
+    /** true = SDK 등록 성공. false/오류 = 초기화 실패. */
+    override val sdkInitialised: Boolean get() = bridge.state == DjiBridgeState.REGISTERED
+
+    /** SDK 단계의 마지막 오류(없으면 null). */
+    override val sdkError: String? get() = bridge.lastError
+
     private var pipeline: Pipeline? = null
     private var reader: Thread? = null
 
     @Volatile
     private var readerRunning = false
+
+    /**
+     * Last link activity (bytes received or state change), monotonic ns
+     * ([System.nanoTime] domain). Volatile: the UI layer reads it through
+     * [ksi.safetyedge.rc.LinkStateMonitor] without polling or blocking the
+     * reader; updated only on the state/reader paths below.
+     */
+    @Volatile
+    var lastActivityMonotonicNs: Long = System.nanoTime()
+        private set
 
     @Volatile
     private var lastError: String? = null
@@ -208,6 +238,7 @@ class MsdkDroneLink(
                     val result = live.readData(buffer)
                     val length = result.length
                     if (length > 0 && !isFailure(result.error)) {
+                        lastActivityMonotonicNs = System.nanoTime()
                         val errorsBefore = reassembler.errors
                         for (message in reassembler.feed(
                             buffer.copyOf(length),
@@ -260,6 +291,7 @@ class MsdkDroneLink(
     private fun setState(next: DroneLink.State) {
         if (state == next) return
         state = next
+        lastActivityMonotonicNs = System.nanoTime()
         listener?.onState(next)
     }
 

@@ -65,6 +65,12 @@ class FakeCore : CoreTransport {
     val annotationsByEvent = linkedMapOf<String, MutableList<ObjectNode>>()
     var failNextAnnotationPost = false
 
+    // -- structured operator responses (queryable route) -----------------------
+    /** Older-server simulation: route unknown -> 404 for both endpoints. */
+    var responsesRouteSupported = true
+    private val responseBatches = linkedMapOf<String, ObjectNode>()
+    private val responsesByFlight = linkedMapOf<String, MutableList<ObjectNode>>()
+
     override fun request(
         method: String,
         path: String,
@@ -201,6 +207,15 @@ class FakeCore : CoreTransport {
                 segments[2] == "observations" && method == "GET" ->
                 200 to listItems("observations", segments[1], path)
 
+            method == "POST" && queryless == "/operator-responses" ->
+                if (!responsesRouteSupported) throw HttpError(404, "NOT_FOUND")
+                else 200 to ingestResponseBatch(Mop.json.readTree(body) as ObjectNode)
+
+            segments.size == 3 && segments[0] == "flights" &&
+                segments[2] == "operator-responses" && method == "GET" ->
+                if (!responsesRouteSupported) throw HttpError(404, "NOT_FOUND")
+                else 200 to listResponseItems(segments[1])
+
             else -> throw HttpError(404, "NOT_FOUND")
         }
     }
@@ -220,11 +235,37 @@ class FakeCore : CoreTransport {
         val name = body.get("name")?.asText()
             ?: throw HttpError(422, "CONTRACT_INVALID")
         val existing = sites.values.firstOrNull { it.get("name")?.asText() == name }
-        if (existing != null) return existing.deepCopy()
+        if (existing != null) {
+            // Same name = same site (server rule): fill the location only
+            // when the stored row currently has none — never overwrite.
+            val lat = body.get("center_lat")?.takeIf { it.isNumber }?.asDouble()
+            val lon = body.get("center_lon")?.takeIf { it.isNumber }?.asDouble()
+            val radius = body.get("radius_m")?.takeIf { it.isNumber }?.asDouble()
+            if (lat != null && lon != null && radius != null &&
+                existing.get("center_lat")?.isNumber != true
+            ) {
+                existing.put("center_lat", lat)
+                existing.put("center_lon", lon)
+                existing.put("radius_m", radius)
+            }
+            return existing.deepCopy()
+        }
         val site = Mop.json.createObjectNode()
         site.put("site_id", newId())
         site.put("org_id", "org-a")
         site.put("name", name)
+        val lat = body.get("center_lat")?.takeIf { it.isNumber }?.asDouble()
+        val lon = body.get("center_lon")?.takeIf { it.isNumber }?.asDouble()
+        val radius = body.get("radius_m")?.takeIf { it.isNumber }?.asDouble()
+        if (lat != null && lon != null && radius != null) {
+            site.put("center_lat", lat)
+            site.put("center_lon", lon)
+            site.put("radius_m", radius)
+        } else {
+            site.putNull("center_lat")
+            site.putNull("center_lon")
+            site.putNull("radius_m")
+        }
         sites[site.get("site_id").asText()] = site
         return site.deepCopy()
     }
@@ -356,6 +397,128 @@ class FakeCore : CoreTransport {
     private fun listAnnotations(eventId: String): ObjectNode {
         val items = Mop.json.createArrayNode()
         annotationsByEvent[eventId]?.forEach { items.add(it) }
+        val response = Mop.json.createObjectNode()
+        response.set<JsonNode>("items", items)
+        return response
+    }
+
+    // -- structured operator responses (mirrors routers/responses.py) ----------
+
+    private fun isUuid(value: String): Boolean = try {
+        java.util.UUID.fromString(value)
+        true
+    } catch (_: IllegalArgumentException) {
+        false
+    }
+
+    /** Schema-shape + digest + proof-gating check (real server parity). */
+    private fun checkResponseItem(item: ObjectNode) {
+        val required = listOf(
+            "schema_version", "response_id", "candidate_id", "flight_id",
+            "site_id", "session_id", "action", "note", "evidence",
+            "acted_at_utc", "delivery_state", "transmission_proof",
+            "receipt_proof", "completion_proof", "content_sha256",
+        )
+        for (field in required) {
+            if (!item.has(field)) throw HttpError(422, "CONTRACT_INVALID")
+        }
+        if (!isUuid(item.get("response_id").asText()) ||
+            !isUuid(item.get("flight_id").asText())
+        ) {
+            throw HttpError(422, "CONTRACT_INVALID")
+        }
+        if (item.get("action").asText() !in
+            setOf("CONFIRM", "HOLD", "ESCALATE_REQUEST")
+        ) {
+            throw HttpError(422, "CONTRACT_INVALID")
+        }
+        if (!CanonicalJson.verifyDigest(item, "content_sha256")) {
+            throw HttpError(422, "CONTRACT_INVALID")
+        }
+        // Proof gating (domain parity): a claim above REQUESTED without its
+        // proof never validates.
+        val state = item.get("delivery_state").asText()
+        val proofs = mapOf(
+            "SENT_CONFIRMED" to listOf("transmission_proof"),
+            "RECEIVED_CONFIRMED" to listOf("transmission_proof", "receipt_proof"),
+            "COMPLETED_CONFIRMED" to
+                listOf("transmission_proof", "receipt_proof", "completion_proof"),
+        )
+        for (field in proofs[state] ?: emptyList()) {
+            if (item.get(field)?.takeIf { it.isTextual }?.asText().isNullOrEmpty()) {
+                throw HttpError(422, "CONTRACT_INVALID")
+            }
+        }
+    }
+
+    private fun ingestResponseBatch(body: ObjectNode): ObjectNode {
+        val clientBatchId = body.get("client_batch_id")?.takeIf { it.isTextual }?.asText()
+            ?: throw HttpError(422, "CONTRACT_INVALID")
+        val itemsNode = body.get("items")
+        if (itemsNode == null || !itemsNode.isArray) {
+            throw HttpError(422, "CONTRACT_INVALID")
+        }
+        val items = itemsNode.map {
+            it as? ObjectNode ?: throw HttpError(422, "CONTRACT_INVALID")
+        }
+        items.forEach { checkResponseItem(it) }
+        val flightIds = items.map { it.get("flight_id").asText() }.toSet()
+        if (flightIds.size != 1) throw HttpError(422, "CONTRACT_INVALID")
+        val flightId = flightIds.single()
+        requireFlight(flightId)
+        val contentHash = CanonicalJson.digestSha256(itemsNode)
+        val existing = responseBatches[clientBatchId]
+        if (existing != null) {
+            // Same id + same content -> idempotent replay; different -> 409.
+            if (existing.get("content_hash").asText() != contentHash) {
+                throw HttpError(409, "CONFLICT")
+            }
+            return batchReply(existing)
+        }
+        val bucket = responsesByFlight.getOrPut(flightId) { mutableListOf() }
+        val accepted = Mop.json.createArrayNode()
+        val duplicates = Mop.json.createArrayNode()
+        val seenInBatch = mutableSetOf<String>()
+        for (item in items) {
+            val id = item.get("response_id").asText()
+            if (!seenInBatch.add(id)) {
+                duplicates.add(id)
+                continue
+            }
+            val stored = bucket.firstOrNull { it.get("response_id")?.asText() == id }
+            if (stored != null) {
+                if (same(stored, item)) {
+                    duplicates.add(id)
+                } else {
+                    throw HttpError(409, "CONFLICT")
+                }
+            } else {
+                bucket.add(item.deepCopy())
+                accepted.add(id)
+            }
+        }
+        val record = Mop.json.createObjectNode()
+        record.put("content_hash", contentHash)
+        record.put("server_batch_id", "server-responses-${responseBatches.size + 1}")
+        record.set<JsonNode>("accepted_ids", accepted)
+        record.set<JsonNode>("duplicate_ids", duplicates)
+        responseBatches[clientBatchId] = record
+        return batchReply(record)
+    }
+
+    private fun batchReply(record: ObjectNode): ObjectNode {
+        val response = Mop.json.createObjectNode()
+        response.put("server_batch_id", record.get("server_batch_id").asText())
+        response.put("durable", true)
+        response.set<JsonNode>("accepted_ids", record.get("accepted_ids").deepCopy())
+        response.set<JsonNode>("duplicate_ids", record.get("duplicate_ids").deepCopy())
+        return response
+    }
+
+    private fun listResponseItems(flightId: String): ObjectNode {
+        requireFlight(flightId)
+        val items = Mop.json.createArrayNode()
+        responsesByFlight[flightId]?.forEach { items.add(it) }
         val response = Mop.json.createObjectNode()
         response.set<JsonNode>("items", items)
         return response
@@ -747,6 +910,9 @@ class FakeCore : CoreTransport {
 
     fun batchedItems(kind: String, flightId: String): List<ObjectNode> =
         items["$kind|$flightId"]?.toList() ?: emptyList()
+
+    fun responsesFor(flightId: String): List<ObjectNode> =
+        responsesByFlight[flightId]?.toList() ?: emptyList()
 
     fun latestObjectBytes(artifactId: String): ByteArray? =
         objects.entries.lastOrNull { it.key.endsWith("/$artifactId") }?.value

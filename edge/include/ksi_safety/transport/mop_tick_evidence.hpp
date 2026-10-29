@@ -72,6 +72,13 @@ class MopTickEvidence {
     void EmitTick(MopEdgeEndpoint* endpoint, const TickRecord& record);
     void EmitTick(MopLink* link, const TickRecord& record);
 
+    // The same derivation, callable by the runtime that persists the source
+    // frame of a tick: the source asset and the MOP observation must name
+    // the same observation or the link is a guess.
+    static std::string ObservationIdFor(const std::string& flight_id,
+                                        const std::string& edge_boot_id,
+                                        std::uint64_t tick_index);
+
     // The RC's session derivation (uuid5 "session|flight|boot", the same
     // value MissionController computes), so the summary links to the RC's
     // flight session.
@@ -82,6 +89,11 @@ class MopTickEvidence {
     bool BuildSummary(const std::string& session_id, JsonValue* out) const;
     bool EmitSummary(MopEdgeEndpoint* endpoint, const std::string& session_id);
     bool EmitSummary(MopLink* link, const std::string& session_id);
+    // Marks the session as having unjournalled records (spool unwritable):
+    // BuildSummary then carries DURABLE_EVIDENCE_GAP so the summary is
+    // never clean while records are missing. Sticky until SetContext.
+    void setDurableGap(bool gap) { durable_gap_ = gap; }
+    bool durableGap() const { return durable_gap_; }
 
     std::uint64_t observations_emitted() const { return observations_; }
     std::uint64_t ticks_seen() const { return frames_; }
@@ -100,6 +112,10 @@ class MopTickEvidence {
     std::int64_t person_max_ = 0;
     std::int64_t equipment_max_ = 0;
     bool any_sync_degraded_ = false;
+    // Sticky until the next SetContext: some ticks were refused a durable
+    // record (spool unwritable). The summary carries DURABLE_EVIDENCE_GAP
+    // so it is never clean while records are missing.
+    bool durable_gap_ = false;
 };
 
 }  // namespace ksi::safety

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Candidate row background: green ONLY for the selected candidate
+     (state_selected). Unselected rows stay on the plain surface. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true" android:drawable="@color/ksi_candidate_selected_bg" />
+    <item android:drawable="@color/ksi_surface" />
+</selector>

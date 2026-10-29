@@ -19,6 +19,17 @@ interface FlightTelemetrySource {
     /** Per-field values + 4-state freshness. */
     val accumulator: FlightTelemetryAccumulator
 
+    /**
+     * D2 — 기체 위치(위도/경도). 현장 GPS 추천의 재료다.
+     *
+     * **null = 이 앱이 기체 위치를 확인하지 못함**이며 0으로 대체하지 않는다.
+     * 위치는 SDK가 읽은 값 그대로이며, 이 앱이 추정하지 않는다.
+     */
+    val aircraftPosition: Pair<Double, Double>? get() = null
+
+    /** 기체 위치 수신 후 지난 시간(ms). null = 수신 없음. */
+    val aircraftPositionAgeMs: Long? get() = null
+
     fun start(onUpdate: () -> Unit)
 
     fun stop()

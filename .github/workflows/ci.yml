@@ -11,6 +11,8 @@ name: CI
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch: {}
 
 concurrency:
@@ -29,19 +31,26 @@ jobs:
       - name: Install (editable)
         run: pip install -e libs/ksi_contracts -e core -e harness pytest pyyaml httpx
       - name: Test
-        run: python -m pytest libs/ksi_contracts/tests core/tests harness/tests -q
+        run: python -m pytest contracts/tests libs/ksi_contracts/tests core/tests harness/tests -q
 
   edge:
     name: Edge C++ (host tests)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install host-test dependencies
+        run: python -m pip install -e libs/ksi_contracts
       - name: Configure
         run: cmake -S edge -B edge/build -DCMAKE_BUILD_TYPE=RelWithDebInfo
       - name: Build
         run: cmake --build edge/build -j"$(nproc)"
       - name: Test
         run: ctest --test-dir edge/build --output-on-failure
+      - name: Test host-script safety and loopback
+        run: MOP_SERVER="$PWD/edge/build/mop_server" python -m unittest discover -s scripts/tests -v
 
   android:
     name: Android (unit tests incl. WorkManager on x86_64 + bench APK)
@@ -72,3 +81,29 @@ jobs:
         run: ./gradlew :rc-ports:test :rc-core:test :rc-msdk:testDebugUnitTest :rc-app:testBenchDebugUnitTest
       - name: Bench APK + device flavor compile
         run: ./gradlew :rc-app:assembleBenchDebug :rc-app:compileDeviceDebugKotlin
+
+  release-scrub:
+    name: Release scrub (${{ matrix.flavor }}, G7 APK hygiene)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        flavor: [bench, device]
+    env:
+      SCRUB_FLAVOR: ${{ matrix.flavor }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install SDK components (preinstalled SDK)
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Release scrub check (static + selected release APK)
+        # Unsigned local build; fails on debuggable/cleartext/dev-default
+        # violations. Full output records the artifact versionCode/versionName.
+        run: bash scripts/release_scrub_check.sh

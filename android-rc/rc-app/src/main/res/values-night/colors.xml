@@ -2,18 +2,29 @@
 <!-- RC cockpit palette — dark scheme, converted from the approved design
      prototype (design/rc-pilot-shell/field-shell.html, `prefers-color-scheme:
      dark`, OKLCH -> sRGB). The converter reproduces the light scheme's
-     values 19/19, so both schemes share one mapping.
-     ksi_accent is not redefined by the design's dark block (same green). -->
+     values, so both schemes share one mapping.
+
+     The `*_video` pair is the SIGNAL TEXT that sits on the cockpit's video
+     band (`ksi_video_bg` = #060E14). That band is near-black in BOTH schemes,
+     so these two names are not "light-surface" tints: they must stay legible
+     as text on a dark band. The light scheme therefore uses the lighter
+     pastels (#FF9F96 / #FFD18A) and the dark scheme uses the dark block's
+     own signal text (#FF8F80 / #EBB761) — in the dark scheme the surface is
+     already dark, so the on-surface and on-video signal roles converge and
+     the two names hold the same token value.
+
+     `ksi_accent` is the single field green: the design keeps one accent
+     across both schemes, so the value is identical here and in the day file. -->
 <resources>
-    <color name="ksi_bg">#181E22</color>
-    <color name="ksi_surface">#242A2E</color>
-    <color name="ksi_fg">#E3E9ED</color>
-    <color name="ksi_muted">#A1A9AF</color>
-    <color name="ksi_border">#464B4F</color>
+    <color name="ksi_bg">#172128</color>
+    <color name="ksi_surface">#202E36</color>
+    <color name="ksi_fg">#EDF3F5</color>
+    <color name="ksi_muted">#B3C2CA</color>
+    <color name="ksi_border">#4B5F69</color>
     <color name="ksi_text_quiet">#B1B9BE</color>
-    <color name="ksi_surface_subtle">#1D2227</color>
-    <color name="ksi_primary">#BFC5CA</color>
-    <color name="ksi_on_primary">#121C23</color>
+    <color name="ksi_surface_subtle">#293A43</color>
+    <color name="ksi_primary">#A0DDC8</color>
+    <color name="ksi_on_primary">#10251F</color>
     <color name="ksi_problem">#FF8F80</color>
     <color name="ksi_problem_bg">#4E2A25</color>
     <color name="ksi_attention">#EBB761</color>
@@ -23,4 +34,15 @@
     <color name="ksi_video_bg">#060E14</color>
     <color name="ksi_video_fg">#EEF2F5</color>
     <color name="ksi_video_grid">#2F3A41</color>
+
+    <!-- Signal text on the video band (see header note). -->
+    <color name="ksi_problem_video">#FF8F80</color>
+    <color name="ksi_attention_video">#EBB761</color>
+
+    <!-- Selected candidate row: a green tint ON the dark surface
+         (the light scheme's #DDEBDD would glare here). -->
+    <color name="ksi_candidate_selected_bg">#253F38</color>
+
+    <!-- One field green across both schemes. -->
+    <color name="ksi_accent">#299236</color>
 </resources>

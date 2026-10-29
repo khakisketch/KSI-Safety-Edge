@@ -17,6 +17,12 @@ Field shapes follow `android-rc/rc-core/.../FileRcStore.kt`:
 - `batch_receipts.ndjson`  — {"kind","client_batch_id","server_batch_id"}
 - `messages.ndjson`        — MOP envelopes (top-level flight_id/edge_boot_id)
 - `gaps.ndjson`            — gap declarations with received_wall_utc
+- `operator_actions.ndjson` — OperatorActionLog nodes (snake_case, first
+  write wins per response_id; corrupt lines reported, never repaired)
+- `response_batches.ndjson` — durable structured-response batch receipts
+  (kind/flight_id/client_batch_id/content_hash/server_batch_id/
+  accepted_ids/duplicate_ids; receipts without a server_batch_id are
+  skipped, exactly like FileRcStore)
 """
 
 from __future__ import annotations
@@ -54,6 +60,20 @@ class DeviceStore:
     application_uploads: set[str] = field(default_factory=set)
     boots_by_flight: dict[str, set[str]] = field(default_factory=dict)
     parse_notes: list[str] = field(default_factory=list)
+    # Structured operator responses (offline evidence, read-only):
+    # - operator_actions: raw snake_case nodes from
+    #   `operator_actions.ndjson` (OperatorActionLog format:
+    #   response_id/candidate_id/site_id/session_id/action/note/
+    #   evidence_source_id/evidence_received_at_utc/policy_id/
+    #   policy_version/acted_at_utc/delivery/transmission_proof/
+    #   receipt_proof/completion_proof), first write wins (idempotent).
+    # - response_batch_receipts: durable receipts from
+    #   `response_batches.ndjson` (kind/flight_id/client_batch_id/
+    #   content_hash/server_batch_id/accepted_ids/duplicate_ids),
+    #   insertion order; only receipts with a non-empty server_batch_id
+    #   are kept (same gate as FileRcStore).
+    operator_actions: dict[str, dict] = field(default_factory=dict)
+    response_batch_receipts: list[dict] = field(default_factory=list)
 
     # -- convenience -----------------------------------------------------------
     def observations_for(self, flight_id: str) -> dict[str, BootNode]:
@@ -83,6 +103,14 @@ class DeviceStore:
             for aid, node in self.annotations.items()
             if node.get("flight_id") == flight_id
         }
+
+    def response_receipts_for(self, flight_id: str, kind: str = "operator-responses") -> list[dict]:
+        """Durable response-batch receipts for one flight (insertion order)."""
+        return [
+            receipt
+            for receipt in self.response_batch_receipts
+            if receipt.get("kind") == kind and receipt.get("flight_id") == flight_id
+        ]
 
 
 def extract_tar(tar_path: Path, dest: Path) -> None:
@@ -145,6 +173,30 @@ def load_device_store(root: Path) -> DeviceStore:
     for node in _read_ndjson(root / "batch_receipts.ndjson", store, required=False):
         if isinstance(node, dict) and node.get("kind") and node.get("client_batch_id"):
             store.batch_receipts.add((str(node["kind"]), str(node["client_batch_id"])))
+
+    for line in _read_ndjson(root / "operator_actions.ndjson", store, required=False):
+        if not isinstance(line, dict):
+            continue
+        rid = line.get("response_id")
+        if not isinstance(rid, str) or not rid:
+            store.parse_notes.append("operator_actions.ndjson: line without response_id")
+            continue
+        store.operator_actions.setdefault(rid, line)
+
+    for node in _read_ndjson(root / "response_batches.ndjson", store, required=False):
+        if not isinstance(node, dict):
+            continue
+        kind = node.get("kind")
+        client_batch_id = node.get("client_batch_id")
+        server_batch_id = node.get("server_batch_id")
+        if (
+            not isinstance(kind, str) or not kind
+            or not isinstance(client_batch_id, str) or not client_batch_id
+            or not isinstance(server_batch_id, str) or not server_batch_id
+        ):
+            store.parse_notes.append("response_batches.ndjson: receipt without kind/client_batch_id/server_batch_id (skipped)")
+            continue
+        store.response_batch_receipts.append(node)
 
     for env in _read_ndjson(root / "messages.ndjson", store, required=False):
         if not isinstance(env, dict):
