@@ -49,9 +49,6 @@ case "$SCRUB_FLAVOR" in
   device) RELEASE_TASK="assembleDeviceRelease" ;;
   *) printf 'Unsupported SCRUB_FLAVOR: %s (bench|device)\n' "$SCRUB_FLAVOR" >&2; exit 1 ;;
 esac
-mkdir -p /tmp/opencode
-BUILD_LOG="/tmp/opencode/ksi-release-${SCRUB_FLAVOR}-build.log"
-
 pass=0; fail=0; skip=0; warn=0
 FAILED=()
 report() { # $1=PASS|FAIL|SKIP|WARN $2=id $3=message
@@ -168,6 +165,8 @@ APK=""
 if [ "${SKIP_APK_BUILD:-0}" = "1" ]; then
   report SKIP A1 "SKIP_APK_BUILD=1 — APK checks below are SKIPPED, not passed"
 else
+  mkdir -p /tmp/opencode
+  BUILD_LOG="$(mktemp "/tmp/opencode/ksi-release-${SCRUB_FLAVOR}-build.XXXXXXXX.log")"
   if (cd "$REPO/android-rc" && ./gradlew ":rc-app:$RELEASE_TASK" --console=plain -q >"$BUILD_LOG" 2>&1); then
     APK="$(ls "$APP"/build/outputs/apk/"$SCRUB_FLAVOR"/release/*.apk 2>/dev/null | head -1 || true)"
     if [ -n "$APK" ]; then

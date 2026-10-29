@@ -78,7 +78,8 @@ Linux aarch64의 Android SDK aapt2에는 x86_64 QEMU/binfmt와 sysroot가 필요
 스크립트의 기본 `QEMU_LD_PREFIX`는 `~/Android/sysroot/root`; 환경에 맞춰 지정한다.
 해당 호스트의 WorkManager/Robolectric 6건은 SKIP이며 통과가 아니다. x86_64 CI 실행 결과를 별도 확인한다.
 전체 로컬 미러 `bash scripts/run_local_verification.sh`는 Edge 테스트 외 loopback MOP 프로세스도
-실행·정리하므로 공유 환경에서는 스크립트를 먼저 검토한다. CI의 정확한 작업은 workflow를 따른다.
+실행·정리한다. 로컬 주소에서만 수신하고 포트가 사용 중이면 다른 프로세스를 종료하지 않고 실패한다.
+필요하면 비어 있는 포트를 `MOP_PORT`로 지정한다. CI의 정확한 작업은 workflow를 따른다.
 
 ## 장비·서버·자산 경계
 

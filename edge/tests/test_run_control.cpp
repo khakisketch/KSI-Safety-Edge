@@ -16,8 +16,10 @@
 
 #include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <vector>
+#include <unistd.h>
 
 #include "ksi_safety/transport/digest.hpp"
 
@@ -697,13 +699,30 @@ int main() {
     // engine (id + file digest). Raw hex and "sha256:"-prefixed digests
     // compare equal; no TensorRT needed (pure parse + compare).
     {
-        const std::string engine_path =
-            "/tmp/opencode/ksi-edge-model-test.bin";
-        {
-            std::FILE* file = std::fopen(engine_path.c_str(), "wb");
-            CHECK(file != nullptr, "engine stand-in writable");
-            std::fwrite("fake-engine-bytes", 1, 17, file);
-            std::fclose(file);
+        const char* configured_tmp = std::getenv("TMPDIR");
+        const std::string tmp_dir = configured_tmp && *configured_tmp
+            ? configured_tmp
+            : (::access("/tmp/opencode", W_OK) == 0 ? "/tmp/opencode" : "/tmp");
+        const std::string name_template = tmp_dir + "/ksi-edge-model-test-XXXXXX";
+        std::vector<char> name(name_template.begin(), name_template.end());
+        name.push_back('\0');
+        const int fd = ::mkstemp(name.data());
+        CHECK(fd >= 0, "engine stand-in writable");
+        if (fd < 0) return 1;
+        const std::string engine_path(name.data());
+        std::FILE* file = ::fdopen(fd, "wb");
+        CHECK(file != nullptr, "engine stand-in stream available");
+        if (file == nullptr) {
+            ::close(fd);
+            std::remove(engine_path.c_str());
+            return 1;
+        }
+        const std::size_t bytes_written = std::fwrite("fake-engine-bytes", 1, 17, file);
+        const int close_result = std::fclose(file);
+        CHECK(bytes_written == 17 && close_result == 0, "engine stand-in fully written");
+        if (bytes_written != 17 || close_result != 0) {
+            std::remove(engine_path.c_str());
+            return 1;
         }
         std::string hash_error;
         const std::string hex = Sha256HexOfFile(engine_path.c_str(),
