@@ -7,6 +7,17 @@ __pycache__/
 
 # opencode session checkpoint (local only, never committed)
 .opencode/working-state.md
+# Local review captures and recovered scratch are not public design assets.
+.opencode/*.png
+.opencode/recovery-r108*/
+.opencode/replay-r108-*.py
+.opencode/label-review-*/
+
+# Local secrets and browser automation scratch; example configs remain shareable.
+.env
+.env.*
+!.env.example
+.playwright-cli/
 
 # service runtime data
 core/var/
@@ -23,3 +34,9 @@ design-previews/
 
 # DJI PSDK credentials — never commit (real file only; .example is tracked)
 **/dji_sdk_app_info.h
+
+# --- DJI third-party assets (로컬 고정, 커밋 금지) ---
+# PSDK는 DJI EULA상 재배포할 수 없다. UX SDK Beta는 MIT이나 대용량이라
+# 커밋하지 않고 scripts/dji_assets.sh 로 복구한다(해시 검증 포함).
+third_party/dji/*
+!third_party/dji/README.md

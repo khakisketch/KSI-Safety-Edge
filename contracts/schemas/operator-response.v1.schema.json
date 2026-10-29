@@ -1,0 +1,220 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/operator-response.v1.schema.json",
+  "title": "OperatorResponse v1",
+  "description": "In-flight operator response (CONFIRM | HOLD | ESCALATE_REQUEST) to an AI risk candidate, with its delivery state. Mirrors android-rc rc-ports ObservationResponse semantics: only LOCAL_ONLY and REQUESTED are producible offline; SENT_CONFIRMED requires transmission_proof, RECEIVED_CONFIRMED additionally requires receipt_proof, COMPLETED_CONFIRMED additionally requires completion_proof. A claim above REQUESTED without its proof is a validation error, never silently accepted. A CONFIRM never clears the risk. Digest rule: content_sha256 is the hex SHA256 of the RFC 8785 canonical JSON of the object excluding content_sha256 itself (see contracts/README.md and libs/ksi_contracts/src/ksi_contracts/canonical.py). Core stores responses append-only and MUST NEVER infer a session verdict or a safety state from their presence.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "response_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "candidate_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "site_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "CONFIRM",
+        "HOLD",
+        "ESCALATE_REQUEST"
+      ]
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 280
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "received_at_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "policy_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "policy_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "source_id",
+        "received_at_utc",
+        "policy_id",
+        "policy_version"
+      ]
+    },
+    "acted_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "delivery_state": {
+      "type": "string",
+      "enum": [
+        "LOCAL_ONLY",
+        "REQUESTED",
+        "SENT_CONFIRMED",
+        "RECEIVED_CONFIRMED",
+        "COMPLETED_CONFIRMED",
+        "UNKNOWN"
+      ]
+    },
+    "transmission_proof": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "receipt_proof": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "completion_proof": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "content_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "required": [
+    "schema_version",
+    "response_id",
+    "candidate_id",
+    "flight_id",
+    "site_id",
+    "session_id",
+    "action",
+    "note",
+    "evidence",
+    "acted_at_utc",
+    "delivery_state",
+    "transmission_proof",
+    "receipt_proof",
+    "completion_proof",
+    "content_sha256"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "delivery_state": {
+            "const": "SENT_CONFIRMED"
+          }
+        },
+        "required": [
+          "delivery_state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "transmission_proof": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "transmission_proof"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "delivery_state": {
+            "const": "RECEIVED_CONFIRMED"
+          }
+        },
+        "required": [
+          "delivery_state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "transmission_proof": {
+            "type": "string",
+            "minLength": 1
+          },
+          "receipt_proof": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "transmission_proof",
+          "receipt_proof"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "delivery_state": {
+            "const": "COMPLETED_CONFIRMED"
+          }
+        },
+        "required": [
+          "delivery_state"
+        ]
+      },
+      "then": {
+        "properties": {
+          "transmission_proof": {
+            "type": "string",
+            "minLength": 1
+          },
+          "receipt_proof": {
+            "type": "string",
+            "minLength": 1
+          },
+          "completion_proof": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "transmission_proof",
+          "receipt_proof",
+          "completion_proof"
+        ]
+      }
+    }
+  ]
+}

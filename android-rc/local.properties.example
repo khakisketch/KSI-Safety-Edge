@@ -1,0 +1,18 @@
+# DJI MSDK v5 앱 키 — 우리 패키지(ksi.safetyedge.rc)용.
+#
+# 발급: DJI 개발자 계정 → Become a Developer → Developer Center → My Apps → CREATE APP
+#   · App Type           : Mobile SDK
+#   · Software Platform  : Android
+#   · Package Name       : ksi.safetyedge.rc   ← 아래의 App Identification Code
+#   · App Key(발급 결과) : 이 예시가 아닌 local.properties에만 입력한다
+#
+# MSDK v5에서 App Key는 **패키지명(App Identification Code)** 에 묶인다.
+# (포털의 Android Configuration 페이지: "The ID code when creating an Android app is
+#  the package name of the app". 생성 폼에도 keystore/서명 항목이 없다.)
+# → debug 서명과 release 서명이 달라도 같은 패키지면 같은 키를 쓴다.
+#   (기기에서의 실제 동작은 실기에서 확인한다.)
+#
+# 이 예시 파일은 공유할 수 있으므로 비밀을 넣지 않는다. 실제 값은 gitignore 대상인
+# android-rc/local.properties에만 로컬로 보관하며 채팅·커밋·공개 산출물에 넣지 않는다.
+# 비워 두면 SDK를 초기화하지 않고 벤치 모드로 기동한다(안전한 기본값).
+dji.apiKey=

@@ -6,6 +6,18 @@ RC actually recorded is actually reachable from the Core read API. It only
 compares the pulled store (see `scripts/rc_device_day.sh pull-store`) with
 Core GET responses; it never runs uploads and never infers success.
 
+Besides artifacts/observations/events/annotations/sessions, it also checks
+the structured operator responses (`operator-response.v1`,
+`GET /api/v1/edge/flights/{flightId}/operator-responses`): each locally
+linked response must match its Core row canonically (content + digest),
+and every id a durable `response_batches.ndjson` receipt claims accepted
+must actually be present in Core. A local response no receipt covers yet
+is reported PENDING (waiting — never "sent", never delivery-confirmed).
+An older Core without the route answers 404: with local responses or
+claimed receipts that is UNKNOWN (query unverified), never a vacuous OK.
+No local responses and no claimed receipts means the optional route was
+unused: OK, no fabricated zero row.
+
 Usage:
 
     python scripts/rc_core_correlate.py \
@@ -13,7 +25,8 @@ Usage:
         --core-url http://127.0.0.1:8000 --token <read-token> \
         --out docs/verification/evidence/<date>-a9-4/08-rc-core-correlation.txt
 
-Exit codes: 0 = 대조 OK · 2 = DISCREPANCY · 1 = 실행/전송 오류.
+Exit codes: 0 = 대조 가능한 항목 일치(PENDING은 명시) · 2 = DISCREPANCY ·
+1 = 조회 미검증(INCOMPLETE) 또는 실행/전송 오류. UNKNOWN을 통과로 취급하지 않는다.
 Tokens are never printed (env `KSI_CORE_TOKEN` also works).
 """
 
@@ -80,6 +93,13 @@ class CoreClientReads:
         except CoreError:
             return None
 
+    def operator_responses(self, flight_id: str) -> list[dict] | None:
+        """Read-only GET .../operator-responses; 404/older Core -> None."""
+        try:
+            return self._client.list_operator_responses(flight_id)
+        except CoreError:
+            return None
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -131,6 +151,8 @@ def main(argv: list[str] | None = None) -> int:
             out.parent.mkdir(parents=True, exist_ok=True)
             out.write_text(text + "\n", encoding="utf-8")
             print(f"\n저장: {out}")
+        if report.verdict == "INCOMPLETE":
+            return 1
         return 0 if report.verdict == "OK" else 2
     except CoreError as exc:
         print(f"오류: Core 요청 실패 {exc.method} {exc.path} -> {exc.status}", file=sys.stderr)

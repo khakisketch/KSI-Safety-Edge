@@ -172,18 +172,44 @@ def test_openapi_parity(client):
     import re
 
     spec = yaml.safe_load((Path(__file__).resolve().parents[2] / "contracts" / "openapi.yaml").read_text())
-
     def norm(p):
         return re.sub(r"\{[^}]*\}", "{}", p)
 
-    expected = set()
-    for path, methods in spec["paths"].items():
-        for method, op in methods.items():
-            if method.upper() in ("HEAD", "OPTIONS"):
-                continue
-            if not isinstance(op, dict) or "operationId" not in op:
-                continue
-            expected.add((norm("/api/v1/edge" + path), method.upper()))
+    def ops(doc):
+        found = set()
+        for path, methods in doc["paths"].items():
+            for method, op in methods.items():
+                if method.upper() in ("HEAD", "OPTIONS"):
+                    continue
+                if not isinstance(op, dict) or "operationId" not in op:
+                    continue
+                found.add((norm("/api/v1/edge" + path), method.upper()))
+        return found
+
+    # Every additive extension file is part of the declared surface.
+    ext_ops = set()
+    for ext_path in sorted(
+        (Path(__file__).resolve().parents[2] / "contracts" / "extensions").glob("*.openapi.yaml")
+    ):
+        ext_doc = yaml.safe_load(ext_path.read_text())
+        ext_ops |= ops(ext_doc)
+
+    frozen = ops(spec)
+    # Frozen baseline may only grow through other approved units; it must
+    # never shrink below the 39 ops pinned in contracts/tests/test_openapi.py.
+    assert len(frozen) >= 39, f"frozen baseline shrank: {len(frozen)}"
+    added = ext_ops
+    assert {
+        ("/api/v1/edge/operator-responses", "POST"),
+        ("/api/v1/edge/flights/{}/operator-responses", "GET"),
+    } <= added, f"the response routes must stay declared: {added}"
+    assert {
+        ("/api/v1/edge/collections", "POST"),
+        ("/api/v1/edge/collections/{}/commit", "POST"),
+        ("/api/v1/edge/collections/{}/receipt", "GET"),
+    } <= added, f"the collection routes must be declared: {added}"
+    assert not (frozen & added), "extension must not redefine frozen paths"
+    expected = frozen | added
     actual = set()
     for path, methods in client.app.openapi()["paths"].items():
         for method in methods:
@@ -194,6 +220,8 @@ def test_openapi_parity(client):
     extra = actual - expected
     assert not missing, f"spec ops missing from app: {missing}"
     assert not extra, f"app routes missing from spec: {extra}"
+    # Frozen baseline stays fully served: no baseline op may disappear.
+    assert not (frozen - actual), f"frozen baseline ops missing from app: {frozen - actual}"
 
 
 def test_audit_log_rows(client):

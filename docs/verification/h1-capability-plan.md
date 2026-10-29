@@ -108,6 +108,6 @@
 | H1-7 RC | NOT_RUN — RC 접근 경로 미확보 |
 | H1-8 DPK(H1b) | NOT_RUN — tap DPK 3종 staging 존재(Aug 12), 미설치 |
 
-- 장치 접속 경로: `~/.ssh/config`의 `ksi-manifold`(172.30.1.33, dji, 키 `ksi_manifold_ed25519`). 작업 루트 `/open_app/ksi-dev`(94G 여유).
+- 장치 접속 환경·식별 정보는 공개 인계에서 생략하고 비공개 보존한다. 실기 접근은 별도 승인과 현행 런북을 따른다.
 - 결과는 product-state·원장에 요약하고, 설계 변경이 필요하면 스펙 개정 이력으로 남긴다.
 - H1 PASS가 ACTIVE 승인이 아님을 유지: 규칙별 실측(G2/G3)은 별도 게이트.

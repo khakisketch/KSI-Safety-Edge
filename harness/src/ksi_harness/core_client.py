@@ -121,6 +121,11 @@ class CoreClient:
     def list_artifacts(self, flight_id: str) -> list[dict]:
         return list(self._get(f"/flights/{flight_id}/artifacts").get("items", []))
 
+    # -- structured operator responses (read-only; 404 -> caller decides) ---------
+    def list_operator_responses(self, flight_id: str) -> list[dict]:
+        """GET /flights/{flightId}/operator-responses items (insertion order)."""
+        return list(self._get(f"/flights/{flight_id}/operator-responses").get("items", []))
+
     # -- batches ------------------------------------------------------------------
     def post_batch(self, flight_id: str, kind: str, client_batch_id: str, items: list) -> dict:
         if kind not in _BATCH_PATHS:

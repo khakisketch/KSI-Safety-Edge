@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Primary: filled ksi_primary / ksi_on_primary. Pressed/focused keep the
+     fill and add a stroke (no new tokens); disabled falls back to the
+     surface_subtle/border pair. Rounded 6dp, no shadow (style kills
+     elevation/stateListAnimator). -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/ksi_surface_subtle" />
+            <stroke android:width="1dp" android:color="@color/ksi_border" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/ksi_primary" />
+            <stroke android:width="2dp" android:color="@color/ksi_border" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <solid android:color="@color/ksi_primary" />
+            <stroke android:width="2dp" android:color="@color/ksi_muted" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/ksi_primary" />
+            <corners android:radius="6dp" />
+        </shape>
+    </item>
+</selector>

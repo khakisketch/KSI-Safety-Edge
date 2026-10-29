@@ -28,6 +28,32 @@ interface UploadStore : RcStore, EvidenceStore {
     fun markArtifactSynced(artifactId: String)
     fun isArtifactSynced(artifactId: String): Boolean
 
+    // -- Commit receipts: COMMITTED is a locally stored fact -----------------
+    // Contract §6: the RC shows upload completion ONLY after the Core's
+    // commit receipt (durable_commit_id) is persisted locally. A lost
+    // completeIngest response is recovered by re-requesting the same commit
+    // (idempotent by manifest_sha256); the UI-facing completion flag flips
+    // only when the receipt is in the store.
+
+    /** Durable commit receipt for one manifest (idempotent by
+     *  manifest_sha256; first write wins). */
+    fun recordCommitReceipt(receipt: ObjectNode)
+
+    /** Stored COMMITTED receipt for a manifest, or null. */
+    fun commitReceipt(manifestSha256: String): ObjectNode?
+
+    fun isBootCommitted(manifestSha256: String): Boolean =
+        commitReceipt(manifestSha256) != null
+
+    /**
+     * Stored COMMITTED receipts of one flight (insertion order).
+     *
+     * WHY: "중앙에 보관됐는가"를 서버 추측으로 답하면 안 된다. 로컬에
+     * **커밋 영수증(durable_commit_id)이 있는 것**만 사실이다. 이 조회는
+     * 그 사실을 비행 단위로 묶어 보여주기 위한 읽기 전용 통로다.
+     */
+    fun commitReceiptsFor(flightId: String): List<ObjectNode>
+
     // -- A7: operator annotations (append-only local queue) --------------------
     // The RC never deletes or rewrites a detection/event: a "false positive
     // suspected" mark is a NEW operator-annotation record; undo is a
@@ -46,6 +72,22 @@ interface UploadStore : RcStore, EvidenceStore {
 
     fun markAnnotationUploaded(annotationId: String)
     fun isAnnotationUploaded(annotationId: String): Boolean
+
+    // -- Structured operator-response batches (queryable route) ----------------
+    // Durable receipts for `POST /operator-responses` batches, keyed by
+    // (kind, client_batch_id) like the evidence batches. The client batch
+    // id is content-derived, so the receipt proves THIS exact content was
+    // durably accepted (accepted + duplicate ids included) — a lost reply
+    // retries the same batch, and new late responses form a new batch.
+
+    /** Idempotent by (kind, client_batch_id); first write wins. */
+    fun recordResponseBatchReceipt(receipt: ObjectNode)
+
+    /** Stored receipt for one batch, or null when it never completed. */
+    fun responseBatchReceipt(kind: String, clientBatchId: String): ObjectNode?
+
+    /** Stored receipts for a flight (insertion order). */
+    fun responseBatchReceipts(kind: String, flightId: String): List<ObjectNode>
 }
 
 /**

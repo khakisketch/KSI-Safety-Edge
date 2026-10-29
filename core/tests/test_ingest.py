@@ -109,6 +109,40 @@ def test_session_frozen_and_resume(client):
     assert r.status_code == 422
 
 
+def test_artifact_id_reuse_with_a_different_digest_is_refused(client):
+    """증거의 정체성은 전역이다: 같은 artifact_id가 다른 바이트를 가리키면 안 된다.
+
+    감시는 "비행 하나에 매니페스트 하나"였다. 그러나 artifact id는 세션에
+    묶이지 않는다 — 같은 id가 다른 다이제스트로 재사용되면, 한 비행의
+    커밋 영수증이 다른 바이트를 증명해 버린다. 그러므로 409로 거절한다.
+    """
+    flight = register_flight(client)
+    fid = flight["flight_id"]
+    shared_id = "11111111-2222-4333-8444-555555555555"
+    first_bytes = b"D" * 100
+    manifest, _ = make_manifest(fid, [(shared_id, first_bytes, "video/mp4", True, "RC_PROXY_SEGMENT")])
+    r = client.post("/ingest-sessions", token=RC, json=manifest)
+    assert r.status_code == 200, r.text
+    up = r.json()["upload_id"]
+    assert _put(client, up, shared_id, first_bytes).status_code == 200
+    assert _complete(client, up, manifest).json()["status"] == "COMMITTED"
+
+    # 같은 id, 다른 바이트 -> 거절(기존 증거는 그대로다)
+    other, _ = make_manifest(fid, [(shared_id, b"E" * 100, "video/mp4", True, "RC_PROXY_SEGMENT")])
+    r2 = client.post("/ingest-sessions", token=RC, json=other)
+    assert r2.status_code == 409, r2.text
+    assert r2.json()["code"] == "CONFLICT"
+    assert r2.json()["details"]["artifact_ids"] == [shared_id]
+
+    # 거절 뒤에도 첫 세션의 커밋 상태는 유지된다.
+    assert client.get(f"/ingest-sessions/{up}", token=RC).json()["status"] == "COMMITTED"
+
+    # 같은 id + 같은 바이트는 재전송(같은 증거)이므로 허용된다.
+    again, _ = make_manifest(fid, [(shared_id, first_bytes, "video/mp4", True, "RC_PROXY_SEGMENT")])
+    r3 = client.post("/ingest-sessions", token=RC, json=again)
+    assert r3.status_code == 200, r3.text
+
+
 def test_two_manifests_one_flight_adr0001(client):
     """Two manifest revisions for one flight, both committed -> COMPLETE."""
     flight = register_flight(client)

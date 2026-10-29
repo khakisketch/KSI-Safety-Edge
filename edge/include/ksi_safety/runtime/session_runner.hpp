@@ -81,6 +81,12 @@ struct RunnerConfig {
     // session evaluates proximity/zone rules with them.
     bool enable_spatial = false;
     SpatialEstimatorConfig spatial;
+    // P1 stream health: caller-clock thresholds for the frame-independent
+    // HealthTick. Without any frame ingress for stale_after_ns the video
+    // input degrades (video_input_stale); past lost_after_ns it is lost
+    // (video_input_lost, contract §3). Non-positive disables that step.
+    std::int64_t video_stale_after_ns = 1000000000LL;  // 1 s
+    std::int64_t video_lost_after_ns = 5000000000LL;   // 5 s
 };
 
 // True iff detect_every_n_frames >= 1 and both ring capacities are > 0.
@@ -106,6 +112,61 @@ enum class SpatialTickReason {
 };
 
 const char* ToString(SpatialTickReason reason);
+
+// --- Runtime run-control vocabulary (Unit A / contract §2) ------------------
+// REQUEST_ACCEPTED: commands accepted, nothing installed or started.
+// CONFIG_APPLIED: the applied bundle's rules/zones are installed in the
+//   engine (effective_config_hash identifies them).
+// STARTING: start requested, no frame processed yet (count is 0).
+// RUNNING: frames are being processed, inputs valid, no install holds.
+// DEGRADED: processing continues but input/inference is incomplete or the
+//   install holds verdicts (see degraded_reasons + input_state).
+// STOPPED: processing ended, evidence closed out.
+enum class RuntimeState {
+    kRequestAccepted,
+    kConfigApplied,
+    kStarting,
+    kRunning,
+    kDegraded,
+    kStopped,
+};
+
+const char* ToString(RuntimeState state);
+
+// Contract §3 input health: each of video/telemetry/engine reports one of
+// ok|stale|lost|failed|absent. The runner emits ok|stale|lost (video),
+// ok|stale|absent (telemetry), ok|failed|absent (engine). "lost" video is
+// reserved for stream starvation observed via the frame-independent
+// HealthTick (caller clock), never guessed from a single tick.
+struct RuntimeInputState {
+    std::string video = "absent";
+    std::string telemetry = "absent";
+    std::string engine = "absent";
+};
+
+struct RuntimeInstallResult {
+    bool ok = false;
+    // On success: install holds (subset of the contract §3 code list —
+    // ACTIVE rejections, zone holds). On failure: the fail-closed reason.
+    std::vector<std::string> reasons;
+    std::string effective_config_hash;
+    std::uint64_t config_epoch = 0;
+    bool config_applied = false;
+};
+
+// Point-in-time copy of the runtime facts MISSION_STATUS reports. Every
+// field is explicit-presence: absence means "unknown", never false.
+struct RuntimeSnapshot {
+    RuntimeState state = RuntimeState::kRequestAccepted;
+    bool config_applied = false;
+    std::string effective_config_hash;
+    std::uint64_t config_epoch = 0;
+    std::uint64_t processed_frame_count = 0;
+    std::int64_t last_processed_frame_mono_ns = 0;
+    bool has_processed_frame = false;
+    std::vector<std::string> degraded_reasons;
+    RuntimeInputState input_state;
+};
 
 struct TrackRecord {
     Track track;
@@ -155,6 +216,58 @@ class SessionRunner {
     PushVerdict PushPose(const Sample<Quaternion>& sample);
     PushVerdict PushPosition(const Sample<Vec3>& sample);
 
+    // --- Runtime install + run control (Unit A / contract G9) ----------------
+    //
+    // The PSDK app gates live processing on SESSION_START/STOP: no start
+    // means no processing, a stop ends it. The gate is enforced inside
+    // ProcessFrame (a disabled tick processes no frame, touches no tracker
+    // or episode state, and leaves tick_index_ alone), so the
+    // "STOPPED => no frame is processed" invariant holds no matter what the
+    // caller does. The counter processed_frame_count() advances only on
+    // processed ticks.
+    //
+    // State machine: REQUEST_ACCEPTED (initial) -> CONFIG_APPLIED (install)
+    // -> STARTING (start requested, no frame yet) -> RUNNING <-> DEGRADED
+    // (per-tick input/install health) -> STOPPED. Reinstall while
+    // RUNNING/DEGRADED/STARTING is rejected (stop first); reinstall after a
+    // stop returns to CONFIG_APPLIED. Direct ProcessFrame calls outside run
+    // control (the Replay driver) keep working: they process and count, but
+    // never move the state.
+    RuntimeInstallResult ApplyRuntimeConfig(
+        std::vector<RiskRule> proximity_rules,
+        std::vector<RiskRule> zone_rules, std::vector<ZoneRevision> zones,
+        std::string effective_config_hash,
+        std::vector<std::string> degraded_reasons);
+    // Idempotent start: opens the gate, resets the processed-frame counter
+    // for the new execution, enters STARTING. Allowed from any settled
+    // state (including without an installed config — config_applied then
+    // stays false and the run is reported as such).
+    void RequestStart();
+    // Clean stop: closes open episodes with kSessionEnd at now_mono_ns
+    // (caller-provided data, no clock read), closes the gate, enters
+    // STOPPED, and returns the closeout outputs for the evidence path.
+    SessionOutput RequestStop(std::uint64_t now_mono_ns);
+    // Identity loss (flight re-adoption / reboot without a clean stop):
+    // closes the gate and parks the state at STOPPED without touching
+    // episode state (the next install reconstructs the session).
+    void AbortRuntime();
+    // Low-level gate. The PSDK app sets false before its worker starts and
+    // the run-control edges flip it; the Replay driver never touches it
+    // (default true preserves the replay path exactly).
+    void SetProcessingEnabled(bool enabled);
+    bool processing_enabled() const { return processing_enabled_; }
+
+    RuntimeSnapshot Snapshot() const;
+    RuntimeState runtime_state() const { return runtime_state_; }
+    std::uint64_t processed_frame_count() const {
+        return processed_frame_count_;
+    }
+    std::uint64_t config_epoch() const { return config_epoch_; }
+    bool config_applied() const { return config_applied_; }
+    const std::string& effective_config_hash() const {
+        return effective_config_hash_;
+    }
+
     // One frame tick. The detector is called at most once (cadence gate).
     TickRecord ProcessFrame(const FramePacket& frame, const FrameContext& ctx,
                             DetectorPort* detector);
@@ -169,6 +282,38 @@ class SessionRunner {
     std::uint64_t TickCount() const { return tick_index_; }
     std::size_t AttitudeSamples() const { return attitude_.size(); }
     std::size_t PositionSamples() const { return position_.size(); }
+    // The actually loaded model profile (id + file-bound digest). The
+    // run-control install check compares enabled bundle profiles against
+    // this — never asserts a requested model while the bytes differ.
+    const ModelProfile& profile() const { return profile_; }
+
+    // P1 stream health, independent of frames: re-evaluates the video input
+    // against caller-provided now_mono_ns (no clock read inside). A started
+    // session that receives no frames degrades (video_input_stale, then
+    // video_input_lost) instead of reporting healthy inputs forever; a
+    // restored frame recovers via the normal frame path. Never promotes or
+    // demotes the run state beyond what RefreshRunHealth would conclude.
+    void HealthTick(std::int64_t now_mono_ns);
+
+    // Latches a durable-evidence failure (spool journal refused /
+    // unwritable spool). Sticky: once latched the snapshot reports
+    // session_capacity_exceeded and the state never returns to RUNNING.
+    // New observation work must stop; the reason feeds the closing log.
+    void NoteDurableFailure(const std::string& reason);
+    bool hasDurableFailure() const { return !durable_failure_.empty(); }
+    const std::string& durableFailureReason() const {
+        return durable_failure_;
+    }
+
+    // Latches a sticky, NON-FATAL evidence gap (bounded autonomy store
+    // saturated). Unlike NoteDurableFailure it never pauses processing: the
+    // operator keeps receiving live observation/assessment facts, and the
+    // record explicitly says which part could not be kept.
+    void NoteEvidenceSaturation(const std::string& reason);
+    bool hasEvidenceSaturation() const { return !evidence_saturation_.empty(); }
+    const std::string& evidenceSaturationReason() const {
+        return evidence_saturation_;
+    }
 
   private:
     RunnerConfig config_;
@@ -176,9 +321,49 @@ class SessionRunner {
     std::uint64_t tick_index_ = 0;
     TopicRing<Quaternion> attitude_;
     TopicRing<Vec3> position_;
+    SessionConfig session_config_;
     SafetySession session_;
     GroundEstimator estimator_;
     ModelProfile profile_;
+    // --- run control (Unit A) -------------------------------------------------
+    bool processing_enabled_ = true;
+    RuntimeState runtime_state_ = RuntimeState::kRequestAccepted;
+    std::uint64_t config_epoch_ = 0;
+    bool config_applied_ = false;
+    std::string effective_config_hash_;
+    std::vector<std::string> persistent_degraded_;
+    std::uint64_t processed_frame_count_ = 0;
+    std::int64_t last_processed_frame_mono_ns_ = 0;
+    bool has_processed_frame_ = false;
+    bool detector_seen_ = false;
+    DetectionStatus last_detection_status_ = DetectionStatus::kNotRun;
+    // Engine verdict tracks the last *attempt*: a cadence skip (kNotRun) is
+    // no new information and must never clear a recorded failure back to
+    // ok, nor count as a successful inference.
+    DetectionStatus last_attempt_status_ = DetectionStatus::kNotRun;
+    std::uint64_t consecutive_non_ok_ = 0;
+    PoseQuality last_attitude_quality_ = PoseQuality::kNone;
+    PoseQuality last_position_quality_ = PoseQuality::kNone;
+    RuntimeInputState input_state_;
+    std::vector<std::string> dynamic_degraded_;
+    // Sticky durable-evidence failure (spool journal refused / unwritable):
+    // once set the run never reports RUNNING again. Set with the truthful
+    // IO reason; reported as the contract code session_capacity_exceeded.
+    std::string durable_failure_;
+    // Sticky non-fatal evidence gap (autonomy store saturated). Reported on
+    // facts; NEVER consulted by the processing gate.
+    std::string evidence_saturation_;
+    // Frame ingress, independent of the processing gate: even a gated
+    // (dropped) frame proves the video stream is alive.
+    bool has_ingress_ = false;
+    std::int64_t last_ingress_mono_ns_ = 0;
+
+    void RefreshRunHealth();
+    // Rebuilds dynamic_degraded_ from the current input_state_ grades and
+    // applies the STARTING/RUNNING/DEGRADED promotion rule. Shared by
+    // RefreshRunHealth (frame path) and HealthTick (clock path) so the two
+    // can never disagree on what the grades mean.
+    void RecomputeHealth();
 };
 
 }  // namespace ksi::safety

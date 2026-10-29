@@ -111,6 +111,30 @@ class CoreApi(private val transport: CoreTransport) {
 
     fun listSites(): ObjectNode = getPaginated("/sites")
 
+    /**
+     * Deferred site registration (offline-first field flow): POSTs one
+     * pending draft. The caller classifies the answer — a returned id that
+     * pre-existed the POST is a name-keyed MATCH, not a creation (see
+     * [PendingSiteSync]).
+     */
+    fun createSite(
+        orgId: String,
+        name: String,
+        centerLat: Double? = null,
+        centerLon: Double? = null,
+        radiusM: Double? = null,
+    ): ObjectNode {
+        val body = json.createObjectNode()
+        body.put("org_id", orgId)
+        body.put("name", name)
+        if (centerLat != null && centerLon != null && radiusM != null) {
+            body.put("center_lat", centerLat)
+            body.put("center_lon", centerLon)
+            body.put("radius_m", radiusM)
+        }
+        return jsonRequest("POST", "/sites", body)
+    }
+
     fun listZoneRevisions(siteId: String): ObjectNode =
         getPaginated("/sites/$siteId/zone-revisions")
 
@@ -121,6 +145,13 @@ class CoreApi(private val transport: CoreTransport) {
 
     fun getObservations(flightId: String): ObjectNode =
         getPaginated("/flights/$flightId/observations")
+
+    /**
+     * D5: 서버가 아는 관측 세션(=비행) 목록. "관측 기록이 유실되지 않았는지"
+     * 확인할 때 **서버가 실제로 몇 개를 알고 있는지** 세는 용도다.
+     * 서버를 조회하지 않은 상태는 호출하지 않고, 그 사실을 UI가 드러낸다.
+     */
+    fun listFlights(): ObjectNode = getPaginated("/flights")
 
     fun getEvents(flightId: String): ObjectNode =
         getPaginated("/events?flight_id=$flightId")
@@ -138,6 +169,33 @@ class CoreApi(private val transport: CoreTransport) {
 
     fun listAnnotations(eventId: String): ObjectNode =
         jsonRequest("GET", "/events/$eventId/annotations")
+
+    // -- structured operator responses (queryable route, no new schema) --------
+    // Payloads are `operator-response.v1` built from the persisted
+    // OperatorActionLog (see OperatorResponsePayload); batch semantics
+    // mirror the evidence batches (content-derived client id, idempotent
+    // replay, 409 on same-id/different-content).
+
+    fun postOperatorResponses(clientBatchId: String, items: JsonNode): ObjectNode {
+        val body = json.createObjectNode()
+        body.put("client_batch_id", clientBatchId)
+        body.set<JsonNode>("items", items)
+        return jsonRequest("POST", "/operator-responses", body)
+    }
+
+    /**
+     * The custody receipts the Core holds for one flight (the collector's
+     * producer-neutral collections — the ORIGINAL Edge evidence, not the
+     * RC's own uploads).
+     *
+     * WHY: "원본 근거가 중앙에 있는가"는 **서버 영수증**으로만 답할 수 있다.
+     * 로컬에 있는 believed receipt는 대조가 아니라 기억이다.
+     */
+    fun listCollections(flightId: String): ObjectNode =
+        jsonRequest("GET", "/collections?flight_id=$flightId")
+
+    fun listOperatorResponses(flightId: String): ObjectNode =
+        jsonRequest("GET", "/flights/$flightId/operator-responses")
 
     fun downloadObject(artifactId: String): ByteArray =
         raw("GET", "/objects/$artifactId")

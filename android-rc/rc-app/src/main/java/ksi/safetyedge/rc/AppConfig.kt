@@ -60,6 +60,15 @@ class AppConfig(context: Context) {
         get() = prefs.getString("operator_org", "") ?: ""
         set(value) { prefs.edit().putString("operator_org", value.trim()).apply() }
 
+    /**
+     * Display-only flight HUD style (H1/H2/H3). This never changes commands,
+     * recording, camera or session state; an absent/invalid key falls back to
+     * the recommended default.
+     */
+    var hudStyle: FlightHudStyle
+        get() = FlightHudStyle.fromKey(prefs.getString("flight_hud_style", null))
+        set(value) { prefs.edit().putString("flight_hud_style", value.name).apply() }
+
     /** Stable operator uuid (minted on first access). */
     val operatorId: String get() = stableId("operator_id")
 

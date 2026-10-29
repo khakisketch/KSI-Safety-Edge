@@ -279,7 +279,9 @@ cmd_log_start() {
   require_device
   local dir pid out
   dir="$(latest_evidence_dir)"
-  pid="$(adb shell pidof -s "$APP_ID" 2>/dev/null | tr -d '\r' || true)"
+  pid="$(adb shell pidof "$APP_ID" 2>/dev/null | tr -d '\r' | awk '{print $1}' || true)"
+  # RC의 pidof(-s 포함)가 같은 패키지의 2 프로세스를 함께 반환한다(실측: "12760 12786").
+  # logcat --pid는 단일 PID만 받으므로 첫 번째(앱 본체)만 쓴다.
   out="$dir/logcat-$(date +%H%M%S).txt"
   if [ -n "$pid" ]; then
     nohup adb logcat --pid="$pid" -v threadtime >"$out" 2>&1 &

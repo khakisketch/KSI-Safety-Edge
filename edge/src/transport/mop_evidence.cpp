@@ -1,6 +1,8 @@
 #include "ksi_safety/transport/mop_evidence.hpp"
 
 #include "ksi_safety/transport/digest.hpp"
+#include "ksi_safety/transport/mop_endpoint.hpp"
+#include "ksi_safety/transport/mop_link.hpp"
 
 namespace ksi::safety {
 
@@ -193,6 +195,40 @@ JsonValue MakeArtifactChunkPayload(const std::string& artifact_id,
     payload.Set("offset", JsonValue::Int(offset));
     payload.Set("data_b64", JsonValue::Str(Base64Encode(data, len)));
     return payload;
+}
+
+void EmitAssessmentArtifact(MopEdgeEndpoint* endpoint,
+                            const std::string& asset_id,
+                            const std::string& flight_id,
+                            const std::string& edge_boot_id,
+                            const std::string& assessment_json) {
+    if (endpoint == nullptr) return;
+    // Explicit identity (not the endpoint's cached one): the caller passes
+    // the LIVE identity the assessment was sealed under, so a stale label
+    // can never be stamped here. Emits the announce + chunk envelopes of
+    // the existing artifact plane.
+    endpoint->EmitArtifactAs(asset_id, kAssessmentSourceKind,
+                             kAssessmentMediaType,
+                             /*segment_index=*/0, /*required=*/false,
+                             assessment_json, flight_id, edge_boot_id);
+}
+
+void EmitAssessmentArtifact(MopLink* link, const std::string& asset_id,
+                            const std::string& flight_id,
+                            const std::string& edge_boot_id,
+                            const std::string& assessment_json) {
+    if (link == nullptr) return;
+    link->WithEndpoint([&](MopEdgeEndpoint* endpoint) {
+        endpoint->EmitArtifactAs(asset_id, kAssessmentSourceKind,
+                                 kAssessmentMediaType,
+                                 /*segment_index=*/0, /*required=*/false,
+                                 assessment_json, flight_id, edge_boot_id);
+    });
+}
+
+bool AssessmentEmitAllowed(const AssessmentEmitGate& gate) {
+    return gate.flight_confirmed && gate.mission_installed &&
+           gate.spool_writable;
 }
 
 }  // namespace ksi::safety

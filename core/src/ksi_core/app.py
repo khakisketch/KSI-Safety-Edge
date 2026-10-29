@@ -9,7 +9,8 @@ from fastapi import FastAPI
 from . import db as db_mod
 from .config import load_settings
 from .routers import annotations as annotations_router
-from .routers import bundles, events, flights, health, ingest, missions, review, sites, ui
+from .routers import bundles, collections, events, flights, health, ingest, missions, review, sites, ui
+from .routers import responses as responses_router
 
 
 def create_app() -> FastAPI:
@@ -38,8 +39,10 @@ def create_app() -> FastAPI:
     app.include_router(bundles.router, prefix=prefix)
     app.include_router(flights.router, prefix=prefix)
     app.include_router(ingest.router, prefix=prefix)
+    app.include_router(collections.router, prefix=prefix)
     app.include_router(events.router, prefix=prefix)
     app.include_router(annotations_router.router, prefix=prefix)
+    app.include_router(responses_router.router, prefix=prefix)
     app.include_router(review.router, prefix=prefix)
 
     # Developer Core-inspection shell at /review (no prefix, no auth). It

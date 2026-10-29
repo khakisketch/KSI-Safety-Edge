@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/collection-manifest.v1.schema.json",
+  "title": "CollectionManifest v1",
+  "description": "Producer-neutral manifest for one central collection of Edge origin evidence. The v1 flight-upload manifest is the RC's own record (it requires rc_device_id, rc_received_last_seq and RC receipt times) — a PC collector or the Edge must not invent those, so the first central collection of Edge origin evidence travels this manifest instead. Identity, digests and sizes are copied from the Edge's sealed revision; nothing is re-derived. Digest rule: a digest field is the hex SHA256 of the RFC 8785 canonical JSON of the object excluding the digest field itself (see contracts/README.md).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "collection_id",
+    "flight_id",
+    "edge_boot_id",
+    "producer",
+    "artifacts",
+    "sealed_revision_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "collection_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Client-derived collection id. Idempotency key: the same id with the same content is the same collection."
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "edge_boot_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "session_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Observation session id (uuid5 session|flight|boot) when the producer knows it; null = not known, never invented."
+    },
+    "mission_revision_id": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The mission revision the covered observations were produced under; null = not carried by this producer."
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "EDGE",
+            "PC_COLLECTOR"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Producer identity (device serial or collector host id). Not an authentication credential."
+        }
+      }
+    },
+    "sealed_revision_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Digest of the Edge's immutable sealed revision manifest that this collection covers."
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "artifact_id",
+          "sha256",
+          "size_bytes",
+          "media_type",
+          "required"
+        ],
+        "properties": {
+          "artifact_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "size_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "media_type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "source_kind": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "What the bytes are (e.g. EDGE_SOURCE_FRAME). Null = not stated by the producer."
+          },
+          "observation_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The observation this artifact is the source of; null = not linked."
+          }
+        }
+      }
+    }
+  }
+}

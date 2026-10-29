@@ -28,7 +28,11 @@ def test_prepare_apply_status_query(tmp_path):
     status = rc.last_status[f["flight_id"]]
     assert status["applied_bundle_sha256"] == f["bundle"]["bundle_sha256"]
     assert status["application_id"] == app["application_id"]
-    assert status["running"] is True
+    # `running` means "a start was requested and not stopped" (2026-10-21
+    # contract §2). APPLY installs the config; it does not start the
+    # session — the C++ endpoint leaves the bool false until SESSION_START.
+    assert status["running"] is False
+    assert status["runtime_state"] == "CONFIG_APPLIED"
 
 
 def test_prepare_rejects_tampered_bundle(tmp_path):

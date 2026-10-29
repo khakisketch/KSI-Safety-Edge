@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 디버그(개발·실기 시험) 빌드 전용: 개발망/현장 노트북 Core 평문 HTTP 허용.
+     릴리스 빌드에는 이 파일이 없고, src/main의 network_security_config가
+     평문을 차단한다(릴리스 매니페스트 기본값은 DJI AAR의 false를 그대로 쓴다).
+     이 파일이 사라지면 개발·실기 Core 접속이 즉시 실패한다(현장 필수 파일). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <application
+        android:usesCleartextTraffic="true"
+        tools:replace="android:usesCleartextTraffic" />
+</manifest>

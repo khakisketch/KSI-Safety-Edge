@@ -27,6 +27,9 @@ SCHEMA_NAMES = (
     "flight-session.v1",
     "detection-event.v1",
     "flight-summary.v1",
+    "operator-response.v1",
+    "collection-manifest.v1",
+    "collection-receipt.v1",
 )
 
 

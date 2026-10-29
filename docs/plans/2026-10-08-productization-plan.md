@@ -1,9 +1,36 @@
+> 공개본: 개인 사용자 경로는 일반 예시로 가렸다. 이 문서의 다른 개인정보·현장 기록이 모두 제거되었다는 보장은 아니다.
+
 # KSI Safety Edge — 제품화 실행 계획 (workstream ledger)
 
-- 작성: 2026-10-08 · 갱신: 2026-10-14 · 상태: **L1 소프트웨어·Replay 경로 구현, A9-4 실기 인수 대기**. 아래 날짜별 이력은 당시 상태이며 현재 판단은 `docs/product-state.md`를 따른다.
+- 작성: 2026-10-08 · 갱신: 2026-10-20 · 상태: **핵심 제어·보존·복구 경로 호스트 검증, 전체 제품·L1 인수 미완료**. 아래 날짜별 이력은 당시 상태이며 현재 판단은 `docs/product-state.md`를 따른다.
 - 사용자 지시(2026-10-08): "그렇다면 문서 등 반영하고 장기적으로 개발해줘 제품을 완성하기 위해" — 6단계 경로·인수 사다리·개발 줄기를 문서로 반영하고 장기 개발을 진행.
 - 상위 기준: `docs/specs/2026-10-08-integrated-design.md`(설계 기준본) · `docs/plans/2026-10-08-reuse-audit-and-porting.md` §0(불변 원칙) · `docs/product-state.md`(마일스톤).
 - 본 원장은 제품화 ①~⑥ 진행·증거·게이트를 기록한다. SI 재사용 판정·B0~W4 이력은 기존 원장에 보존.
+
+## 최신 통합 검증 (2026-10-20 실제 실행일)
+
+- 사용자 승인한 계속 개발 범위에서 RC_LOCAL 번들 구성·실제 설치 영수증·명시 시작/중지·상태 조회·
+  단절/재시작 증거 회수·필수 마감 기록·Core 전송/조회·대조를 연결하고 오류 경로를 보강했다.
+  과거 본문의 `2026-10-21`은 선행 작업 라벨이며 아래 정정과 최종 결과가 최신이다.
+- **최종 소유자 검증:** Python **186 passed**; Android 명시 5개 task **850건 중 844 실행 통과·6 SKIP**
+  (core 221 / ports 83 / msdk debug 60 / app bench 246 / app device 240), 두 flavor lint 오류 0·경고 각 235;
+  Edge CTest **28/28**, 별도 ASan+UBSan **28/28**. PSDK 3.16 aarch64 앱 실제 컴파일·링크 성공,
+  플레이스홀더 실행 exit 2(장비/실제 키 사용 없음). bench/device unsigned APK 스크럽 각각 **18 PASS**.
+- **주요 보강:** 원자적 명령 순서·실제 엔진 설치 후 APPLIED·설정/모델 출처 대조·불일치 보고의 진단 격리;
+  새 boot와 명시 재검증; 영속 spool/audit·작업별 출처·내용 기반 아티팩트 ID·ACK-only 압축;
+  저장 실패 전 정상 발행 금지·counter/append 실패 원자성·손상 꼬리 복구·저장 불가 시 KSI 쓰기 차단과 기본 UI 격리;
+  앱 재시작 후에도 미확인 STOP 잠금 유지·실제 typed STOPPED 이후 마감·영상 손실/대응 0건 기록;
+  구조화 대응의 별도 영수증·늦은 대응 자동 sync·Core 읽기 대조. 저장 ACK는 현장 전달/조치 완료가 아니다.
+- **이전 판단 정정:** 빈 데모/프레이밍 자료가 전체 프로덕션 입력은 아니며 서버의 실제 번들 경로는 기존에도 있다.
+  필수 zones/rules 부재를 빈 설치로 허용하지 않는다. PSDK 호스트 빌드 불가·코드 재사용 불가 단정은 철회했다.
+  실제 설치 규칙 수와 raw 요청 규칙 수를 같다고 보지 않으며 기하 보류는 판단 가능이 아니다.
+- **범위 유지:** 운용 화면 우선 진입·GPS 현장 추천/확인은 아직 제안이다. 자동 현장 확정·ACTIVE·AI 기체 명령은 추가하지 않았다.
+  원본 스키마/예제/기본 OpenAPI 바이트와 다른 세션의 선행 변경을 보존했다. 신규 대응 schema·API 확장은 별도 파일이다.
+- **미검증/미완료:** ADB 장치·키·Manifold 경로가 없어 실제 MOP/영상/장비 동작·Android 렌더·터치/햇빛·사용자 인수는 미수행.
+  새 지도 편집·공간 입력/보정·실측 정확도·비행 제어권 보고·운영 인증/보존/서명도 별도 미완료다.
+  TSan과 최신 hosted CI 실행은 확인하지 않았고, 모듈/호스트 통과로 제품 전체 또는 L1을 완료 처리하지 않는다.
+- 상세 결과·정확한 소스/산출물 해시: `docs/plans/2026-10-20-integration-verification.md` 및 같은 이름의 `.json`.
+  실패 모드와 보정 이유: `docs/plans/2026-10-20-integration-recheck.md`. 커밋·푸시·실장비 설치/조작은 하지 않았다.
 
 ## 1. 인수 사다리 (달성 순서)
 
@@ -169,8 +196,29 @@
 - 2026-10-14 **배포 전 보안 게이트(하드웨어 독립)** — ① 전송 보안 부분 이행: 릴리스 `network_security_config`(평문 금지)·디버그 오버라이드(개발·실기 허용) + 매니페스트 연결. aapt2 dump 검증: bench debug `cleartextTrafficPermitted=true` · bench release `false`(리소스 최적화로 `res/8G.xml`, 매니페스트 0x7f0f0000) · device debug 리소스 포함. 디버그 동작 불변. ② 통합 게이트 문서 `docs/plans/2026-10-14-production-security-gate.md`(G1 전송·G2 인증·G3 신원·G4 비밀 저장·G5 보존·G6 알림·G7 서명/롤백 + 결정 필요 + 불변 원칙) 신설, A9 §6·블루프린트 §7.5·README·AGENTS 연결. 미구현/결정 필요/실기 필요를 구분 표기. 릴리스 빌드는 서명 전 unsigned — G7 유지.
 
 - 2026-10-16/17 **정본 통합·위험구역 계약·운용 계약 v1(주 운용 앱 전환)** — ① **정본 경로 통합**: `docs/superpowers/` 제거 → `docs/product-state.md`·`docs/specs/`·`docs/plans/`(참조 갱신; 증거·캡처 기록은 보존 규칙대로 미수정) `5190479`. ② **현장 위험구역 지정 계약**: 비행 전 RC(MSDK) 임무준비 지도 흐름 — 점 찍기·불변 리비전·캐시≠저장≠적용 분리·SHADOW 고정 `0c18e13`; 오프라인 지도 공급사 조사(약관 제약) `3dc61a4`. ③ **round23/24 시안**(미커밋 후보): 지도 구역 지정, 행동 계약 상태 시연(확인 실패·요청 결과/미확인 분리·유효성 3단계)·정상 여정 완주(준비→종료→검토). ④ **운용 화면 행동 계약 v1 확정(10-17 사용자 승인)**: KSI RC=**현장 주 운용 앱**(Pilot 2 보조 범위 개정, B-1 부록); 순수 상태모델 5종(`TakeoverRequests`·`WarningState`·`ObservationValidity`·`ShadowCandidateSelection`·`ObserveView`)+AT-01~06 테스트 28건 `8c0761e`. ⑤ **읽기 전용 텔레메트리**: MSDK 5.18 키 매트릭스(문서+provided 스텁 javap — 해제는 `cancelListen`), `MsdkFlightTelemetrySource`, 필드별 4상태(미수신/유효/지연/미지원) 누적기 — rc-ports 이동·`FlightTelemetrySource` 시임·bench fake·`PlatformLinks` `1c493fc`·`75db162`; **콕핏 텔레메트리 스트립**(제어 주체=출처 미연결 `미확인`·비행 모드·배터리·MOP·기체 링크·홈 거리, 지연 `지연 N초` 올림, 색 단독 구분 없음) `2962c4d`. ⑥ 병행 운용 배선분 보존 편입(CockpitStatusPresenter·MainActivity 등, 내용 무수정) `e6b74a4`. 검증: 전체 host suite green(rc-ports 61·rc-msdk 33·rc-app bench 74(6 skip)·device 68·lintBenchDebug green)·CI 3/3(`75db162`·`2962c4d`). **미검증: 실기 키 콜백·고도 기준·갱신 주기(A9-4), Android 화면 렌더, 명령 기능(카메라·감독형 자동·제어권 — 별도 안전 검증).**
+- 2026-10-20 **확정 제품 정의(사용자 확정) + 갭 분석·명령 배선·대응 이력** — 사용자 지적("프로젝트를 제대로 이해 못하고 그냥 디자인만 만든 느낌")에 대응해 제품 정의를 재확인: **DJI Pilot 2 수준의 필수 비행·촬영·임무 운용 경험 + KSI 고유 AI 안전 관측·위험 판단·현장 대응·증거 기록을 하나의 RC 앱에서 제공하는 통합 현장 안전 운용 시스템**(관측·운용·증거는 하나의 현장 작업을 완성하는 구성이며, 고객 가치와 개발 순서를 구분). ① `docs/plans/2026-10-20-product-gap-analysis.md` 신설 — 재사용 자산 11종·갭 8건(G1~G8)·충돌 문서 4건·현장 완결 최소 기능 6단계·RC/Edge/Core 책임 경계·실장비 위험 7건·MVP→인수 S0~S6 완료 기준·계약 결정 2건. ② 문서 정합: `README.md`의 "보조 화면/Pilot 2 기준" 표현 정정, `docs/product-state.md` 제품 목표에 확정 정의 기입, `AGENTS.md` 정본 지도 갱신. ③ **비행·카메라 명령 배선(S1)**: `rc-ports/AircraftCommand.kt`(요청≠확인 분리, AI는 기체 미명령, 순수 `CommandGate`), `rc-msdk/MsdkAircraftCommand.kt`+`MsdkCommandGateway.kt`(MSDK 5.18 키를 `javap`으로 확인 후 매핑 — 추측 없음; 게이트 거부 시 SDK 미호출; 지원 확인은 전부 `UNVERIFIED` 기본·실기 증거로 갱신 가능). ④ **대응 이력(S3)**: `rc-ports/ObservationResponse.kt`(확인/보류/전달 요청 + 전달 4단 상태, 증빙 없는 전송·수신·완료 주장은 `UNKNOWN`으로 강등), `rc-core/OperatorActionLog.kt`(append-only 로컬 로그, 응답 id 멱등, 손상 줄 복구, 위험 주장 없음). ⑤ **계약 결정 요청**: 대응 이력·재분석 결과의 Core 전송 경로 부재(`operator-annotation.v1` enum 3종 고정, `review-finding.v1`에 대응 엔드포인트 없음, `/review-jobs`는 P1 기록 전용) — 권고는 `operator-response.v1` 신설(B)과 재분석 결과 append-only 적재, **결정 전까지 대응 이력은 로컬 전용**으로 화면도 "전달 요청만 저장됨 · 전송 완료 아님"만 말함. ④ **통합 운용 화면(S2)**: `rc-app` 관측 페이지에 운용 데크(영상/지도 전환·비행/카메라 명령 48dp·AI 패널) 추가 — 비행 필수 정보 띠 최상단, 데크는 영상 아래(가림 없음). AI 패널은 기존 관측·사건 데이터만 읽고 '관측 미수신=분석 결과 알 수 없음'과 '사건 0건≠안전'을 구분, 프레임 대응 미검증 시 실시간 박스 미표시, SHADOW/ACTIVE/객체 관측 구분. **한계(G1b)**: RC에 제어권 보고 소스가 없어 owner=UNKNOWN → 이륙/착륙/RTH는 현재 항상 차단(카메라만 가능). ⑥ **화면 설계 정착(round40)**: 사용자 지시(“선 개발을 해두는 게 더 중요…화면 구성 및 UI UX 설계부터”)에 따라 `docs/plans/2026-10-20-rc-screen-contract.md`(화면 계약 v1: 1920×1200 기준 view id 대응·데이터 출처·상태 행렬·조작 문구·미구현 표기)와 `design/rc-pilot-shell/mockups/rc-app-flow.html`(홈→현장 준비→운용→대응→기록 검토→기기·설정 6화면, 실제 기기 크기 RC Plus 2 7.02형 1920×1200·1400nit 기준) 작성. 소유자가 1920×1200 렌더를 직접 읽고 지적한 결함 2건(운용 하단 245px 공백+상태 스트립이 네이티브 구조와 불일치, 준비 지도가 빈 격자+하단 45% 공백)을 수정(→ 12px/80px). 검사 22개 통과·pageerror 0·캡처 10장. **단순 시안이 아니라 실제 Android view id·strings·신규 모델(AircraftCommandUi·AiObservationPanel·ObservationResponse·CommandGate)에서 나온 데이터만 사용.** 실장비 미검증. ⑦ **UI/UX 네이티브 구현(round40 후속)**: 승인된 화면 계약(`2026-10-20-rc-screen-contract.md`)을 실제 Android 앱에 반영 — 관측 페이지 재배치(텔레메트리 띠·우려 우선 행 = 전체 폭 / 가로 작업 행: 영상 좌측 + 운용 데크 우측, 6칸 상태 스트립은 영상 아래), AI 후보 선택 연결(`ShadowCandidateSelection`·표시 전용), 대응 입력 UI(`responsePanel`: 확인·보류·전달요청·≤280자 메모 → `RcSession.operatorActions` 1건 append, 전달 문구 `operatorClaim` verbatim, 증빙 없으면 상위 주장 금지). 기존 view id 160개 resolve·동작 불변, 색/문구는 리소스만, 48dp. Android host **500 tests 0 failures**(472→+28), lint 0 errors. **미검증: 실기 렌더.**
+- ⑤ **대응 이력 보존 경로(S4)**: `rc-core/OperatorActionArtifacts.kt` — 대응 이력 NDJSON을 부트별 스냅샷으로 만들어 `flight-upload-manifest.v1`이 이미 허용하는 `source_kind=FLIGHT_LOG` 아티팩트로 업로드(계약 변경 0, `contracts/`·Core 서버·Edge 무변경). 응답이 없으면 아티팩트를 만들지 않고, 바이트가 없으면 `COMPLETE`가 아니라 `PARTIAL`. 재업로드 멱등. 검증: Python `run_all_tests.sh` 134 passed, Android host 326(변경 전)→**472 tests 0 failures**(rc-msdk 104·rc-ports 76·rc-core 73·rc-app 213), 기존 레이아웃/상태 계약 테스트 약화 없이 통과. **미검증: 실장비(키 콜백·명령 전달·영역/모델 정합·카메라 제어)·Android 실기 렌더·사용자 인수·ACTIVE·보안 게이트.** 실장비 경로(실영상 입력→Edge 탐지·품질→RC 표시·영속→단절·재시작·복원→Core 업로드·대조)는 A9-4 입력 대기.
 
 
+
+
+- 2026-10-21 **G9(실행 경로)·단위 A/B/C/D 구현 — 사용자 확정 계약 반영**: 계약 `docs/plans/2026-10-21-edge-operation-contract.md`(첫 위험=사람–중장비 접근·초기 판정=지정 작업구역 침입 / 링크 단절 시 Manifold 로컬 관측 계속 / `COMMITTED`=증거 영속 보존·세션 결과 분리 / L1 필수 기록 5묶음). 4단위 병렬 구현 후 통합 검증.
+  - **A(edge 런타임 제어, `edge/`)**: ① `bundle_config` — 번들 JSON→`RiskRule`/`ZoneRevision` 파싱(ACTIVE 규칙 **설치 거부** `policy_install_rejected`, WGS84 구역은 **held** 설치 — 현장좌표 변환 입력이 없으면 다각형 없이 보류, `kUnknownStatus`) ② `SessionRunner` 게이트 — **시작 없이는 프레임 미처리**(중지 중 탐지기 0회·카운터·틱 고정), 상태 6종 `REQUEST_ACCEPTED→CONFIG_APPLIED→STARTING→RUNNING⇄DEGRADED→STOPPED`, 재적용은 실행 중 거부·중지 후 epoch 증가, `runtime_epoch` 재부팅 회전(과거 RUNNING 복원 금지) ③ `MISSION_STATUS` **선택 필드 8종** 추가(부재=모름), 기존 `running` bool 의미는 "시작 요청됨"으로 유지하고 **`OnApply`의 `running_=true` 제거**(적용≠시작) ④ psdk-app `SyncRunControl` — MOP 단절은 러너에 닿지 않아 **로컬 관측 계속**, 링크는 결과 발행만 차단 ⑤ `contracts/mop/edge-to-rc.mopv1.hex` 재생성(변경 1필드: `running true→false`; RC→Edge 픽스처 불변).
+  - **B(RC 상태 모델, `rc-core`/`rc-ports`/`rc-msdk`)**: `EdgeRuntimeState`/`EdgeRuntimeStatus`(부재=UNKNOWN, 파싱 예외 없음)·`MissionController.runtimeStatus/analysisConfirmed/sessionReady/recordedRuntimeEpoch/needsRevalidation/noteLinkLost`·`SessionResultClassifier`(SUCCESS/FAILED/INTERRUPTED/UNKNOWN, **보존 성공은 성공 근거로 쓰지 않음**)·커밋 영수증(`committed`는 **영수증 저장 후에만** 참, PARTIAL은 영수증 없음)·`LinkStateMonitor`. **MissionState를 대체하지 않고 병행** — SHADOW용 두 번째 상태 머신 금지 원칙 준수.
+  - **C(RC 화면, `rc-app`)**: `EdgeRuntimePanel`(고정 영역·스크롤 밖)·`SessionResultPanel`·`MissionPreparationModel`(캐시/저장/적용 **3분리**·거부 사유·지도 편집 미구현 명시)·AI 패널 `analysisRan` 구분(**"관측 0건(분석 수행됨)" ≠ "분석 결과 없음"**)·준비 화면 구역 리비전·번들 digest·적용 상태 바인딩. 레이아웃 계약 테스트로 영상/텔레메트리 비가림 고정.
+  - **D(하네스·Core, `harness/`/`core/`)**: 파이썬 페이크 Edge가 런타임 상태·저하·재부팅 epoch를 시연(ACTIVE 거부·중복 명령 무부작용)·Core `COMMITTED` 의미는 **회귀 테스트로 고정**(필수 아티팩트 누락·digest 불일치→PARTIAL·durable id 없음, **Core가 세션 판정을 추정하지 않음** 검증).
+  - **검증**: edge ctest **22/22**(기존 20 무변경 + `runtime_control`·`rc_bundle`) · Android host **548 tests 0 failures**(rc-app bench 156·device 150·rc-core 111·rc-ports 79·rc-msdk 52; 6 skip=aarch64 Robolectric 기존) · lint 0 errors · Python **142 passed**(134→+8). **3자 전선 일치 확인**(C++/Kotlin/Python 동일 8 필드).
+  - **교차 언어에서 드러난 사실(G11)**: RC가 **실제로 보내는 번들**(`DemoFeed.demoBundle`·`DemoSession`·`rc-to-edge` 픽스처)은 `zones[]`·`rules[]`가 **비어 있다**(실 규칙은 서버/시험 형태에만 존재) → Edge 설치 규칙 **0건**. 파서는 배열 부재=빈 설치(해시만)·타입 오류=fail-closed로 정리했고, **RC는 "위험 규칙 0건 — 위험 판정 없음"을 표시**(`riskEvaluationAvailable`)한다. **남음**: 구역 지정 동선→번들 구성→적용·확인 경로(계약 §10.3), 구역 편집기(지도 캐시 출처 미결).
+  - **미검증 유지**: **psdk-app(Manifold 기기용)은 이 호스트에서 빌드 불가**(PSDK SDK는 기기 전용 `/open_app/psdk`) → `main.cpp`·`mop_service` 변경은 **컴파일 미검증(코드 검토만)** · 실기 MOP 왕복·대역폭·DPK 설치·실영상·Manifold 장시간 안정성(A9-4 대기) · 실기 렌더·dp·장갑·햇빛 · 사용자 인수 · ACTIVE · 보안 게이트 · Core 세션 판정 노출(§9-1/§9-2).
+
+- 2026-10-21 **후속 배치(단위 E·F·H·I + 화면 G)**: 2026-10-21 첫 배치(A~D, G9 실행 경로) 이후 남은 개발 항목 일괄 진행.
+  - **E(rc-core·rc-ports)**: ① `MissionBundleBuilder` — 저장된 **불변 구역 리비전** + SHADOW 규칙으로 `origin=RC_LOCAL` 번들 구성(digest 규칙 준수·ACTIVE 미생성·**기하 발명 없음**·제외 리비전은 사유와 함께 보고). 실제 스키마로 교차 검증(스키마 오류 0·3개 digest Kotlin↔Python 일치) ② `MissionController.pollTick`(2s 주기 `MISSION_STATUS_QUERY`, **명령 상태 기계를 전진시키지 않음**) ③ `noteLinkSnapshot` + `LinkLossForwarder`(CONNECTED→단절 전이에서만 발화, 세션 종료 뒤 단절은 중단 근거 아님) ④ `SessionVerdict.decide` + `SessionFactsResolver`(영상 근거·선언 공백을 실제 저장소 사실로 채움, **보존 입력을 판정에 쓰지 않음**) → rc-core 111→**135**·rc-ports 79→**82**.
+  - **F(edge)**: psdk-app의 런타임 제어 **결정 로직을 DJI 독립 모듈로 분리**(`run_control.{hpp,cpp}`)해 호스트 테스트 가능하게 만들고, 기기 쪽은 얇은 어댑터로 축소. G9의 핵심 배선이 **처음으로 검증 가능**해짐(edge ctest 22→**23**, 신규 `run_control` 13블록). **psdk-app 자체는 여전히 이 호스트에서 컴파일 불가**(PSDK는 기기 전용) → 어댑터는 코드 검토만, 실기는 A9-4.
+  - **H(core·contracts)**: **`operator-response.v1` 신규 스키마**(기존 스키마 불변, 버전 정책 준수) — `SENT/RECEIVED/COMPLETED` 전달 상태는 **대응 증명이 없으면 스키마 단계에서 거부**. Core append-only 저장 + 배치 멱등(`client_batch_id`+payload hash) + 비행별 조회. **Core는 세션 판정·안전 상태를 추정하지 않음**(추가 필드 probe로 검증). 파이썬 142→**162**(+20).
+  - **I(빌드·CI)**: `scripts/release_scrub_check.sh` — 릴리스 산출물 스크럽 검사 18 PASS(평문 차단·디버그 상수 유출·버전 기록, **스킵은 통과로 보고하지 않음**: 빌드 불가 시 exit 2). CI `release-scrub` 잡 추가. 검사에서 **실제 위험 1건 발견** → 릴리스 매니페스트의 `usesCleartextTraffic=true` 표기를 `src/debug`로 이동(릴리스는 DJI AAR 기본값 false + NSC 차단, 디버그만 개발망 평문 허용) → 스크럽 **18 PASS 0 WARN**.
+  - **함께 고친 것**: 하네스 페이크 Edge의 레거시 `running` bool이 실제 Edge와 어긋나(적용=시작으로 처리) → 계약 §2 의미("시작 요청됨")로 정정 + 회귀 시험 1건 추가, 기존 시험 1건은 **옛 계약(적용=시작) 가정을 새 계약으로 갱신**.
+  - **검증**: edge ctest **23/23** · Android host **548+**(단위 E 반영 후 재집계 예정) · lint 0 errors · Python **163 passed** · 스크럽 **18 PASS**.
+  - **남은 사실(변하지 않음)**: 실기 MOP·대역폭·DPK 설치·실영상·psdk-app 컴파일·실기 렌더·dp·장갑(A9-4 대기) · 구역 편집기(지도 캐시 출처 미결) · WGS84→현장좌표 변환(Edge는 held) · ACTIVE · 보안 게이트 G2·G3·G5·G6(결정 필요) · RC가 `operator-response.v1`로 Core에 실제 전송하는 배선.
 
 
 
@@ -178,4 +226,4 @@
 
 - 2026-10-09 **A2 계약(사용자 명확화) 구현**: ① **envelope ACK ≠ 실제 적용 ACK** — 상태는 MISSION_PREPARED/MISSION_APPLIED(또는 digest 일치 MISSION_STATUS)로만 전진, 전송만으로 READY 표시 금지. ② 상태기계 PREPARED→APPLIED→RUNNING→STOPPED(+REJECTED/STATUS_UNKNOWN)·세션 ID=`uuid5("session|flight|boot")`(Python 업로더와 동일 파생). ③ **장애 복구**: 중복 명령(msg_id dedup, 재시작 후에도 유지)·늦은 ACK(unacked 큐만 정리)·재연결 재조정(STATUS_QUERY)·**구버전/늦은 APPLIED 거절**(pending ctx 없음 → ACK+`ignoredStale` 기록, **빈 bundle 레코드 생성 금지** — Python 하네스의 잠재 갭을 닫음; 시도 상관은 bundle digest+pending ctx). ④ session RUN/STOP는 명령 ACK 기반(Edge 로컬 상태). **DJI MOP=전송 수단, KSI Envelope=자체 메시지 계약으로 분리 명시** — Kotlin/Python 일치는 자체 계약 일치이며 실기체·조종기 전송 검증이 아님.
 
-- 2026-10-09 A0 결과: JDK17=17.0.20.1(apt)·adb 34.0.4(apt, arm64)·Gradle 8.10.2(`/home/ksi/Android/tools`, 사용자 공간). **Google Maven에 aapt2 linux-aarch64 없음 확인**(x86_64만) → `qemu-user-static` 설치 후 **`docker run --platform linux/amd64` 동작 확인**(x86_64) — APK 빌드는 x86_64 컨테이너에서 수행하는 경로로 확정. H1-now 장치 관찰: root `/` **ro**(27G·66%·8.7G 여유)·시계 **2026-10-03(≈6일 지연)**·RTC 1970·NTP inactive·dmesg 비공개·재부팅은 **"Interactive authentication required"**(비밀번호 필요) — 재부팅/시계 정비는 사용자 권한 필요. `rc-core`: Uuid5(RFC4122 v5)·CanonicalJson(JCS, erdtman 1.1)·Mop envelope — Python 실모듈 생성 골든(NAMESPACE `bcf20008…`, msg_id `f922155e…`, digest 4종, envelope/tamper) **6/6 PASS**(교차언어 F9 갭의 실행 가능 벡터).
+- 2026-10-09 A0 결과: JDK17=17.0.20.1(apt)·adb 34.0.4(apt, arm64)·Gradle 8.10.2(`~/Android/tools`, 사용자 공간). **Google Maven에 aapt2 linux-aarch64 없음 확인**(x86_64만) → `qemu-user-static` 설치 후 **`docker run --platform linux/amd64` 동작 확인**(x86_64) — APK 빌드는 x86_64 컨테이너에서 수행하는 경로로 확정. H1-now 장치 관찰: root `/` **ro**(27G·66%·8.7G 여유)·시계 **2026-10-03(≈6일 지연)**·RTC 1970·NTP inactive·dmesg 비공개·재부팅은 **"Interactive authentication required"**(비밀번호 필요) — 재부팅/시계 정비는 사용자 권한 필요. `rc-core`: Uuid5(RFC4122 v5)·CanonicalJson(JCS, erdtman 1.1)·Mop envelope — Python 실모듈 생성 골든(NAMESPACE `bcf20008…`, msg_id `f922155e…`, digest 4종, envelope/tamper) **6/6 PASS**(교차언어 F9 갭의 실행 가능 벡터).

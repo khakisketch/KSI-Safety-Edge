@@ -12,6 +12,15 @@ data class BootUploadReport(
     val missingArtifacts: List<String>,
     /** Local artifacts whose bytes are not complete+verified (never sent). */
     val incompleteLocal: List<String>,
+    /**
+     * Announced artifacts withheld from the flight-ingest manifest: their
+     * `source_kind` is outside the frozen ingest enum
+     * ([ManifestBuilder.INGESTIBLE_SOURCE_KINDS]). Retained locally and
+     * Core-receivable through the collection path — never deleted,
+     * never relabelled, never marked SYNCED by a manifest that omitted
+     * them.
+     */
+    val excludedFromIngest: List<String> = emptyList(),
     /** Artifacts marked SYNCED by THIS run (COMMITTED only). */
     val synced: List<String>,
     val chunksSent: Int,
@@ -46,6 +55,12 @@ data class FlightUploadReport(
     val annotationsUploaded: Int = 0,
     /** Annotations that could not be posted (kept pending for retry). */
     val annotationFailures: List<String> = emptyList(),
+    /** Structured operator responses accepted by the server in THIS run. */
+    val responsesUploaded: Int = 0,
+    /** Linked responses still without a durable structured-route receipt. */
+    val responsesPending: Int = 0,
+    /** Structured-route failures (kept pending for retry, never silent). */
+    val responseFailures: List<String> = emptyList(),
     /** Where the manifest UTC instants come from. A verified Edge clock
      *  anchor does not exist yet (H1): this is RC receipt time, NOT the
      *  confirmed event time. */
@@ -78,12 +93,35 @@ data class FlightUploadReport(
  * directory is intact is not re-detected automatically (a manual receipt
  * reset forces re-upload, which is safe — the server re-verifies sha256 at
  * every ingest commit).
+ *
+ * COMMITTED is a locally stored fact (contract §6): [uploadBoot] persists
+ * the Core's commit receipt ([UploadStore.recordCommitReceipt]) BEFORE
+ * anything reports completion, and the boot's `committed` flag is true
+ * only when that receipt is in the store. A lost completeIngest response
+ * is recovered by re-requesting the same commit (idempotent by
+ * manifest_sha256); PARTIAL never flips the flag.
  */
 class EvidenceUploader(
     private val core: CoreApi,
     private val store: UploadStore,
     /** Chunk size for resumable object upload (default 64 KiB). */
     private val chunkBytes: Int = 64 * 1024,
+    /**
+     * Operator-response log sharing the store's directory (single source of
+     * truth with the UI). When present, each boot's manifest carries that
+     * boot's responses as a required FLIGHT_LOG artifact (no responses for a
+     * boot: nothing announced, manifest unchanged). Null disables the path
+     * and preserves the previous behavior exactly.
+     */
+    private val operatorActions: OperatorActionLog? = null,
+    /**
+     * Session-verdict log (see [SessionResultLog]). When present, each
+     * boot's manifest carries that boot's decided verdict as a required
+     * FLIGHT_LOG artifact of the session-result lineage (no verdict for a
+     * boot: nothing announced, manifest unchanged). Null disables the path
+     * and preserves the previous behavior exactly.
+     */
+    private val sessionResults: SessionResultLog? = null,
 ) {
     init {
         require(chunkBytes > 0) { "chunkBytes must be positive" }
@@ -121,6 +159,10 @@ class EvidenceUploader(
         // Operator opinions travel AFTER evidence (their events must exist
         // server-side); failures leave them pending for the next sync.
         val (annotationsUploaded, annotationFailures) = uploadAnnotations(spec)
+        // Structured operator responses ride the queryable route (independent
+        // of the FLIGHT_LOG artifact snapshots above): a failure here never
+        // fails the evidence sync, and an empty log posts nothing.
+        val responseReport = uploadOperatorResponses(spec)
         val view = core.getFlight(spec.flightId)
         return FlightUploadReport(
             flightView = view,
@@ -132,7 +174,20 @@ class EvidenceUploader(
             uploadState = view.get("upload_state")?.asText() ?: "UNKNOWN",
             annotationsUploaded = annotationsUploaded,
             annotationFailures = annotationFailures,
+            responsesUploaded = responseReport.posted,
+            responsesPending = responseReport.pendingAfter,
+            responseFailures = responseReport.failures,
         )
+    }
+
+    /**
+     * Posts this flight's linked operator responses through the structured
+     * route. Null log (route disabled) behaves exactly like an empty log:
+     * nothing is posted and the flight is never blocked by it.
+     */
+    private fun uploadOperatorResponses(spec: FlightUploadSpec): OperatorResponseUploadReport {
+        val actions = operatorActions ?: return OperatorResponseUploadReport(skipped = true)
+        return OperatorResponseSync(core, store, actions).uploadForFlight(spec.flightId)
     }
 
     /** Posts pending annotations for this flight (append-only, idempotent by
@@ -217,6 +272,23 @@ class EvidenceUploader(
         return uploaded to drift
     }
 
+    private fun commitReceipt(
+        spec: FlightUploadSpec,
+        bootId: String,
+        manifestSha: String,
+        uploadId: String,
+        commitId: String,
+    ): ObjectNode {
+        val receipt = Mop.json.createObjectNode()
+        receipt.put("schema_version", 1)
+        receipt.put("flight_id", spec.flightId)
+        receipt.put("edge_boot_id", bootId)
+        receipt.put("manifest_sha256", manifestSha)
+        receipt.put("upload_id", uploadId)
+        receipt.put("durable_commit_id", commitId)
+        return receipt
+    }
+
     private fun uploadBatches(spec: FlightUploadSpec): List<BatchUploadReport> {
         val byKind = linkedMapOf(
             "observations" to store.observationsFor(spec.flightId),
@@ -265,6 +337,18 @@ class EvidenceUploader(
     }
 
     private fun uploadBoot(spec: FlightUploadSpec, bootId: String): BootUploadReport {
+        // Materialize this boot's operator responses BEFORE the manifest is
+        // built, so the manifest<->artifact<->bytes triple stays consistent.
+        // No responses for this boot: nothing is announced and the manifest
+        // (and the flight's completeness judgement) is unchanged.
+        operatorActions?.let {
+            OperatorActionArtifacts.ensureForBoot(store, it, spec.flightId, bootId, chunkBytes)
+        }
+        // Same for the decided session verdict (separate FLIGHT_LOG lineage;
+        // no verdict decided: nothing announced, manifest unchanged).
+        sessionResults?.let {
+            SessionResultArtifacts.ensureForBoot(store, it, spec.flightId, bootId, chunkBytes)
+        }
         val manifest = try {
             manifestBuilder.build(spec, bootId)
         } catch (exc: IllegalStateException) {
@@ -283,6 +367,12 @@ class EvidenceUploader(
             )
         }
         val manifestSha = manifest.get("manifest_sha256").asText()
+        // Withheld from the flight-ingest manifest (frozen source_kind
+        // enum): retained locally, Core-receivable via the collection path.
+        // Never marked SYNCED by a manifest that omitted them.
+        val excludedFromIngest = manifestBuilder
+            .excludedArtifacts(spec.flightId, bootId)
+            .mapNotNull { it.get("artifact_id")?.takeIf { id -> id.isTextual }?.asText() }
         val open = core.openIngest(manifest)
         val uploadId = open.get("upload_id")?.asText() ?: ""
         val status = core.getIngest(uploadId)
@@ -320,7 +410,22 @@ class EvidenceUploader(
         }
         val done = core.completeIngest(uploadId, manifestSha)
         val doneStatus = done.get("status")?.asText() ?: "UNKNOWN"
-        val committed = doneStatus == "COMMITTED"
+        // COMMITTED is a locally stored fact: persist the Core's commit
+        // receipt BEFORE anything reports completion. PARTIAL (or a
+        // COMMITTED without its durable id, which is a server contract
+        // violation) never flips the flag — the next run re-requests the
+        // same commit (idempotent by manifest_sha256).
+        val committed = if (doneStatus == "COMMITTED") {
+            val commitId = done.get("durable_commit_id")
+                ?.takeIf { it.isTextual }?.asText()
+                ?: throw IllegalStateException(
+                    "ingest $uploadId COMMITTED without durable_commit_id",
+                )
+            store.recordCommitReceipt(commitReceipt(spec, bootId, manifestSha, uploadId, commitId))
+            store.isBootCommitted(manifestSha)
+        } else {
+            false
+        }
         val missing = done.get("missing_artifact_ids")
             ?.mapNotNull { if (it.isTextual) it.asText() else null } ?: emptyList()
         val synced = mutableListOf<String>()
@@ -341,6 +446,7 @@ class EvidenceUploader(
             committed = committed,
             missingArtifacts = missing,
             incompleteLocal = incompleteLocal,
+            excludedFromIngest = excludedFromIngest,
             synced = synced,
             chunksSent = chunksSent,
             receivedStartedUtc = manifest.get("flight_started_at_utc").asText(),

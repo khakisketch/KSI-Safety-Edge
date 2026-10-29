@@ -77,7 +77,21 @@ class MsdkFlightTelemetrySource(
         private set
 
     private var homeLocation: Pair<Double, Double>? = null
+    @Volatile
     private var aircraftLocation: Pair<Double, Double>? = null
+    @Volatile
+    private var aircraftLocationAtMs: Long? = null
+
+    /**
+     * D2 — 기체 위치(위도/경도). 현장 GPS 추천의 재료다.
+     *
+     * **null = 이 앱이 기체 위치를 확인하지 못함**이며 0으로 대체하지 않는다.
+     * 위치는 MSDK가 읽은 값 그대로이며, RC가 임의로 추정하지 않는다.
+     */
+    override val aircraftPosition: Pair<Double, Double>? get() = aircraftLocation
+
+    /** 기체 위치 수신 후 지난 시간(ms). null = 수신 없음. */
+    override val aircraftPositionAgeMs: Long? get() = aircraftLocationAtMs?.let { clock() - it }
 
     fun evidence(): Evidence = currentEvidence
 
@@ -126,6 +140,7 @@ class MsdkFlightTelemetrySource(
                             loc.altitude.toDouble(), at,
                         )
                         aircraftLocation = loc.latitude.toDouble() to loc.longitude.toDouble()
+                        aircraftLocationAtMs = at
                         recomputeHomeDistance(at)
                         emit()
                     }

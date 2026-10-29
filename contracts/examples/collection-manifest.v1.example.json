@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "collection_id": "7f6e5d4c-3b2a-4190-8f7e-6d5c4b3a2918",
+  "flight_id": "11111111-2222-4333-8444-555555555555",
+  "edge_boot_id": "66666666-7777-4888-9999-aaaaaaaaaaaa",
+  "session_id": "88888888-9999-4aaa-8bbb-cccccccccccc",
+  "mission_revision_id": "99999999-aaaa-4bbb-8ccc-dddddddddddd",
+  "producer": {
+    "type": "PC_COLLECTOR",
+    "id": "collector-01"
+  },
+  "sealed_revision_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "artifacts": [
+    {
+      "artifact_id": "9b1f0d2e-4c3a-4b7e-9a5f-2c8d1e6b7a40",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "size_bytes": 921600,
+      "media_type": "application/x-raw-rgb24",
+      "required": true,
+      "source_kind": "EDGE_SOURCE_FRAME",
+      "observation_id": "3c2a1b90-7d6e-4f5a-8b9c-0d1e2f3a4b5c"
+    }
+  ]
+}

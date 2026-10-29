@@ -28,6 +28,8 @@ internal object CockpitStatusPresenter {
         val aircraft: Fact,
         val recorder: Fact,
         val evidence: Fact,
+        /** AI/observation cell: Edge runtime headline + freshness facts. */
+        val observation: Fact,
         val priority: OperatorStatus.Item?,
     )
 
@@ -35,7 +37,10 @@ internal object CockpitStatusPresenter {
         items: List<OperatorStatus.Item>,
         hasActiveFlight: Boolean,
         unsyncedArtifactCount: Int? = null,
+        /** Edge runtime panel (null = the Edge never reported; "미확인" wording). */
+        edge: EdgeRuntimePanel.Panel? = null,
     ): Overview {
+        val storageDown = items.any { it.label == StorageHealth.UNAVAILABLE_TITLE }
         val mopItem = items.firstOrNull {
             it.label.startsWith("MOP") || it.label.contains("하트비트")
         }
@@ -62,8 +67,24 @@ internal object CockpitStatusPresenter {
             mop = mopFact(mopItem),
             aircraft = aircraftFact(aircraftItem),
             recorder = recorderFact(recorderItem),
-            evidence = evidenceFact(evidenceItems, hasActiveFlight, unsyncedArtifactCount),
-            priority = items.firstOrNull { it.label == "녹화 오류" }
+            evidence = if (storageDown) {
+                unknown("로컬 증거")
+            } else {
+                evidenceFact(evidenceItems, hasActiveFlight, unsyncedArtifactCount)
+            },
+            observation = if (storageDown) {
+                Fact(
+                    "AI 관측",
+                    "상태 미확인",
+                    OperatorStatus.Severity.PROBLEM,
+                    StorageHealth.UNAVAILABLE_DETAIL,
+                    StorageHealth.UNAVAILABLE_ACTION,
+                )
+            } else {
+                observationFact(items, hasActiveFlight, edge)
+            },
+            priority = items.firstOrNull { it.label == StorageHealth.UNAVAILABLE_TITLE }
+                ?: items.firstOrNull { it.label == "녹화 오류" }
                 ?: items.firstOrNull { it.severity != OperatorStatus.Severity.INFO },
         )
     }
@@ -153,6 +174,69 @@ internal object CockpitStatusPresenter {
             item.label.startsWith("미동기화 증거") ||
             item.label == "Core 미설정" ||
             item.label.startsWith("늦은 의견")
+
+    /**
+     * AI/observation cell: the Edge runtime headline when the Edge reported
+     * (or "Edge 실행 상태 미확인" when it did not — never 0/없음), with the
+     * observation freshness facts as detail. The legacy `running` bool is
+     * never read here.
+     */
+    private fun observationFact(
+        items: List<OperatorStatus.Item>,
+        hasActiveFlight: Boolean,
+        edge: EdgeRuntimePanel.Panel?,
+    ): Fact {
+        if (edge != null) {
+            val supporting = items.filter(::isObservationFact)
+                .filter { it.label != edge.headline }
+                .joinToString(" · ") {
+                    if (it.detail.isBlank()) it.label else "${it.label} ${it.detail}"
+                }
+            val detail = (edge.details + listOfNotNull(
+                supporting.takeIf { it.isNotBlank() },
+            )).joinToString(" · ")
+            return Fact(
+                "AI 관측",
+                edge.headline,
+                edge.severity,
+                detail,
+                action = edge.linkLine?.let { "링크 복구 후 MISSION_STATUS 대조" },
+            )
+        }
+        if (!hasActiveFlight) {
+            return Fact(
+                "AI 관측",
+                "기록 없음",
+                OperatorStatus.Severity.INFO,
+                "활성 기록이 없어 관측 수신을 기다리는 중입니다.",
+            )
+        }
+        val supporting = items.filter(::isObservationFact)
+            .joinToString(" · ") {
+                if (it.detail.isBlank()) it.label else "${it.label} ${it.detail}"
+            }
+        return Fact(
+            "AI 관측",
+            EdgeRuntimePanel.UNKNOWN_LINE,
+            OperatorStatus.Severity.INFO,
+            (listOf("Edge 보고 없음 · 부재는 false/0이 아님") +
+                listOfNotNull(supporting.takeIf { it.isNotBlank() })).joinToString(" · "),
+        )
+    }
+
+    private fun isObservationFact(item: OperatorStatus.Item): Boolean =
+        item.label == "AI 관측 지연" ||
+            item.label.startsWith("관측 공백 ") ||
+            item.label == "사건 0건" ||
+            item.label == "Edge 실행 상태 미확인" ||
+            item.label == "Edge 통신 단절" ||
+            item.label == "영상 입력 단절 · 관측 저하" ||
+            item.label.startsWith("요청 수신 ·") ||
+            item.label.startsWith("설정 적용됨 ·") ||
+            item.label == "관측 기동 중" ||
+            item.label.startsWith("관측 실행 중 ·") ||
+            item.label.startsWith("관측 저하 ·") ||
+            item.label == "관측 중지"
 
     private fun appendDetail(value: String, detail: String): String =
         if (detail.isBlank()) value else "$value · $detail"

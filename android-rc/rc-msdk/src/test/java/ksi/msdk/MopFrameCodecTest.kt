@@ -1,5 +1,9 @@
 package ksi.msdk
 
+import ksi.safetyedge.rc.MopFrameCodec
+import ksi.safetyedge.rc.MopReassembler
+import ksi.safetyedge.rc.MopFrameWriter
+
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

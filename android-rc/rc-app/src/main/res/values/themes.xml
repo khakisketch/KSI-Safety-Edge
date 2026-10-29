@@ -5,5 +5,15 @@
          so the light appearance is unchanged; the dark values live in
          res/values-night/colors.xml. -->
     <style name="Theme.KsiRc" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <!-- Default button = secondary (outlined). Explicit Primary / Ghost /
+             Nav styles live in res/values/styles.xml. -->
+        <item name="buttonStyle">@style/Widget.Ksi.Button</item>
+        <item name="android:buttonStyle">@style/Widget.Ksi.Button</item>
+        <item name="colorAccent">@color/ksi_primary</item>
+        <item name="colorControlNormal">@color/ksi_muted</item>
+        <item name="android:windowBackground">@color/ksi_bg</item>
+        <!-- System icons stay light; primary reverses in night resources. -->
+        <item name="android:statusBarColor">@color/ksi_video_bg</item>
+        <item name="android:navigationBarColor">@color/ksi_video_bg</item>
     </style>
 </resources>

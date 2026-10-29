@@ -18,6 +18,7 @@ _DIGEST_FIELDS = {
     "flight-upload-manifest.v1": ("manifest_sha256",),
     "mission-snapshot.v1": ("content_sha256",),
     "risk-policy.v1": ("content_sha256",),
+    "operator-response.v1": ("content_sha256",),
 }
 
 
@@ -83,6 +84,7 @@ def validate_domain(name: str, obj: Any, check_digests: bool = True) -> list[str
         "mission-snapshot.v1": _domain_snapshot,
         "observation.v1": _domain_observation,
         "operator-annotation.v1": _domain_annotation,
+        "operator-response.v1": _domain_response,
     }
     fn = dispatch.get(name)
     if fn is not None:
@@ -340,6 +342,35 @@ def _domain_observation(obj: dict) -> list[str]:
                 errors.append(
                     f"BBOX_ORDER: bbox corners out of order {list(bbox)}"
                 )
+    return errors
+
+
+def _domain_response(obj: dict) -> list[str]:
+    """Proof-gated delivery states mirror the schema if/then rules.
+
+    States above REQUESTED MUST carry their proof references; a missing
+    proof is a validation error (never silently accepted, never stored as
+    the claimed state). Non-escalation states that assert no transmission
+    (LOCAL_ONLY / REQUESTED / UNKNOWN) pass through.
+    """
+    errors: list[str] = []
+    state = obj.get("delivery_state")
+    if state not in ("SENT_CONFIRMED", "RECEIVED_CONFIRMED", "COMPLETED_CONFIRMED"):
+        return errors
+    proofs: dict[str, str] = {
+        "SENT_CONFIRMED": "transmission_proof",
+        "RECEIVED_CONFIRMED": "receipt_proof",
+        "COMPLETED_CONFIRMED": "completion_proof",
+    }
+    # Higher states subsume the lower proofs (receipt implies transmission,
+    # completion implies receipt + transmission).
+    order = ("SENT_CONFIRMED", "RECEIVED_CONFIRMED", "COMPLETED_CONFIRMED")
+    for required in order[: order.index(state) + 1]:
+        field = proofs[required]
+        if not isinstance(obj.get(field), str) or not obj[field]:
+            errors.append(
+                f"PROOF_REQUIRED: delivery_state {state} requires {field}"
+            )
     return errors
 
 

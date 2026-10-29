@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Primary text: ksi_on_primary; disabled drops to ksi_muted. Enabled text
+     is never blanket-dimmed. -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false" android:color="@color/ksi_muted" />
+    <item android:color="@color/ksi_on_primary" />
+</selector>

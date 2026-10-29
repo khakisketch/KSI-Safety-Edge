@@ -1,0 +1,223 @@
+openapi: 3.1.0
+info:
+  title: KSI Safety Edge API — collections extension
+  version: 1.0.0
+  description: >-
+    Additive extension to contracts/openapi.yaml (which stays byte-frozen):
+    the producer-neutral central collection surface for Edge origin evidence
+    and its custody receipt. The v1 flight-upload manifest is the RC's own
+    record (it requires rc_device_id, rc_received_last_seq and RC receipt
+    times) — a PC collector or the Edge must not invent those, so the first
+    central collection of Edge origin evidence travels its own manifest
+    (../schemas/collection-manifest.v1.schema.json) and comes back as a
+    custody receipt (../schemas/collection-receipt.v1.schema.json).
+    The byte path is the proven one: a collection opens an ingest session
+    whose artifacts are uploaded with the existing resumable chunk PUT
+    (Content-Range) and verified by coverage plus the announced sha256.
+    A missing or damaged REQUIRED artifact yields NO receipt and names what
+    is missing. The receipt binds the exact required artifact set (ids and
+    digests) and is immutable; re-committing returns the same receipt. A
+    receipt is custody proof — NOT a completeness claim for the whole flight
+    and NOT a deletion token (ADR-0002). One artifact id means one byte
+    stream: the same id with a different digest is 409, globally.
+    Auth, error shape and idempotency are identical to the frozen baseline:
+    bearer auth (dev static token); cross-org access returns 404; same-org
+    insufficient scope returns 403; same collection id with the same
+    content is 200-idempotent, with different content is 409.
+servers:
+  - url: http://127.0.0.1:8000/api/v1/edge
+security:
+  - bearerAuth: []
+tags:
+  - name: collections
+paths:
+  /collections:
+    get:
+      tags: [collections]
+      summary: List the custody receipts the Core holds for a flight (or one boot)
+      operationId: listCollections
+      parameters:
+        - name: flight_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: edge_boot_id
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: >-
+            The receipts this organisation holds. An empty list means the Core
+            holds no receipt for that filter — which is NOT the same as "the
+            RC did not ask".
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - collection_id
+                        - upload_id
+                        - flight_id
+                        - edge_boot_id
+                        - manifest_sha256
+                        - artifact_set_sha256
+                        - sealed_revision_sha256
+                        - required_artifact_count
+                        - producer
+                        - issued_at_utc
+                        - receipt_sha256
+                      properties:
+                        collection_id: { type: string, format: uuid }
+                        upload_id: { type: string, format: uuid }
+                        flight_id: { type: string, format: uuid }
+                        edge_boot_id: { type: string }
+                        manifest_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+                        artifact_set_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+                        sealed_revision_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+                        required_artifact_count: { type: integer, minimum: 0 }
+                        producer:
+                          type: object
+                          required: [type, id]
+                          properties:
+                            type: { type: string, enum: [EDGE, PC_COLLECTOR] }
+                            id: { type: string }
+                        issued_at_utc: { type: string }
+                        receipt_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+    post:
+      tags: [collections]
+      summary: Open (or resume) a central collection
+      operationId: openCollection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/collection-manifest.v1.schema.json
+      responses:
+        "200":
+          description: >-
+            The collection exists. "status" is NEW or RESUMING;
+            "missing_artifact_ids" lists what the Core still needs.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [collection_id, upload_id, manifest_sha256, missing_artifact_ids, status]
+                properties:
+                  collection_id: { type: string, format: uuid }
+                  upload_id: { type: string, format: uuid }
+                  manifest_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+                  missing_artifact_ids:
+                    type: array
+                    items: { type: string, format: uuid }
+                  status: { type: string, enum: [NEW, RESUMING] }
+        "409":
+          description: >-
+            The same collection id was presented with different content, or
+            an artifact id was reused with a different digest.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+        "422":
+          description: The manifest does not validate against the schema.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+  /collections/{collection_id}/commit:
+    post:
+      tags: [collections]
+      summary: Verify the required set and issue the custody receipt
+      operationId: commitCollection
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The custody receipt (immutable; re-committing returns it unchanged).
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/collection-receipt.v1.schema.json
+        "409":
+          description: >-
+            The required set is incomplete or a digest does not match — no
+            receipt is issued and the missing artifact ids are named.
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+  /collections/{collection_id}/retention-view:
+    get:
+      tags: [collections]
+      summary: What the Core can prove about a collection (retention view)
+      operationId: collectionRetentionView
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: >-
+            The proven facts and the unproven ones, kept apart. "eligible" is
+            false while any fact is unproven (fail-closed), and "deleted" is
+            always 0 — this endpoint never deletes anything.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  [collection_id, proven, unproven, eligible, reasons, deleted]
+                properties:
+                  collection_id: { type: string, format: uuid }
+                  flight_id: { type: string, format: uuid }
+                  edge_boot_id: { type: string }
+                  receipt_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+                  artifact_set_sha256: { type: string, pattern: "^[a-f0-9]{64}$" }
+                  required_artifact_count: { type: integer, minimum: 0 }
+                  proven: { type: array, items: { type: string } }
+                  unproven: { type: array, items: { type: string } }
+                  eligible: { type: boolean }
+                  reasons: { type: array, items: { type: string } }
+                  deleted: { type: integer, const: 0 }
+                  note: { type: string }
+        "404":
+          description: No receipt for this collection (never a guess).
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error
+  /collections/{collection_id}/receipt:
+    get:
+      tags: [collections]
+      summary: Read the custody receipt
+      operationId: getCollectionReceipt
+      parameters:
+        - name: collection_id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: The stored receipt.
+          content:
+            application/json:
+              schema:
+                $ref: ../schemas/collection-receipt.v1.schema.json
+        "404":
+          description: No receipt for this collection (never a guess).
+          content:
+            application/json:
+              schema:
+                $ref: ../openapi.yaml#/components/schemas/Error

@@ -22,6 +22,9 @@ for t in "${TARGETS[@]}"; do
       cmake -S "$REPO/edge" -B "$REPO/edge/build" -DCMAKE_BUILD_TYPE=RelWithDebInfo >/dev/null
       cmake --build "$REPO/edge/build" -j"$(nproc)" >/dev/null
       ctest --test-dir "$REPO/edge/build" --output-on-failure
+      "$REPO/.venv/bin/python" -m unittest discover -s "$REPO/scripts/tests" -v
+      echo "=== 가상 Manifold MOP 왕복 (호스트 Edge 대역 ↔ 가상 RC) ==="
+      bash "$REPO/scripts/mop_loopback_check.sh"
       ;;
     android)
       echo "=== android (host unit tests) ==="

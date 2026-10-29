@@ -7,6 +7,9 @@ import ksi.rc.EvidenceIngest
 import ksi.rc.FileRcStore
 import ksi.rc.Inbound
 import ksi.rc.Mop
+import ksi.safetyedge.rc.MopFrameCodec
+import ksi.safetyedge.rc.MopReassembler
+import ksi.safetyedge.rc.MopFrameWriter
 import ksi.rc.MopEndpoint
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals

@@ -421,7 +421,7 @@
     <div>
       <p class="eyebrow">CORE DATA DIAGNOSTICS</p>
       <h1 id="pageTitle">Core 데이터 점검</h1>
-      <p class="lede">Core 응답의 비행 기록과 연결 증거를 점검합니다.</p>
+      <p class="lede">Core 응답의 관측 기록과 연결 증거를 점검합니다.</p>
       <p class="scope-note">이 화면은 Core 조회 도구입니다. RC 업로드나 RC→Core 전달을 확인·증명하지 않습니다.</p>
     </div>
     <div class="page-scope">개발자용 · 읽기 중심</div>
@@ -444,9 +444,9 @@
       </section>
       <section class="inspection-cell" aria-labelledby="selectedFlightSummaryTitle">
         <p class="eyebrow">SELECTED FLIGHT · CORE RESPONSE</p>
-        <h2 id="selectedFlightSummaryTitle" tabindex="-1">선택한 비행</h2>
+        <h2 id="selectedFlightSummaryTitle" tabindex="-1">선택한 관측 세션</h2>
         <div id="selectedFlightState" class="inspection-state"><span class="muted">선택 전</span></div>
-        <p id="selectedFlightFacts" class="inspection-copy">비행 목록을 불러온 뒤 항목을 선택하세요.</p>
+        <p id="selectedFlightFacts" class="inspection-copy">관측 기록 목록을 불러온 뒤 항목을 선택하세요.</p>
         <div id="selectedFlightMetrics" class="inspection-metrics" aria-live="polite"></div>
       </section>
       <section class="inspection-cell" aria-labelledby="nextActionHeading">
@@ -458,8 +458,8 @@
       </section>
     </div>
     <div class="read-status-row" role="group" aria-label="Core 읽기 요청 상태" aria-live="polite">
-      <div class="read-status-item"><span class="read-status-label">비행 목록</span><span id="readListStatus" class="read-status-value">조회 전</span></div>
-      <div class="read-status-item"><span class="read-status-label">비행 상세</span><span id="readDetailStatus" class="read-status-value">선택 전</span></div>
+      <div class="read-status-item"><span class="read-status-label">관측 기록 목록</span><span id="readListStatus" class="read-status-value">조회 전</span></div>
+      <div class="read-status-item"><span class="read-status-label">관측 세션 상세</span><span id="readDetailStatus" class="read-status-value">선택 전</span></div>
       <div class="read-status-item"><span class="read-status-label">연결 증거</span><span id="readEvidenceStatus" class="read-status-value">조회 전</span></div>
     </div>
     <p class="read-scope-note">‘조회 확인’은 Core API 응답을 받았다는 뜻이며 RC 업로드, 전달 경로 또는 파일 내용의 검증을 뜻하지 않습니다.</p>
@@ -475,7 +475,7 @@
         <div class="field">
           <label for="token">Core 조회 토큰</label>
           <input id="token" type="password" autocomplete="off" spellcheck="false" aria-describedby="readHelp" />
-          <p class="field-help" id="readHelp">Core가 현재 반환하는 비행 목록과 상세 레코드를 조회합니다. RC 업로드 확인은 아닙니다.</p>
+          <p class="field-help" id="readHelp">Core가 현재 반환하는 관측 기록 목록과 상세 레코드를 조회합니다. RC 업로드 확인은 아닙니다.</p>
         </div>
         <div class="field">
           <label for="writeToken">A-2 개발용 작성 토큰 <span class="optional">선택 · rc scope</span></label>
@@ -484,7 +484,7 @@
         </div>
         <div class="credential-actions">
           <button id="save" class="button" type="button">탭에 저장</button>
-          <button id="load" class="button button-primary" type="button">비행 불러오기</button>
+          <button id="load" class="button button-primary" type="button">관측 기록 불러오기</button>
         </div>
       </div>
       <div class="dev-tools">
@@ -503,15 +503,15 @@
   <div id="status" role="status" aria-live="polite"></div>
 
   <div class="workspace">
-    <aside id="flight-rail" class="flight-rail" aria-label="비행 목록">
+    <aside id="flight-rail" class="flight-rail" aria-label="관측 기록 목록">
       <div class="rail-header">
-        <div><h2>비행</h2><p class="rail-caption" id="flightCount">조회 토큰으로 목록을 불러오세요.</p></div>
-        <button id="refresh" class="button" type="button" aria-label="비행 목록 새로고침">새로고침</button>
+        <div><h2>관측 기록</h2><p class="rail-caption" id="flightCount">조회 토큰으로 목록을 불러오세요.</p></div>
+        <button id="refresh" class="button" type="button" aria-label="관측 기록 목록 새로고침">새로고침</button>
       </div>
       <p class="rail-caveat">Core가 현재 반환하는 레코드입니다. 목록에 없거나 사건이 0건인 사실만으로 업로드 여부·안전을 판단할 수 없습니다.</p>
       <div id="listSummary" class="list-summary" hidden></div>
       <div id="flights" class="flight-list" aria-live="polite">
-        <div class="empty-list"><strong>목록을 아직 조회하지 않았습니다.</strong>API 접근 설정에서 Core 조회 토큰을 입력하고 비행 목록을 불러오세요.</div>
+        <div class="empty-list"><strong>목록을 아직 조회하지 않았습니다.</strong>API 접근 설정에서 Core 조회 토큰을 입력하고 관측 기록 목록을 불러오세요.</div>
       </div>
     </aside>
 
@@ -520,13 +520,13 @@
         <div>
           <p id="detailEyebrow" class="eyebrow">FLIGHT / NO SELECTION</p>
           <h2 id="detailTitle">비행을 선택하세요</h2>
-          <div id="detailSubtitle" class="detail-subtitle">Core가 반환한 데이터를 비행 단위로 확인합니다.</div>
+          <div id="detailSubtitle" class="detail-subtitle">Core가 반환한 데이터를 관측 세션 단위로 확인합니다.</div>
         </div>
         <div class="detail-tools"><button id="backToList" class="button" type="button" hidden>목록으로</button></div>
       </div>
       <div id="detail" class="detail-content">
         <div class="detail-empty">
-          <p class="empty-title">Core가 반환한 레코드를 비행 단위로 확인합니다.</p>
+          <p class="empty-title">Core가 반환한 레코드를 관측 세션 단위로 확인합니다.</p>
           <p class="empty-copy">목록에서 비행을 선택하면 Core-side 수집 상태, 커버리지, 관측, 사건과 artifact 응답을 확인할 수 있습니다. 이 화면은 RC 업로드 또는 종단 간 전달을 검증하지 않습니다.</p>
           <div class="empty-steps">
             <div class="empty-step"><b>01</b><div><strong>수집 상태</strong><span>manifest 커밋 수와 누락 artifact를 확인합니다.</span></div></div>
@@ -625,11 +625,11 @@ function nextDiagnostic() {
     label: "API 접근 설정", action: "open-access",
   };
   if (readState.list.state === "loading" || listLoading) return {
-    title: "비행 목록 응답을 기다리는 중",
+    title: "관측 기록 목록 응답을 기다리는 중",
     copy: "목록 응답을 확인한 뒤 대상 비행을 선택하세요.", label: "조회 중…", action: "none", disabled: true,
   };
   if (!readState.list.text || readState.list.state === "idle" || readState.list.state === "error") return {
-    title: readState.list.state === "error" ? "목록 조회에 실패했습니다" : "Core 비행 목록을 조회하세요",
+    title: readState.list.state === "error" ? "목록 조회에 실패했습니다" : "Core 관측 기록 목록을 조회하세요",
     copy: readState.list.state === "error" ? "토큰·조직 범위와 Core 응답을 확인한 뒤 다시 시도하세요." : "이 요청은 현재 Core API의 목록 응답만 확인합니다.",
     label: readState.list.state === "error" ? "목록 다시 조회" : "비행 목록 불러오기", action: "load-list",
   };
@@ -641,7 +641,7 @@ function nextDiagnostic() {
   if (!selectedFlightId) return {
     title: "점검할 비행을 선택하세요",
     copy: "Core 목록에서 대상 레코드를 열어 수집 상태와 실제 반환 건수를 확인합니다.",
-    label: "비행 목록 보기", action: "select-flight",
+    label: "관측 기록 목록 보기", action: "select-flight",
   };
   if (inspectedFlight?.phase === "loading") return {
     title: "선택한 비행의 Core 응답을 기다리는 중",
@@ -649,7 +649,7 @@ function nextDiagnostic() {
     label: "조회 중…", action: "none", disabled: true,
   };
   if (!inspectedFlight || inspectedFlight.phase === "error") return {
-    title: "비행 상세 응답을 확인할 수 없습니다",
+    title: "관측 세션 상세 응답을 확인할 수 없습니다",
     copy: "선택한 비행의 상세 API 요청을 다시 시도하세요.", label: "상세 다시 조회", action: "retry-flight",
   };
   const flight = inspectedFlight.flight || {};
@@ -710,7 +710,7 @@ function renderInspection() {
   if (!selectedFlightId) {
     stateNode.innerHTML = '<span class="muted">선택 전</span>';
     factsNode.textContent = list.state === "read" && list.count === 0
-      ? "현재 Core 응답에는 비행 레코드가 없습니다."
+      ? "현재 Core 응답에는 관측 세션 레코드가 없습니다."
       : "비행 목록을 불러온 뒤 항목을 선택하세요.";
     metricsNode.innerHTML = "";
   } else if (inspectedFlight?.phase === "error") {
@@ -866,7 +866,7 @@ function clearSelection() {
   $("backToList").hidden = true;
   $("detail").setAttribute("aria-busy", "false");
   $("detail").innerHTML = `<div class="detail-empty">
-    <p class="empty-title">Core가 반환한 레코드를 비행 단위로 확인합니다.</p>
+    <p class="empty-title">Core가 반환한 레코드를 관측 세션 단위로 확인합니다.</p>
     <p class="empty-copy">목록에서 비행을 선택하면 Core-side 수집 상태, 커버리지, 관측, 사건과 artifact 응답을 확인할 수 있습니다. 이 화면은 RC 업로드 또는 종단 간 전달을 검증하지 않습니다.</p>
     <div class="empty-steps">
       <div class="empty-step"><b>01</b><div><strong>수집 상태</strong><span>manifest 커밋 수와 누락 artifact를 확인합니다.</span></div></div>

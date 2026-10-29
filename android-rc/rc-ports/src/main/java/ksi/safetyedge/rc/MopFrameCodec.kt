@@ -1,4 +1,4 @@
-package ksi.msdk
+package ksi.safetyedge.rc
 
 import java.io.ByteArrayOutputStream
 

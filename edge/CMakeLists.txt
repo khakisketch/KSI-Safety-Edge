@@ -26,6 +26,7 @@ add_library(ksi_safety_edge_core STATIC
   src/capture/frame_queue.cpp
   src/time/provenance.cpp
   src/time/topic_ring.cpp
+  src/time/topic_ring.cpp
   src/time/matching.cpp
   src/time/interpolation.cpp
   src/perception/pipeline.cpp
@@ -36,6 +37,8 @@ add_library(ksi_safety_edge_core STATIC
   src/perception/tensorrt_runtime.cpp
   src/perception/tracker.cpp
   src/runtime/session_runner.cpp
+  src/runtime/run_control.cpp
+  src/runtime/bundle_config.cpp
   src/replay/replay_manifest.cpp
   src/replay/frame_source.cpp
   src/replay/telemetry_source.cpp
@@ -50,13 +53,27 @@ add_library(ksi_safety_edge_core STATIC
   src/risk/engine.cpp
   src/session/session.cpp
   src/transport/digest.cpp
+  src/transport/audit_trail.cpp
   src/transport/json.cpp
   src/transport/mop_frame.cpp
   src/transport/mop_envelope.cpp
   src/transport/mop_evidence.cpp
   src/transport/mop_tick_evidence.cpp
+  src/transport/durable_spool.cpp
   src/transport/mop_endpoint.cpp
   src/transport/mop_link.cpp
+  src/evidence/store.cpp
+  src/evidence/recorder.cpp
+  src/observation/assessment.cpp
+  src/observation/context_ring.cpp
+  src/observation/autonomous_processor.cpp
+  src/observation/planner.cpp
+  src/observation/source_roi.cpp
+  src/observation/source_attention_policy.cpp
+  src/observation/source_attention.cpp
+  # Unit B (separate owner: edge/.../observation/reobservation.*) — registered
+  # here per parent integration note; Unit A neither reads nor drives it.
+  src/observation/reobservation.cpp
 )
 target_include_directories(ksi_safety_edge_core PUBLIC include)
 target_link_libraries(ksi_safety_edge_core PUBLIC Threads::Threads)
@@ -119,6 +136,18 @@ if(KSI_SAFETY_EDGE_ENABLE_SANITIZERS)
     -fsanitize=address,undefined -fno-sanitize-recover=all)
 endif()
 
+# 가상 Manifold(호스트 Edge 대역): TCP 위에서 실제 Edge 엔진을 돌린다.
+# 실제 Manifold가 없는 동안 프로토콜·계약 계층을 실행 가능하게 검증하기 위한 것.
+add_executable(mop_server tools/mop_server.cpp)
+target_link_libraries(mop_server PRIVATE ksi_safety_edge_core)
+target_compile_options(mop_server PRIVATE -Wall -Wextra -Wpedantic -Werror)
+if(KSI_SAFETY_EDGE_ENABLE_SANITIZERS)
+  target_compile_options(mop_server PRIVATE
+    -fsanitize=address,undefined -fno-sanitize-recover=all -g)
+  target_link_options(mop_server PRIVATE
+    -fsanitize=address,undefined -fno-sanitize-recover=all)
+endif()
+
 add_executable(replay_run tools/replay_run.cpp)
 target_link_libraries(replay_run PRIVATE ksi_safety_edge_core)
 target_compile_options(replay_run PRIVATE -Wall -Wextra -Wpedantic -Werror)
@@ -130,6 +159,14 @@ if(KSI_SAFETY_EDGE_ENABLE_SANITIZERS)
 endif()
 
 enable_testing()
+
+add_executable(source_attention_bench tools/source_attention_bench.cpp)
+target_link_libraries(source_attention_bench PRIVATE ksi_safety_edge_core)
+target_compile_options(source_attention_bench PRIVATE -Wall -Wextra -Wpedantic -Werror)
+if(KSI_SAFETY_EDGE_ENABLE_SANITIZERS)
+  target_compile_options(source_attention_bench PRIVATE -fsanitize=address,undefined -fno-sanitize-recover=all -g)
+  target_link_options(source_attention_bench PRIVATE -fsanitize=address,undefined -fno-sanitize-recover=all)
+endif()
 
 function(ksi_safety_edge_test name source)
   add_executable(${name} ${source})
@@ -145,6 +182,10 @@ function(ksi_safety_edge_test name source)
   add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
+ksi_safety_edge_test(evidence_store tests/test_evidence_store.cpp)
+ksi_safety_edge_test(evidence_recorder tests/test_evidence_recorder.cpp)
+ksi_safety_edge_test(mop_qos tests/test_mop_qos.cpp)
+ksi_safety_edge_test(json_canonical tests/test_json_canonical.cpp)
 ksi_safety_edge_test(capture_queue tests/test_capture_queue.cpp)
 ksi_safety_edge_test(provenance tests/test_provenance.cpp)
 ksi_safety_edge_test(ring tests/test_ring.cpp)
@@ -165,7 +206,39 @@ ksi_safety_edge_test(mop_frame tests/test_mop_frame.cpp)
 ksi_safety_edge_test(mop_json tests/test_mop_json.cpp)
 ksi_safety_edge_test(mop_tick tests/test_mop_tick.cpp)
 ksi_safety_edge_test(mop_e2e tests/test_mop_e2e.cpp)
+ksi_safety_edge_test(rc_bundle tests/test_rc_bundle.cpp)
+ksi_safety_edge_test(runtime_control tests/test_runtime_control.cpp)
+ksi_safety_edge_test(run_control tests/test_run_control.cpp)
+ksi_safety_edge_test(durable_spool tests/test_durable_spool.cpp)
+ksi_safety_edge_test(audit_trail tests/test_audit_trail.cpp)
+# The audit/config policy test includes the device adapter header (host-safe:
+# no PSDK includes; inline-only use, no device link needed).
+target_include_directories(audit_trail PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/psdk-app/src)
+ksi_safety_edge_test(run_health tests/test_run_health.cpp)
+ksi_safety_edge_test(app_config tests/test_app_config.cpp)
+# The startup-config test includes the DJI-free device arg helper
+# (host-safe: no PSDK includes, pure argv decision logic).
+target_include_directories(app_config PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/psdk-app/src)
+ksi_safety_edge_test(evidence_workflow tests/test_evidence_workflow.cpp)
+ksi_safety_edge_test(autonomy_stage1 tests/test_autonomy_stage1.cpp)
+ksi_safety_edge_test(observation_planner tests/test_observation_planner.cpp)
+ksi_safety_edge_test(source_roi tests/test_source_roi.cpp)
+ksi_safety_edge_test(readability tests/test_readability.cpp)
+ksi_safety_edge_test(source_attention_policy tests/test_source_attention_policy.cpp)
+ksi_safety_edge_test(source_attention tests/test_source_attention.cpp)
+ksi_safety_edge_test(evidence_saturation tests/test_evidence_saturation.cpp)
+target_include_directories(source_attention PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psdk-app/src)
+target_include_directories(source_attention_policy PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/psdk-app/src)
+ksi_safety_edge_test(assessment_delivery tests/test_assessment_delivery.cpp)
+# Unit B (separate owner). Registered, not wired: no fake-B to real camera,
+# no coupling into the passive Unit A path.
+ksi_safety_edge_test(reobservation tests/test_reobservation.cpp)
 get_filename_component(KSI_MOP_CONTRACTS_DIR
   "${CMAKE_CURRENT_SOURCE_DIR}/../contracts/mop" ABSOLUTE)
 target_compile_definitions(mop_e2e PRIVATE
+  KSI_MOP_CONTRACTS_DIR="${KSI_MOP_CONTRACTS_DIR}"
+  KSI_MOP_TEST_FIXTURES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/tests/fixtures")
+target_compile_definitions(rc_bundle PRIVATE
   KSI_MOP_CONTRACTS_DIR="${KSI_MOP_CONTRACTS_DIR}")

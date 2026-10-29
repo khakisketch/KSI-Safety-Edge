@@ -16,6 +16,11 @@ namespace ksi::safety {
 std::string Sha256Hex(const std::uint8_t* data, std::size_t len);
 std::string Sha256Hex(const std::string& bytes);
 
+// Lowercase hex SHA-256 of a whole file, streamed in chunks (engines are
+// tens of MB — never fully buffered). Empty string on failure with *error
+// set (unreadable path, short read); never throws, never guesses.
+std::string Sha256HexOfFile(const char* path, std::string* error);
+
 // Lowercase hex SHA-1 (40 chars) — UUIDv5 name hashing.
 std::string Sha1Hex(const std::uint8_t* data, std::size_t len);
 

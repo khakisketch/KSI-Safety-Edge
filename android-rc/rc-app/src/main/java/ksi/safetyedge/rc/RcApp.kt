@@ -29,6 +29,19 @@ class RcApp : Application() {
         private set
 
     /**
+     * Operator-initiated aircraft/camera commands (rc-ports
+     * [AircraftCommandPort]). Bench attaches the [FakeAircraftCommand]
+     * double; device uses the real MSDK adapter with confirmed connection
+     * and authority gates. SDK acceptance never proves execution.
+     */
+    lateinit var aircraftCommand: AircraftCommandPort
+        private set
+
+    /** Physical aircraft connection, not payload/MOP availability. */
+    lateinit var aircraftConnection: AircraftConnectionProvider
+        private set
+
+    /**
      * A9-1: the device flavor installs the DJI MSDK bootstrap HERE, in the
      * official sample's order (`attachBaseContext` ->
      * `com.cySdkyc.clx.Helper.install`) — before any SDK class is touched.
@@ -42,7 +55,11 @@ class RcApp : Application() {
     override fun onCreate() {
         super.onCreate()
         config = AppConfig(this)
-        session = RcSession(
+        // KSI session first — but its durable open NEVER throws for
+        // storage I/O (degraded mode keeps the store object usable for
+        // reads and fail-closed for writes), so video/camera init below
+        // always runs even when local storage is dead.
+        session = createAppSession(
             storeDir = File(filesDir, "rc-store"),
             rcDeviceId = config.rcDeviceId,
             wallClock = { ReceiptClock.now() },
@@ -52,14 +69,26 @@ class RcApp : Application() {
                 if (config.coreConfigured) config.coreUrl to config.coreToken else null
             },
         )
+        // The test Edge link (TCP) is a DEVELOPMENT path: it connects at
+        // startup so a field test needs no hidden tap, and it is only ever
+        // attached when a target is configured in the developer settings.
+        if (TestEdgeLink.isConfigured(this)) {
+            session.link.connect()
+        }
         demoSession = DemoSession(filesDir, { ReceiptClock.now() })
         videoSource = PlatformLinks.videoSource(this)
         videoRecorder = PlatformLinks.videoRecorder(this)
+        aircraftConnection = PlatformLinks.aircraftConnection(this, session.link)
+        aircraftCommand = PlatformLinks.aircraftCommand(this)
         // A9-3: encoded frames flow to the recorder independently of the
         // display surface (bench: both are no-ops).
         PlatformLinks.wireVideo(videoSource, videoRecorder)
         // A8: MOP retransmission timer — re-sends unacked envelopes (same
-        // msg_id) and drains the outbox while the link is connected.
+        // msg_id) and drains the outbox while the link is connected. The
+        // same 1s tick also drives the live-status poll
+        // (MissionController.pollTick via RcSession.retransmitTick) while a
+        // session is in flight — the Edge runtime display goes live without
+        // the operator doing anything.
         retransmitExecutor.scheduleWithFixedDelay(
             Runnable { runCatching { session.retransmitTick() } },
             1, 1, java.util.concurrent.TimeUnit.SECONDS,
@@ -76,9 +105,37 @@ class RcApp : Application() {
         // an invalid policy must not strand an already-started flight (C63).
         val seconds = if (segmentSeconds in 1..3600) segmentSeconds else 300
         PlatformLinks.configureRecorder(recorder, seconds)
+        // Provenance anchor for the close path: which Edge boot was known
+        // when proxy recording started (null recorded as null), plus the
+        // sticky recorder failure flag at that moment — only failures first
+        // observed during THIS flight count later (a sticky flag predating
+        // the flight belongs to the earlier closeout, never this one).
+        session.noteRecordingStart(flightId, recorder.hasWriteFailure)
         recorder.start(flightId)
     }
 
     /** Stops recording and returns only finalized, real segment files. */
     fun stopFlightRecording(): List<File> = videoRecorder?.stop() ?: emptyList()
 }
+
+/**
+ * Pure assembly seam for the primary RC app surface (host-testable: no
+ * Android APIs — the caller supplies the platform link and clocks). Used
+ * by [RcApp.onCreate] and by host tests that reopen the SAME store
+ * directory after corrupting it, proving the app degrades instead of
+ * crashing. The returned session never throws for storage I/O: check
+ * [RcSession.storageAvailable] for the KSI persistence state.
+ */
+internal fun createAppSession(
+    storeDir: File,
+    rcDeviceId: String,
+    wallClock: () -> String,
+    link: DroneLink,
+    coreConfig: () -> Pair<String, String>?,
+): RcSession = RcSession(
+    storeDir = storeDir,
+    rcDeviceId = rcDeviceId,
+    wallClock = wallClock,
+    link = link,
+    coreConfig = coreConfig,
+)

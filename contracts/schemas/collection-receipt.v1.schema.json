@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://ksi.example/contracts/collection-receipt.v1.schema.json",
+  "title": "CollectionReceipt v1",
+  "description": "Custody receipt for one central collection: it binds the EXACT required artifact set (ids + digests) the Core durably holds. It is not a completeness claim for the whole flight and NOT a deletion token (ADR-0002: COMMITTED binds one manifest revision, never the whole store). A collection with a missing or damaged required artifact gets no receipt. Digest rule: receipt_sha256 is the hex SHA256 of the RFC 8785 canonical JSON of the object excluding the digest field itself.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "collection_id",
+    "upload_id",
+    "manifest_sha256",
+    "required_artifact_ids",
+    "artifact_set_sha256",
+    "producer",
+    "issued_at_utc"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "collection_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "upload_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "The ingest session that carried the bytes for this collection."
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "required_artifact_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "format": "uuid"
+      }
+    },
+    "artifact_set_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Digest over the sorted (artifact_id, sha256) pairs of the REQUIRED set. One digest fixes the whole set; changing any byte changes it."
+    },
+    "flight_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "edge_boot_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "sealed_revision_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "EDGE",
+            "PC_COLLECTOR"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "issued_at_utc": {
+      "type": "string",
+      "minLength": 20,
+      "description": "UTC timestamp of issuance (ISO-8601)."
+    },
+    "receipt_sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Digest of the canonical receipt excluding this field. The receipt is the custody proof; it is NOT a deletion token."
+    }
+  }
+}

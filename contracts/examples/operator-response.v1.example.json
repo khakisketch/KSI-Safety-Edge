@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "response_id": "33333333-3333-4333-8333-000000000031",
+  "candidate_id": "33333333-3333-4333-8333-000000000032",
+  "flight_id": "33333333-3333-4333-8333-000000000004",
+  "site_id": "33333333-3333-4333-8333-000000000001",
+  "session_id": "33333333-3333-4333-8333-000000000033",
+  "action": "ESCALATE_REQUEST",
+  "note": "지상팀 전달 요청 — 전송 아님",
+  "evidence": {
+    "source_id": "33333333-3333-4333-8333-000000000032",
+    "received_at_utc": "2026-10-20T02:10:00Z",
+    "policy_id": "33333333-3333-4333-8333-000000000007",
+    "policy_version": "33333333-3333-4333-8333-000000000009"
+  },
+  "acted_at_utc": "2026-10-20T02:11:00Z",
+  "delivery_state": "REQUESTED",
+  "transmission_proof": null,
+  "receipt_proof": null,
+  "completion_proof": null,
+  "content_sha256": "0d350660fc427e61fe96b16af9344c8c2813f01f39587e11338eb658c0f9ff05"
+}

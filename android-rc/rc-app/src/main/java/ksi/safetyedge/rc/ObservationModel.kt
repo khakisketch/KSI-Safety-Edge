@@ -30,6 +30,13 @@ object ObservationModel {
         val detectedAtEdgeNs: Long,
         val observationQuality: String,
         val evidence: List<EvidenceLink>,
+        /**
+         * The sealed machine judgement behind this event's observation
+         * (null = no intact assessment covers it: "미수신", never 0건).
+         * SHADOW-only, zero incidents/alerts/responses — stated, not
+         * hidden.
+         */
+        val assessment: AssessmentModel.AssessmentCard? = null,
     ) {
         /** DETECTED_ONLY events are object detections, not risk events. */
         val detectionOnly: Boolean get() = eventType == "DETECTED_ONLY"
@@ -48,15 +55,23 @@ object ObservationModel {
         val lastReceivedUtc: String?,
     )
 
+    const val DEFAULT_CARD_LIMIT = 20
+
     /** Newest-first event cards (insertion order reversed), capped. */
     fun eventCards(
         store: UploadStore,
         flightId: String,
-        limit: Int = 20,
-    ): List<EventCard> =
-        store.eventsFor(flightId).takeLast(limit).reversed().map { event ->
+        limit: Int = DEFAULT_CARD_LIMIT,
+    ): List<EventCard> {
+        val byTick = AssessmentModel.assessmentsByTick(store, flightId)
+        val tickByObservationId = store.observationsFor(flightId).associate { observation ->
+            (observation.get("observation_id")?.asText() ?: "") to
+                (observation.get("edge_frame_seq")?.takeIf { it.isNumber }?.asLong())
+        }
+        return store.eventsFor(flightId).takeLast(limit).reversed().map { event ->
             val artifactIds = event.get("evidence_artifact_ids")
                 ?.mapNotNull { it.asText() } ?: emptyList()
+            val tick = tickByObservationId[event.get("observation_id")?.asText() ?: ""]
             EventCard(
                 eventId = event.get("event_id")?.asText() ?: "-",
                 eventType = event.get("event_type")?.asText() ?: "UNKNOWN",
@@ -74,8 +89,10 @@ object ObservationModel {
                         synced = store.isArtifactSynced(id),
                     )
                 },
+                assessment = tick?.let { byTick[it] },
             )
         }
+    }
 
     fun observationPulse(store: UploadStore, flightId: String): ObservationPulse {
         val observations = store.observationsFor(flightId)
@@ -116,6 +133,15 @@ object ObservationModel {
 
     fun heartbeatAgeMs(store: UploadStore, flightId: String, nowUtc: String): Long? =
         lastDataAgeMs(store.lastHeartbeatUtc(flightId), nowUtc)
+
+    /**
+     * LINK liveness: the age of the newest heartbeat receipt, whichever
+     * flight it belonged to. A flight-scoped lookup says "no heartbeat"
+     * until the mission handshake adopts the RC's flight id, which would
+     * report a dead Edge while it is demonstrably beating.
+     */
+    fun heartbeatAgeMsAny(store: UploadStore, nowUtc: String): Long? =
+        lastDataAgeMs(store.lastHeartbeatUtcAny(), nowUtc)
 
     fun observationAgeMs(store: UploadStore, flightId: String, nowUtc: String): Long? =
         lastDataAgeMs(store.lastObservationUtc(flightId), nowUtc)

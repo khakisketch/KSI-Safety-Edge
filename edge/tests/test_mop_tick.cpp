@@ -333,6 +333,31 @@ int main() {
               "failure counted as skipped");
     }
 
+    // --- durable gap: a summary over unjournalled records is never clean --
+    {
+        MopTickEvidence gap_emitter(MakeContext());
+        gap_emitter.BuildTick(MakeDetectionTick(1, 3000000000LL));
+        CHECK(!gap_emitter.durableGap(), "no gap by default");
+        gap_emitter.setDurableGap(true);
+        CHECK(gap_emitter.durableGap(), "gap latches");
+        JsonValue summary;
+        CHECK(gap_emitter.BuildSummary("session-gap", &summary),
+              "gapped session still summarizes (honestly)");
+        const JsonValue* reasons = Field(summary, "quality_reasons");
+        CHECK(reasons != nullptr && reasons->IsArray(),
+              "quality reasons present");
+        bool flagged = false;
+        for (const auto& reason : reasons->arrayValue()) {
+            if (reason.IsString() &&
+                reason.strValue() == "DURABLE_EVIDENCE_GAP") {
+                flagged = true;
+            }
+        }
+        CHECK(flagged, "summary carries DURABLE_EVIDENCE_GAP, never clean");
+        CHECK(Field(summary, "covered_frames")->intValue() == 1,
+              "covered counts only journalled ticks");
+    }
+
     // --- full link round trip: emit -> frames -> reassemble -> verify -------
     {
         StepClock clock;

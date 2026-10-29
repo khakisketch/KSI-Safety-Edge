@@ -42,8 +42,39 @@ class ManifestBuilder(private val store: UploadStore) {
         manifest.put("rc_received_last_seq", topSeq)
         manifest.put("flight_started_at_utc", startedUtc)
         manifest.put("flight_ended_at_utc", endedUtc)
+        val listed = ingestibleArtifacts(spec.flightId, bootId)
+        // FLIGHT_LOG snapshots supersede PER LINEAGE: the store keeps every
+        // snapshot (append-only evidence — nothing is ever deleted), but the
+        // manifest carries only the latest entry of EACH lineage (e.g. the
+        // operator-action lineage and the session-result lineage travel
+        // side by side; neither evicts the other). Otherwise a stale
+        // partial snapshot would hold the flight PARTIAL forever even
+        // after a newer complete snapshot exists. Lineage is derived from
+        // the content-derived artifact id (no schema change, no new
+        // fields). Unknown derivations get their OWN per-artifact lineage
+        // (`legacy:<artifactId>`): a required log with an app-defined id
+        // (e.g. a bundle snapshot vs a closeout log) is NEVER evicted by
+        // another unknown log — every unknown REQUIRED artifact is
+        // retained. Boots without any FLIGHT_LOG entry are unaffected (no
+        // empty artifact is ever synthesized here).
+        val latestFlightLog = linkedMapOf<String, String>()
+        for (artifact in listed) {
+            if (artifact.get("source_kind")?.asText() != OperatorActionArtifacts.SOURCE_KIND) {
+                continue
+            }
+            val logId = artifact.get("artifact_id")?.asText() ?: continue
+            val logSha = artifact.get("sha256")?.asText() ?: ""
+            latestFlightLog[flightLogLineage(spec.flightId, bootId, logId, logSha)] = logId
+        }
         val artifacts = manifest.putArray("artifacts")
-        for (artifact in store.artifactsFor(spec.flightId, bootId)) {
+        for (artifact in listed) {
+            if (artifact.get("source_kind")?.asText() == OperatorActionArtifacts.SOURCE_KIND) {
+                val entryId = artifact.get("artifact_id")?.asText()
+                val entrySha = artifact.get("sha256")?.asText() ?: ""
+                val entryLineage = if (entryId == null) "legacy:"
+                else flightLogLineage(spec.flightId, bootId, entryId, entrySha)
+                if (latestFlightLog[entryLineage] != entryId) continue
+            }
             val entry = artifacts.addObject()
             entry.put("artifact_id", artifact.get("artifact_id").asText())
             entry.put("source_kind", artifact.get("source_kind").asText())
@@ -76,6 +107,28 @@ class ManifestBuilder(private val store: UploadStore) {
         return manifest
     }
 
+    /**
+     * Artifacts the frozen flight-ingest contract accepts. The
+     * `flight-upload-manifest.v1` `source_kind` enum is CLOSED: an entry
+     * with any other kind makes the Core reject the WHOLE manifest (422),
+     * which would hold one new artifact kind hostage against every other
+     * artifact of the boot. Non-listed artifacts (e.g. sealed machine
+     * assessments, `EDGE_ASSESSMENT`) stay retained locally and reach the
+     * Core through the producer-neutral collection path (whose
+     * `source_kind` is free-form), never by relabelling them here.
+     */
+    fun ingestibleArtifacts(flightId: String, bootId: String): List<ObjectNode> =
+        store.artifactsFor(flightId, bootId).filter {
+            (it.get("source_kind")?.asText() ?: "") in INGESTIBLE_SOURCE_KINDS
+        }
+
+    /** Announced artifacts withheld from the flight-ingest manifest for the
+     *  reason above (retained locally, never deleted, never relabelled). */
+    fun excludedArtifacts(flightId: String, bootId: String): List<ObjectNode> =
+        store.artifactsFor(flightId, bootId).filter {
+            (it.get("source_kind")?.asText() ?: "") !in INGESTIBLE_SOURCE_KINDS
+        }
+
     /** Consecutive (channel, seq+1) runs from the declared gaps. */
     private fun gapRuns(bootId: String): List<List<ObjectNode>> {
         val declared = store.gapsForBoot(bootId)
@@ -93,6 +146,27 @@ class ManifestBuilder(private val store: UploadStore) {
             }
         }
         return runs
+    }
+
+    /**
+     * FLIGHT_LOG lineage of one manifest artifact: the content-derived id
+     * is a pure function of (flight, boot, content sha), so a lineage can
+     * be re-derived without any schema change. Unknown ids each travel as
+     * their OWN `legacy:<artifactId>` lineage — grouping ALL unknowns
+     * together would let one required log evict another. Known lineages
+     * still supersede only their own lineage.
+     */
+    private fun flightLogLineage(
+        flightId: String,
+        bootId: String,
+        artifactId: String,
+        sha256Hex: String,
+    ): String = when {
+        OperatorActionArtifacts.artifactIdFor(flightId, bootId, sha256Hex) == artifactId ->
+            "operator-actions"
+        SessionResultArtifacts.isLineage(flightId, bootId, artifactId, sha256Hex) ->
+            SessionResultArtifacts.LINEAGE
+        else -> "legacy:$artifactId"
     }
 
     private fun synthesizeMissingGaps(flightId: String, bootId: String) {
@@ -125,6 +199,20 @@ class ManifestBuilder(private val store: UploadStore) {
         const val FRAME_MS = 33L
 
         val DATA_CHANNELS = listOf("EVENT_RELIABLE", "EVIDENCE_TRANSFER")
+
+        /**
+         * The frozen `flight-upload-manifest.v1` `source_kind` enum
+         * (contracts/, byte-identical). Adding a kind needs a new `.vN`
+         * contract file + approval — never a silent local widening.
+         */
+        val INGESTIBLE_SOURCE_KINDS = setOf(
+            "EDGE_SNAPSHOT",
+            "EDGE_CLIP",
+            "RC_PROXY_SEGMENT",
+            "CAMERA_SD_ORIGINAL",
+            "FLIGHT_LOG",
+            "TELEMETRY_LOG",
+        )
     }
 }
 
